@@ -1,7 +1,9 @@
 /target
 **/*.rs.bk
 Cargo.lock
-/mirrors/*
-!/mirrors/mirrors.json
 /.harness/
 decisions-draft.md
+
+# mirrors skill: copies ignored, manifest versioned
+/mirrors/*
+!/mirrors/mirrors.json

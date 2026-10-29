@@ -1,5 +1,5 @@
 {
-  "_what": "Read-only source mirrors. Fetched into mirrors/ (gitignored) by docs/parity/tools/fetch_mirrors.py; how to add or pin one: docs/parity/tools/README.md, section Mirrors. Documents cite mirrored files as mirrors/<mirror>/... (repo) or mirrors/<mirror>/<member>/... (set) at the commits below.",
+  "_what": "Read-only copies of outside repositories, fetched into mirrors/<name>/ (gitignored) by the mirrors skill (fetch_mirrors.py). Entries with \"commit\" are pinned; entries with \"follow\": true take the newest commit of \"ref\" on every fetch; \"kind\": \"pages\" entries copy the .md pages a site's llms.txt links, always current (checked at most every \"max_age\" hours); \"writable\": true copies can be edited. Cite files as mirrors/<name>/<path> or mirrors/<set>/<member>/<path>.",
   "mirrors": {
     "cm6": {
       "kind": "set",
@@ -9,75 +9,212 @@
       ],
       "members": {
         "state": {
-          "commit": "651084c8a322b3a19b2bb3e00eee7d4a61d641af",
-          "ref": "refs/tags/6.7.6",
-          "version": "6.7.6"
+          "ref": "refs/heads/main",
+          "commit": "651084c8a322b3a19b2bb3e00eee7d4a61d641af"
         },
         "view": {
-          "commit": "d236c7ccdfc8a04e6a64bd172eb3a2f3f8cb7e0c",
           "ref": "refs/heads/main",
-          "version": "6.43.14",
-          "note": "main after the 6.43.14 release (2026-10-17, 'Improve Home/End behavior in bidi text'); package.json still says 6.43.14"
+          "commit": "7b7882d327970a21a395e93c2f62cbb52ead2708"
         },
         "language": {
-          "commit": "21a38068286652eceb17d8e02da88cbed52f8263",
-          "ref": "refs/tags/6.13.1",
-          "version": "6.13.1"
+          "ref": "refs/heads/main",
+          "commit": "21a38068286652eceb17d8e02da88cbed52f8263"
         },
         "commands": {
-          "commit": "5d2ddbbf485a7e8b17c69cf58ebaebf8e375036c",
-          "ref": "refs/tags/6.11.1",
-          "version": "6.11.1"
+          "ref": "refs/heads/main",
+          "commit": "5d2ddbbf485a7e8b17c69cf58ebaebf8e375036c"
         },
         "streamparser": {
-          "commit": "e8750deb555c08c6b9cea9956daf748c23e3da92",
-          "ref": "refs/heads/main",
-          "version": "6.0.0",
-          "note": "main after the 6.0.0 release"
+          "ref": "refs/tags/6.0.0",
+          "commit": "9419d08a7c8559151f73545425e1953fb1d2e0f8"
         },
         "lang-markdown": {
-          "commit": "f90daf6e56a72f1cf8bbe10b07867f535d0ad2e4",
-          "ref": "refs/tags/6.5.2",
-          "version": "6.5.2"
+          "ref": "refs/heads/main",
+          "follow": true
         },
         "lang-javascript": {
-          "commit": "752304c598da12042525d696ec8b8f40972db692",
           "ref": "refs/heads/main",
-          "version": "6.2.5",
-          "note": "main after the 6.2.5 release"
+          "follow": true
         },
         "legacy-modes": {
-          "commit": "cee55a6909d5497a48960d19ed7d53ce8e5d59a7",
-          "ref": "refs/tags/6.5.5",
-          "version": "6.5.5"
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lsp-client": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-jinja": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-yaml": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "theme-one-dark": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-less": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-liquid": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-vue": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-angular": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-wast": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-lezer": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-xml": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-rust": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-sql": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-html": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-sass": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-css": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-go": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-python": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-php": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-cpp": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-json": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-java": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "basic-setup": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "merge": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "language-data": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "collab": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lint": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "autocomplete": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "search": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "dev": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "buildhelper": {
+          "ref": "refs/heads/main",
+          "follow": true
+        },
+        "lang-example": {
+          "ref": "refs/heads/main",
+          "follow": true
         }
       }
     },
-    "zed": {
-      "kind": "repo",
-      "url": "https://github.com/zed-industries/zed",
-      "ref": "refs/heads/main",
-      "commit": null,
-      "include": [
-        "crates/gpui",
-        "crates/sum_tree",
-        "crates/collections",
-        "crates/util"
-      ],
+    "lezer": {
+      "kind": "set",
+      "url": "https://code.haverbeke.berlin/lezer/{member}",
       "license": [
-        "Apache-2.0"
+        "MIT"
       ],
-      "license_check": "cargo",
-      "note": "Only Apache-2.0 crates are fetched (rules.md §5.3: GPL/AGPL crates are quarantined). Add a crate to include only after checking its Cargo.toml license; the fetch refuses any included crate whose license is not listed."
+      "members": {
+        "common": {
+          "ref": "refs/tags/1.5.4",
+          "commit": "ac5937bfa48c32cb51b618f60708241459d8528f"
+        },
+        "highlight": {
+          "ref": "refs/tags/1.2.5",
+          "commit": "411321ba47cffc8845e79e1a3c773e0bcaf8b5b5"
+        },
+        "lr": {
+          "ref": "refs/tags/1.4.11",
+          "commit": "22814e6ac99851b40c706f743b19f33bb076411a"
+        }
+      }
     },
-    "markdown-oxide": {
-      "kind": "repo",
-      "url": "https://github.com/Feel-ix-343/markdown-oxide",
-      "ref": "refs/heads/main",
-      "commit": null,
+    "marijn": {
+      "kind": "set",
+      "url": "https://code.haverbeke.berlin/marijn/{member}",
       "license": [
-        "Apache-2.0"
-      ]
+        "MIT"
+      ],
+      "members": {
+        "style-mod": {
+          "ref": "refs/tags/4.1.4",
+          "commit": "c90c6b05cb22b55eeaab6de045ad1b55a0275e6c"
+        },
+        "crelt": {
+          "ref": "refs/tags/1.0.7",
+          "commit": "86f0f8a7ebc3a8655aa55c307e5f2d97c72c2d46"
+        },
+        "w3c-keyname": {
+          "ref": "refs/tags/2.2.8",
+          "commit": "5ea93b04bb62230c7de4165e3a9b5c840f05cd44"
+        },
+        "find-cluster-break": {
+          "ref": "refs/tags/1.0.4",
+          "commit": "098961685c964055851434a40cbffb815057cc06"
+        }
+      }
     }
   }
 }
