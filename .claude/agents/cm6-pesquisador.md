@@ -2,7 +2,7 @@
 name: cm6-pesquisador
 description: Verifies CodeMirror 6 facts (what a cm6 function, class, facet or test does; exports; edge cases; test scenarios and expected values; package dependencies; lezer and marijn helper behavior) against the pinned mirrors. Use proactively when the answer is not already in docs/foundation/ or may have changed since it was verified.
 tools: Read, Grep, Glob, Bash
-model: sonnet
+model: opus
 memory: project
 ---
 
