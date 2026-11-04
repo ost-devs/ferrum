@@ -1,6 +1,6 @@
 # Ferrum: purpose, architecture and foundation
 
-The reference document for anyone (human or AI) working on Ferrum: what Ferrum is and aims at, how it relates to CodeMirror 6 (cm6), how the four foundation crates relate to each other, which decisions come before implementation, and what comes after. Rules: `rules.md` (same folder).
+The reference document for anyone (human or AI) working on Ferrum: what Ferrum is and aims at, how it relates to CodeMirror 6 (cm6), how the four foundation crates relate to each other, which decisions come before implementation, and what comes after. Rules for changes: `.claude/rules/` (code: `rust-crates.md`; writing: `writing.md`; outside sources: `mirrors.md`).
 
 Anything marked *preliminary* comes from a first reading of cm6, not from a specification; the specification of each crate decides.
 
@@ -29,7 +29,7 @@ These are what Ferrum is for. Code that does not reach them yet is unfinished, n
 - **Native performance**: large documents without whole-document work, fast startup, low input latency, smooth rendering at high refresh rates. The maintainer's targets: the core (state update, viewport and decoration work) handles a typical keystroke in under 1 ms; the surface renders at the display's refresh rate, up to 120 FPS (8.3 ms per frame); an input is visible in the next frame the display shows. Each target becomes a reproducible benchmark.
 - **A stable public API** for applications, reached through the facade crate `ferrum` (section 4.1) once the foundation is complete.
 
-A goal is stated as a goal. It is stated as *reached* only with the evidence that proves it (`rules.md` §4).
+A goal is stated as a goal. It is stated as *reached* only with the evidence that proves it (`.claude/rules/writing.md`).
 
 ### The idea behind it
 
@@ -52,7 +52,7 @@ Every cm6 item falls into one of three kinds of fidelity. This is the filter tha
 | **Contract parity** | In cm6 the logic asks the DOM (geometry) or Lezer (syntax). Ferrum defines a Rust trait for that question and reproduces the logic on top of it. | Tests run against a fake implementation of the trait (fixed-width layout, hand-built trees) and reproduce cm6's expected results where the scenario permits. | `moveVertically`, `moveToLineBoundary` (visual lines), `posAtCoords`, `coordsAtPos`, syntax-driven indentation, folding, bracket matching |
 | **Not ported** | Exists only because of the DOM, CSS or browsers. | One-line reason; note whether a surface crate must offer a native equivalent. | DOM reconciliation (`docview`, `tile`, `buildtile`), `MutationObserver` handling (`domobserver`, `domchange`, `domreader`), `style-mod` theming, `EditContext`, browser workarounds |
 
-Idiomatic Rust is welcome when observable behavior is identical (see `rules.md`).
+Idiomatic Rust is welcome when observable behavior is identical (`.claude/rules/rust-crates.md`).
 
 ---
 
@@ -170,7 +170,7 @@ cm6 never lays out text; the browser does. In Ferrum:
 
 ## 5. Status and scope
 
-- **2026-11-04: restart from zero.** No Ferrum code exists. An earlier attempt (branch `bad-start`) produced code that claimed parity it did not have; none of its code, tests or API is a base. Branch `bad-start` is kept as a quarry of ideas only.
+- **2026-11-04: restart from zero.** No Ferrum code exists. Branch `bad-start` keeps the earlier state. Its Rust crates, written by another AI, claimed parity they did not have: none of their code, tests, API or READMEs is a base. Its method documents, audit tools and cm6 oracles were written with the maintainer and may be adapted where they fit the new scope.
 - **Scope: the four foundation crates only** (`ferrum-state`, `ferrum-view`, `ferrum-language`, `ferrum-commands`), built in dependency order. Nothing else (facade, surfaces, feature crates, applications) is started until those four are complete and stable.
 - **The workflow** (how a crate is specified, implemented and checked, and by which agents) is being redesigned and is not written yet.
 
@@ -200,7 +200,7 @@ For ASCII-only tests all three give identical numbers, so the choice mostly affe
 
 **D8. Input, IME and accessibility.** Which crate owns the semantics of text input and composition (cm6: `input.ts`, `domchange.ts`, `webtest-composition.ts`)? Accessibility (cm6 gets it from the DOM) needs a native story (for example AccessKit) in surfaces; the view core must expose what they need.
 
-**D9. Licensing.** The repository carries `LICENSE-MIT`, `LICENSE-APACHE` and `THIRD-PARTY-NOTICES.md` (cm6's copyright and permission notice: a Rust port of cm6 is a derived work of MIT-licensed code). Crate manifests declare `MIT OR Apache-2.0` when they are created. Rules for outside code: `rules.md` §5.
+**D9. Licensing.** The repository carries `LICENSE-MIT`, `LICENSE-APACHE` and `THIRD-PARTY-NOTICES.md` (cm6's copyright and permission notice: a Rust port of cm6 is a derived work of MIT-licensed code). Crate manifests declare `MIT OR Apache-2.0` when they are created. Rules for outside code: `.claude/rules/mirrors.md`.
 
 **D10. Short-term scope.** Which cm6 features the foundation must have before the first surface is rebuilt (for example: no tooltips/panels/dialogs yet, gutters model only, no `StreamLanguage`).
 

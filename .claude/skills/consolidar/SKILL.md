@@ -16,8 +16,9 @@ Goal: a fresh session must be as precise as this one without reading it.
 |---|---|
 | User preference or correction about how to work | Auto memory, `feedback` type (personal, not in git) |
 | Project decision, scope or constraint the user set (restart, scope, goals, mirror pins, bad-start quarry) | Auto memory, `project` type (the user chose memories for these); the map's Decisions table points to it |
-| Rule for every task in this repo | `AGENTS.md` (keep it short) |
-| Rule for code, tests, annotations, licensing, references | `docs/foundation/rules.md` |
+| Rule for every task in this repo, subagents included | `CLAUDE.md` at the root (create it only for such a rule; keep it short). Project state never goes there |
+| Rule for some files (crate code, docs, mirrors) | `.claude/rules/*.md` with `paths:` |
+| Something that must always hold | A mechanism (`.claude/settings.json` permissions, a hook), not prose |
 | Purpose, architecture, crate ownership, decisions D1–D10 | `docs/foundation/ferrum-foundation.md` |
 | How the parts fit, where a topic lives, a decision that looks wrong but is not | `.claude/skills/ferrum/SKILL.md`, if no doc above already holds it |
 | Verified cm6 fact | Memory of `cm6-pesquisador` (`.claude/agent-memory/cm6-pesquisador/MEMORY.md`) |

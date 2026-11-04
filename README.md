@@ -9,7 +9,7 @@ A native, embeddable text editor engine in Rust whose core reproduces the archit
 ## Documents
 
 - `docs/foundation/ferrum-foundation.md`: purpose, goals, architecture, the foundation crates, open decisions.
-- `docs/foundation/rules.md`: rules every change follows.
+- `.claude/rules/`: rules every change follows.
 
 ## License
 

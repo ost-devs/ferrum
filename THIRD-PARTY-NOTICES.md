@@ -36,6 +36,6 @@ THE SOFTWARE.
 
 ## Dependencies
 
-Ferrum's crates use third-party Rust crates through Cargo; each keeps its own license, listed in its package metadata. Foundation crates take only dependencies licensed under MIT, Apache-2.0, or a choice that includes one of them (`docs/foundation/rules.md` §5).
+Ferrum's crates use third-party Rust crates through Cargo; each keeps its own license, listed in its package metadata. Foundation crates take only dependencies licensed under MIT, Apache-2.0, or a choice that includes one of them (`.claude/rules/rust-crates.md`).
 
 Applications that distribute binaries built with Ferrum must include the license notices of the dependencies they ship. A tool such as [`cargo-about`](https://github.com/EmbarkStudios/cargo-about) can generate that list from `Cargo.lock`.
