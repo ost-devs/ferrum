@@ -31,7 +31,7 @@ A headless, embeddable Rust editor engine whose core has cm6's architecture and 
 | The maintainer is not asked to decide technical questions mid-way | Their intent: approve the result, not judge choices beyond their knowledge, and not stop the work waiting on them. How the workflow achieves it is still open | memory `project-workflow-redesign` |
 
 ## Known open gaps
-- Foundational decisions D1–D10 (position unit, line breaks, syntax backend, layout contract, command type, threading, style model, input/IME/accessibility, licensing, first-version scope) are open; where they get recorded is undecided. `ferrum-foundation.md` §6.
+- Foundational decisions D1–D8 and D10 (position unit, line breaks and `Text` libraries, syntax backend, layout contract, command type, threading, style model, input/IME/accessibility, first-version scope) are open; D9 (licensing: MIT per crate, Apache-2.0 only for ports of Apache code) is decided. Where open decisions get recorded is undecided. `ferrum-foundation.md` §6.
 - The workflow (spec → implementation → conformance, agents, gates) is being redesigned; requirements and next steps in memory `project-workflow-redesign`.
 - No cm6 harness/oracle in the tree yet. The ones on `bad-start` (`docs/parity/tools/`, `docs/parity/state/oracle/`) were built with Claude Code and are adapted or replaced as the new workflow needs.
 - Ideas to reuse later from `bad-start` (README as living docs, facade shape, tooling, old briefs): memory `project-bad-start-quarry`. Read them with `git show bad-start:<path>`.
@@ -42,7 +42,8 @@ A headless, embeddable Rust editor engine whose core has cm6's architecture and 
 | Purpose, goals, architecture, crate ownership, decisions D1–D10, later crates | `docs/foundation/ferrum-foundation.md` |
 | Rules for crate code, tests, annotations, dependencies | `.claude/rules/rust-crates.md` (loads on `crates/**`) |
 | Rules for docs, claims vs goals, references | `.claude/rules/writing.md` |
-| Mirrors, licenses, Zed quarantine | `.claude/rules/mirrors.md`; edits denied in `.claude/settings.json` |
+| Mirrors (cm6 as specification, citations) | `.claude/rules/mirrors.md`; edits denied in `.claude/settings.json` |
+| Licensing (per crate, outside code) | `ferrum-foundation.md` §6 D9 |
 | cm6 package dependencies and size | `ferrum-foundation.md` §3 |
 | Mirror pins and how to update | `mirrors/mirrors.json`; `mirrors` skill |
 | cm6 copyright notice | `THIRD-PARTY-NOTICES.md` |

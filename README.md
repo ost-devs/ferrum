@@ -10,7 +10,8 @@ A native, embeddable text editor engine in Rust whose core reproduces the archit
 
 - `docs/foundation/ferrum-foundation.md`: purpose, goals, architecture, the foundation crates, open decisions.
 - `.claude/rules/`: rules every change follows.
+- `dev/ptbr/`: Brazilian Portuguese translations for readers; the English originals win.
 
 ## License
 
-Licensed under either of [MIT](LICENSE-MIT) or [Apache-2.0](LICENSE-APACHE), at your option. Ferrum ports CodeMirror 6 (MIT); its notice is in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+Each crate declares its license. Crates are [MIT](LICENSE-MIT); a crate is [Apache-2.0](LICENSE-APACHE) only when it ports or incorporates Apache-2.0 code. Ferrum ports CodeMirror 6 (MIT); its notice is in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

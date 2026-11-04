@@ -54,6 +54,8 @@ Every cm6 item falls into one of three kinds of fidelity. This is the filter tha
 
 Idiomatic Rust is welcome when observable behavior is identical (`.claude/rules/rust-crates.md`).
 
+**Limitations of cm6's stack are not targets.** Some cm6 behavior comes from JavaScript or the browser rather than from editor design (for example, positions counted in UTF-16 code units because JavaScript strings are UTF-16). Matching such behavior is not a goal by itself. Departing from it is a decision (section 6) that names the limitation concretely, as the code shows it, and records the observable consequences of each option.
+
 ---
 
 ## 3. cm6 packages and their real dependencies
@@ -124,7 +126,7 @@ The four foundation packages of cm6 depend on each other like this (verified in 
                               │ ferrum-view       │  → state (layout/input via traits)
                               └─────────┬─────────┘
                               ┌─────────▼─────────┐
-                              │ ferrum-state      │  → no Ferrum deps (ropey, unicode-segmentation)
+                              │ ferrum-state      │  → no Ferrum deps (library candidates: D2)
                               └───────────────────┘
 ```
 
@@ -187,6 +189,7 @@ These decisions shape the whole foundation; implementing before taking them risk
 For ASCII-only tests all three give identical numbers, so the choice mostly affects non-ASCII tests and integration costs. *Recommendation: UTF-8 bytes, with explicit conversion functions to UTF-16 (LSP, IME) and documented translation of non-ASCII cm6 test values.*
 
 **D2. Line breaks and the `Text` model.** cm6 splits input on `\r\n?|\n` (or on `lineSeparator`), stores lines without separators, counts every line break as one position, and reinserts the separator on output (`state.lineBreak`, `sliceDoc`). *Recommendation: same semantics. Normalize on input, configure `ropey` so only `\n` counts as a line break (disable `unicode_lines` and `cr_lines`), keep the original separator in state for output.*
+The libraries behind `Text` and `findClusterBreak` are part of this decision, not taken yet (`ropey` and `unicode-segmentation` are candidates). cm6's `findClusterBreak` comes from `@marijn/find-cluster-break`; another implementation may place grapheme cluster boundaries differently for some sequences, which changes cursor motion and deletion. Before choosing: compare the rules and Unicode versions of both, record the observable consequences, and say whether each difference is cm6 design or a limitation of its stack (section 2).
 
 **D3. Syntax backend and tree abstraction.** Which Ferrum types replace `Tree`, `SyntaxNode`, `NodeType`, `NodeProp`? How are tree-sitter grammars wrapped? How are cm6 node-prop-based strategies (indentation, folding, bracket matching, language data) expressed: Rust node props, tree-sitter queries (`indents.scm`, `folds.scm`, `highlights.scm`), or both? What replaces `@lezer/highlight` tags? Is `StreamLanguage` kept (useful for simple modes, used heavily by cm6's `legacy-modes`)? Is parsing synchronous with a time budget (cm6) or off-thread? Note that tree-sitter is C, which complicates `wasm32-unknown-unknown`.
 
@@ -200,7 +203,7 @@ For ASCII-only tests all three give identical numbers, so the choice mostly affe
 
 **D8. Input, IME and accessibility.** Which crate owns the semantics of text input and composition (cm6: `input.ts`, `domchange.ts`, `webtest-composition.ts`)? Accessibility (cm6 gets it from the DOM) needs a native story (for example AccessKit) in surfaces; the view core must expose what they need.
 
-**D9. Licensing.** The repository carries `LICENSE-MIT`, `LICENSE-APACHE` and `THIRD-PARTY-NOTICES.md` (cm6's copyright and permission notice: a Rust port of cm6 is a derived work of MIT-licensed code). Crate manifests declare `MIT OR Apache-2.0` when they are created. Rules for outside code: `.claude/rules/mirrors.md`.
+**D9. Licensing. Decided by the maintainer, 2026-11-04.** The license is chosen per crate: MIT whenever possible. A crate is Apache-2.0 only when it ports or incorporates Apache-2.0 code, or another legal consequence of Apache-2.0 material requires it. The four foundation crates port cm6 (MIT) and are MIT. `THIRD-PARTY-NOTICES.md` keeps cm6's copyright and permission notice (a Rust port of cm6 is a derived work of MIT-licensed code); `LICENSE-APACHE` stays at the root for crates that will need it. Outside code under a copyleft license (GPL, AGPL, for example Zed's `editor` crate) is never read, copied or used as a dependency.
 
 **D10. Short-term scope.** Which cm6 features the foundation must have before the first surface is rebuilt (for example: no tooltips/panels/dialogs yet, gutters model only, no `StreamLanguage`).
 
@@ -220,7 +223,7 @@ Not started before the four foundation crates are complete and stable (section 5
 | Collaboration | `ferrum-collab` | `@codemirror/collab` | cm6 collab is central-authority OT via `ChangeSet` mapping. CRDT integration (Yjs, Automerge) is a different model and a separate decision, not part of a cm6 port. |
 | Merge/diff | `ferrum-merge` | `@codemirror/merge` | Diff algorithm is portable; side-by-side view is mostly surface. |
 | LSP | `ferrum-lsp-client` | `@codemirror/lsp-client` | Completion, hover, diagnostics, formatting through LSP; needs UTF-16 conversion (D1). |
-| PKM | outside the engine | none | Vault indexing, wikilinks, backlinks, tags, frontmatter. It does not need the editor engine and should not depend on it: a sibling library or part of the application. `markdown-oxide` (Apache-2.0) is a reference. |
+| PKM | outside the engine | none | Vault indexing, wikilinks, backlinks, tags, frontmatter. It does not need the editor engine and should not depend on it: a sibling library or part of the application. `markdown-oxide` (Apache-2.0) is a reference; whether Ferrum depends on it or ports it the way it ports cm6 is undecided (a port would be an Apache-2.0 crate, D9). |
 | Facade | `ferrum` | `codemirror` | Re-exports and presets (a `basic_setup` equivalent) behind feature flags. |
 
 Other possibilities, none of them short-term goals:

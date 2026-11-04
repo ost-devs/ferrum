@@ -35,5 +35,5 @@ Every public item carries one mapping line plus the qualifiers that apply; cm6 n
 3. **Errors**: the error contract of each precondition comes from the specification and decisions; where they say nothing, ask. No `unwrap()`/`expect()` on conditions valid input can trigger; a documented panic is listed under `# Panics`.
 4. Prefer `src/module.rs` over `src/module/mod.rs`. Comments explain why (cm6 correspondence, Unicode and boundary cases), never narrate the code.
 5. **Zero warnings** in `cargo build`, `cargo test` and `cargo clippy` for the workspace. Run them after every change and report failures with their output.
-6. **Dependencies**: no copyleft dependency, direct or transitive. A new direct dependency not licensed MIT or Apache-2.0 needs the maintainer's approval. Crate manifests declare `MIT OR Apache-2.0`.
+6. **Dependencies**: no copyleft dependency, direct or transitive. A new direct dependency not licensed MIT or Apache-2.0 needs the maintainer's approval. A crate manifest declares the license decided in D9 (`docs/foundation/ferrum-foundation.md` §6): `MIT` for the foundation crates.
 7. Do not take decisions D1–D10 (`docs/foundation/ferrum-foundation.md` §6) or approve your own specifications, deviations or exceptions.
