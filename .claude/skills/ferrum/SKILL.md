@@ -28,7 +28,7 @@ A headless, embeddable Rust editor engine whose core has cm6's architecture and 
 | cm6 names kept, in Rust case | A cm6 developer finds the same API (`cursorCharLeft` → `cursor_char_left`) | `.claude/rules/rust-crates.md` |
 | Dependency order is state → view → language → commands (commands is the top, not the base) | Many cm6 commands take an `EditorView`; keymaps live in view; indentation and syntax come from language | `ferrum-foundation.md` §3 |
 | Mirror dependencies pinned at the newest version npm resolves, not the range minimum | The oracle runs what npm installs; another version produces false mismatches | memory `project-cm6-dependency-pins` |
-| The maintainer approves only at the final gate | Intermediate decisions need project knowledge the maintainer may lack; an architect agent prepares or takes them | memory `project-workflow-redesign` |
+| The maintainer is not asked to decide technical questions mid-way | Their intent: approve the result, not judge choices beyond their knowledge, and not stop the work waiting on them. How the workflow achieves it is still open | memory `project-workflow-redesign` |
 
 ## Known open gaps
 - Foundational decisions D1–D10 (position unit, line breaks, syntax backend, layout contract, command type, threading, style model, input/IME/accessibility, licensing, first-version scope) are open; where they get recorded is undecided. `ferrum-foundation.md` §6.
