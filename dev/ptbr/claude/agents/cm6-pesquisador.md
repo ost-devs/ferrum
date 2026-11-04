@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agents/cm6-pesquisador.md` (commit `0fef1ac`). Frontmatter original: `tools: Read, Grep, Glob, Bash`, `model: sonnet`, `memory: project`.
+> Tradução para leitura de `.claude/agents/cm6-pesquisador.md` (commit `e3d7bfa`). Frontmatter original: `tools: Read, Grep, Glob, Bash`, `model: opus`, `memory: project`.
 
 # Agente `cm6-pesquisador`
 
