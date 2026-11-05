@@ -5,12 +5,17 @@ Work in progress. Delete this file when the workflow is designed and written dow
 ## State on 2026-11-05
 
 - No Ferrum code. D9 decided (MIT per crate). `docs/foundation/ferrum-foundation.md`; path-scoped rules in `.claude/rules/`; mirror edits denied in `.claude/settings.json`; consultant pieces: `/ferrum` map, `cm6-pesquisador` agent (opus), `/consolidar`, `/mirrors`. pt-BR translations in `dev/ptbr/`. No `CLAUDE.md`: create one only for a rule every task and subagent needs.
-- Branch `claude-project-memories-cloud-env-vuweqc`: project memories moved into the repository (this file, `docs/foundation/bad-start-quarry.md`, `.claude/rules/mirrors.md` "Dependency pins") and the `mirrors` skill added. Not merged into `main` yet.
+- Decided by the user on 2026-11-05: project state and decisions live in the repository, not in auto memory, because cloud sessions start from a fresh clone and subagents never read the main auto memory. The five project memories were moved (this file, `docs/foundation/bad-start-quarry.md`, `.claude/rules/mirrors.md` "Dependency pins", `.claude/rules/writing.md`), and the `mirrors` skill was added, on branch `claude-project-memories-cloud-env-vuweqc`, with a pull request to `main`.
 - Branch `docs/audit-briefs` is still on origin (contained in `bad-start`) until the user deletes it.
 
-## Next step
+## Next steps
 
-Design the workflow: how each foundation crate is specified, implemented and checked, and by which agents. The session that designs it decides, starting from the intent and problems below, and may reach a different shape.
+In order; the first three are the user's.
+1. Merge the pull request of `claude-project-memories-cloud-env-vuweqc` into `main`, and bring the local `claude` branch up to date with it.
+2. On the local machine: delete the five moved project memories and their `MEMORY.md` lines (`project-restart-scope`, `project-bad-start-quarry`, `project-cm6-dependency-pins`, `project-workflow-redesign`, `feedback-goals-are-not-claims`); review the shared memory `feedback-state-in-repo`, whose default (state in project memory) no longer matches this project; fix the link `[[user-mantenedor]]` in `feedback-ai-files-in-english`, whose target was not among the exported memories.
+3. Cloud environment: put `/mirrors` (`python3 .claude/skills/mirrors/fetch_mirrors.py`) in the environment's setup script, then check that a new session starts with `mirrors/` filled. If the script runs before the clone, use a `SessionStart` hook in the repository instead. Optionally delete branch `docs/audit-briefs` on origin.
+4. Answer the open questions under "Open" (decision process, order of D1–D10).
+5. Design the workflow: how each foundation crate is specified, implemented and checked, and by which agents. The session that designs it decides, starting from the intent and problems below, and may reach a different shape.
 
 ## What the user wants (their intent, 2026-11-04)
 
