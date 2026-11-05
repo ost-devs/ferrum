@@ -11,8 +11,8 @@ Current state only: what is decided, what is open, what comes next. Resolved or 
 
 ## Next steps
 
-1. The user's, outside the repository: bring the local `claude` branch up to date with `main`; on the local machine, delete the five project memories moved into the repository (`project-restart-scope`, `project-bad-start-quarry`, `project-cm6-dependency-pins`, `project-workflow-redesign`, `feedback-goals-are-not-claims`), review the shared memory `feedback-state-in-repo` (its default, state in project memory, no longer matches this project) and the link `[[user-mantenedor]]` in `feedback-ai-files-in-english` (its target was not exported); check that auto memory is on (agent memory needs it); optionally delete branch `docs/audit-briefs` on origin.
-2. Settle the consultant (open question 1): the user needs it to understand and take the other decisions.
+1. The user's, outside the repository: bring the local `claude` branch up to date with `main`; on the local machine, delete the five project memories moved into the repository (`project-restart-scope`, `project-bad-start-quarry`, `project-cm6-dependency-pins`, `project-workflow-redesign`, `feedback-goals-are-not-claims`), review the shared memory `feedback-state-in-repo` (its default, state in project memory, no longer matches this project) and the link `[[user-mantenedor]]` in `feedback-ai-files-in-english` (its target was not exported); check that auto memory is on (agent memory needs it) and that Claude Code is 2.1.318 or later (the version tested); run `/mirrors check`; optionally delete branch `docs/audit-briefs` on origin.
+2. Settle the consultant (open question 1): the user needs it to understand and take the other decisions. Suggested on 2026-11-05: the working session writes the consultant's agent definition, whose prompt is mostly the user's written intent, and the user reviews that text before it exists (the consultant cannot review its own definition); the user then talks with it in a second session (`claude --agent <name>`), for example in a `tmux` pane next to the working session.
 3. With the consultant, settle the order (open question 2) and the first stage.
 
 
