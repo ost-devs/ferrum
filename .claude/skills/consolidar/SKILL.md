@@ -14,7 +14,7 @@ Goal: a fresh session must be as precise as this one without reading it.
 
 | Item | Place |
 |---|---|
-| User preference or correction about how to work | Auto memory, `feedback` type (personal, not in git) |
+| User preference or correction about how to work | Auto memory, `feedback` type (personal, not in git). In a cloud session auto memory is lost with the container: show the item to the user to add on their machine |
 | Project decision, scope or constraint the user set | The file that owns the topic (`ferrum-foundation.md`, a rule, `docs/foundation/bad-start-quarry.md`); the map's Decisions table points to it |
 | Rule for every task in this repo, subagents included | `CLAUDE.md` at the root (create it only for such a rule; keep it short). Project state never goes there |
 | Rule for some files (crate code, docs, mirrors) | `.claude/rules/*.md` with `paths:` |
