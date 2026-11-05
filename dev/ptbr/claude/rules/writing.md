@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/rules/writing.md` (commit `1ebed6c`). Carrega automaticamente quando o Claude toca em `docs/**`, `*.md`, `.claude/**/*.md` ou `crates/**`.
+> Tradução para leitura de `.claude/rules/writing.md` (commit `8072cd2`). Carrega automaticamente quando o Claude toca em `docs/**`, `*.md`, `.claude/**/*.md` ou `crates/**`.
 
 # Escrevendo documentação, doc comments e instruções
 
