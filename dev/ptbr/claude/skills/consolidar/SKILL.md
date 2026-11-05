@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/consolidar/SKILL.md` (commit `0fef1ac`). Só roda quando você digita `/consolidar` (`disable-model-invocation: true`).
+> Tradução para leitura de `.claude/skills/consolidar/SKILL.md` (commit `cc03aed`). Só roda quando você digita `/consolidar` (`disable-model-invocation: true`).
 
 # Skill `/consolidar`
 
@@ -17,14 +17,14 @@ Objetivo: uma sessão nova deve ser tão precisa quanto esta sem precisar lê-la
 | Item | Lugar |
 |---|---|
 | Preferência ou correção do usuário sobre como trabalhar | Auto memory, tipo `feedback` (pessoal, fora do git) |
-| Decisão de projeto, escopo ou restrição definida pelo usuário (reinício, escopo, objetivos, pins dos mirrors, aproveitamento do bad-start) | Auto memory, tipo `project` (o usuário escolheu memórias para isso); a tabela de Decisões do mapa aponta para ela |
+| Decisão de projeto, escopo ou restrição definida pelo usuário | O arquivo dono do tema (`ferrum-foundation.md`, uma rule, `docs/foundation/bad-start-quarry.md`); a tabela de Decisões do mapa aponta para ele |
 | Regra para toda tarefa neste repositório, subagentes incluídos | `CLAUDE.md` na raiz (crie só para uma regra assim; mantenha curto). Estado do projeto nunca vai lá |
 | Regra para alguns arquivos (código dos crates, docs, mirrors) | `.claude/rules/*.md` com `paths:` |
 | Algo que precisa valer sempre | Um mecanismo (permissões em `.claude/settings.json`, um hook), não texto |
 | Propósito, arquitetura, responsabilidade de cada crate, decisões D1–D10 | `docs/foundation/ferrum-foundation.md` |
 | Como as partes se encaixam, onde um tema mora, uma decisão que parece errada mas não é | `.claude/skills/ferrum/SKILL.md`, se nenhum documento acima já a contém |
 | Fato verificado do cm6 | Memória do `cm6-pesquisador` (`.claude/agent-memory/cm6-pesquisador/MEMORY.md`) |
-| Trabalho inacabado, pendências, próximo passo | Faça commit do trabalho no seu branch. O estado vai para uma única memória de projeto (hoje `project-workflow-redesign`): branch, próximo passo, data. Nunca também no repositório. Apague-a quando terminar |
+| Trabalho inacabado, pendências, próximo passo | Faça commit do trabalho no seu branch. O estado vai para um único arquivo em `docs/progress/` (hoje `workflow-redesign.md`): branch, próximo passo, data. Nunca também na memória. Apague-o quando terminar |
 
 4. Mostre ao usuário uma tabela: item → para onde foi. Pergunte antes de fazer commit se o usuário não autorizou commits.
 5. Diga ao usuário que é seguro dar `/clear`.

@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/foundation/ferrum-foundation.md` (commit `0fef1ac`). O original em inglês é o que vale. Termos técnicos sem tradução consagrada (crate, trait, facet, headless, shaping, viewport) ficam em inglês.
+> Tradução para leitura de `docs/foundation/ferrum-foundation.md` (commit `cc03aed`). O original em inglês é o que vale. Termos técnicos sem tradução consagrada (crate, trait, facet, headless, shaping, viewport) ficam em inglês.
 
 # Ferrum: propósito, arquitetura e fundação
 
@@ -174,9 +174,9 @@ Portanto `cosmic-text` pertence a uma superfície (ou a um crate auxiliar compar
 
 ## 5. Situação e escopo
 
-- **2026-11-04: reinício do zero.** Não existe código do Ferrum. O branch `bad-start` guarda o estado anterior. Seus crates Rust, escritos por outra IA, afirmavam uma paridade que não tinham: nada do seu código, testes, API ou READMEs serve de base. Seus documentos de método, ferramentas de auditoria e oráculos do cm6 foram escritos com o mantenedor e podem ser adaptados onde couberem no novo escopo.
+- **2026-11-04: reinício do zero.** Não existe código do Ferrum. O branch `bad-start` guarda o estado anterior. Seus crates Rust, escritos por outra IA, afirmavam uma paridade que não tinham: nada do seu código, testes, API ou READMEs serve de base. Seus documentos de método, ferramentas de auditoria e oráculos do cm6 foram escritos com o mantenedor e podem ser adaptados onde couberem no novo escopo: `docs/foundation/bad-start-quarry.md`.
 - **Escopo: só os quatro crates de fundação** (`ferrum-state`, `ferrum-view`, `ferrum-language`, `ferrum-commands`), construídos na ordem das dependências. Nada mais (fachada, superfícies, crates de funcionalidade, aplicações) começa antes que esses quatro estejam completos e estáveis.
-- **O fluxo de trabalho** (como um crate é especificado, implementado e verificado, e por quais agentes) está sendo redesenhado e ainda não está escrito.
+- **O fluxo de trabalho** (como um crate é especificado, implementado e verificado, e por quais agentes) está sendo redesenhado e ainda não está escrito; estado e direção em `docs/progress/workflow-redesign.md`.
 
 ---
 

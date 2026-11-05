@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "description": "Defuddle for the mirrors skill (\"web\" mirrors): npm ci --ignore-scripts",
+  "dependencies": {
+    "defuddle": "0.19.5"
+  }
+}
