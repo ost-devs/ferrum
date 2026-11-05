@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/rules/writing.md` (commit `0fef1ac`). Carrega automaticamente quando o Claude toca em `docs/**`, `*.md`, `.claude/**/*.md` ou `crates/**`.
+> Tradução para leitura de `.claude/rules/writing.md` (commit `cc03aed`). Carrega automaticamente quando o Claude toca em `docs/**`, `*.md`, `.claude/**/*.md` ou `crates/**`.
 
 # Escrevendo documentação, doc comments e instruções
 
@@ -10,6 +10,10 @@ Os objetivos do Ferrum (`docs/foundation/ferrum-foundation.md` §1 "Goals": pari
 2. Nada de justificativas inventadas: uma diferença em relação ao cm6 sem um motivo concreto e verificável é uma questão em aberto, não uma justificativa.
 3. Relate com fidelidade: testes que falham com a saída; trabalho pulado ou aproximado dito como tal; trabalho parcial relatado como parcial.
 4. READMEs e doc comments descrevem o que existe, item por item; trabalho planejado é marcado como planejado. Os arquivos `src/README.md` dos crates listam cada item com uma linha descrevendo o que ele faz (documentação viva).
+
+## Arquivos que os agentes carregam e notas para sessões futuras
+1. Rules, skills e definições de agentes contêm só o que a tarefa atual do agente pode usar. Política de licenciamento e cautelas sobre trabalho futuro (superfícies, PKM, fontes sem mirror) ficam em `docs/foundation/ferrum-foundation.md` até o escopo chegar nelas. Antes de acrescentar texto a um desses arquivos, pergunte o que o agente faria de diferente com ele agora; se nada, o lugar é o documento para humanos.
+2. Um arquivo de trabalho em andamento (`docs/progress/`) dá uma direção, não um desenho: a intenção do usuário (obrigatória), problemas já vistos, restrições verificadas e ideias marcadas como opções. Nunca o que adotar ou rejeitar, nem que forma construir.
 
 ## Referências
 Escritas para um agente futuro sem o contexto desta sessão, partindo da raiz do repositório.
