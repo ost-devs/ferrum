@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/consolidar/SKILL.md` (commit `cc03aed`). Só roda quando você digita `/consolidar` (`disable-model-invocation: true`).
+> Tradução para leitura de `.claude/skills/consolidar/SKILL.md` (commit `48a08ae`). Só roda quando você digita `/consolidar` (`disable-model-invocation: true`).
 
 # Skill `/consolidar`
 
@@ -16,7 +16,7 @@ Objetivo: uma sessão nova deve ser tão precisa quanto esta sem precisar lê-la
 
 | Item | Lugar |
 |---|---|
-| Preferência ou correção do usuário sobre como trabalhar | Auto memory, tipo `feedback` (pessoal, fora do git) |
+| Preferência ou correção do usuário sobre como trabalhar | Auto memory, tipo `feedback` (pessoal, fora do git). Numa sessão na nuvem a auto memory se perde com o container: mostre o item ao usuário para ele acrescentar na máquina dele |
 | Decisão de projeto, escopo ou restrição definida pelo usuário | O arquivo dono do tema (`ferrum-foundation.md`, uma rule, `docs/foundation/bad-start-quarry.md`); a tabela de Decisões do mapa aponta para ele |
 | Regra para toda tarefa neste repositório, subagentes incluídos | `CLAUDE.md` na raiz (crie só para uma regra assim; mantenha curto). Estado do projeto nunca vai lá |
 | Regra para alguns arquivos (código dos crates, docs, mirrors) | `.claude/rules/*.md` com `paths:` |
