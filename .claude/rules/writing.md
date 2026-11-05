@@ -17,6 +17,10 @@ Ferrum's goals (`docs/foundation/ferrum-foundation.md` §1 "Goals": 1:1 behavior
 3. Report faithfully: failing tests with their output; skipped or approximated work said so; partial work reported as partial.
 4. READMEs and doc comments describe what exists, item by item; planned work is marked as planned. Crate `src/README.md` files list each item with a one-line description of what it does (living documentation).
 
+## Agent-loaded files and notes for later sessions
+1. Rules, skills and agent definitions hold only what the agent's current task can act on. Licensing policy and cautions about later work (surfaces, PKM, sources not mirrored) stay in `docs/foundation/ferrum-foundation.md` until the scope reaches them. Before adding text to such a file, ask what the agent would do differently with it now; if nothing, it belongs in the human doc.
+2. A work-in-progress file (`docs/progress/`) gives a direction, not a design: the user's intent (binding), problems seen before, verified constraints, and ideas marked as options. Never what to adopt or reject, or which shape to build.
+
 ## References
 Written for a later agent without this session's context, starting at the repository root.
 1. Paths relative to the repository root, never absolute, never `./`. Nothing from the session environment (`/tmp`, a scratchpad, a home directory).
