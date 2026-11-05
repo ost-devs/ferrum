@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/progress/workflow-redesign.md` (commit `a840b27`). O original em inglês é o que vale.
+> Tradução para leitura de `docs/progress/workflow-redesign.md` (commit `48821a3`). O original em inglês é o que vale.
 
 # Redesenho do fluxo de trabalho
 
@@ -8,14 +8,15 @@ Só o estado atual: o que está decidido, o que está em aberto, o que vem depoi
 
 - Nenhum código do Ferrum. D9 decidida (MIT por crate). Já existe: `docs/foundation/ferrum-foundation.md`, rules com escopo de caminho em `.claude/rules/`, edição dos mirrors negada em `.claude/settings.json`, o mapa `/ferrum`, o agente `cm6-pesquisador`, `/consolidar`, `/mirrors`, traduções em pt-BR em `dev/ptbr/`. Sem `CLAUDE.md`: crie um só para uma regra de que toda tarefa e todo subagente precisem.
 - O estado e as decisões do projeto moram no repositório, não na auto memory (decidido em 2026-11-05: sessões na nuvem começam de um clone novo; subagentes nunca leem a auto memory principal).
+- O trabalho acontece na máquina local nesta fase (decisão do usuário, 2026-11-05): a memória dos agentes, os subagentes aninhados e os mirrors persistentes precisam dela. Uma sessão na nuvem foi testada em 2026-11-05; o que ela mostrou está no histórico do git (`git show fa24433:docs/progress/workflow-redesign.md`, "Verified constraints").
 - O pull request #2 (branch `claude-project-memories-cloud-env-vuweqc`) está aberto com as últimas mudanças deste arquivo.
 
 ## Próximos passos
 
-1. Do usuário, fora do repositório: atualizar o branch local `claude` com o `main`; na máquina local, apagar as cinco memórias de projeto levadas para o repositório (`project-restart-scope`, `project-bad-start-quarry`, `project-cm6-dependency-pins`, `project-workflow-redesign`, `feedback-goals-are-not-claims`), revisar a memória compartilhada `feedback-state-in-repo` (o padrão dela, estado na memória de projeto, já não combina com este projeto) e o link `[[user-mantenedor]]` em `feedback-ai-files-in-english` (o alvo não foi exportado); colocar o `/mirrors` (`python3 .claude/skills/mirrors/fetch_mirrors.py`) no script de setup do ambiente na nuvem, e usar um hook `SessionStart` se o script rodar antes do clone; opcional: apagar o branch `docs/audit-briefs` no origin.
+1. Do usuário, fora do repositório: atualizar o branch local `claude` com o `main`; na máquina local, apagar as cinco memórias de projeto levadas para o repositório (`project-restart-scope`, `project-bad-start-quarry`, `project-cm6-dependency-pins`, `project-workflow-redesign`, `feedback-goals-are-not-claims`), revisar a memória compartilhada `feedback-state-in-repo` (o padrão dela, estado na memória de projeto, já não combina com este projeto) e o link `[[user-mantenedor]]` em `feedback-ai-files-in-english` (o alvo não foi exportado); conferir se a auto memory está ligada (a memória dos agentes precisa dela); opcional: apagar o branch `docs/audit-briefs` no origin.
 2. Definir o consultor (questão aberta 1): o usuário precisa dele para entender e tomar as outras decisões.
 3. Com o consultor, definir a ordem (questão aberta 2) e a primeira etapa.
-4. `cm6-pesquisador` nas sessões na nuvem: a memória dele não carrega lá (auto memory desligada) e as ferramentas dele não têm `Write`/`Edit`, então ele nem lê seus fatos automaticamente nem registra fatos novos. Opções: as instruções dele nomeiam `.claude/agent-memory/cm6-pesquisador/MEMORY.md` para ler primeiro, e as ferramentas ganham `Write`/`Edit` limitados a essa pasta; ou aceitar a lacuna nas sessões na nuvem.
+
 
 ## A intenção do usuário (obrigatória)
 
@@ -44,16 +45,11 @@ Documentação do Claude Code, 2026-11-04, v2.1.316:
 - `isolation: worktree` cria o branch a partir do branch padrão (`main`), não do HEAD.
 - A continuação automática depois do reset do limite de uso só acontece numa sessão interativa aberta; execuções em segundo plano e `-p` não esperam. https://code.claude.com/docs/en/interactive-mode
 
-Sessões do Claude Code na nuvem, observado em 2026-11-05:
-- Uma sessão começa de um clone novo de um branch: sem auto memory, sem outros branches locais (traga-os com fetch), sem mirrors (rode `/mirrors`).
-- O host dos mirrors, `code.haverbeke.berlin`, precisa estar nos domínios de rede permitidos do ambiente.
-- O origin tem um branch chamado `claude`, então nenhum branch `claude/<qualquer-coisa>` pode ser criado; use `claude-<nome>`.
-
 Agentes, testado em 2026-11-05 com o Claude Code 2.1.318 e um agente de teste (`memory: project`, uma palavra no seu `MEMORY.md`); documentação: https://code.claude.com/docs/en/sub-agents:
-- O `memory:` de um agente só carrega com a auto memory ligada. Sessões na nuvem rodam com ela desligada, então lá o `MEMORY.md` de um agente não é carregado e as ferramentas de memória não são acrescentadas (o `cm6-pesquisador` incluído). Com a auto memory ligada, a memória carregou tanto como subagente quanto como sessão principal (`claude --agent <nome>`).
+- O `memory:` de um agente só carrega com a auto memory ligada (desligada nas sessões na nuvem); com ela ligada, a memória carregou tanto como subagente quanto como sessão principal (`claude --agent <nome>`).
 - `claude --agent <nome>` roda a sessão inteira como esse agente: prompt, ferramentas e modelo dele, e pode ser retomada; a chave `agent` em `.claude/settings.json` o torna o padrão de toda sessão do projeto.
 - Subagentes não podem usar `AskUserQuestion`; um subagente é retomado com o histórico completo por `SendMessage` dentro da mesma sessão.
-- Um subagente com `Agent` nas ferramentas pode criar subagentes, até `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` camadas abaixo da sessão principal (3 por padrão). Sessões na nuvem definem 1, então lá um subagente não pode criar outros; um agente rodado com `--agent` é a sessão principal e pode.
+- Um subagente com `Agent` nas ferramentas pode criar subagentes, até `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` camadas abaixo da sessão principal (3 por padrão; sessões na nuvem definem 1).
 
 ## Questões em aberto
 
@@ -62,7 +58,7 @@ As opções são para avaliar; uma recomendação é de um agente, não uma deci
 **1. A forma do consultor.**
 - a) A sessão principal. Ela tem mais contexto, mas é a sessão que orquestra e propõe (no `bad-start`, a sessão principal escrevia as disposições que o Gate 1 aprovava, `1-parity-audit.md` §4), então aprovaria as próprias propostas; e o contexto dela acaba com a sessão.
 - b) Um subagente personalizado com `memory: project`, como o `cm6-pesquisador`: um contexto independente de quem propõe, e uma memória versionada em `.claude/agent-memory/` que chega a toda sessão e ambiente. Recomendada pela análise de 2026-11-05. Condições: ele lê a proposta, os arquivos de evidência e a intenção do usuário a partir do repositório, não o raciocínio de quem propôs; a memória dele guarda precedentes (como perguntas anteriores foram respondidas e por quê) e nunca uma decisão, que mora só no registro; ele revisa todo item não óbvio (`DEFER`, `DROP`, `CONTRACT`, tudo o que toca uma decisão) e uma amostra registrada do resto, como o `1-parity-audit.md` §12 fazia na verificação, em vez de toda linha.
-- Conferido em 2026-11-05 (ver "Restrições verificadas"): a mesma definição pode rodar em dois modos. Como subagente da sessão de trabalho, ele responde a cada pergunta com as próprias palavras no rascunho. Como sessão principal (`claude --agent <nome>`), o usuário conversa com ele diretamente sobre um rascunho, e ele pode pedir pesquisa ao `cm6-pesquisador` mesmo numa sessão na nuvem. Como subagente, ele só pode pedir pesquisa onde o aninhamento é permitido (não nas sessões na nuvem). A memória dele só carrega com a auto memory ligada; nas sessões na nuvem o agente teria que ler o seu `MEMORY.md` explicitamente, e precisa de `Write`/`Edit` nas ferramentas para atualizá-lo. Não conferido: como iniciar uma sessão na nuvem como um agente específico sem ser pela configuração `agent`, que vale para o projeto inteiro.
+- Conferido em 2026-11-05 (ver "Restrições verificadas"): a mesma definição pode rodar em dois modos. Como subagente da sessão de trabalho, ele responde a cada pergunta com as próprias palavras no rascunho. Como sessão principal (`claude --agent <nome>`), o usuário conversa com ele diretamente sobre um rascunho, e ele pode pedir pesquisa ao `cm6-pesquisador` nos dois modos. A memória dele só carrega com a auto memory ligada.
 
 **2. Quando as D1–D10 são tomadas.** A proposta de 2026-11-04 tomava D10, D1, D2 e D6 antes de desenhar a etapa de especificação do state. Fatos que pesam contra precisar delas tão cedo: a auditoria de especificação era neutra em relação às decisões por regra (`1-parity-audit.md` §2.4: itens de contrato descrevem a pergunta, formas em Rust só aparecem no esboço); as fixtures guardam as posições UTF-16 do cm6 junto com o texto, para serem convertidas quando a D1 for tomada (§6.2); a auditoria juntava evidência para as decisões abertas em vez de supor respostas (§1, §10). O que depende de Rust ou de uma decisão: as armadilhas JS→Rust (§9), o esboço de implementação (§16), a tradução dos valores de teste pela D1, e o `DEFER` (D10) no Gate 1. Opções:
 - a) Tomar as decisões de cada etapa antes da especificação dela (a proposta de 2026-11-04).
