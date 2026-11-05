@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/progress/workflow-redesign.md` (commit `1ebed6c`). O original em inglês é o que vale.
+> Tradução para leitura de `docs/progress/workflow-redesign.md` (commit `d76804e`). O original em inglês é o que vale.
 
 # Redesenho do fluxo de trabalho: estado e direção
 
@@ -16,7 +16,7 @@ Em ordem; os três primeiros são do usuário.
 1. Fazer o merge do pull request de `claude-project-memories-cloud-env-vuweqc` no `main` e atualizar o branch local `claude` com ele.
 2. Na máquina local: apagar as cinco memórias de projeto levadas e suas linhas no `MEMORY.md` (`project-restart-scope`, `project-bad-start-quarry`, `project-cm6-dependency-pins`, `project-workflow-redesign`, `feedback-goals-are-not-claims`); revisar a memória compartilhada `feedback-state-in-repo`, cujo padrão (estado na memória de projeto) já não combina com este projeto; corrigir o link `[[user-mantenedor]]` em `feedback-ai-files-in-english`, cujo alvo não estava entre as memórias exportadas.
 3. Ambiente na nuvem: colocar o `/mirrors` (`python3 .claude/skills/mirrors/fetch_mirrors.py`) no script de setup do ambiente e conferir se uma sessão nova começa com `mirrors/` preenchida. Se o script rodar antes do clone, usar um hook `SessionStart` no repositório. Opcional: apagar o branch `docs/audit-briefs` no origin.
-4. Responder às perguntas em "Em aberto" (processo de decisão, ordem das D1–D10).
+4. Fechar o processo de decisão: responder à proposta de 2026-11-04 em "Em aberto", revista pela intenção do usuário de 2026-11-05 abaixo (consultor, nenhuma decisão silenciosa, D10).
 5. Desenhar o fluxo de trabalho: como cada crate de fundação é especificado, implementado e verificado, e por quais agentes. A sessão que o desenhar decide, partindo da intenção e dos problemas abaixo, e pode chegar a outra forma.
 
 ## O que o usuário quer (intenção dele, 2026-11-04)
@@ -25,6 +25,10 @@ Em ordem; os três primeiros são do usuário.
 - O usuário só é consultado sobre o que precisa da intenção ou aprovação dele, nunca sobre escolhas técnicas que não consegue julgar. Ele concorda com uma aprovação humana final. Um portão intermediário que pare o trabalho esperando por ele, e assim force uma nova janela de contexto, é o que ele quer evitar.
 - As decisões têm uma única fonte de verdade, e o usuário pode revisar uma proposta antes de ela virar decisão.
 - Cada agente recebe o que precisa para o seu trabalho, nem menos nem mais.
+
+Acrescentado em 2026-11-05:
+- Nenhuma decisão é tomada silenciosamente por uma IA. Toda pergunta que a auditoria antiga mandava ao humano (`human-decisions.md` no `bad-start`, por exemplo HD-INTERNALS) continua sendo levantada e registrada do mesmo jeito. Um consultor pessoal do usuário (agente ou skill) responde às que o usuário não precisa responder; cada resposta dele fica registrada como do consultor e é fácil de achar. O agente que propõe decidir ele mesmo as escolhas técnicas, como sugeria a proposta de 2026-11-04 ("decidida pelo arquiteto"), é o que o usuário rejeita.
+- Pular itens do cm6 nunca pode ser silencioso. O usuário desconfia da D10 (escopo de curto prazo) por isso (ver "Em aberto").
 
 ## Problemas vistos na abordagem antiga (`bad-start`), a evitar
 
@@ -48,7 +52,7 @@ Sessões do Claude Code na nuvem, observado em 2026-11-05:
 
 ## Ideias levantadas até agora (opções, não escolhas)
 
-- A ideia do usuário: um agente que conhece o projeto e a intenção do usuário (um "arquiteto") toma as decisões intermediárias e ajuda o usuário com as dele.
+- O consultor (ideia do usuário, refinada em 2026-11-05; a forma está em aberto): um subagente dá um contexto independente de quem propõe, uma skill roda dentro do contexto de quem propõe. Ele poderia responder a partir da intenção escrita do usuário e da evidência, citar no que se apoiou, e passar ao usuário o que a intenção escrita não cobre ou o que muda o comportamento observável em relação ao cm6. Toda resposta do consultor listada na aprovação final.
 - Decisões como um arquivo com status por entrada, ou um arquivo de rascunho revisado e depois movido; local em aberto (o usuário pensou no mapa `/ferrum`).
 - O material de `docs/flow/` do `bad-start`: tabela de papéis, esboços de subagentes, uma skill de retomada, hooks (bloquear edição de testes, reinjetar contexto depois da compactação), execuções sem supervisão e na nuvem.
 - Rodar sessões longas no `tmux` para sobreviver aos limites de uso (máquina local).
@@ -59,3 +63,4 @@ Sessões do Claude Code na nuvem, observado em 2026-11-05:
 - Ordem: as D1–D10 são tomadas antes do desenho do fluxo, ou como sua primeira etapa? Opções: decidi-las antes; desenhar primeiro só o processo de decisão e passar as D1–D10 por ele; desenhar o fluxo inteiro com D1 e D10 como entradas.
 - Precedência entre documentos de instrução (texto antigo: `docs/fundation/rules.md` §0 no `bad-start`).
 - Onde as D1–D10 são registradas.
+- D10 (escopo de curto prazo, `ferrum-foundation.md` §6). No `bad-start`, a D10 virou disposições `DEFER`, cada uma com motivo, aprovadas no Gate 1 (`docs/fundation/1-parity-audit.md` §5, §14); depois a conformidade deixava os itens `DEFER` fora do G1 e do veredito `CONFORMANT` (`docs/fundation/3-conformance-audit.md` §3 G1), então um crate podia parecer conforme com itens deixados de fora, e nada os reabria. No escopo atual (`ferrum-foundation.md` §5: nada mais começa antes de os quatro crates estarem completos), o propósito de adiar não é claro; só importa se uma superfície tiver que começar antes de a fundação estar completa. Se a D10 fica, e em que forma, é decisão do usuário.
