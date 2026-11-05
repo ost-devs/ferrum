@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/progress/workflow-redesign.md` (commit `cc03aed`). O original em inglês é o que vale.
+> Tradução para leitura de `docs/progress/workflow-redesign.md` (commit `1ebed6c`). O original em inglês é o que vale.
 
 # Redesenho do fluxo de trabalho: estado e direção
 
@@ -7,12 +7,17 @@ Trabalho em andamento. Apague este arquivo quando o fluxo de trabalho estiver de
 ## Estado em 2026-11-05
 
 - Nenhum código do Ferrum. D9 decidida (MIT por crate). `docs/foundation/ferrum-foundation.md`; rules com escopo de caminho em `.claude/rules/`; edição dos mirrors negada em `.claude/settings.json`; peças de consultoria: mapa `/ferrum`, agente `cm6-pesquisador` (opus), `/consolidar`, `/mirrors`. Traduções em pt-BR em `dev/ptbr/`. Sem `CLAUDE.md`: crie um só para uma regra de que toda tarefa e todo subagente precisem.
-- Branch `claude-project-memories-cloud-env-vuweqc`: memórias de projeto levadas para o repositório (este arquivo, `docs/foundation/bad-start-quarry.md`, `.claude/rules/mirrors.md` "Dependency pins") e skill `mirrors` adicionada. Ainda sem merge no `main`.
+- Decidido pelo usuário em 2026-11-05: o estado e as decisões do projeto moram no repositório, não na auto memory, porque sessões na nuvem começam de um clone novo e subagentes nunca leem a auto memory principal. As cinco memórias de projeto foram levadas (este arquivo, `docs/foundation/bad-start-quarry.md`, `.claude/rules/mirrors.md` "Dependency pins", `.claude/rules/writing.md`), e a skill `mirrors` foi adicionada, no branch `claude-project-memories-cloud-env-vuweqc`, com um pull request para o `main`.
 - O branch `docs/audit-briefs` continua no origin (contido no `bad-start`) até o usuário apagá-lo.
 
-## Próximo passo
+## Próximos passos
 
-Desenhar o fluxo de trabalho: como cada crate de fundação é especificado, implementado e verificado, e por quais agentes. A sessão que o desenhar decide, partindo da intenção e dos problemas abaixo, e pode chegar a outra forma.
+Em ordem; os três primeiros são do usuário.
+1. Fazer o merge do pull request de `claude-project-memories-cloud-env-vuweqc` no `main` e atualizar o branch local `claude` com ele.
+2. Na máquina local: apagar as cinco memórias de projeto levadas e suas linhas no `MEMORY.md` (`project-restart-scope`, `project-bad-start-quarry`, `project-cm6-dependency-pins`, `project-workflow-redesign`, `feedback-goals-are-not-claims`); revisar a memória compartilhada `feedback-state-in-repo`, cujo padrão (estado na memória de projeto) já não combina com este projeto; corrigir o link `[[user-mantenedor]]` em `feedback-ai-files-in-english`, cujo alvo não estava entre as memórias exportadas.
+3. Ambiente na nuvem: colocar o `/mirrors` (`python3 .claude/skills/mirrors/fetch_mirrors.py`) no script de setup do ambiente e conferir se uma sessão nova começa com `mirrors/` preenchida. Se o script rodar antes do clone, usar um hook `SessionStart` no repositório. Opcional: apagar o branch `docs/audit-briefs` no origin.
+4. Responder às perguntas em "Em aberto" (processo de decisão, ordem das D1–D10).
+5. Desenhar o fluxo de trabalho: como cada crate de fundação é especificado, implementado e verificado, e por quais agentes. A sessão que o desenhar decide, partindo da intenção e dos problemas abaixo, e pode chegar a outra forma.
 
 ## O que o usuário quer (intenção dele, 2026-11-04)
 
