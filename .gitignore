@@ -6,3 +6,6 @@ decisions-draft.md
 # mirrors skill: copies ignored, manifest versioned
 /mirrors/*
 !/mirrors/mirrors.json
+
+# mirrors skill: Defuddle installed by npm ci next to the script
+/.claude/skills/mirrors/node_modules
