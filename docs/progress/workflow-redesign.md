@@ -14,7 +14,7 @@ In order; the first three are the user's.
 1. Merge the pull request of `claude-project-memories-cloud-env-vuweqc` into `main`, and bring the local `claude` branch up to date with it.
 2. On the local machine: delete the five moved project memories and their `MEMORY.md` lines (`project-restart-scope`, `project-bad-start-quarry`, `project-cm6-dependency-pins`, `project-workflow-redesign`, `feedback-goals-are-not-claims`); review the shared memory `feedback-state-in-repo`, whose default (state in project memory) no longer matches this project; fix the link `[[user-mantenedor]]` in `feedback-ai-files-in-english`, whose target was not among the exported memories.
 3. Cloud environment: put `/mirrors` (`python3 .claude/skills/mirrors/fetch_mirrors.py`) in the environment's setup script, then check that a new session starts with `mirrors/` filled. If the script runs before the clone, use a `SessionStart` hook in the repository instead. Optionally delete branch `docs/audit-briefs` on origin.
-4. Answer the open questions under "Open" (decision process, order of D1–D10).
+4. Settle the decision process: answer the 2026-11-04 proposal under "Open", revised by the user's 2026-11-05 intent below (consultant, no silent decisions, D10).
 5. Design the workflow: how each foundation crate is specified, implemented and checked, and by which agents. The session that designs it decides, starting from the intent and problems below, and may reach a different shape.
 
 ## What the user wants (their intent, 2026-11-04)
@@ -23,6 +23,10 @@ In order; the first three are the user's.
 - The user is asked only what needs their intent or approval, never technical choices they cannot judge. They agree with a final human approval. An intermediate gate that stops the work waiting on them, and so forces a new context window, is what they want to avoid.
 - Decisions have one source of truth, and the user can review a proposal before it becomes a decision.
 - Each agent gets what it needs for its job, no less and no more.
+
+Added on 2026-11-05:
+- No decision is taken silently by an AI. Every question that the old audit sent to the human (`human-decisions.md` on `bad-start`, for example HD-INTERNALS) is still raised and recorded in the same way. A personal consultant of the user (agent or skill) answers the ones the user need not answer; each of its answers is recorded as the consultant's and is easy to find. The agent that proposes deciding technical choices itself, as the 2026-11-04 proposal suggested ("decided by the architect"), is what the user rejects.
+- Skipping cm6 items must never be silent. The user doubts D10 (short-term scope) for this reason (see "Open").
 
 ## Problems seen in the old approach (`bad-start`), to avoid
 
@@ -46,7 +50,7 @@ Claude Code cloud sessions, observed 2026-11-05:
 
 ## Ideas raised so far (options, not choices)
 
-- The user's idea: an agent that knows the project and the user's intent (an "architect") makes the intermediate calls and helps the user with theirs.
+- The consultant (the user's idea, refined 2026-11-05; its form is open): a subagent gives a context independent of the proposer, a skill runs inside the proposer's context. It could answer from the user's written intent and the evidence, cite what it relied on, and pass to the user what the written intent does not cover or what changes observable behavior relative to cm6. Every consultant answer listed in the final approval.
 - Decisions as one file with a status per entry, or a draft file reviewed and then moved; location open (the user wondered about the `/ferrum` map).
 - `bad-start`'s `docs/flow/` material: role table, subagent sketches, a resume skill, hooks (block test edits, re-inject after compaction), unattended and cloud runs.
 - Running long sessions in `tmux` to survive usage limits (local machine).
@@ -57,3 +61,4 @@ Claude Code cloud sessions, observed 2026-11-05:
 - Order: are D1–D10 taken before the workflow design, or as its first stage? Options: decide them first; design only the decision process first and take D1–D10 through it; design the whole workflow with D1 and D10 as inputs.
 - Precedence between instruction documents (old text: `docs/fundation/rules.md` §0 on `bad-start`).
 - Where D1–D10 are recorded.
+- D10 (short-term scope, `ferrum-foundation.md` §6). On `bad-start`, D10 became `DEFER` dispositions, each with a reason, approved at Gate 1 (`docs/fundation/1-parity-audit.md` §5, §14); conformance then left `DEFER` items out of G1 and of the `CONFORMANT` verdict (`docs/fundation/3-conformance-audit.md` §3 G1), so a crate could read as conforming with items left out, and nothing reopened them. Under the current scope (`ferrum-foundation.md` §5: nothing else starts before the four crates are complete), the purpose of a deferral is unclear; it matters only if a surface should start before the foundation is complete. Whether D10 stays, and in which form, is the user's call.
