@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/progress/workflow-redesign.md` (commit `48821a3`). O original em inglês é o que vale.
+> Tradução para leitura de `docs/progress/workflow-redesign.md` (commit `7a177f9`). O original em inglês é o que vale.
 
 # Redesenho do fluxo de trabalho
 
