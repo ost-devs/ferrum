@@ -20,21 +20,21 @@ A headless, embeddable Rust editor engine whose core has cm6's architecture and 
 ## Decisions that look wrong but are not
 | Decision | Reason | Where |
 |---|---|---|
-| All crate code deleted; nothing from `bad-start`'s Rust crates reused | Another AI (Google's agy) wrote them, claimed "100% parity", and they were incomplete and imprecise; auditing them cost more than restarting. Its method docs, tools and oracles (made with Claude Code) are a different case: adaptable | commit `a1e5463`; `ferrum-foundation.md` §5; memory `project-restart-scope` |
-| Only the four foundation crates, even "quick" GPUI or facade work is refused | The first attempt spread to surfaces and PKM before the base was right | `ferrum-foundation.md` §5; memory `project-restart-scope` |
-| "1:1 parity" and "120 FPS" are written as goals, not avoided | Earlier docs treated the goals themselves as false claims; only saying a goal is *reached* needs evidence | `.claude/rules/writing.md`; memory `feedback-goals-are-not-claims` |
+| All crate code deleted; nothing from `bad-start`'s Rust crates reused | Another AI (Google's agy) wrote them, claimed "100% parity", and they were incomplete and imprecise; auditing them cost more than restarting. Its method docs, tools and oracles (made with Claude Code) are a different case: adaptable | commit `a1e5463`; `ferrum-foundation.md` §5; `docs/foundation/bad-start-quarry.md` |
+| Only the four foundation crates, even "quick" GPUI or facade work is refused | The first attempt spread to surfaces and PKM before the base was right | `ferrum-foundation.md` §5 |
+| "1:1 parity" and "120 FPS" are written as goals, not avoided | Earlier docs treated the goals themselves as false claims; only saying a goal is *reached* needs evidence | `.claude/rules/writing.md`; `ferrum-foundation.md` §1 "Goals" |
 | cm6 DOM code is not translated | Each item is classified first (behavioral / contract / surface / not ported); a DOM mechanism becomes a trait question or a surface job, never a port. Native-relevant behavior implemented with the DOM is not dropped either | `ferrum-foundation.md` §2, §4.2 table; `.claude/rules/rust-crates.md` |
 | No public item beyond cm6 and the specification | Invented API was a defect of `bad-start`; every public item maps to a cm6 export or an approved `ferrum-only` decision | `.claude/rules/rust-crates.md` |
 | cm6 names kept, in Rust case | A cm6 developer finds the same API (`cursorCharLeft` → `cursor_char_left`) | `.claude/rules/rust-crates.md` |
 | Dependency order is state → view → language → commands (commands is the top, not the base) | Many cm6 commands take an `EditorView`; keymaps live in view; indentation and syntax come from language | `ferrum-foundation.md` §3 |
-| Mirror dependencies pinned at the newest version npm resolves, not the range minimum | The oracle runs what npm installs; another version produces false mismatches | memory `project-cm6-dependency-pins` |
-| The maintainer is not asked to decide technical questions mid-way | Their intent: approve the result, not judge choices beyond their knowledge, and not stop the work waiting on them. How the workflow achieves it is still open | memory `project-workflow-redesign` |
+| Mirror dependencies pinned at the newest version npm resolves, not the range minimum | The oracle runs what npm installs; another version produces false mismatches | `.claude/rules/mirrors.md` "Dependency pins" |
+| The maintainer is not asked to decide technical questions mid-way | Their intent: approve the result, not judge choices beyond their knowledge, and not stop the work waiting on them. How the workflow achieves it is still open | `docs/progress/workflow-redesign.md` |
 
 ## Known open gaps
 - Foundational decisions D1–D8 and D10 (position unit, line breaks and `Text` libraries, syntax backend, layout contract, command type, threading, style model, input/IME/accessibility, first-version scope) are open; D9 (licensing: MIT per crate, Apache-2.0 only for ports of Apache code) is decided. Where open decisions get recorded is undecided. `ferrum-foundation.md` §6.
-- The workflow (spec → implementation → conformance, agents, gates) is being redesigned; requirements and next steps in memory `project-workflow-redesign`.
+- The workflow (spec → implementation → conformance, agents, gates) is being redesigned; state, intent and next step in `docs/progress/workflow-redesign.md`.
 - No cm6 harness/oracle in the tree yet. The ones on `bad-start` (`docs/parity/tools/`, `docs/parity/state/oracle/`) were built with Claude Code and are adapted or replaced as the new workflow needs.
-- Ideas to reuse later from `bad-start` (README as living docs, facade shape, tooling, old briefs): memory `project-bad-start-quarry`. Read them with `git show bad-start:<path>`.
+- Ideas to reuse later from `bad-start` (README as living docs, facade shape, tooling, old briefs): `docs/foundation/bad-start-quarry.md`. Read them with `git show bad-start:<path>` (fetch the branch first in a fresh clone).
 
 ## Where each topic lives
 | Topic | File |
@@ -45,7 +45,8 @@ A headless, embeddable Rust editor engine whose core has cm6's architecture and 
 | Mirrors (cm6 as specification, citations) | `.claude/rules/mirrors.md`; edits denied in `.claude/settings.json` |
 | Licensing (per crate, outside code) | `ferrum-foundation.md` §6 D9 |
 | cm6 package dependencies and size | `ferrum-foundation.md` §3 |
-| Mirror pins and how to update | `mirrors/mirrors.json`; `mirrors` skill |
+| Mirror pins and how to update | `mirrors/mirrors.json`; `.claude/rules/mirrors.md` "Dependency pins"; `mirrors` skill (`/mirrors` fetches every copy after a clone) |
+| Work in progress: state, next step | `docs/progress/` |
 | cm6 copyright notice | `THIRD-PARTY-NOTICES.md` |
 | Verified cm6 facts | `.claude/agent-memory/cm6-pesquisador/MEMORY.md` |
 
