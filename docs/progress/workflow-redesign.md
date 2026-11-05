@@ -13,6 +13,7 @@ Current state only: what is decided, what is open, what comes next. Resolved or 
 1. The user's, outside the repository: bring the local `claude` branch up to date with `main`; on the local machine, delete the five project memories moved into the repository (`project-restart-scope`, `project-bad-start-quarry`, `project-cm6-dependency-pins`, `project-workflow-redesign`, `feedback-goals-are-not-claims`), review the shared memory `feedback-state-in-repo` (its default, state in project memory, no longer matches this project) and the link `[[user-mantenedor]]` in `feedback-ai-files-in-english` (its target was not exported); put `/mirrors` (`python3 .claude/skills/mirrors/fetch_mirrors.py`) in the cloud environment's setup script, and use a `SessionStart` hook instead if the script turns out to run before the clone; optionally delete branch `docs/audit-briefs` on origin.
 2. Settle the consultant (open question 1): the user needs it to understand and take the other decisions.
 3. With the consultant, settle the order (open question 2) and the first stage.
+4. `cm6-pesquisador` in cloud sessions: its memory does not load there (auto memory off) and its tools have no `Write`/`Edit`, so it can neither read its facts automatically nor record new ones. Options: its instructions name `.claude/agent-memory/cm6-pesquisador/MEMORY.md` to read first, and its tools gain `Write`/`Edit` limited to that folder; or accept the gap in cloud sessions.
 
 ## The user's intent (binding)
 
@@ -46,6 +47,12 @@ Claude Code cloud sessions, observed 2026-11-05:
 - The mirrors host `code.haverbeke.berlin` must be in the environment's allowed network domains.
 - Origin has a branch named `claude`, so no branch named `claude/<anything>` can be created; use `claude-<name>`.
 
+Agents, tested 2026-11-05 with Claude Code 2.1.318 and a probe agent (`memory: project`, a word in its `MEMORY.md`); docs: https://code.claude.com/docs/en/sub-agents:
+- An agent's `memory:` loads only while auto memory is on. Cloud sessions run with it off, so there an agent's `MEMORY.md` is not loaded and its memory tools are not added (`cm6-pesquisador` included). With auto memory on, the memory loaded both as a subagent and as the main thread (`claude --agent <name>`).
+- `claude --agent <name>` runs the whole session as that agent: its prompt, tools and model, resumable; the `agent` key in `.claude/settings.json` makes it the default for every session of the project.
+- Subagents cannot use `AskUserQuestion`; a subagent is resumed with full history through `SendMessage` within the same session.
+- A subagent with `Agent` in its tools can spawn subagents, up to `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` layers below the main thread (3 by default). Cloud sessions set it to 1, so there a subagent cannot spawn; an agent run with `--agent` is the main thread and can.
+
 ## Open questions
 
 Options are to evaluate; a recommendation is an agent's, not a decision.
@@ -53,7 +60,7 @@ Options are to evaluate; a recommendation is an agent's, not a decision.
 **1. The consultant's form.**
 - a) The main session. It holds the most context, but it is the session that orchestrates and proposes (on `bad-start`, the main session wrote the dispositions that Gate 1 approved, `1-parity-audit.md` §4), so it would approve its own proposals; and its context ends with the session.
 - b) A custom subagent with `memory: project`, like `cm6-pesquisador`: a context independent of the proposer, and a memory versioned in `.claude/agent-memory/` that reaches every session and environment. Recommended by the 2026-11-05 analysis. Conditions: it reads the proposal, the evidence files and the user's intent from the repository, not the proposer's reasoning; its memory holds precedents (how earlier questions were answered and why) and never a decision, which lives only in the register; it reviews every non-obvious item (`DEFER`, `DROP`, `CONTRACT`, anything touching a decision) and a recorded sample of the rest, as `1-parity-audit.md` §12 did for verification, rather than every row.
-- To check before choosing: how the user talks with the consultant about a draft (through the main session, or a session run as that agent), and whether a subagent can ask for research it needs.
+- Checked 2026-11-05 (see "Verified constraints"): the same definition can run in two modes. As a subagent of the working session, it answers each question in its own words in the draft. As the main thread (`claude --agent <name>`), the user talks with it directly about a draft, and it can ask `cm6-pesquisador` for research even in a cloud session. As a subagent, it can ask for research only where nesting is allowed (not in cloud sessions). Its memory loads only with auto memory on; in cloud sessions the agent would have to read its `MEMORY.md` explicitly, and it needs `Write`/`Edit` in its tools to update it. Not checked: how a cloud session is started as a given agent other than through the project-wide `agent` setting.
 
 **2. When D1–D10 are taken.** The 2026-11-04 proposal took D10, D1, D2 and D6 before designing the state specification stage. Facts that weigh against needing them that early: the specification audit was decision-neutral by rule (`1-parity-audit.md` §2.4: contract items state the question, Rust shapes appear only in the sketch); fixtures store cm6's UTF-16 positions with their text so they can be mapped once D1 is taken (§6.2); the audit collected evidence for open decisions instead of assuming answers (§1, §10). What depends on Rust or on a decision: the JS→Rust hazards (§9), the implementation sketch (§16), the D1 translation of test values, and `DEFER` (D10) at Gate 1. Options:
 - a) Take each stage's decisions before its specification (the 2026-11-04 proposal).
