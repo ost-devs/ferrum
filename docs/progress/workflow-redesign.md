@@ -2,16 +2,16 @@
 
 Current state only: what is decided, what is open, what comes next. Resolved or superseded items are removed, not kept; git history has them (the full 2026-11-04 decision-process proposal: `git show 3f6648d:docs/progress/decision-process-proposal.md`). Delete this file when the workflow is designed and written down.
 
-## State on 2026-11-05
+## State on 2026-11-06
 
 - No Ferrum code. D9 decided (MIT per crate). In place: `docs/foundation/ferrum-foundation.md`, path-scoped rules in `.claude/rules/`, mirror edits denied in `.claude/settings.json`, the `/ferrum` map, the `cm6-pesquisador` agent, `/consolidar`, `/mirrors`, pt-BR translations in `dev/ptbr/`. No `CLAUDE.md`: create one only for a rule every task and subagent needs.
-- Project state and decisions live in the repository, not in auto memory (decided 2026-11-05: cloud sessions start from a fresh clone; subagents never read the main auto memory).
+- Project state and decisions live in the repository, not in auto memory; the progress files are in `docs/progress/` (the shared memory `feedback-state-in-repo` yields to a progress file the project names). Decided 2026-11-05: (cloud sessions start from a fresh clone; subagents never read the main auto memory).
 - Work happens on the local machine for this phase (the user's decision, 2026-11-05): agent memory, nested subagents and persistent mirrors need it. A cloud session was tried on 2026-11-05; what it showed is in git history (`git show fa24433:docs/progress/workflow-redesign.md`, "Verified constraints").
 - Pull request #2 (branch `claude-project-memories-cloud-env-vuweqc`) is open with the latest changes to this file.
 
 ## Next steps
 
-1. The user's, outside the repository: bring the local `claude` branch up to date with `main`; on the local machine, delete the five project memories moved into the repository (`project-restart-scope`, `project-bad-start-quarry`, `project-cm6-dependency-pins`, `project-workflow-redesign`, `feedback-goals-are-not-claims`), review the shared memory `feedback-state-in-repo` (its default, state in project memory, no longer matches this project) and the link `[[user-mantenedor]]` in `feedback-ai-files-in-english` (its target was not exported); check that auto memory is on (agent memory needs it) and that Claude Code is 2.1.318 or later (the version tested); run `/mirrors check`; optionally delete branch `docs/audit-briefs` on origin.
+1. The user's, outside the repository: update Claude Code to 2.1.318 or later (the local machine ran 2.1.316 on 2026-11-06; agent memory was tested on 2.1.318).
 2. Settle the consultant (open question 1): the user needs it to understand and take the other decisions. Suggested on 2026-11-05: the working session writes the consultant's agent definition, whose prompt is mostly the user's written intent, and the user reviews that text before it exists (the consultant cannot review its own definition); the user then talks with it in a second session (`claude --agent <name>`), for example in a `tmux` pane next to the working session.
 3. With the consultant, settle the order (open question 2) and the first stage.
 
