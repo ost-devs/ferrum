@@ -215,6 +215,15 @@
           "commit": "098961685c964055851434a40cbffb815057cc06"
         }
       }
+    },
+    "claude-code-docs": {
+      "kind": "pages",
+      "url": "https://code.claude.com/docs/llms.txt",
+      "license": [],
+      "max_age": 24,
+      "include": [
+        "en"
+      ]
     }
   }
 }
