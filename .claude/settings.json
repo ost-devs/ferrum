@@ -3,5 +3,20 @@
     "deny": [
       "Edit(/mirrors/*/**)"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && python3 \"$HOME/.claude/skills/mirrors/fetch_mirrors.py\" claude-code-docs >/dev/null 2>&1 || true",
+            "async": true,
+            "timeout": 600
+          }
+        ]
+      }
+    ]
   }
 }
