@@ -22,7 +22,7 @@ Só o estado atual: o que está decidido, o que está em aberto, o que vem depoi
 
 - Cada crate termina com paridade de comportamento 1:1 real com o cm6, e o fluxo consegue mostrar isso.
 - Nenhuma decisão é tomada silenciosamente por uma IA, e o agente que propõe nunca decide a própria proposta. Toda pergunta que a auditoria antiga mandava ao humano (`human-decisions.md` no `bad-start`, por exemplo HD-INTERNALS) continua sendo levantada e registrada. Um consultor pessoal do usuário responde às que o usuário não precisa responder; cada resposta fica registrada como do consultor e é fácil de achar.
-- Uma fonte única de verdade para as decisões, com um rascunho antes dela compartilhado pelo usuário e o consultor: o usuário não aceita as respostas mais importantes do consultor sem entendê-las.
+- Uma fonte de verdade por decisão: cada decisão é escrita em exatamente um lugar, aquele onde os agentes agem a partir dela, e os outros documentos só apontam para ela. Um rascunho anterior a ela é compartilhado pelo usuário e pelo consultor: o usuário não aceita as respostas mais importantes do consultor sem entendê-las.
 - O usuário só é consultado sobre o que precisa da intenção ou aprovação dele, nunca sobre escolhas técnicas que não consegue julgar, e o trabalho não para esperando por ele.
 - Pular um item do cm6 nunca é silencioso.
 - O fluxo é desenhado e executado em etapas, e o método é aperfeiçoado depois de cada crate; ele não é desenhado para todos os crates de antemão.

@@ -9,7 +9,7 @@ Two authors, two levels of trust (`git log bad-start --format=%an -- <path>`).
 Author "Ferrum Engine": `crates/`, the root and crate READMEs. Their code, tests, API and claims are never a source. Only these ideas are kept:
 
 - **README as living documentation** (structure only; its API facts may be invented): `crates/ferrum-commands/src/README.md` lists every command with a one-line description of what it does, grouped by cm6 section, where cm6's README lists names only. Now required by `.claude/rules/writing.md`.
-- **cm6 names in Rust conventions**: now `.claude/rules/rust-crates.md`. Where agy kept a name identical to cm6, check it is idiomatic Rust before copying.
+- **cm6 names in Rust conventions**: the **Names** rule under Architecture in `.claude/rules/rust-crates.md`; decisions in `.claude/rules/rust-naming-decisions.md`.
 - **Facade crate `ferrum`** (`crates/ferrum/`) as the stable application API; built only after the four foundation crates (`ferrum-foundation.md` §5).
 - **GPUI build workarounds** in the old dev container: `patches/xattr-0.2.3` (ENOATTR as ENODATA on Linux, via `[patch.crates-io]`) and `lib/libxkbcommon-x11.so` symlinked to the system library. Relevant only when the GPUI surface starts.
 
