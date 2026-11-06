@@ -7,7 +7,7 @@ Current state only: what is decided, what is open, what comes next. Resolved or 
 - No Ferrum code. D9 decided (MIT per crate). In place: `docs/foundation/ferrum-foundation.md`, path-scoped rules in `.claude/rules/`, mirror edits denied in `.claude/settings.json`, the `/ferrum` map, the `cm6-pesquisador` agent, `/consolidar`, `/mirrors`, pt-BR translations in `dev/ptbr/`. No `CLAUDE.md`: create one only for a rule every task and subagent needs.
 - Project state and decisions live in the repository, not in auto memory; the progress files are in `docs/progress/` (the shared memory `feedback-state-in-repo` yields to a progress file the project names). Decided 2026-11-05: (cloud sessions start from a fresh clone; subagents never read the main auto memory).
 - Work happens on the local machine for this phase (the user's decision, 2026-11-05): agent memory, nested subagents and persistent mirrors need it. A cloud session was tried on 2026-11-05; what it showed is in git history (`git show fa24433:docs/progress/workflow-redesign.md`, "Verified constraints").
-- Pull request #2 (branch `claude-project-memories-cloud-env-vuweqc`) is open with the latest changes to this file.
+
 
 ## Next steps
 
@@ -20,7 +20,7 @@ Current state only: what is decided, what is open, what comes next. Resolved or 
 
 - Each crate ends with real 1:1 behavioral parity with cm6, and the workflow can show it.
 - No decision is taken silently by an AI, and the agent that proposes never decides its own proposal. Every question the old audit sent to the human (`human-decisions.md` on `bad-start`, for example HD-INTERNALS) is still raised and recorded. A personal consultant of the user answers the ones the user need not answer; each answer is recorded as the consultant's and is easy to find.
-- One source of truth per decision: each decision is written in exactly one place, the one where agents act on it, and other documents only point to it. A draft before it is shared by the user and the consultant: the user does not accept the consultant's most important answers without understanding them.
+- One source of truth per decision: each decision is written in one place, and other documents only point to it. A draft before it is shared by the user and the consultant: the user does not accept the consultant's most important answers without understanding them.
 - The user is asked only what needs their intent or approval, never technical choices they cannot judge, and the work does not stop waiting on them.
 - Skipping a cm6 item is never silent.
 - The workflow is designed and run in stages, and the method is refined after each crate; it is not designed for every crate in advance.
@@ -65,8 +65,7 @@ Options are to evaluate; a recommendation is an agent's, not a decision.
 **2. When D1–D10 are taken.** The 2026-11-04 proposal took D10, D1, D2 and D6 before designing the state specification stage. Facts that weigh against needing them that early: the specification audit was decision-neutral by rule (`1-parity-audit.md` §2.4: contract items state the question, Rust shapes appear only in the sketch); fixtures store cm6's UTF-16 positions with their text so they can be mapped once D1 is taken (§6.2); the audit collected evidence for open decisions instead of assuming answers (§1, §10). What depends on Rust or on a decision: the JS→Rust hazards (§9), the implementation sketch (§16), the D1 translation of test values, and `DEFER` (D10) at Gate 1. Options:
 - a) Take each stage's decisions before its specification (the 2026-11-04 proposal).
 - b) Audit cm6 first, decision-neutral and with the Rust-specific parts at its end; take each decision with the consultant before the implementation that needs it, using the examples the audit produced. `ferrum-foundation.md` §6 asks for the decisions "before any implementation", not before the audit. Favored by the 2026-11-05 analysis.
-
-**3. Where decisions live, and the draft.** The user's intent requires an approved decision to be written where agents act on it. The form follows where each decision is acted on:
+**3. Where decisions live, and the draft.** Agents that act on a decision need it in their context. The form follows where each decision is acted on:
 - a) Path-scoped files in `.claude/rules/`, grouped by the files the decision governs (most of D1–D8 govern `crates/**`; D9 also crate manifests), like the naming registry. Favored by the 2026-11-06 analysis.
 - b) `.claude/rules/` without `paths:`, or `CLAUDE.md`: loaded in every task, for a decision every task needs; Explore and Plan skip `CLAUDE.md`.
 
