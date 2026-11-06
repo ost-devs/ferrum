@@ -25,7 +25,7 @@ Ferrum is **not**:
 
 These are what Ferrum is for. Code that does not reach them yet is unfinished, not a reason to lower them.
 
-- **1:1 behavioral parity with cm6** for every item that is behavioral or contract parity (section 2): same results, same invariants, the same tests passing with the same expected values. Names follow cm6, in Rust conventions (`cursorCharLeft` → `cursor_char_left`, `EditorState` stays `EditorState`), so a developer who knows cm6 finds the same API.
+- **1:1 behavioral parity with cm6** for every item that is behavioral or contract parity (section 2): same results, same invariants, the same tests passing with the same expected values. Names stay recognizable to a developer who knows cm6, in idiomatic Rust (the **Names** rule under Architecture in `.claude/rules/rust-crates.md`).
 - **Native performance**: large documents without whole-document work, fast startup, low input latency, smooth rendering at high refresh rates. The maintainer's targets: the core (state update, viewport and decoration work) handles a typical keystroke in under 1 ms; the surface renders at the display's refresh rate, up to 120 FPS (8.3 ms per frame); an input is visible in the next frame the display shows. Each target becomes a reproducible benchmark.
 - **A stable public API** for applications, reached through the facade crate `ferrum` (section 4.1) once the foundation is complete.
 
