@@ -11,9 +11,8 @@ Current state only: what is decided, what is open, what comes next. Resolved or 
 
 ## Next steps
 
-1. The user's, outside the repository: update Claude Code to 2.1.318 or later (the local machine ran 2.1.316 on 2026-11-06; agent memory was tested on 2.1.318).
-2. Settle the consultant (open question 1): the user needs it to understand and take the other decisions. Suggested on 2026-11-05: the working session writes the consultant's agent definition, whose prompt is mostly the user's written intent, and the user reviews that text before it exists (the consultant cannot review its own definition); the user then talks with it in a second session (`claude --agent <name>`), for example in a `tmux` pane next to the working session.
-3. With the consultant, settle the order (open question 2) and the first stage.
+1. Settle the consultant (open question 1): the user needs it to understand and take the other decisions. Suggested on 2026-11-05: the working session writes the consultant's agent definition, whose prompt is mostly the user's written intent, and the user reviews that text before it exists (the consultant cannot review its own definition); the user then talks with it in a second session (`claude --agent <name>`), for example in a `tmux` pane next to the working session.
+2. With the consultant, settle the order (open question 2) and the first stage.
 
 
 ## The user's intent (binding)
