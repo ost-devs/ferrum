@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/foundation/ferrum-foundation.md` (commit `cc03aed`). O original em inglês é o que vale. Termos técnicos sem tradução consagrada (crate, trait, facet, headless, shaping, viewport) ficam em inglês.
+> Tradução para leitura de `docs/foundation/ferrum-foundation.md` (commit `66515aa`). O original em inglês é o que vale. Termos técnicos sem tradução consagrada (crate, trait, facet, headless, shaping, viewport) ficam em inglês.
 
 # Ferrum: propósito, arquitetura e fundação
 
@@ -27,7 +27,7 @@ O Ferrum **não** é:
 
 É para isto que o Ferrum existe. Código que ainda não os alcança está inacabado; isso não é motivo para rebaixá-los.
 
-- **Paridade de comportamento 1:1 com o cm6** para todo item de paridade de comportamento ou de contrato (seção 2): mesmos resultados, mesmos invariantes, os mesmos testes passando com os mesmos valores esperados. Os nomes seguem o cm6, nas convenções de Rust (`cursorCharLeft` → `cursor_char_left`, `EditorState` continua `EditorState`), para que um desenvolvedor que conhece o cm6 encontre a mesma API.
+- **Paridade de comportamento 1:1 com o cm6** para todo item de paridade de comportamento ou de contrato (seção 2): mesmos resultados, mesmos invariantes, os mesmos testes passando com os mesmos valores esperados. Os nomes continuam reconhecíveis para quem conhece o cm6, em Rust idiomático (regra **Nomes** em Arquitetura, em `.claude/rules/rust-crates.md`).
 - **Desempenho nativo**: documentos grandes sem trabalho sobre o documento inteiro, inicialização rápida, baixa latência de entrada, renderização fluida em altas taxas de atualização. As metas do mantenedor: o núcleo (atualização de estado, trabalho de viewport e decorações) processa uma tecla típica em menos de 1 ms; a superfície renderiza na taxa de atualização da tela, até 120 FPS (8,3 ms por quadro); uma entrada aparece no próximo quadro que a tela mostrar. Cada meta vira um benchmark reproduzível.
 - **Uma API pública estável** para aplicações, oferecida pelo crate fachada `ferrum` (seção 4.1) quando a fundação estiver completa.
 
@@ -54,9 +54,7 @@ Todo item do cm6 cai em um de três tipos de fidelidade. É o filtro que impede 
 | **Paridade de contrato** | No cm6 a lógica pergunta ao DOM (geometria) ou ao Lezer (sintaxe). O Ferrum define uma trait Rust para essa pergunta e reproduz a lógica em cima dela. | Testes rodam contra uma implementação falsa da trait (layout de largura fixa, árvores montadas à mão) e reproduzem os resultados esperados do cm6 onde o cenário permite. | `moveVertically`, `moveToLineBoundary` (linhas visuais), `posAtCoords`, `coordsAtPos`, indentação guiada pela sintaxe, dobramento, casamento de colchetes |
 | **Não portado** | Existe só por causa do DOM, do CSS ou de navegadores. | Motivo em uma linha; anotar se um crate de superfície precisa oferecer um equivalente nativo. | Reconciliação do DOM (`docview`, `tile`, `buildtile`), tratamento de `MutationObserver` (`domobserver`, `domchange`, `domreader`), temas com `style-mod`, `EditContext`, contornos para navegadores |
 
-Rust idiomático é bem-vindo quando o comportamento observável é idêntico (`.claude/rules/rust-crates.md`).
-
-**Limitações da stack do cm6 não são metas.** Parte do comportamento do cm6 vem do JavaScript ou do navegador, não do design do editor (por exemplo, posições contadas em unidades de código UTF-16 porque as strings de JavaScript são UTF-16). Reproduzir esse comportamento não é um objetivo em si. Afastar-se dele é uma decisão (seção 6) que nomeia a limitação de forma concreta, como o código a mostra, e registra as consequências observáveis de cada opção.
+**A pilha do cm6 não é a meta.** O cm6 é moldado pelo lugar onde roda: uma única thread de JavaScript, um coletor de lixo, strings UTF-16, um navegador que cuida do layout e da entrada. Isso aparece em parte do comportamento (posições em unidades de código UTF-16) e em muitos mecanismos (analisar em fatias de tempo para que a única thread continue responsiva). O Ferrum porta o que o cm6 faz pelo editor, não o que a pilha lhe impôs. Para cada comportamento ou mecanismo, pergunte que problema ele resolve e se o Rust tem o mesmo problema. Se não tem (o Rust pode rodar trabalho em outras threads), o Ferrum pode resolver de outro jeito quando isso serve a um objetivo da seção 1; uma capacidade nunca é usada só porque o Rust a tem. Se o problema existe também no nativo (medir texto é caro em qualquer toolkit), a solução do cm6 é o ponto de partida. Um mecanismo diferente com o mesmo comportamento observável é uma escolha de implementação, mostrada pelos testes portados; uma mudança no comportamento observável ou na API pública é uma decisão (seção 6) que nomeia a limitação como o código do cm6 a mostra e registra as consequências de cada opção.
 
 ---
 

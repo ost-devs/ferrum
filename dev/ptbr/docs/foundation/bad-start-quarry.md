@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/foundation/bad-start-quarry.md` (commit `cc03aed`). O original em inglês é o que vale.
+> Tradução para leitura de `docs/foundation/bad-start-quarry.md` (commit `66515aa`). O original em inglês é o que vale.
 
 # O que reaproveitar do `bad-start`
 
@@ -11,7 +11,7 @@ Dois autores, dois níveis de confiança (`git log bad-start --format=%an -- <ca
 Autor "Ferrum Engine": `crates/`, os READMEs da raiz e dos crates. O código, os testes, a API e as afirmações deles nunca são fonte. Só estas ideias ficam:
 
 - **README como documentação viva** (só a estrutura; os fatos de API podem ser inventados): `crates/ferrum-commands/src/README.md` lista cada comando com uma linha descrevendo o que ele faz, agrupado por seção do cm6, onde o README do cm6 lista só os nomes. Hoje exigido por `.claude/rules/writing.md`.
-- **Nomes do cm6 nas convenções de Rust**: hoje em `.claude/rules/rust-crates.md`.
+- **Nomes do cm6 nas convenções de Rust**: a regra **Nomes** em Arquitetura, em `.claude/rules/rust-crates.md`; as decisões em `.claude/rules/rust-naming-decisions.md`.
 - **Crate fachada `ferrum`** (`crates/ferrum/`) como a API estável para aplicações; construído só depois dos quatro crates de fundação (`ferrum-foundation.md` §5).
 - **Contornos para compilar o GPUI** no antigo container de desenvolvimento: `patches/xattr-0.2.3` (ENOATTR como ENODATA no Linux, via `[patch.crates-io]`) e `lib/libxkbcommon-x11.so` como link simbólico para a biblioteca do sistema. Relevante só quando a superfície GPUI começar.
 

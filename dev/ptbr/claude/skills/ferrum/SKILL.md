@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/ferrum/SKILL.md` (commit `cc03aed`). O Claude a carrega sozinho quando precisa (ou via `/ferrum`).
+> Tradução para leitura de `.claude/skills/ferrum/SKILL.md` (commit `66515aa`). O Claude a carrega sozinho quando precisa (ou via `/ferrum`).
 
 # Skill `/ferrum`
 
@@ -27,8 +27,9 @@ Um motor de editor em Rust, headless e embutível, cujo núcleo tem a arquitetur
 | Só os quatro crates de fundação; até trabalho "rápido" de GPUI ou fachada é recusado | A primeira tentativa se espalhou para superfícies e PKM antes de a base estar certa | `ferrum-foundation.md` §5 |
 | "Paridade 1:1" e "120 FPS" são escritos como objetivos, não evitados | Documentos anteriores tratavam os próprios objetivos como afirmações falsas; só dizer que um objetivo foi *alcançado* precisa de evidência | `.claude/rules/writing.md`; `ferrum-foundation.md` §1 "Goals" |
 | Código de DOM do cm6 não é traduzido | Cada item é classificado antes (comportamento / contrato / superfície / não portado); um mecanismo de DOM vira uma pergunta de trait ou trabalho de superfície, nunca um port. Comportamento relevante para o nativo implementado com DOM também não é descartado | `ferrum-foundation.md` §2, tabela da §4.2; `.claude/rules/rust-crates.md` |
+| O Ferrum pode usar o que a pilha do cm6 não pode (outras threads, sem coletor de lixo) | Muitos mecanismos do cm6 contornam uma única thread de JavaScript e o navegador; a paridade é de comportamento, não de mecanismo. Uma capacidade usada só porque o Rust a tem não é motivo | `ferrum-foundation.md` §2 |
 | Nenhum item público além do cm6 e da especificação | API inventada foi um defeito do `bad-start`; todo item público corresponde a um export do cm6 ou a uma decisão `ferrum-only` aprovada | `.claude/rules/rust-crates.md` |
-| Nomes do cm6 mantidos, na grafia de Rust | Um desenvolvedor de cm6 encontra a mesma API (`cursorCharLeft` → `cursor_char_left`) | `.claude/rules/rust-crates.md` |
+| Nomes do cm6 mantidos nas convenções de Rust; em conflito, o idioma de Rust vence | Um desenvolvedor de cm6 reconhece a API sem abrir mão de traits e convenções da std (`len`, `Display`) | `.claude/rules/rust-crates.md` **Nomes**; `.claude/rules/rust-naming-decisions.md` |
 | A ordem de dependência é state → view → language → commands (commands é o topo, não a base) | Muitos comandos do cm6 recebem um `EditorView`; keymaps moram em view; indentação e sintaxe vêm de language | `ferrum-foundation.md` §3 |
 | Dependências dos mirrors fixadas na versão mais nova que o npm resolve, não no mínimo do intervalo | O oráculo roda o que o npm instala; outra versão produz divergências falsas | `.claude/rules/mirrors.md` "Dependency pins" |
 | O mantenedor não é chamado para decidir questões técnicas no meio do caminho | A intenção dele: aprovar o resultado, não julgar escolhas além do seu conhecimento, e não travar o trabalho esperando por ele. Como o fluxo de trabalho consegue isso ainda está em aberto | `docs/progress/workflow-redesign.md` |
@@ -45,6 +46,7 @@ Um motor de editor em Rust, headless e embutível, cujo núcleo tem a arquitetur
 | Propósito, objetivos, arquitetura, responsabilidade dos crates, decisões D1–D10, crates futuros | `docs/foundation/ferrum-foundation.md` |
 | Regras para código dos crates, testes, anotações, dependências | `.claude/rules/rust-crates.md` (carrega em `crates/**`) |
 | Regras para docs, afirmações vs objetivos, referências | `.claude/rules/writing.md` |
+| Decisões de nomes cm6 → Rust | `.claude/rules/rust-naming-decisions.md` |
 | Mirrors (cm6 como especificação, citações) | `.claude/rules/mirrors.md`; edições negadas em `.claude/settings.json` |
 | Licenciamento (por crate, código externo) | `ferrum-foundation.md` §6 D9 |
 | Dependências e tamanho dos pacotes do cm6 | `ferrum-foundation.md` §3 |

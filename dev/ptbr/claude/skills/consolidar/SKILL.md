@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/consolidar/SKILL.md` (commit `48a08ae`). Só roda quando você digita `/consolidar` (`disable-model-invocation: true`).
+> Tradução para leitura de `.claude/skills/consolidar/SKILL.md` (commit `66515aa`). Só roda quando você digita `/consolidar` (`disable-model-invocation: true`).
 
 # Skill `/consolidar`
 
