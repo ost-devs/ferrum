@@ -51,4 +51,5 @@ Every public item carries one mapping line plus the qualifiers that apply; cm6 n
 4. Prefer `src/module.rs` over `src/module/mod.rs`. Comments explain why (cm6 correspondence, Unicode and boundary cases), never narrate the code.
 5. **Zero warnings** in `cargo build`, `cargo test` and `cargo clippy` for the workspace. Run them after every change and report failures with their output.
 6. **Dependencies**: no copyleft dependency, direct or transitive. A new direct dependency not licensed MIT or Apache-2.0 needs the maintainer's approval. A crate manifest declares the license decided in D9 (`docs/foundation/ferrum-foundation.md` §6): `MIT` for the foundation crates.
-7. Do not take decisions D1–D10 (`docs/foundation/ferrum-foundation.md` §6) or approve your own specifications, deviations or exceptions.
+7. **Port the behavior, not cm6's stack** (`docs/foundation/ferrum-foundation.md` §2). A mechanism cm6 needs only because of JavaScript or the browser may be replaced by one that serves a Ferrum goal better; the ported tests show the behavior is unchanged. A replacement that changes observable behavior or public API needs an approved decision.
+8. Do not take decisions D1–D10 (`docs/foundation/ferrum-foundation.md` §6) or approve your own specifications, deviations or exceptions.
