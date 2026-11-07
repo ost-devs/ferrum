@@ -172,13 +172,13 @@ cm6 never lays out text; the browser does. In Ferrum:
 
 - **2026-11-04: restart from zero.** No Ferrum code exists. Branch `bad-start` keeps the earlier state. Its Rust crates, written by another AI, claimed parity they did not have: none of their code, tests, API or READMEs is a base. Its method documents, audit tools and cm6 oracles were written with the maintainer and may be adapted where they fit the new scope: `docs/foundation/bad-start-quarry.md`.
 - **Scope: the four foundation crates only** (`ferrum-state`, `ferrum-view`, `ferrum-language`, `ferrum-commands`), built in dependency order. Nothing else (facade, surfaces, feature crates, applications) is started until those four are complete and stable.
-- **The workflow** (how a crate is specified, implemented and checked, and by which agents) is being redesigned and is not written yet; state and direction in `docs/progress/workflow-redesign.md`.
+- **The workflow**: how a crate is specified, implemented and checked, by which agents, and how decisions are taken and recorded: `docs/workflow/README.md`. The maintainer's intent, which binds it: `docs/foundation/maintainer-intent.md`. Where the work is: `docs/progress/`.
 
 ---
 
 ## 6. Foundational decisions (before any implementation)
 
-These decisions shape the whole foundation; implementing before taking them risks doing the work twice. Evidence is collected from cm6 and the Rust libraries involved; where decisions are recorded is part of the workflow redesign (section 5).
+These decisions shape the whole foundation; implementing before taking them risks doing the work twice. The consultant takes them with the evidence of each crate's specification, before the implementation that needs them; their first iteration is drafted for the maintainer to confirm (`docs/foundation/maintainer-intent.md`). A decision taken is written in `.claude/rules/decisions.md` under its id, and its entry below then points there instead of repeating it (`docs/workflow/README.md` §3). The recommendations below are earlier analyses, not decisions.
 
 **D1. Position unit.** What does an integer position mean?
 - UTF-8 bytes: native to Rust strings, `regex`, tree-sitter (which also needs row/column points), `cosmic-text` and GPUI. Requires care never to land inside a code point.

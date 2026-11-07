@@ -1,5 +1,7 @@
 # What to reuse from `bad-start`
 
+<!-- refs:bad-start: repository paths in this file refer to branch bad-start unless they exist here -->
+
 Branch `bad-start` (commit `7fb1db0`) keeps the state before the 2026-11-04 restart (`ferrum-foundation.md` §5). Read it with `git show bad-start:<path>`; a fresh clone has only its working branch, so fetch it first: `git fetch origin bad-start:bad-start`.
 
 Two authors, two levels of trust (`git log bad-start --format=%an -- <path>`).
@@ -15,7 +17,7 @@ Author "Ferrum Engine": `crates/`, the root and crate READMEs. Their code, tests
 
 ## Adaptable: work by the maintainer with Claude Code
 
-`docs/fundation/`, `docs/parity/`, `docs/flow/`. Not to follow literally (the scope changed), but material the workflow design may draw on (`docs/progress/workflow-redesign.md`):
+`docs/fundation/`, `docs/parity/`, `docs/flow/`. Material, not a plan: the workflow (`docs/workflow/README.md`) took what still held and records it with its evidence in `docs/workflow/learnings.md`; the audit tools now live, adapted, in `tools/`:
 
 - `docs/fundation/LEARNINGS.md`: L1–L30, evidence-based lessons from the state audit. Golden fixtures from running cm6 find bugs that reading misses; shape checklist; consumer values; JS→Rust hazards; cost class (quadratic `count_column`); JSONL with fixed schemas; incremental, resumable output; at most 4 parallel subagents because of usage limits; one condensed card per subagent; the main session reads summaries, not sources; 10% verification sample.
 - `docs/fundation/1-parity-audit.md` (dispositions, behaviors B1..Bn, fixtures, hazards, subagent card), scope sheets `1a`–`1d`, `2-parity-implementation.md`, `3-conformance-audit.md` (gates G1–G10).

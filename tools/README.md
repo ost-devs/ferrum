@@ -1,0 +1,15 @@
+# Tools
+
+Shared tools of the workflow (`docs/workflow/`). Run every command from the repository root. Adapted from the maintainer's audit tools on branch `bad-start` (`docs/parity/tools/`), with paths for this layout; checked on 2026-11-07 against `@codemirror/state`: 264 inventory rows, 172 test cases. Node 22, `tsx`, Python 3.
+
+| Tool | Used in | Command | Output |
+|---|---|---|---|
+| `tools/cm6/setup_harness.py` | specification S0, once per crate | `python3 tools/cm6/setup_harness.py <package> [--npm <pkg@ver> …]` | `.harness/<package>/` (gitignored): copies of the package's `src/` and of every `@codemirror/*` package it depends on, their npm dependencies, TypeScript, a `tsconfig.json` mapping `@codemirror/<name>` to the copies and `@harness/lib` to `tools/cm6/oracle-lib.ts`, `harness.json` with versions |
+| `tools/cm6/oracle-lib.ts` | every probe and generator | `import {rng, capture, encode, fixtureWriter} from "@harness/lib"` | seeded PRNG (mulberry32), exception capture, Rust-safe string encoding, fixture writer |
+| `tools/cm6/inventory.cjs` | specification S0 | `node tools/cm6/inventory.cjs --harness .harness/<package> --package <package> --prefix <crate>.cm6 > docs/parity/<crate>/raw/inventory.jsonl` | one row per export, public member and config-object field |
+| `tools/cm6/tests.cjs` | specification S0 | `node tools/cm6/tests.cjs --harness .harness/<package> --package <package> > docs/parity/<crate>/raw/tests.jsonl` | one row per `it()`, `webtest-*` included; `generated: true` marks cases created in loops (expand them, one row per case) |
+| `tools/render.py` | any | `python3 tools/render.py <rows.jsonl> --cols id,item,… [--title …] [--header …] > <file>.md` | Markdown table from JSON Lines |
+| `tools/check_refs.py` | end of every step that writes documents | `python3 tools/check_refs.py docs .claude tools --quiet` | count of unresolvable references (scratch paths, missing files, lines past the end, missing sections) |
+| `tools/ferrum_pub.py` | conformance G1 | `RUSTC_BOOTSTRAP=1 cargo rustdoc -p <crate> -- -Z unstable-options --output-format json`, then `python3 tools/ferrum_pub.py target/doc/<crate_name>.json crates/<crate> > pub.jsonl` | public items of a Ferrum crate. Written for rustdoc JSON format 61: check `format_version` first and adapt if it changed |
+
+Run a probe with `npx tsx --tsconfig .harness/<package>/tsconfig.json <probe>.ts`. Probes import cm6 by package name (`@codemirror/state`) and the helpers as `@harness/lib`; they live in `docs/parity/<crate>/oracle/cm6/<chunk>/`. The mirrors themselves are fetched by the `mirrors` skill (`/mirrors`).

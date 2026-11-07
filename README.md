@@ -9,7 +9,9 @@ A native, embeddable text editor engine in Rust whose core reproduces the archit
 ## Documents
 
 - `docs/foundation/ferrum-foundation.md`: purpose, goals, architecture, the foundation crates, open decisions.
+- `docs/foundation/maintainer-intent.md` and `docs/workflow/`: how the work is decided and run.
 - `.claude/rules/`: rules every change follows.
+- `dev/maintainer/`: for the maintainer, in Brazilian Portuguese: how to run the work, drafts, reports.
 - `dev/ptbr/`: Brazilian Portuguese translations for readers; the English originals win.
 
 ## License

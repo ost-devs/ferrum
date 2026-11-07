@@ -38,9 +38,10 @@ Purpose and architecture: `docs/foundation/ferrum-foundation.md`. cm6's source a
 3. Ported tests are named `test_cm6_<cm6 file>_<nn>_<slug of the it() name>`. A test derived from cm6 source because cm6 has none is marked `// derived from cm6 source: <file:line>`.
 4. Helpers mirror cm6's (`mirrors/cm6/commands/test/state.ts`: `|` marks a cursor, `<…>` a selected range) and have tests of their own.
 5. A change starts from a failing test derived from the specification, never from the code.
+6. Ported and derived tests live in `crates/<crate>/tests/`, written by a context that has not seen the implementation; the implementation never edits them (`docs/workflow/implementation.md` §3). Unit tests inside `src/` cover private helpers only.
 
 ## Annotations
-Every public item carries one mapping line plus the qualifiers that apply; cm6 names exactly as cm6 exports them.
+Every public item carries one mapping line plus the qualifiers that apply; cm6 names exactly as cm6 exports them. `<decision>` is the id of an entry in `.claude/rules/decisions.md` or `.claude/rules/rust-naming-decisions.md`.
 - Mapping: `/// cm6: EditorState.changeByRange`; `/// cm6 contract: <cm6 API it replaces>` (trait methods replacing a DOM or Lezer query); `/// ferrum-only: <reason>, see <decision>`.
 - Qualifiers: `/// cm6 deviation: <what differs>, see <decision>`; `/// placement: cm6 has this in <package>, see <decision>`.
 
@@ -52,4 +53,4 @@ Every public item carries one mapping line plus the qualifiers that apply; cm6 n
 5. **Zero warnings** in `cargo build`, `cargo test` and `cargo clippy` for the workspace. Run them after every change and report failures with their output.
 6. **Dependencies**: no copyleft dependency, direct or transitive. A new direct dependency not licensed MIT or Apache-2.0 needs the maintainer's approval. A crate manifest declares the license decided in D9 (`docs/foundation/ferrum-foundation.md` §6): `MIT` for the foundation crates.
 7. **Port the behavior, not cm6's stack** (`docs/foundation/ferrum-foundation.md` §2). A mechanism cm6 needs only because of JavaScript or the browser may be replaced by one that serves a Ferrum goal better; the ported tests show the behavior is unchanged. A replacement that changes observable behavior or public API needs an approved decision.
-8. Do not take decisions D1–D10 (`docs/foundation/ferrum-foundation.md` §6) or approve your own specifications, deviations or exceptions.
+8. **Decisions are not yours.** A decision (D1–D10 of `docs/foundation/ferrum-foundation.md` §6, a deviation, an exception, a design or error contract the specification leaves open) is taken by the `consultant` or the maintainer, never by the agent that proposed it (`docs/workflow/README.md` §3). Where a rule here says *ask*, report the question with its options and evidence, and continue with what does not depend on it. Decisions in force: `.claude/rules/decisions.md` (once the first is taken) and `.claude/rules/rust-naming-decisions.md`.

@@ -11,9 +11,8 @@ Traduções, para leitura humana, dos documentos em inglês do repositório. A e
 | `README.md` | `README.md` |
 | `docs/foundation/ferrum-foundation.md` | `docs/foundation/ferrum-foundation.md` |
 | `docs/foundation/bad-start-quarry.md` | `docs/foundation/bad-start-quarry.md` |
-| `docs/progress/workflow-redesign.md` | `docs/progress/workflow-redesign.md` |
 | `claude/rules/*.md` | `.claude/rules/*.md` |
-| `claude/agents/cm6-pesquisador.md` | `.claude/agents/cm6-pesquisador.md` |
-| `claude/agent-memory/cm6-pesquisador/MEMORY.md` | `.claude/agent-memory/cm6-pesquisador/MEMORY.md` |
+| `claude/agents/*.md` | `.claude/agents/*.md` |
+| `claude/agent-memory/cm6-researcher/MEMORY.md` | `.claude/agent-memory/cm6-researcher/MEMORY.md` |
 | `claude/skills/*/SKILL.md` | `.claude/skills/*/SKILL.md` |
 | `claude/settings.md` (explicação) | `.claude/settings.json` |
