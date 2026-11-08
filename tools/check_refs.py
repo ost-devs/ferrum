@@ -21,7 +21,7 @@ import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-PATH = re.compile(r'(?<![\w/.@-])((?:mirrors|crates|docs|tools|dev|\.claude)/[\w./-]*[\w])(?::(\d+))?')
+PATH = re.compile(r'(?<![\w/.@:-])((?:mirrors|crates|docs|tools|dev|\.claude)/[\w./-]*[\w])(?::(\d+))?')
 SCRATCH = re.compile(r'/tmp/\S|scratchpad/|/home/\w|~/\.')
 SEC = re.compile(r'(?:`?([\w./-]*[\w-]+\.md)`?\s+)?§\s?(\d+(?:\.\d+)?)')
 MIRRORS = json.loads((ROOT / 'mirrors/mirrors.json').read_text())['mirrors']
