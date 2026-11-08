@@ -28,8 +28,10 @@ LOG = os.path.join(ROOT, ".git", "ptbr-sync.log")
 BATCH = 8
 HEADER = re.compile(r"\(commit `([0-9a-f]{7,40})`\)")
 
-# Not translated: outside sources, what is already Portuguese, work state that
-# changes every step, code, and legal texts (a translation has no legal force).
+# The test is relevance to a Brazilian developer reading Ferrum, not how often a
+# file changes. Not translated: outside sources, what is already Portuguese,
+# work state and specification data written for agents, code, and legal texts
+# (a translation has no legal force).
 EXCLUDED_PREFIXES = ("mirrors/", "dev/", "docs/progress/", "docs/parity/")
 EXCLUDED_NAMES = ("THIRD-PARTY-NOTICES.md",)
 
@@ -40,9 +42,6 @@ def included(path: str) -> bool:
     if not path.endswith(".md") or path.startswith(EXCLUDED_PREFIXES):
         return False
     if os.path.basename(path) in EXCLUDED_NAMES or os.path.basename(path).startswith("LICENSE"):
-        return False
-    # crate src/README.md files change with every code change; crate READMEs stay
-    if path.startswith("crates/") and "/src/" in path:
         return False
     return True
 
