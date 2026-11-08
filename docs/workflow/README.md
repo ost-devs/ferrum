@@ -160,6 +160,8 @@ Verified against Claude Code 2.1.319 and its documentation mirror (`mirrors/clau
 - A rule with `paths:` loads on Read, Write or Edit of a matching file, or a single-file read through Bash; a rule without `paths:` loads at launch (`memory.md` "Path-specific rules").
 - An agent's `memory:` loads only with auto memory on, and adds Read, Write and Edit to its tools (`sub-agents.md` "Enable persistent memory").
 - Preloaded `skills:` reach a subagent, with `` !`command` `` output injected; under `claude --agent` they do not. An `initialPrompt` naming the skill loads it there, with injection (probe run on 2026-11-07).
+- A `` !`command` `` with quoted text or `$(…)` fails the permission check before it runs ("Quoted text in this command can't be checked"), and the skill does not load. Keep injected commands plain (they run from the repository root) and list them in the skill's `allowed-tools` (observed 2026-11-07).
+- A project agent's frontmatter hook blocks a call in an interactive session: `cm6-researcher` writing under `docs/` was refused by `.claude/hooks/guard.py` (2026-11-07).
 - The `Agent(type, …)` allowlist works only under `claude --agent`; in a subagent the list is ignored (`sub-agents.md` "Restrict which subagents can be spawned"). Frontmatter hooks fire in both modes (`sub-agents.md` "Hooks in subagent frontmatter"). They need the workspace trust dialog accepted, and a `-p` session does not count as trusted. `.claude/hooks/guard.py` enforces write and spawn limits through them.
 - Subagents cannot use `AskUserQuestion`. Nesting is allowed up to `CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH` layers (3 by default).
 - Only an interactive session continues by itself after a usage-limit reset (`interactive-mode.md`).

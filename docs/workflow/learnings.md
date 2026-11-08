@@ -28,3 +28,9 @@ Source: `docs/fundation/LEARNINGS.md` on `bad-start` (L1–L34, read with `git s
 | W11 | evidence (`2a-implementation-state.md` §3 on `bad-start`) | Questions sent to the human were settled inside a later brief without any decision record | decisions only through a commit with `Decided-by:` (`README.md` §3) |
 | W12 | evidence (L14) | About 30 proposed additions were obvious (`Debug`, `Default`, `is_empty`) and were approved as one list | the consultant decides obvious items as one list (`specification.md` §7) |
 | W13 | analysis (L28) | Tests written by a context that has not seen the implementation catch more; writing all tests of a crate first would force invented signatures | per module: skeleton, tests, implementation, check (`implementation.md` §3). To confirm after the first crate: test changes requested by implementers, tokens per step |
+
+## From building the workflow (2026-11-07)
+
+| Id | Basis | Observation | Where it went |
+|---|---|---|---|
+| W14 | evidence (test of the `consultant` on three `@codemirror/view` items no document covered: `EditorView.lineWrapping`, `exceptionSink`/`logException`, `EditorView.announce`; answers and comparison in `git show 3d2f9db:dev/maintainer/consultant-design.md` §7) | Given only "decide the disposition of X", each run reasoned from why cm6 does it to a different disposition, found evidence the designer had not (a cm6 CHANGELOG bug where the wrapping flag and the layout disagreed; repeated announcements), and raised unasked questions; all three independently found the missing naming entry for cm6 static members. Three runs in parallel created the same new file and had to merge it | one consultant at a time; a place for item decisions before a crate's inventory (`README.md` §3); question Q3 of `docs/parity/ferrum-state/questions.md` |

@@ -22,3 +22,10 @@ Open questions only (`docs/workflow/README.md` §3): a decided entry is removed 
 - **Options.** To be proposed with the `ferrum-state` sketch (`docs/workflow/specification.md` §7), once the Rust shape of `Facet`, `StateEffectType` and `AnnotationType` is proposed: the form depends on whether such values can be built in a `const` or `static` context.
 - **Evidence.** `mirrors/cm6/state/src/state.ts` and `extension.ts` (static members of `EditorState`); the inventory rows with kind `static property` and `static method` (`tools/cm6/inventory.cjs`).
 - **Raised by.** All three consultant runs of the 2026-11-07 test, independently. **Blocks.** The first skeleton of the implementation stage.
+
+## Q4. Parity with which cm6, over time
+
+- **Question.** The cm6 core packages are pinned to commits of their `main` branches (`mirrors/mirrors.json`), and cm6 keeps changing. Once a crate is conforming at one pin, what happens when cm6 changes a behavior: is the pin moved and the crate re-specified, at what cadence, and how is a verdict dated so "1:1 parity" stays a true statement?
+- **Options.** (a) Freeze the pins for the whole foundation, then re-sync in one planned pass. (b) Re-sync per crate at each new cm6 release, with a diff of the changed behaviors driving the work. (c) Leave it until the first crate is conforming, recording only the pin in each verdict.
+- **Evidence.** `.claude/rules/mirrors.md` "Dependency pins"; `docs/workflow/conformance.md` §1 (verdicts record mirror commits); `git show bad-start:docs/fundation/LEARNINGS.md` L31 (an unversioned mirror once differed from the release it claimed).
+- **Raised by.** The workflow design, 2026-11-07. **Blocks.** Nothing before the conformance stage of `ferrum-state`.
