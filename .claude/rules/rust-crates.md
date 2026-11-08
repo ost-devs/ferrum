@@ -6,7 +6,7 @@ paths:
 
 # Changing Ferrum crates
 
-Purpose and architecture: `docs/foundation/ferrum-foundation.md`. cm6's source and tests (`mirrors/cm6/`) are the specification of behavior; the approved specification and decisions of a crate are its work list. Code on branch `bad-start` (written by another AI) is never a source: not its code, tests or API.
+Purpose and architecture: `docs/foundation/ferrum-foundation.md`. cm6's source and tests (`mirrors/cm6/`) are the specification of behavior; the approved specification and decisions of a crate are its work list.
 
 ## Architecture
 1. **Dependency direction**, as in cm6: `ferrum-state` ← `ferrum-view` ← `ferrum-language` ← `ferrum-commands`. A crate depends only on crates to its left. Nothing in the foundation depends on a feature crate or a surface.

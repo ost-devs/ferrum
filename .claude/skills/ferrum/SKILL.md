@@ -1,6 +1,6 @@
 ---
 name: ferrum
-description: Working map of Ferrum (native Rust editor engine reproducing CodeMirror 6 behavior) - how the four foundation crates map to cm6 packages, the non-obvious decisions behind the restart, open decisions and gaps, and where each topic lives. Use before answering how Ferrum works, judging a change or plan for it, or deciding what to port from cm6.
+description: Working map of Ferrum (native Rust editor engine reproducing CodeMirror 6 behavior) - how the four foundation crates map to cm6 packages, the non-obvious decisions behind it, open decisions and gaps, and where each topic lives. Use before answering how Ferrum works, judging a change or plan for it, or deciding what to port from cm6.
 ---
 
 # Ferrum: working map
@@ -20,22 +20,20 @@ A headless, embeddable Rust editor engine whose core has cm6's architecture and 
 ## Decisions that look wrong but are not
 | Decision | Reason | Where |
 |---|---|---|
-| All crate code deleted; nothing from `bad-start`'s Rust crates reused | Another AI (Google's agy) wrote them, claimed "100% parity", and they were incomplete and imprecise; auditing them cost more than restarting. Its method docs, tools and oracles (made with Claude Code) are a different case: adaptable | commit `a1e5463`; `ferrum-foundation.md` §5; `docs/foundation/bad-start-quarry.md` |
-| Only the four foundation crates, even "quick" GPUI or facade work is refused | The first attempt spread to surfaces and PKM before the base was right | `ferrum-foundation.md` §5 |
+| Only the four foundation crates, even "quick" GPUI or facade work is refused | The maintainer's scope: nothing outside the four starts before they are complete and stable | `ferrum-foundation.md` §5 |
 | "1:1 parity" and "120 FPS" are written as goals, not avoided | Earlier docs treated the goals themselves as false claims; only saying a goal is *reached* needs evidence | `.claude/rules/writing.md`; `ferrum-foundation.md` §1 "Goals" |
 | cm6 DOM code is not translated | Each item is classified first (behavioral / contract / surface / not ported); a DOM mechanism becomes a trait question or a surface job, never a port. Native-relevant behavior implemented with the DOM is not dropped either | `ferrum-foundation.md` §2, §4.2 table; `.claude/rules/rust-crates.md` |
 | Ferrum may use what cm6's stack cannot (other threads, no garbage collector) | Many cm6 mechanisms work around one JavaScript thread and the browser; parity is of behavior, not of mechanism. A capability used only because Rust has it is not a reason | `ferrum-foundation.md` §2 |
-| No public item beyond cm6 and the specification | Invented API was a defect of `bad-start`; every public item maps to a cm6 export or an approved `ferrum-only` decision | `.claude/rules/rust-crates.md` |
+| No public item beyond cm6 and the specification | An invented public item is a promise cm6 does not make and a cost to the stable API; every public item maps to a cm6 export or a decided `ferrum-only` item | `.claude/rules/rust-crates.md` |
 | cm6 names kept in Rust conventions; Rust idiom wins on conflict | A cm6 developer recognizes the API without giving up std traits and conventions (`len`, `Display`) | `.claude/rules/rust-crates.md` **Names**; `.claude/rules/rust-naming-decisions.md` |
 | Dependency order is state → view → language → commands (commands is the top, not the base) | Many cm6 commands take an `EditorView`; keymaps live in view; indentation and syntax come from language | `ferrum-foundation.md` §3 |
 | Mirror dependencies pinned at the newest version npm resolves, not the range minimum | The oracle runs what npm installs; another version produces false mismatches | `.claude/rules/mirrors.md` "Dependency pins" |
-| The maintainer is not asked technical questions; the `consultant` agent decides them | Their intent: not judge choices beyond their knowledge, not stop the work waiting on them, and find every decision recorded as the consultant's. Whoever proposes never decides | `docs/foundation/maintainer-intent.md`; `docs/workflow/README.md` §3 |
+| The maintainer is not asked technical questions; the `consultant` agent decides them | Their intent: not judge choices beyond their knowledge, not stop the work waiting on them, and find every decision recorded as the consultant's. The agents that produce the work bring facts and questions; the consultant derives the decisions | `docs/foundation/maintainer-intent.md`; `docs/workflow/README.md` §3 |
 | The specification is audited before D1–D10 are taken | The audit records what cm6 does, decision-neutral; decisions are taken with its evidence before the implementation that needs them (`ferrum-foundation.md` §6 asks for them before implementation, not before the audit) | `docs/workflow/README.md` §1 |
 
 ## Known open gaps
 - Foundational decisions D1–D8 and D10 (position unit, line breaks and `Text` libraries, syntax backend, layout contract, command type, threading, style model, input/IME/accessibility, first-version scope) are open; D9 (licensing: MIT per crate, Apache-2.0 only for ports of Apache code) is decided. The consultant takes them with the evidence of each crate's specification; where they will be recorded: `docs/workflow/README.md` §3. `ferrum-foundation.md` §6.
 - No Ferrum code yet; the work runs crate by crate through `/ferrum-run`; where it is: `docs/progress/`.
-- Ideas to reuse later from `bad-start` (README as living docs, facade shape, tooling, old briefs): `docs/foundation/bad-start-quarry.md`. Read them with `git show bad-start:<path>` (fetch the branch first in a fresh clone).
 
 ## Where each topic lives
 | Topic | File |

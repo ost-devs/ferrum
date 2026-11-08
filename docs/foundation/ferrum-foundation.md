@@ -170,7 +170,6 @@ cm6 never lays out text; the browser does. In Ferrum:
 
 ## 5. Status and scope
 
-- **2026-11-04: restart from zero.** No Ferrum code exists. Branch `bad-start` keeps the earlier state. Its Rust crates, written by another AI, claimed parity they did not have: none of their code, tests, API or READMEs is a base. Its method documents, audit tools and cm6 oracles were written with the maintainer and may be adapted where they fit the new scope: `docs/foundation/bad-start-quarry.md`.
 - **Scope: the four foundation crates only** (`ferrum-state`, `ferrum-view`, `ferrum-language`, `ferrum-commands`), built in dependency order. Nothing else (facade, surfaces, feature crates, applications) is started until those four are complete and stable.
 - **The workflow**: how a crate is specified, implemented and checked, by which agents, and how decisions are taken and recorded: `docs/workflow/README.md`. The maintainer's intent, which binds it: `docs/foundation/maintainer-intent.md`. Where the work is: `docs/progress/`.
 

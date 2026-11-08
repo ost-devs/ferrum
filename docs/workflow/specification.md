@@ -1,6 +1,6 @@
 # Specification stage
 
-Turns one cm6 package into the specification of its Ferrum crate: what the crate must do, item by item and behavior by behavior, with values produced by running cm6, the cm6 tests to port, the questions Ferrum must answer, and a proposed implementation sketch. It is the implementer's work list and the reference of the conformance stage. Roles and decisions: `docs/workflow/README.md`. Tools: `tools/README.md`.
+Turns one cm6 package into the specification of its Ferrum crate: what the crate must do, item by item and behavior by behavior, with values produced by running cm6, the cm6 tests to port, the questions Ferrum must answer, and the crate's design, which the consultant derives from those facts. It is the implementer's work list and the reference of the conformance stage. Roles and decisions: `docs/workflow/README.md`. Tools: `tools/README.md`.
 
 ---
 
@@ -10,15 +10,15 @@ Turns one cm6 package into the specification of its Ferrum crate: what the crate
 - The scope from `docs/foundation/ferrum-foundation.md` §4.2: what the crate owns.
 - The crates below it: their approved specification (`docs/parity/<crate>/`) and, once it exists, their conformance report.
 - The decisions in force: `.claude/rules/decisions.md` and `.claude/rules/rust-naming-decisions.md`.
-- For `ferrum-state` only: the cm6 side of the earlier state audit on branch `bad-start` (`docs/parity/state/behaviors.md`, `fixtures/`, `oracle/cm6-probes/`, `decisions-evidence.md`). It is used as a completeness cross-check in verification (§8), never as a source. Everything it says about Ferrum describes deleted code.
+- For `ferrum-state` only: the cm6 side of the earlier state audit on branch `bad-start` (`docs/parity/state/behaviors.md`, `fixtures/`, `oracle/cm6-probes/`, `decisions-evidence.md`). It is read only in verification (§8), after the rows are written, as a completeness cross-check, never as a source. Everything it says about Ferrum describes deleted code. This input ends when the `ferrum-state` specification is approved.
 
 ## 2. Ground rules
 
 1. **cm6's code is the specification.** Read the whole function and every helper it calls before stating a behavior. When a README or doc comment disagrees with the code, the code wins.
 2. **Purpose filter** (`ferrum-foundation.md` §2). A disposition says what the item does for a native editor, with a reason specific to that item. Nothing is kept only because cm6 has it. Nothing is dropped only because cm6 implements it with the DOM: native-relevant behavior becomes a contract or a surface job.
-3. **Decision-neutral.** The specification states questions, never Ferrum's answers. Rust shapes appear only in the implementation sketch (§7), marked as proposals.
+3. **Decision-neutral.** The specification states questions, never Ferrum's answers. Rust shapes appear only in the consultant's design (§7).
 4. **Facts with evidence.** Every row cites cm6 `file:line` with the symbol. What was deduced and not read or run is marked as deduction.
-5. **Nobody decides their own proposal.** Dispositions, the sketch and every question go to the consultant (`README.md` §3).
+5. **Facts and questions, never proposals.** The consultant derives the dispositions, the design and every answer from the facts the stage gathers (`README.md` §3; questions in the shape of `CLAUDE.md` "Raising a question").
 6. **Complete or explicit.**
    - Declare the totals first; every table then has exactly that many rows.
    - One item per row; no "etc." or "same as above".
@@ -65,14 +65,14 @@ dispositions.md            per source file: disposition and reason; per-row disp
 contracts.md               per CONTRACT item: the question, the logic around it, the smallest fake
 hazards.md                 JS→Rust hazards per item
 stack.md                   mechanisms that exist because of cm6's stack, per item (§5)
-implementation-plan.md     the proposed sketch (§7)
+implementation-plan.md     the crate's design, written by the consultant at S5 (§7)
 questions.md               open questions for the consultant (README.md §3)
 verification.md            §8
 ```
 
 Schemas (one JSON object per line; `[]` marks arrays):
 
-- `raw/inventory.jsonl`: `id, item, kind, file, line, chunk, disposition, reason`
+- `raw/inventory.jsonl`: `id, item, kind, file, line, chunk, does, platform, used_by[], disposition, reason`. S1 writes the facts: `does` (what the item does, from its code), `platform` (what it takes from the DOM, CSS, the browser, Lezer or the TypeScript type system, with `file:line`, or `none`), `used_by` (the cm6 packages and items that call it). The consultant writes `disposition` and `reason`.
 - `raw/behaviors.jsonl`: `id, item_id, text, cm6, deps[], hazards[], stack[], consumer_values[], cost, cm6_tests[], fixtures[], golden_note`
 - `raw/tests.jsonl`: `id, file, line, describe, name, generated, scenario, expected, behaviors[], class, class_reason, port_notes`
 - `fixtures/<chunk>.jsonl`: `id, item_id, behaviors[], input, output, encoding`
@@ -182,32 +182,34 @@ The orchestrator writes, from the merged rows:
   - every capability higher cm6 packages use from this one, for the later stages.
 - `questions.md` (`README.md` §3). It gathers:
   - every question the workers raised;
-  - every decision the specification depends on (D1–D10 with the items and fixtures that show its consequences; each option with what it implies);
+  - every decision the specification depends on (D1–D10 with the items and fixtures that show its consequences);
   - every quirk or apparent bug of cm6 whose reproduction is a choice.
 
-  Each question carries its evidence as references.
-- `implementation-plan.md`: the proposed sketch. It is a proposal for the consultant, never presented as decided, and nothing in it may change a specified behavior. It contains:
-  - **Module map**: one Rust module per cm6 source file in scope, its public items, what stays `pub(crate)`.
-  - **Core types and invariants**, and how each invariant is kept.
-  - **Rust shapes for cm6 idioms**, chosen with the hazards:
+  Each question has the shape of `CLAUDE.md` "Raising a question": no options, no recommendation.
+- in `hazards.md`, for each cm6 throw: its condition (`file:line`), what it protects, and whether a caller can check the condition in advance.
 
-    | cm6 idiom | Usual Rust shape | Watch for |
-    |---|---|---|
-    | object literal with optional fields | struct with `Default`, or a builder | defaults equal to cm6's |
-    | union-typed parameter | enum, `impl Into<…>` | every union member stays expressible |
-    | class hierarchy, `instanceof`, duck typing | enum for closed sets, trait for open sets | open construction must not break invariants |
-    | identity (`===`, `Map` keys) | `Arc` + `Arc::ptr_eq`, or ids per configuration | value equality is not identity |
-    | lazily cached getter | `OnceLock` / `OnceCell` | computed once; re-entrancy as in cm6 |
-    | exception | `Result`, or a documented panic | the error contract per precondition is a question |
-    | JS `number` | an integer width chosen from consumer values; `f64` for geometry | narrow types truncate |
-    | callback with early stop | iterator, or `FnMut -> ControlFlow` | keep the stop semantics |
-    | module-level counter, `Date.now()` | per-instance ids, an injected clock | determinism in tests |
-    | strings and UTF-16 offsets | rope slices, positions in the unit of D1 | no whole-document `String` |
+The consultant writes at S5 (§9), from those facts, `implementation-plan.md`: the crate's design. It records decisions, each with its reason, and nothing in it may change a specified behavior. It contains:
+- **Module map**: one Rust module per cm6 source file in scope, its public items, what stays `pub(crate)`.
+- **Core types and invariants**, and how each invariant is kept.
+- **The Rust form of each cm6 idiom the crate uses**, with what must hold whatever the form:
 
-  - **Error contract per precondition**: for each cm6 throw, whether it guards an invariant (a programmer error) or validates input a caller cannot check in advance. The options follow from that.
-  - **Ownership and threading** (D6), **dependencies** with license, **order of implementation**, and the **test plan**: port order, fakes, the fixture replayer, oracle drivers.
-  - **Obvious decisions**: one line each, `OBVIOUS-<n>: <decision>: <reason>`, for choices with a single reasonable answer (`Debug` on public types, `Default` equal to cm6's default, `is_empty` beside `len`). The consultant decides them as one list. Anything with two reasonable answers, or an observable difference, is a question instead.
-  - **Native opportunities**: where Rust could do better than cm6's mechanism, from `stack.md`. For each, give what cm6 does (`file:line`), what Rust could do, the Ferrum goal it serves, the measurement that would confirm the benefit, and its behavior impact. With no impact, the implementer may adopt it with a proof test. With an impact, it is a question.
+  | cm6 idiom | Must hold |
+  |---|---|
+  | object literal with optional fields | defaults equal to cm6's |
+  | union-typed parameter | every union member stays expressible |
+  | class hierarchy, `instanceof`, duck typing | open construction must not break invariants |
+  | identity (`===`, `Map` keys) | value equality is not identity |
+  | lazily cached getter | computed once; re-entrancy as in cm6 |
+  | exception | an error contract per precondition |
+  | JS `number` | no truncation of the values consumers pass; geometry keeps fractions |
+  | callback with early stop | the stop semantics |
+  | module-level counter, `Date.now()` | determinism in tests |
+  | strings and UTF-16 offsets | positions in the unit of D1; no whole-document `String` |
+
+- **Error contract per precondition**, from the throw facts in `hazards.md`.
+- **Ownership and threading** (D6), **dependencies** with license, **order of implementation**, and the **test plan**: port order, fakes, the fixture replayer, oracle drivers.
+- **Obvious decisions**: one line each, `OBVIOUS-<n>: <decision>: <reason>`, for choices with a single reasonable answer.
+- **Native opportunities**: where a mechanism in `stack.md` exists only because of cm6's stack and another serves a Ferrum goal better: what cm6 does (`file:line`), the mechanism chosen, the goal, the measurement that confirms the benefit, and the behavior impact. With no impact, the implementer adopts it with a proof test.
 
 ## 8. Verification
 
@@ -236,15 +238,15 @@ A `verifier` that wrote no rows runs this (card: Appendix B):
 | Step | Who | Work | Ends with (committed) |
 |---|---|---|---|
 | S0 Setup | orchestrator | Pin the package and the core packages it reads for consumer values at their latest release, and queue a release delta for every conforming crate whose package moved (`docs/workflow/README.md` §1 "The cm6 reference"). Check the mirrors (`/mirrors check`) and build the harness (`tools/cm6/setup_harness.py`). Run the inventory and test tools; expand generated test cases. Declare the totals. List the scope: source files, test files, consumer packages. Split into chunks of about 40–80 inventory rows or up to 1,000 source lines. Write both cards and `docs/progress/<crate>.md` | raw rows, cards, progress |
-| S1 Dispositions | orchestrator proposes. For a package too large to read in one context, `spec-auditor`s report facts per group of files (what each export does, what it uses from the DOM, who uses it) | A disposition and an item-specific reason for every row and every file, written in the rows. Entries of `docs/parity/<crate>/early-decisions.md`, if it exists, are written into their rows as decided and the file is deleted (`docs/workflow/README.md` §3). Questions for items with no clear answer | `dispositions.md`, proposals in `raw/inventory.jsonl` |
-| S1 decision | `consultant` | Decides the dispositions: reads the whole list, goes deep on the non-obvious and on every `DROP` | decisions in the rows, `Decided-by: consultant` |
+| S1 Facts | orchestrator. For a package too large to read in one context, `spec-auditor`s per group of files | The facts of every row (`does`, `platform`, `used_by`, §4) and of every source file, no disposition. Entries of `docs/parity/<crate>/early-decisions.md`, if it exists, are written into their rows as decided and the file is deleted (`docs/workflow/README.md` §3) | facts in `raw/inventory.jsonl` |
+| S1 Dispositions | `consultant` | Derives a disposition and an item-specific reason for every row and every file from the facts and cm6's code; verifies the premise of every `DROP` against cm6 | dispositions in the rows, `dispositions.md`, `Decided-by: consultant` |
 | S2 Chunks | `spec-auditor`, one per chunk, at most 4 at a time | §5, §6 for the chunk's items and test cases | rows, fixtures and probes per chunk; tokens per chunk in progress |
 | S3 Synthesis | orchestrator | §7; render the Markdown views; `tools/check_refs.py` | the remaining deliverables |
 | S4 Verification | `verifier` | §8 | `verification.md` |
-| S5 Decision | `consultant` | Decides `questions.md`, the obvious decisions and the sketch; takes the decisions D1–D10 whose evidence this specification provides; approves the specification. Drafts for the maintainer per `README.md` §3 | decisions in their places; the questions file emptied of decided entries |
+| S5 Decision | `consultant` | Decides `questions.md`; writes the crate's design (`implementation-plan.md`, §7); takes the decisions D1–D10 whose evidence this specification provides; approves the specification. Drafts for the maintainer per `README.md` §3 | decisions in their places; the questions file emptied of decided entries |
 | S6 Retrospective | orchestrator | `docs/workflow/learnings.md` entries; method questions; progress points to the implementation stage | learnings, progress |
 
-S2 starts only after the S1 decision, because chunks cover only the items in scope. The orchestrator may run S1 for the next crate while this crate is in S2–S5.
+S2 starts only after the S1 dispositions, because chunks cover only the items in scope. The orchestrator may run S1 for the next crate while this crate is in S2–S5.
 
 ## 10. Cost and orchestration
 
@@ -269,11 +271,10 @@ Cost is cut by not repeating work:
 ## 11. Do not
 
 - write Ferrum code or tests;
-- read the earlier Ferrum code on `bad-start`, or treat its earlier method as a plan;
 - hand-write golden values;
 - skip a source or test file because it is large or a `webtest`;
 - port DOM machinery into the specification because cm6 has it, or drop native-relevant behavior because cm6 implements it with the DOM;
-- present a proposal as decided, or decide a question;
+- propose an answer to a question, or decide one;
 - invent a reason: a difference without a verifiable reason is a question.
 
 ---
@@ -301,8 +302,9 @@ Write only: docs/parity/[crate]/raw/[chunk]-*.jsonl, fixtures/[chunk].jsonl, ora
 [paste the schemas of the files this worker writes]
 
 ## Questions
-Write each question you cannot settle from cm6's code into raw/[chunk]-questions.jsonl:
-{id, item_id, question, options[], evidence[]}. Do not answer it.
+Write each question you cannot settle from cm6's code into raw/[chunk]-questions.jsonl, in the shape of
+CLAUDE.md "Raising a question": {id, item_id, problem, found[], open_because, bears_on[], blocks}.
+No options, no recommendation.
 
 ## Final report
 Counts per file, unfinished ids (or "none"), questions raised, the five most important findings with ids, tokens if known.

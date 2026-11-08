@@ -19,8 +19,8 @@ How a foundation crate goes from cm6 to a conforming Rust crate, who does each p
 | Role | Runs as | Does | Never |
 |---|---|---|---|
 | Maintainer | human | starts and resumes the work (`/ferrum-run`); confirms drafts; reads reports; talks with the consultant | is asked a technical choice |
-| Orchestrator | the main session, through `/ferrum-run` | runs the current stage step by step: proposes (dispositions, sketch, method changes), spawns workers with their cards, merges their output, raises questions, keeps `docs/progress/`, commits | decides a question, approves its own proposal, reads sources a worker owns |
-| `consultant` | subagent of the orchestrator; or `claude --agent consultant` for the maintainer | decides every delegated question and records it (§3); explains and revisits decisions with the maintainer | writes specifications, tests or code; decides what the intent reserves for the maintainer |
+| Orchestrator | the main session, through `/ferrum-run` | runs the current stage step by step: spawns workers with their cards, merges their output, gathers the facts each decision needs (for dispositions, design, method), raises questions, keeps `docs/progress/`, commits | decides a question or proposes an answer to one, reads sources a worker owns |
+| `consultant` | subagent of the orchestrator; or `claude --agent consultant` for the maintainer | derives from the evidence and records every delegated decision (§3), including the dispositions and the crate's design (`implementation-plan.md`); explains and revisits decisions with the maintainer | writes the facts of a specification, tests or code; decides what the intent reserves for the maintainer |
 | `cm6-researcher` | subagent of anyone | verifies cm6 facts against the mirrors | decides |
 | `rust-researcher` | subagent of anyone | verifies facts about Rust, its crates, Unicode and native platform libraries; runs probes and benchmarks | decides |
 | `spec-auditor` | subagent, one per chunk | writes behaviors, fixtures and test rows of one chunk of a cm6 package | decides dispositions or questions |
@@ -39,27 +39,22 @@ Each worker gets its role from its definition (`.claude/agents/`) and its task f
 - Rust design (types, traits, error contracts, ownership);
 - library choices;
 - whether a cm6 bug or quirk is reproduced;
-- approval of a specification, a contract trait, a conformance verdict;
+- approval of a specification, a conformance verdict;
 - a change to this method.
 
 Following cm6's code where the specification already says what to do is not a decision.
 
 **Who decides.**
-- Whoever produces a proposal never decides it. Producers include the orchestrator, every worker and the researchers. They raise a question: the options, the evidence for each, and what the answer blocks.
-- The `consultant` decides everything the maintainer delegated.
+- Whoever produces the work never decides: the orchestrator, every worker and the researchers bring facts and questions, never a proposal to approve. Approving a ready answer is weaker than deriving one, and the menu frames the decision.
+- The `consultant` derives every decision the maintainer delegated from the evidence, builds the alternatives itself, and records each with its reasoning.
 - The maintainer decides three things:
   - what the intent reserves for them;
   - a new direct dependency not licensed MIT or Apache-2.0 (a legal responsibility, `.claude/rules/rust-crates.md` Code 6);
   - any change to `docs/foundation/maintainer-intent.md` or to the goals in `ferrum-foundation.md` §1.
 
 **How a question reaches the consultant.**
-- Questions of a crate are queued in `docs/parity/<crate>/questions.md`. Each entry has:
-  - an id `Q<n>`;
-  - the question;
-  - the options;
-  - evidence as references (`mirrors/...:line`, fixture ids, behavior ids);
-  - who raised it;
-  - what it blocks.
+- Questions of a crate are queued in `docs/parity/<crate>/questions.md`, in the shape of `CLAUDE.md` "Raising a question": what was found, why it is open, the facts that bear on it, what it blocks, who raised it. No options, no recommendation.
+- Decisions that a stage asks for by kind rather than by question (the dispositions, the crate's design) reach the consultant as facts: the rows and files the stage brief names.
 - Questions about the method are queued in `docs/progress/` (§7).
 - The orchestrator calls the consultant with pointers, never arguments, and batches questions that share evidence. Example: `Decide Q12–Q19 in docs/parity/ferrum-state/questions.md`.
 - A question already decided is asked again only when it cites the earlier decision and the new evidence.
@@ -106,8 +101,8 @@ Following cm6's code where the specification already says what to do is not a de
 
 | Stage | Ends when | Approved by |
 |---|---|---|
-| Specification (`docs/workflow/specification.md`) | inventory with dispositions, behaviors, fixtures, test catalog, contracts, hazards, questions and implementation sketch, verified | consultant (dispositions first, then the whole specification with its questions and sketch) |
-| Implementation (`docs/workflow/implementation.md`) | every in-scope item implemented, each module's tests passing, written by a context that never saw the implementation | consultant for every question, contract trait and test change raised on the way |
+| Specification (`docs/workflow/specification.md`) | inventory with dispositions, behaviors, fixtures, test catalog, contracts, hazards and questions, verified; the crate's design | consultant (dispositions first, then the questions, the crate's design and the whole specification) |
+| Implementation (`docs/workflow/implementation.md`) | every in-scope item implemented, each module's tests passing, written by a context that never saw the implementation | consultant for every question, contract trait and test change raised on the way, from the facts the orchestrator gathers |
 | Conformance (`docs/workflow/conformance.md`) | every gate run, verdicts verified | consultant accepts the verdict and any difference it explains; the maintainer receives the report in Portuguese (`dev/maintainer/reports/`) |
 
 A crate is described as conforming only with that report (`.claude/rules/writing.md` "Goals and claims"). Every cm6 item that is not ported (`DROP`) is listed in every verdict and in the crate's README, never omitted.
@@ -151,9 +146,9 @@ Agents other than the consultant and the orchestrator never read `dev/` as a sou
 After each stage, the orchestrator adds to `docs/workflow/learnings.md` what the stage taught:
 - what happened, measured where possible;
 - its basis (evidence, docs, or analysis with the measurement that would confirm it);
-- the change it suggests.
+- what in the method it calls into question.
 
-Suggested changes are questions for the consultant, queued in the crate's progress file. The consultant decides method changes and edits the workflow documents. A change that touches the maintainer's intent is drafted for the maintainer.
+Each entry that calls the method into question becomes a question for the consultant (`CLAUDE.md` "Raising a question"), queued in the crate's progress file. The consultant decides method changes and edits the workflow documents. A change that touches the maintainer's intent is drafted for the maintainer.
 
 ## 8. Tool constraints this design relies on
 

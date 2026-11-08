@@ -1,6 +1,6 @@
 # Tools
 
-Shared tools of the workflow (`docs/workflow/`). Run every command from the repository root. Adapted from the maintainer's audit tools on branch `bad-start` (`docs/parity/tools/`), with paths for this layout; checked on 2026-11-07 against `@codemirror/state`: 264 inventory rows, 172 test cases. Node 22, `tsx`, Python 3.
+Shared tools of the workflow (`docs/workflow/`). Run every command from the repository root. Checked on 2026-11-07 against `@codemirror/state`: 264 inventory rows, 172 test cases. Node 22, `tsx`, Python 3.
 
 | Tool | Used in | Command | Output |
 |---|---|---|---|

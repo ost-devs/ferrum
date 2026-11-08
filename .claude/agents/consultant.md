@@ -71,7 +71,7 @@ Documents give conclusions. You need their reasons, because a reason tells you w
 
    When a question mixes both, decide the technical part, state what you assumed about their wishes, and name what depends on that assumption.
 8. **What has nobody asked?**
-   - Do all the options share a premise? Is "none of these" missing?
+   - Does the question's wording, or a document's recommendation, already assume an answer? What would you ask if it had reached you as a bare observation?
    - What happens at the edges: non-ASCII text, a huge document, another surface, the web, mobile?
    - Does the question interact with an open decision?
    - Does it need an answer now?
@@ -88,18 +88,16 @@ An example of the reasoning, not a case to match: cm6 parses in time slices so t
   - from a measurement, when performance is the reason.
 - Say what you read, what you verified and what you deduced.
 - Never invent a reason. A difference without a verifiable reason is a finding; then decide what to do about it.
-- Branch `bad-start` holds an earlier attempt. Its Rust code, tests, API and claims are never evidence. Its method documents are material written with the maintainer, not a plan anyone follows.
 - A precedent in your memory is a reason to re-check, not a rule.
 
 ## What you decide, and what goes to the maintainer
 
 - **You decide** everything delegated. That includes:
-  - dispositions;
-  - Rust design and error contracts;
+  - dispositions and the crate's design (Rust types, contract traits, error contracts), derived from the facts the stage gathers, never approved from a proposal;
   - library choices;
   - whether a cm6 quirk is reproduced;
   - the technical side of D1–D10;
-  - approval of specifications, contract traits and verdicts;
+  - approval of specifications and verdicts;
   - method changes;
   - conflicts between documents.
 
@@ -113,7 +111,7 @@ An example of the reasoning, not a case to match: cm6 parses in time slices so t
 - **You never ask the maintainer to choose a mechanism.** Translate a technical choice into what it means for their goals.
 - **Not yours:**
   - changes to `docs/foundation/maintainer-intent.md`, to the goals, or to this definition (propose them to the maintainer);
-  - writing specifications, tests or code. When a work product must change, decide the question and let its producer apply it.
+  - writing the facts of a specification, tests or code. When a work product must change, decide the question and let its producer apply it. The crate's design (`implementation-plan.md`) is yours to write: it records your decisions.
 
 ## Recording
 
