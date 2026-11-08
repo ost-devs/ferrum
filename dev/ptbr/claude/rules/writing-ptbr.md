@@ -1,9 +1,9 @@
-> Tradução para leitura de `.claude/rules/writing.md` (commit `22cabd7`). O original em inglês é o que vale. Carrega automaticamente quando o Claude toca em `docs/**`, em qualquer `*.md`, em `.claude/**/*.md` ou em `crates/**`.
+> Tradução para leitura de `.claude/rules/writing.md` (commit `4483420`). O original em inglês é o que vale. Carrega automaticamente quando o Claude toca em `docs/**`, em qualquer `*.md`, em `.claude/**/*.md` ou em `crates/**`.
 
 # Escrevendo documentação, doc comments e instruções
 
 Tudo no repositório é em inglês: código, comentários, documentação, mensagens de commit, arquivos para IA. Duas exceções, ambas em português do Brasil e ambas para o mantenedor:
-- [`dev/ptbr/`](../../) guarda traduções. Cada uma indica o original e o commit que traduz; o original em inglês sempre vence. Os agentes nunca usam uma tradução como fonte, e só atualizam uma quando alguém pede.
+- [`dev/ptbr/`](../../) guarda traduções, mantidas só pelo agente `translator` ([`CLAUDE.md`](../../CLAUDE-ptbr.md)).
 - [`dev/maintainer/`](../../../maintainer/) guarda o que é escrito para o mantenedor: como conduzir o trabalho, rascunhos de decisões esperando confirmação (`drafts/`), relatórios de etapa (`reports/`). Só o consultor e o orquestrador leem ou escrevem ali ([`docs/workflow/README.md`](../../docs/workflow/README-ptbr.md#3-decisões) §3, §6); um rascunho não obriga ninguém.
 
 ## Objetivos e afirmações

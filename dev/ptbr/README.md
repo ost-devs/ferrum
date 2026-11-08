@@ -17,8 +17,6 @@ Regras:
 <!-- translations:start -->
 | Tradução | Original |
 |---|---|
-| [`CLAUDE-ptbr.md`](CLAUDE-ptbr.md) | [`CLAUDE.md`](../../CLAUDE.md) |
-| [`README-ptbr.md`](README-ptbr.md) | [`README.md`](../../README.md) |
 | [`claude/agent-memory/cm6-researcher/MEMORY-ptbr.md`](claude/agent-memory/cm6-researcher/MEMORY-ptbr.md) | [`.claude/agent-memory/cm6-researcher/MEMORY.md`](../../.claude/agent-memory/cm6-researcher/MEMORY.md) |
 | [`claude/agent-memory/consultant/MEMORY-ptbr.md`](claude/agent-memory/consultant/MEMORY-ptbr.md) | [`.claude/agent-memory/consultant/MEMORY.md`](../../.claude/agent-memory/consultant/MEMORY.md) |
 | [`claude/agent-memory/consultant/feedback-maintainer-suggestions-ptbr.md`](claude/agent-memory/consultant/feedback-maintainer-suggestions-ptbr.md) | [`.claude/agent-memory/consultant/feedback-maintainer-suggestions.md`](../../.claude/agent-memory/consultant/feedback-maintainer-suggestions.md) |
@@ -30,6 +28,7 @@ Regras:
 | [`claude/agents/rust-researcher-ptbr.md`](claude/agents/rust-researcher-ptbr.md) | [`.claude/agents/rust-researcher.md`](../../.claude/agents/rust-researcher.md) |
 | [`claude/agents/spec-auditor-ptbr.md`](claude/agents/spec-auditor-ptbr.md) | [`.claude/agents/spec-auditor.md`](../../.claude/agents/spec-auditor.md) |
 | [`claude/agents/test-writer-ptbr.md`](claude/agents/test-writer-ptbr.md) | [`.claude/agents/test-writer.md`](../../.claude/agents/test-writer.md) |
+| [`claude/agents/translator-ptbr.md`](claude/agents/translator-ptbr.md) | [`.claude/agents/translator.md`](../../.claude/agents/translator.md) |
 | [`claude/agents/verifier-ptbr.md`](claude/agents/verifier-ptbr.md) | [`.claude/agents/verifier.md`](../../.claude/agents/verifier.md) |
 | [`claude/rules/decisions-ptbr.md`](claude/rules/decisions-ptbr.md) | [`.claude/rules/decisions.md`](../../.claude/rules/decisions.md) |
 | [`claude/rules/mirrors-ptbr.md`](claude/rules/mirrors-ptbr.md) | [`.claude/rules/mirrors.md`](../../.claude/rules/mirrors.md) |
@@ -42,6 +41,8 @@ Regras:
 | [`claude/skills/ferrum-run/SKILL-ptbr.md`](claude/skills/ferrum-run/SKILL-ptbr.md) | [`.claude/skills/ferrum-run/SKILL.md`](../../.claude/skills/ferrum-run/SKILL.md) |
 | [`claude/skills/ferrum/SKILL-ptbr.md`](claude/skills/ferrum/SKILL-ptbr.md) | [`.claude/skills/ferrum/SKILL.md`](../../.claude/skills/ferrum/SKILL.md) |
 | [`claude/skills/mirrors/SKILL-ptbr.md`](claude/skills/mirrors/SKILL-ptbr.md) | [`.claude/skills/mirrors/SKILL.md`](../../.claude/skills/mirrors/SKILL.md) |
+| [`CLAUDE-ptbr.md`](CLAUDE-ptbr.md) | [`CLAUDE.md`](../../CLAUDE.md) |
+| [`README-ptbr.md`](README-ptbr.md) | [`README.md`](../../README.md) |
 | [`docs/foundation/ferrum-foundation-ptbr.md`](docs/foundation/ferrum-foundation-ptbr.md) | [`docs/foundation/ferrum-foundation.md`](../../docs/foundation/ferrum-foundation.md) |
 | [`docs/foundation/maintainer-intent-ptbr.md`](docs/foundation/maintainer-intent-ptbr.md) | [`docs/foundation/maintainer-intent.md`](../../docs/foundation/maintainer-intent.md) |
 | [`docs/workflow/README-ptbr.md`](docs/workflow/README-ptbr.md) | [`docs/workflow/README.md`](../../docs/workflow/README.md) |

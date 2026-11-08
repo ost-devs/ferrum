@@ -1,6 +1,8 @@
-> Tradução para leitura de `CLAUDE.md` (commit `22cabd7`). O original em inglês é o que vale. O Claude Code carrega o original em toda sessão e em todo subagente.
+> Tradução para leitura de `CLAUDE.md` (commit `4483420`). O original em inglês é o que vale. O Claude Code carrega o original em toda sessão e em todo subagente.
 
 # Ferrum
+
+`dev/ptbr/` guarda traduções para português para leitores humanos. Nunca leia, pesquise, cite nem edite; só o agente `translator` a mantém.
 
 ## Levantando uma pergunta (Raising a question)
 

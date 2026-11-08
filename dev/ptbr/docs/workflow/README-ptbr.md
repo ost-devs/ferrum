@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/README.md` (commit `22cabd7`). O original em inglês é o que vale; as seções citadas (§1, §3…) seguem a numeração do original.
+> Tradução para leitura de `docs/workflow/README.md` (commit `4483420`). O original em inglês é o que vale; as seções citadas (§1, §3…) seguem a numeração do original.
 
 # Como o trabalho do Ferrum corre
 
@@ -140,6 +140,8 @@ Um crate só é descrito como em conformidade com esse relatório ([`.claude/rul
 - como conversar com o consultor (`claude --agent consultant` em outra sessão);
 - onde estão os rascunhos e os relatórios;
 - como listar as decisões do consultor.
+
+As traduções para português em `dev/ptbr/` são mantidas em dia sem que ninguém peça: no início da sessão, [`.claude/hooks/ptbr_sync.py`](../../../../.claude/hooks/ptbr_sync.py) encontra os originais alterados desde a sua tradução e faz o agente `translator` (Sonnet) traduzir o diff em segundo plano. Nenhum outro agente as lê ou edita ([`.claude/settings.json`](../../claude/settings-ptbr.md) proíbe).
 
 Agentes que não sejam o consultor e o orquestrador nunca leem `dev/` como fonte.
 
