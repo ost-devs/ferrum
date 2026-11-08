@@ -9,3 +9,4 @@
 
 ## Calibration
 - [Maintainer's suggestions](feedback-maintainer-suggestions.md) — weigh, don't obey or reject for show; they prize decider independence and nothing silent
+- [Questions are questions](feedback-question-not-request.md) — on an interrogative from the maintainer, answer and offer; act only on an imperative
