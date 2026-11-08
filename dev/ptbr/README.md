@@ -1,19 +1,25 @@
-# Ferrum
+# Traduções para português do Brasil
 
-> Tradução para leitura do `README.md` (commit `0fef1ac`). O original em inglês é o que vale.
+Traduções, para leitura humana, dos documentos em inglês do repositório. A estrutura espelha a do repositório, com duas diferenças:
 
-Um motor de editor de texto nativo e embutível em Rust, cujo núcleo reproduz a arquitetura e o comportamento observável do [CodeMirror 6](https://codemirror.net/), sem navegador.
+- `.claude/` aparece aqui como `claude/` (sem o ponto), para que o Claude Code não carregue estas cópias como regras, skills ou agentes de verdade.
+- Cada tradução tem o nome do original acrescido de `-ptbr` (`ferrum-foundation.md` → `ferrum-foundation-ptbr.md`, `README.md` → `README-ptbr.md`). Assim uma tradução nunca se confunde com o original numa busca, e este `README.md` é o que o GitHub abre ao entrar na pasta.
 
-**Situação:** reiniciado do zero em 2026-11-04. Ainda não há código. O trabalho cobre só os quatro crates de fundação (`ferrum-state`, `ferrum-view`, `ferrum-language`, `ferrum-commands`); nada mais começa antes que eles estejam completos e estáveis.
+Regras:
 
-**Objetivos:** paridade de comportamento 1:1 com o CodeMirror 6, com os nomes do cm6 nas convenções de Rust; desempenho nativo; uma API pública estável por meio de um crate fachada. São objetivos, não resultados: cada um só é declarado alcançado junto com a evidência que o prova.
+- O original em inglês sempre vence. Cada arquivo indica no topo qual original traduz e de qual commit.
+- Para saber se uma tradução está desatualizada: `git log <commit>..HEAD -- <original>`. Se aparecer algum commit, o original mudou depois.
+- Os agentes não usam estas traduções como fonte e só as atualizam quando alguém pede (`.claude/rules/writing.md`).
+- Não são traduzidos: `dev/maintainer/` (já está em português), `docs/progress/` e `docs/parity/` (estado do trabalho, muda a cada passo), e código.
 
-## Documentos
-
-- `docs/foundation/ferrum-foundation.md`: propósito, objetivos, arquitetura, os crates de fundação, decisões em aberto.
-- `.claude/rules/`: regras que toda mudança segue.
-- `dev/ptbr/`: traduções para leitores em português do Brasil; os originais em inglês vencem.
-
-## Licença
-
-Cada crate declara sua licença. Os crates são [MIT](LICENSE-MIT); um crate só é [Apache-2.0](LICENSE-APACHE) quando porta ou incorpora código Apache-2.0. O Ferrum porta o CodeMirror 6 (MIT); o aviso dele está em [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+| Tradução | Original |
+|---|---|
+| `README-ptbr.md` | `README.md` |
+| `docs/foundation/ferrum-foundation-ptbr.md` | `docs/foundation/ferrum-foundation.md` |
+| `docs/foundation/maintainer-intent-ptbr.md` | `docs/foundation/maintainer-intent.md` |
+| `docs/workflow/*-ptbr.md` | `docs/workflow/*.md` |
+| `claude/rules/*-ptbr.md` | `.claude/rules/*.md` |
+| `claude/agents/*-ptbr.md` | `.claude/agents/*.md` |
+| `claude/agent-memory/*/*-ptbr.md` | `.claude/agent-memory/*/*.md` |
+| `claude/skills/*/SKILL-ptbr.md` | `.claude/skills/*/SKILL.md` |
+| `claude/settings-ptbr.md` (explicação) | `.claude/settings.json` |

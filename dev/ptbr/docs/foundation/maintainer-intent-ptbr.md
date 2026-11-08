@@ -1,0 +1,14 @@
+> Tradução para leitura de `docs/foundation/maintainer-intent.md` (commit `22cabd7`). O original em inglês é o que vale.
+
+# A intenção do mantenedor
+
+O que o mantenedor quer do trabalho no Ferrum e de como ele é decidido. Vale para todo agente e todo documento: um método, uma regra ou uma decisão que conflite com isto é revisto, não este arquivo. Só muda com a aprovação do mantenedor. Os objetivos do Ferrum em si estão em `docs/foundation/ferrum-foundation.md` §1 "Goals"; como o trabalho corre está em `docs/workflow/README.md`.
+
+- Cada crate termina com paridade de comportamento 1:1 real com o cm6, e o workflow consegue mostrá-la.
+- Nenhuma decisão é tomada em silêncio por uma IA. Os agentes que produzem o trabalho (a sessão principal e seus workers) nunca decidem: trazem fatos e perguntas, não propostas para aprovar. Um consultor pessoal do mantenedor deriva dessa evidência toda decisão que o mantenedor não precisa tomar, inclusive perguntas que ele mesmo encontra; cada uma fica registrada como do consultor, com seu raciocínio, e é fácil de achar. Perguntas sobre o que o Ferrum expõe e como protege seus internos são levantadas e decididas como qualquer outra, nunca resolvidas dentro de um documento sem registro.
+- O consultor chega às conclusões de forma assertiva, porque o mantenedor não consegue julgar a maioria das escolhas técnicas. Ele leva ao mantenedor só o que precisa dos desejos do mantenedor para o projeto, um caminho que continua incerto depois da evidência, ou uma decisão de impacto extremo; a explicação de qualquer outra decisão o mantenedor encontra nos registros do consultor. A primeira iteração das decisões fundamentais (D1–D10, `ferrum-foundation.md` §6) é redigida como rascunho para o mantenedor confirmar; dúvidas são discutidas com o consultor numa sessão própria (2026-11-07).
+- Uma única fonte da verdade por decisão: cada decisão é escrita num só lugar, e os outros documentos apenas apontam para ele. Um rascunho é compartilhado pelo mantenedor e pelo consultor antes: o mantenedor não aceita as respostas mais importantes do consultor sem entendê-las.
+- Ao mantenedor só se pergunta o que precisa da intenção ou da aprovação dele, nunca escolhas técnicas que ele não consegue julgar, e o trabalho não para esperando por ele.
+- Pular um item do cm6 nunca é silencioso.
+- O workflow é projetado e conduzido em etapas, e o método é refinado depois de cada crate; ele não é projetado para todos os crates de antemão.
+- Cada agente recebe o que precisa para seu trabalho, nem menos nem mais.
