@@ -123,16 +123,18 @@ def translator_definition() -> str:
     fields = dict(line.split(": ", 1) for line in front.strip().splitlines())
     return json.dumps({"translator": {
         "description": fields["description"], "prompt": body.strip(),
-        "tools": [t.strip() for t in fields["tools"].split(",")], "model": fields["model"]}})
+        "tools": [t.strip() for t in fields["tools"].split(",")], "model": fields["model"],
+        "effort": fields["effort"]}})
 
 
 def translate(batch, commit, pairs, log) -> None:
-    env = dict(os.environ, FERRUM_PTBR_SYNC="1")
+    # the variable outranks any effort set in user settings or the session
+    env = dict(os.environ, FERRUM_PTBR_SYNC="1", CLAUDE_CODE_EFFORT_LEVEL="medium")
     # --setting-sources user also hides project agents, so the definition is
     # passed inline (observed with Claude Code 2.1.319)
     cmd = ["claude", "-p", prompt(batch, commit, pairs),
            "--agents", translator_definition(),
-           "--agent", "translator", "--model", "sonnet",
+           "--agent", "translator", "--model", "sonnet", "--effort", "medium",
            "--setting-sources", "user",
            "--permission-mode", "acceptEdits",
            "--allowedTools", "Read", "Write", "Edit",
