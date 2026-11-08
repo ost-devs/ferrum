@@ -36,7 +36,7 @@ A crate is `CONFORMANT` when every gate of §2 passes. There is no percentage th
 
 **Record:**
 - `cargo --version` and the Node version;
-- the mirror commits, which must equal those the specification was approved at (`/mirrors check`).
+- the cm6 release (`@codemirror/<package>@<version>`) and its mirror commit, which must equal those the specification was approved at (`/mirrors check`); the verdict states parity with that release only (`docs/workflow/README.md` §1 "The cm6 reference").
 
 **Outputs:**
 - `docs/parity/<crate>/conformance.md`, rendered from `raw/conformance.jsonl` (`id, kind (item|behavior|test|fixture|gate), verdict, evidence, repro`);
