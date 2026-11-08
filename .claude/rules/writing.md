@@ -9,7 +9,7 @@ paths:
 # Writing documentation, doc comments and instructions
 
 Everything in the repository is in English: code, comments, docs, commit messages, files for AI. Two exceptions, both in Brazilian Portuguese and both for the maintainer:
-- `dev/ptbr/` holds translations. Each names the original and the commit it translates; the English original always wins. Agents never use a translation as a source, and update one only when asked.
+- `dev/ptbr/` holds translations, kept by the `translator` agent alone (`CLAUDE.md`).
 - `dev/maintainer/` holds what is written for the maintainer: how to run the work, drafts of decisions awaiting confirmation (`drafts/`), stage reports (`reports/`). Only the consultant and the orchestrator read or write it (`docs/workflow/README.md` §3, §6); a draft binds no one.
 
 ## Goals and claims

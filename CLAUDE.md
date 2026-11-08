@@ -1,5 +1,7 @@
 # Ferrum
 
+`dev/ptbr/` holds Portuguese translations for human readers. Never read, search, cite or edit it; only the `translator` agent keeps it.
+
 ## Raising a question
 
 Only the `consultant` (or the maintainer) decides (`docs/workflow/README.md` §3). Every other session and agent brings facts and questions, never a proposal to approve. When cm6's code, the specification and the decisions in force (`.claude/rules/decisions.md`, `.claude/rules/rust-naming-decisions.md`, the item's row) do not settle a choice, raise a question in this shape, in the file your card or brief names, or in your report if none does:

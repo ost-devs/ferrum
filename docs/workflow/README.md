@@ -139,6 +139,8 @@ A crate is described as conforming only with that report (`.claude/rules/writing
 - where drafts and reports are;
 - how to list the consultant's decisions.
 
+The Portuguese translations in `dev/ptbr/` are kept current without anyone asking: at session start, `.claude/hooks/ptbr_sync.py` finds originals changed since their translation and has the `translator` agent (Sonnet) translate the diff in the background. No other agent reads or edits them (`.claude/settings.json` denies it).
+
 Agents other than the consultant and the orchestrator never read `dev/` as a source.
 
 ## 7. Refining the method

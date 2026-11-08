@@ -1,7 +1,9 @@
 {
   "permissions": {
     "deny": [
-      "Edit(/mirrors/*/**)"
+      "Edit(/mirrors/*/**)",
+      "Read(/dev/ptbr/**)",
+      "Edit(/dev/ptbr/**)"
     ]
   },
   "hooks": {
@@ -14,6 +16,12 @@
             "command": "cd \"$CLAUDE_PROJECT_DIR\" && python3 .claude/skills/mirrors/fetch_mirrors.py claude-code-docs >/dev/null 2>&1 || true",
             "async": true,
             "timeout": 600
+          },
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && python3 .claude/hooks/ptbr_sync.py >/dev/null 2>&1 || true",
+            "async": true,
+            "timeout": 60
           }
         ]
       }

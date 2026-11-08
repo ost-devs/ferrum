@@ -10,9 +10,11 @@ Regras:
 - O original em inglês sempre vence. Cada arquivo indica no topo qual original traduz e de qual commit.
 - Os caminhos citados nas traduções são clicáveis: levam à tradução quando ela existe, senão ao original. O texto do link mostra sempre o caminho do original, como no documento em inglês.
 - Para saber se uma tradução está desatualizada: `git log <commit>..HEAD -- <original>`. Se aparecer algum commit, o original mudou depois.
-- Os agentes não usam estas traduções como fonte e só as atualizam quando alguém pede ([`.claude/rules/writing.md`](claude/rules/writing-ptbr.md)).
-- Não são traduzidos: [`dev/maintainer/`](../maintainer/) (já está em português), [`docs/progress/`](../../docs/progress/) e [`docs/parity/`](../../docs/parity/) (estado do trabalho, muda a cada passo), e código.
+- Ninguém mais lê nem edita esta pasta: uma regra de permissão em [`.claude/settings.json`](claude/settings-ptbr.md) a esconde de todas as sessões e agentes. Só o agente [`translator`](claude/agents/translator-ptbr.md) a mantém.
+- A atualização é automática. Ao abrir uma sessão, [`.claude/hooks/ptbr_sync.py`](../../.claude/hooks/ptbr_sync.py) verifica, sem IA, que originais mudaram desde o commit indicado no topo de cada tradução. Se algum mudou, dispara o `translator` (modelo Sonnet) em segundo plano. Ele traduz só o diff (ou o arquivo inteiro, se for novo), e o script faz o commit (`ptbr: translate at <commit>`) e refaz a tabela abaixo. Registro em `.git/ptbr-sync.log`. Para ver o que está pendente: `python3 .claude/hooks/ptbr_sync.py --dry-run`.
+- Todo documento novo é traduzido sozinho: todo `.md` versionado, mais `.claude/settings.json`. Ficam de fora: [`dev/`](../) (já está em português), [`docs/progress/`](../../docs/progress/) e [`docs/parity/`](../../docs/parity/) (estado do trabalho, muda a cada passo; a especificação é material de trabalho dos agentes), os `src/README.md` dos crates (mudam a cada mudança de código), `mirrors/` (fontes externas), código, e os textos legais (`LICENSE-*`, `THIRD-PARTY-NOTICES.md`: uma tradução não tem valor legal).
 
+<!-- translations:start -->
 | Tradução | Original |
 |---|---|
 | [`CLAUDE-ptbr.md`](CLAUDE-ptbr.md) | [`CLAUDE.md`](../../CLAUDE.md) |
@@ -48,3 +50,4 @@ Regras:
 | [`docs/workflow/learnings-ptbr.md`](docs/workflow/learnings-ptbr.md) | [`docs/workflow/learnings.md`](../../docs/workflow/learnings.md) |
 | [`docs/workflow/specification-ptbr.md`](docs/workflow/specification-ptbr.md) | [`docs/workflow/specification.md`](../../docs/workflow/specification.md) |
 | [`tools/README-ptbr.md`](tools/README-ptbr.md) | [`tools/README.md`](../../tools/README.md) |
+<!-- translations:end -->
