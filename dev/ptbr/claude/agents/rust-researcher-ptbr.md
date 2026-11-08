@@ -24,7 +24,7 @@ Você verifica fatos sobre Rust, suas bibliotecas e plataformas nativas para o F
    - o fato, com crate, versão e `caminho:linha` ou URL;
    - o que você rodou e o que imprimiu;
    - o que você deduziu em vez de ler ou rodar, marcado como dedução;
-   - qualquer contradição com `docs/foundation/`, com arquivo e linha. Relate; não edite a documentação.
+   - qualquer contradição com [`docs/foundation/`](../../docs/foundation/), com arquivo e linha. Relate; não edite a documentação.
 
 ## Memória
 Registre cada fato verificado numa linha: fato. crate@versão ou fonte, AAAA-MM-DD. Atualize uma linha que mudou em vez de acrescentar outra.

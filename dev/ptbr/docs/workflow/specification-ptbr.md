@@ -1,17 +1,17 @@
-> Tradução para leitura de `docs/workflow/specification.md` (commit `22cabd7`). O original em inglês é o que vale; as seções citadas (§5, §9…) seguem a numeração do original. Os modelos de cartão (apêndices) ficam em inglês, como no original, porque são texto que o orquestrador copia.
+> Tradução para leitura de `docs/workflow/specification.md` (commit `22cabd7`). O original em inglês é o que vale; as seções citadas (§5, §9…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
 
 # Etapa de especificação
 
-Transforma um pacote do cm6 na especificação do seu crate do Ferrum: o que o crate precisa fazer, item por item e comportamento por comportamento, com valores produzidos rodando o cm6, os testes do cm6 a portar, as perguntas que o Ferrum precisa responder, e o projeto do crate, que o consultor deriva desses fatos. É a lista de trabalho do implementador e a referência da etapa de conformidade. Papéis e decisões: `docs/workflow/README.md`. Ferramentas: `tools/README.md`.
+Transforma um pacote do cm6 na especificação do seu crate do Ferrum: o que o crate precisa fazer, item por item e comportamento por comportamento, com valores produzidos rodando o cm6, os testes do cm6 a portar, as perguntas que o Ferrum precisa responder, e o projeto do crate, que o consultor deriva desses fatos. É a lista de trabalho do implementador e a referência da etapa de conformidade. Papéis e decisões: [`docs/workflow/README.md`](README-ptbr.md). Ferramentas: [`tools/README.md`](../../tools/README-ptbr.md).
 
 ---
 
 ## 1. Entradas
 
 - O pacote do cm6 no commit fixado em `mirrors/mirrors.json`, e o harness construído a partir dele (§9 S0).
-- O escopo de `docs/foundation/ferrum-foundation.md` §4.2: o que pertence ao crate.
+- O escopo de [`docs/foundation/ferrum-foundation.md`](../foundation/ferrum-foundation-ptbr.md#42-o-que-pertence-a-cada-crate-de-fundação) §4.2: o que pertence ao crate.
 - Os crates abaixo dele: sua especificação aprovada (`docs/parity/<crate>/`) e, quando existir, seu relatório de conformidade.
-- As decisões em vigor: `.claude/rules/decisions.md` e `.claude/rules/rust-naming-decisions.md`.
+- As decisões em vigor: [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) e [`.claude/rules/rust-naming-decisions.md`](../../claude/rules/rust-naming-decisions-ptbr.md).
 - Só para `ferrum-state`: o lado cm6 da auditoria de estado anterior, no branch `bad-start` (`docs/parity/state/behaviors.md`, `fixtures/`, `oracle/cm6-probes/`, `decisions-evidence.md`). Ele é lido só na verificação (§8), depois de as linhas estarem escritas, como checagem cruzada de completude, nunca como fonte. Tudo o que ele diz sobre o Ferrum descreve código apagado. Esta entrada termina quando a especificação de `ferrum-state` é aprovada.
 
 ## 2. Regras básicas
@@ -20,7 +20,7 @@ Transforma um pacote do cm6 na especificação do seu crate do Ferrum: o que o c
 2. **Filtro de propósito** (`ferrum-foundation.md` §2). Uma disposição diz o que o item faz para um editor nativo, com um motivo específico daquele item. Nada é mantido só porque o cm6 o tem. Nada é descartado só porque o cm6 o implementa com o DOM: comportamento relevante para um editor nativo vira um contrato ou um trabalho da superfície.
 3. **Neutra quanto a decisões.** A especificação declara perguntas, nunca as respostas do Ferrum. Formas de Rust aparecem só no projeto do consultor (§7).
 4. **Fatos com evidência.** Toda linha cita `file:line` do cm6 com o símbolo. O que foi deduzido, e não lido ou rodado, é marcado como dedução.
-5. **Fatos e perguntas, nunca propostas.** O consultor deriva as disposições, o projeto e toda resposta a partir dos fatos que a etapa reúne (`README.md` §3; perguntas no formato de `CLAUDE.md` "Raising a question").
+5. **Fatos e perguntas, nunca propostas.** O consultor deriva as disposições, o projeto e toda resposta a partir dos fatos que a etapa reúne ([`README.md`](README-ptbr.md#3-decisões) §3; perguntas no formato de [`CLAUDE.md`](../../CLAUDE-ptbr.md) "Raising a question").
 6. **Completo ou explícito.**
    - Declare os totais primeiro; toda tabela então tem exatamente esse número de linhas.
    - Um item por linha; nada de "etc." ou "idem".
@@ -29,7 +29,7 @@ Transforma um pacote do cm6 na especificação do seu crate do Ferrum: o que o c
 
 ## 3. Inventário e disposições
 
-**Inventário.** `tools/cm6/inventory.cjs` escreve uma linha por:
+**Inventário.** [`tools/cm6/inventory.cjs`](../../../../tools/cm6/inventory.cjs) escreve uma linha por:
 - export de nível superior alcançável a partir de `src/index.ts`;
 - membro público de instância ou estático;
 - membro de enum;
@@ -47,11 +47,11 @@ Membros `@internal` e privados são lidos como helpers mas não ganham linha. Co
 | `ELSEWHERE: <crate>` | Pertence a outro crate do Ferrum | qual e por quê |
 | `DROP` | Existe só por causa do DOM, do CSS, dos navegadores ou do sistema de tipos do TypeScript | o motivo específico do item, e se uma superfície precisa de um equivalente nativo |
 
-Não existe disposição "depois". Todo item no escopo é especificado. Se o consultor decide que um item não é necessário (por exemplo sob D10), essa decisão é registrada e o item é listado em todo veredicto (`README.md` §4).
+Não existe disposição "depois". Todo item no escopo é especificado. Se o consultor decide que um item não é necessário (por exemplo sob D10), essa decisão é registrada e o item é listado em todo veredicto ([`README.md`](README-ptbr.md#4-etapas-e-suas-aprovações) §4).
 
 ## 4. Entregáveis e esquemas
 
-Tudo em `docs/parity/<crate>/`. Os arquivos JSON Lines em `raw/` e `fixtures/` são a fonte da verdade; as visões em Markdown são renderizadas a partir deles com `tools/render.py`, nunca editadas à mão.
+Tudo em `docs/parity/<crate>/`. Os arquivos JSON Lines em `raw/` e `fixtures/` são a fonte da verdade; as visões em Markdown são renderizadas a partir deles com [`tools/render.py`](../../../../tools/render.py), nunca editadas à mão.
 
 ```
 o progresso fica em docs/progress/<crate>.md
@@ -122,7 +122,7 @@ Para todo item no escopo (`CORE`, `CONTRACT`, a parte de `SURFACE` que pertence 
    - substitutos solitários são codificados (`encode`).
 
    Um comportamento que precisa de DOM ou de gramática ganha `golden_note` com o motivo, e seus valores esperados são tirados das asserções dos testes do cm6.
-4. **Valores de consumidores.** Faça grep em todo pacote do cm6 espelhado que usa o item, atrás das constantes e faixas que ele passa, por exemplo os lados de decoração ±1e8…±6e8, níveis de precedência e posições grandes. Inclua-os nos comportamentos e nas fixtures. Valores de consumidores caem bem fora dos testes do próprio pacote (`docs/workflow/learnings.md` W2).
+4. **Valores de consumidores.** Faça grep em todo pacote do cm6 espelhado que usa o item, atrás das constantes e faixas que ele passa, por exemplo os lados de decoração ±1e8…±6e8, níveis de precedência e posições grandes. Inclua-os nos comportamentos e nas fixtures. Valores de consumidores caem bem fora dos testes do próprio pacote ([`docs/workflow/learnings.md`](learnings-ptbr.md) W2).
 5. **Geradores** para todo item puro: com semente, com um cabeçalho declarando a semente, o número de casos e como cobrem cada entrada desta lista (ou por que uma entrada não se aplica):
    - entrada vazia, um elemento, muitos elementos;
    - elementos iguais e duplicados, incluindo o mesmo objeto reutilizado;
@@ -182,12 +182,12 @@ O orquestrador escreve, a partir das linhas juntadas:
 - `raw/xc.jsonl`:
   - toda capacidade de que este crate precisa de um crate de baixo, conferida contra a especificação do crate de baixo. Uma capacidade faltando ou diferente vira uma pergunta no `questions.md` do crate de baixo, com uma fixture mostrando o que é necessário;
   - toda capacidade que pacotes mais altos do cm6 usam deste, para as etapas posteriores.
-- `questions.md` (`README.md` §3). Ele reúne:
+- `questions.md` ([`README.md`](README-ptbr.md#3-decisões) §3). Ele reúne:
   - toda pergunta que os workers levantaram;
   - toda decisão de que a especificação depende (D1–D10 com os itens e as fixtures que mostram suas consequências);
   - toda peculiaridade ou bug aparente do cm6 cuja reprodução é uma escolha.
 
-  Cada pergunta tem o formato de `CLAUDE.md` "Raising a question": sem opções, sem recomendação.
+  Cada pergunta tem o formato de [`CLAUDE.md`](../../CLAUDE-ptbr.md) "Raising a question": sem opções, sem recomendação.
 - em `hazards.md`, para cada throw do cm6: sua condição (`file:line`), o que ele protege, e se um chamador consegue checar a condição antes.
 
 O consultor escreve no S5 (§9), a partir desses fatos, `implementation-plan.md`: o projeto do crate. Ele registra decisões, cada uma com seu motivo, e nada nele pode mudar um comportamento especificado. Ele contém:
@@ -224,7 +224,7 @@ Um `verifier` que não escreveu nenhuma linha roda isto (cartão: Apêndice B):
    - todo gerador, rodado de novo com sua semente, reproduz exatamente suas fixtures;
    - todo caso de teste está classificado;
    - todo texto de motivo repetido é listado e conferido contra cada linha que o carrega;
-   - `tools/check_refs.py` limpo.
+   - [`tools/check_refs.py`](../../../../tools/check_refs.py) limpo.
 2. **Amostra**, escolhida com uma semente registrada:
    - pelo menos 10% dos itens no escopo (mínimo 20);
    - todo item `CONTRACT`;
@@ -239,14 +239,14 @@ Um `verifier` que não escreveu nenhuma linha roda isto (cartão: Apêndice B):
 
 | Passo | Quem | Trabalho | Termina com (em commit) |
 |---|---|---|---|
-| S0 Preparação | orquestrador | Fixar o pacote e os pacotes centrais que ele lê para valores de consumidores na versão mais recente, e enfileirar um delta de versão para todo crate em conformidade cujo pacote andou (`docs/workflow/README.md` §1 "The cm6 reference"). Conferir os mirrors (`/mirrors check`) e construir o harness (`tools/cm6/setup_harness.py`). Rodar as ferramentas de inventário e de testes; expandir os casos de teste gerados. Declarar os totais. Listar o escopo: arquivos-fonte, arquivos de teste, pacotes consumidores. Dividir em pedaços de cerca de 40–80 linhas de inventário ou até 1.000 linhas de fonte. Escrever os dois cartões e `docs/progress/<crate>.md` | linhas brutas, cartões, progresso |
-| S1 Fatos | orquestrador. Para um pacote grande demais para ler num contexto, `spec-auditor`s por grupo de arquivos | Os fatos de toda linha (`does`, `platform`, `used_by`, §4) e de todo arquivo-fonte, sem disposição. As entradas de `docs/parity/<crate>/early-decisions.md`, se existir, são escritas nas suas linhas como decididas e o arquivo é apagado (`docs/workflow/README.md` §3) | fatos em `raw/inventory.jsonl` |
+| S0 Preparação | orquestrador | Fixar o pacote e os pacotes centrais que ele lê para valores de consumidores na versão mais recente, e enfileirar um delta de versão para todo crate em conformidade cujo pacote andou ([`docs/workflow/README.md`](README-ptbr.md#1-forma) §1 "The cm6 reference"). Conferir os mirrors (`/mirrors check`) e construir o harness ([`tools/cm6/setup_harness.py`](../../../../tools/cm6/setup_harness.py)). Rodar as ferramentas de inventário e de testes; expandir os casos de teste gerados. Declarar os totais. Listar o escopo: arquivos-fonte, arquivos de teste, pacotes consumidores. Dividir em pedaços de cerca de 40–80 linhas de inventário ou até 1.000 linhas de fonte. Escrever os dois cartões e `docs/progress/<crate>.md` | linhas brutas, cartões, progresso |
+| S1 Fatos | orquestrador. Para um pacote grande demais para ler num contexto, `spec-auditor`s por grupo de arquivos | Os fatos de toda linha (`does`, `platform`, `used_by`, §4) e de todo arquivo-fonte, sem disposição. As entradas de `docs/parity/<crate>/early-decisions.md`, se existir, são escritas nas suas linhas como decididas e o arquivo é apagado ([`docs/workflow/README.md`](README-ptbr.md#3-decisões) §3) | fatos em `raw/inventory.jsonl` |
 | S1 Disposições | `consultant` | Deriva uma disposição e um motivo específico do item para toda linha e todo arquivo, a partir dos fatos e do código do cm6; verifica a premissa de todo `DROP` contra o cm6 | disposições nas linhas, `dispositions.md`, `Decided-by: consultant` |
 | S2 Pedaços | `spec-auditor`, um por pedaço, no máximo 4 ao mesmo tempo | §5, §6 para os itens e casos de teste do pedaço | linhas, fixtures e sondas por pedaço; tokens por pedaço no progresso |
-| S3 Síntese | orquestrador | §7; renderizar as visões em Markdown; `tools/check_refs.py` | os entregáveis restantes |
+| S3 Síntese | orquestrador | §7; renderizar as visões em Markdown; [`tools/check_refs.py`](../../../../tools/check_refs.py) | os entregáveis restantes |
 | S4 Verificação | `verifier` | §8 | `verification.md` |
-| S5 Decisão | `consultant` | Decide o `questions.md`; escreve o projeto do crate (`implementation-plan.md`, §7); toma as decisões D1–D10 cuja evidência esta especificação fornece; aprova a especificação. Rascunhos para o mantenedor conforme `README.md` §3 | decisões nos seus lugares; o arquivo de perguntas esvaziado das entradas decididas |
-| S6 Retrospectiva | orquestrador | Entradas em `docs/workflow/learnings.md`; perguntas de método; o progresso aponta para a etapa de implementação | aprendizados, progresso |
+| S5 Decisão | `consultant` | Decide o `questions.md`; escreve o projeto do crate (`implementation-plan.md`, §7); toma as decisões D1–D10 cuja evidência esta especificação fornece; aprova a especificação. Rascunhos para o mantenedor conforme [`README.md`](README-ptbr.md#3-decisões) §3 | decisões nos seus lugares; o arquivo de perguntas esvaziado das entradas decididas |
+| S6 Retrospectiva | orquestrador | Entradas em [`docs/workflow/learnings.md`](learnings-ptbr.md); perguntas de método; o progresso aponta para a etapa de implementação | aprendizados, progresso |
 
 O S2 só começa depois das disposições do S1, porque os pedaços cobrem só os itens no escopo. O orquestrador pode rodar o S1 do próximo crate enquanto este crate está em S2–S5.
 
@@ -286,41 +286,41 @@ O custo é cortado não repetindo trabalho:
 O orquestrador preenche os colchetes e escreve `docs/parity/<crate>/cards/spec-auditor.md`. Mantenha-o abaixo de cerca de 120 linhas; ele se soma à definição do agente e nunca relaxa as regras.
 
 ```
-# spec-auditor card: [crate] ([cm6 package] [version], mirror commit [short])
+# cartão do spec-auditor: [crate] ([pacote do cm6] [versão], commit do mirror [curto])
 
-Run probes: npx tsx --tsconfig .harness/[package]/tsconfig.json <file>.ts
-Import cm6 as "@codemirror/[name]", helpers as "@harness/lib" (rng, capture, encode, fixtureWriter).
-Consumer packages to grep for values: [mirrors/cm6/... list].
-Write only: docs/parity/[crate]/raw/[chunk]-*.jsonl, fixtures/[chunk].jsonl, oracle/cm6/[chunk]/, raw/[chunk].progress.
+Rode sondas: npx tsx --tsconfig .harness/[pacote]/tsconfig.json <arquivo>.ts
+Importe o cm6 como "@codemirror/[nome]", os helpers como "@harness/lib" (rng, capture, encode, fixtureWriter).
+Pacotes consumidores em que fazer grep atrás de valores: [lista mirrors/cm6/...].
+Escreva só: docs/parity/[crate]/raw/[chunk]-*.jsonl, fixtures/[chunk].jsonl, oracle/cm6/[chunk]/, raw/[chunk].progress.
 
-## For every item you own (docs/workflow/specification.md §5)
-[the nine points of §5, condensed: read; behaviors with their fields; fixtures; consumer values;
- generators with the checklist; cost; hazards (list); stack notes; contract questions]
+## Para todo item que é seu (docs/workflow/specification.md §5)
+[os nove pontos da §5, condensados: ler; comportamentos com seus campos; fixtures; valores de consumidores;
+ geradores com a lista de formas; custo; riscos (lista); notas de pilha; perguntas de contrato]
 
-## For every test case you own (§6)
-[scenario, action, expected, behaviors, class with reason, port notes; helper specifications; derived tests]
+## Para todo caso de teste que é seu (§6)
+[cenário, ação, esperado, comportamentos, classe com motivo, notas de port; especificações dos helpers; testes derivados]
 
-## Schemas (§4)
-[paste the schemas of the files this worker writes]
+## Esquemas (§4)
+[cole os esquemas dos arquivos que este worker escreve]
 
-## Questions
-Write each question you cannot settle from cm6's code into raw/[chunk]-questions.jsonl, in the shape of
+## Perguntas
+Escreva cada pergunta que você não consegue resolver pelo código do cm6 em raw/[chunk]-questions.jsonl, no formato de
 CLAUDE.md "Raising a question": {id, item_id, problem, found[], open_because, bears_on[], blocks}.
-No options, no recommendation.
+Sem opções, sem recomendação.
 
-## Final report
-Counts per file, unfinished ids (or "none"), questions raised, the five most important findings with ids, tokens if known.
+## Relatório final
+Contagens por arquivo, ids não terminados (ou "nenhum"), perguntas levantadas, os cinco achados mais importantes com ids, tokens se souber.
 ```
 
 ## Apêndice B. Modelo de cartão: `verifier` (especificação)
 
 ```
-# verifier card: [crate] specification
+# cartão do verifier: especificação de [crate]
 
-Seed: [n]. Sample: [ids]. Earlier samples: [seeds and results].
-Checks: docs/workflow/specification.md §8, items 1–3 [3 only for ferrum-state].
-Run probes and generators with: npx tsx --tsconfig .harness/[package]/tsconfig.json <file>.ts
-Write only docs/parity/[crate]/verification.md (append a section for this seed).
-Each mismatch: id, what the row says, what cm6 shows (file:line or fixture re-run), severity.
-Final report: counts checked, mismatches with ids, whether this sample is clean.
+Semente: [n]. Amostra: [ids]. Amostras anteriores: [sementes e resultados].
+Verificações: docs/workflow/specification.md §8, itens 1–3 [3 só para ferrum-state].
+Rode sondas e geradores com: npx tsx --tsconfig .harness/[pacote]/tsconfig.json <arquivo>.ts
+Escreva só docs/parity/[crate]/verification.md (acrescente uma seção para esta semente).
+Cada divergência: id, o que a linha diz, o que o cm6 mostra (file:line ou nova execução da fixture), gravidade.
+Relatório final: quantidade conferida, divergências com ids, se esta amostra está limpa.
 ```

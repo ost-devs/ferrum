@@ -2,7 +2,7 @@
 
 # Decisões de nomes cm6 → Rust
 
-Registro dos casos interpretativos da regra **Names** (Nomes), em Architecture, de `.claude/rules/rust-crates.md`. Cada entrada vale para todos os casos da sua categoria. Uma entrada só é acrescentada ou mudada por decisão do `consultant` ou do mantenedor (`docs/workflow/README.md` §3); seu id é estável e é o que as anotações citam.
+Registro dos casos interpretativos da regra **Names** (Nomes), em Architecture, de [`.claude/rules/rust-crates.md`](rust-crates-ptbr.md). Cada entrada vale para todos os casos da sua categoria. Uma entrada só é acrescentada ou mudada por decisão do `consultant` ou do mantenedor ([`docs/workflow/README.md`](../../docs/workflow/README-ptbr.md#3-decisões) §3); seu id é estável e é o que as anotações citam.
 
 | Id | cm6 | Rust | Categoria | Motivo |
 |---|---|---|---|---|

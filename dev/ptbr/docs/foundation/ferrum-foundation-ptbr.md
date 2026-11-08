@@ -2,7 +2,7 @@
 
 # Ferrum: propósito, arquitetura e fundação
 
-O documento de referência para qualquer um (humano ou IA) que trabalhe no Ferrum: o que o Ferrum é e o que busca, como se relaciona com o CodeMirror 6 (cm6), como os quatro crates de fundação se relacionam entre si, quais decisões vêm antes da implementação e o que vem depois. Regras para mudanças: `.claude/rules/` (código: `rust-crates.md`; escrita: `writing.md`; fontes externas: `mirrors.md`).
+O documento de referência para qualquer um (humano ou IA) que trabalhe no Ferrum: o que o Ferrum é e o que busca, como se relaciona com o CodeMirror 6 (cm6), como os quatro crates de fundação se relacionam entre si, quais decisões vêm antes da implementação e o que vem depois. Regras para mudanças: [`.claude/rules/`](../../claude/rules/) (código: `rust-crates.md`; escrita: `writing.md`; fontes externas: `mirrors.md`).
 
 Tudo o que está marcado como *preliminar* vem de uma primeira leitura do cm6, não de uma especificação; a especificação de cada crate decide.
 
@@ -27,11 +27,11 @@ O Ferrum **não** é:
 
 É para isto que o Ferrum existe. Código que ainda não os alcança está inacabado, e isso não é motivo para rebaixá-los.
 
-- **Paridade de comportamento 1:1 com o cm6** para todo item de paridade de comportamento ou de contrato (seção 2): mesmos resultados, mesmos invariantes, os mesmos testes passando com os mesmos valores esperados. Os nomes continuam reconhecíveis para um desenvolvedor que conhece o cm6, em Rust idiomático (a regra **Names**, em Architecture, de `.claude/rules/rust-crates.md`).
+- **Paridade de comportamento 1:1 com o cm6** para todo item de paridade de comportamento ou de contrato (seção 2): mesmos resultados, mesmos invariantes, os mesmos testes passando com os mesmos valores esperados. Os nomes continuam reconhecíveis para um desenvolvedor que conhece o cm6, em Rust idiomático (a regra **Names**, em Architecture, de [`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md)).
 - **Desempenho nativo**: documentos grandes sem trabalho no documento inteiro, inicialização rápida, baixa latência de entrada, renderização suave em altas taxas de atualização. As metas do mantenedor: o núcleo (atualização do estado, trabalho de viewport e de decorações) trata uma tecla típica em menos de 1 ms; a superfície renderiza na taxa de atualização da tela, até 120 FPS (8,3 ms por frame); uma entrada fica visível no próximo frame que a tela mostra. Cada meta vira um benchmark reproduzível.
 - **Uma API pública estável** para aplicações, alcançada pelo crate fachada `ferrum` (seção 4.1) quando a fundação estiver completa.
 
-Um objetivo é declarado como objetivo. Só é declarado *alcançado* com a evidência que o prova (`.claude/rules/writing.md`).
+Um objetivo é declarado como objetivo. Só é declarado *alcançado* com a evidência que o prova ([`.claude/rules/writing.md`](../../claude/rules/writing-ptbr.md)).
 
 ### A ideia por trás
 
@@ -173,13 +173,13 @@ Por isso `cosmic-text` pertence a uma superfície (ou a um crate auxiliar compar
 ## 5. Situação e escopo
 
 - **Escopo: só os quatro crates de fundação** (`ferrum-state`, `ferrum-view`, `ferrum-language`, `ferrum-commands`), construídos na ordem das dependências. Nada mais (fachada, superfícies, crates de funcionalidade, aplicações) começa até esses quatro estarem completos e estáveis.
-- **O workflow**: como um crate é especificado, implementado e conferido, por quais agentes, e como as decisões são tomadas e registradas: `docs/workflow/README.md`. A intenção do mantenedor, que o obriga: `docs/foundation/maintainer-intent.md`. Onde o trabalho está: `docs/progress/`.
+- **O workflow**: como um crate é especificado, implementado e conferido, por quais agentes, e como as decisões são tomadas e registradas: [`docs/workflow/README.md`](../workflow/README-ptbr.md). A intenção do mantenedor, que o obriga: [`docs/foundation/maintainer-intent.md`](maintainer-intent-ptbr.md). Onde o trabalho está: [`docs/progress/`](../../../../docs/progress/).
 
 ---
 
 ## 6. Decisões fundamentais (antes de qualquer implementação)
 
-Estas decisões moldam toda a fundação; implementar antes de tomá-las arrisca fazer o trabalho duas vezes. O consultor as toma com a evidência da especificação de cada crate, antes da implementação que precisa delas; a primeira iteração delas é redigida como rascunho para o mantenedor confirmar (`docs/foundation/maintainer-intent.md`). Uma decisão tomada é escrita em `.claude/rules/decisions.md` sob seu id, e a entrada dela abaixo passa então a apontar para lá em vez de repeti-la (`docs/workflow/README.md` §3). As recomendações abaixo são análises anteriores, não decisões.
+Estas decisões moldam toda a fundação; implementar antes de tomá-las arrisca fazer o trabalho duas vezes. O consultor as toma com a evidência da especificação de cada crate, antes da implementação que precisa delas; a primeira iteração delas é redigida como rascunho para o mantenedor confirmar ([`docs/foundation/maintainer-intent.md`](maintainer-intent-ptbr.md)). Uma decisão tomada é escrita em [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) sob seu id, e a entrada dela abaixo passa então a apontar para lá em vez de repeti-la ([`docs/workflow/README.md`](../workflow/README-ptbr.md#3-decisões) §3). As recomendações abaixo são análises anteriores, não decisões.
 
 **D1. Unidade de posição.** O que significa uma posição inteira?
 - Bytes UTF-8: nativo das strings de Rust, de `regex`, do tree-sitter (que também precisa de pontos linha/coluna), do `cosmic-text` e do GPUI. Exige cuidado para nunca cair dentro de um code point.
@@ -202,7 +202,7 @@ As bibliotecas por trás de `Text` e de `findClusterBreak` fazem parte desta dec
 
 **D8. Entrada, IME e acessibilidade.** Qual crate é dono da semântica da entrada de texto e da composição (cm6: `input.ts`, `domchange.ts`, `webtest-composition.ts`)? A acessibilidade (o cm6 a recebe do DOM) precisa de uma solução nativa (por exemplo AccessKit) nas superfícies; o núcleo da view precisa expor o que elas precisam.
 
-**D9. Licenças. Decidida pelo mantenedor, 2026-11-04.** A licença é escolhida por crate: MIT sempre que possível. Um crate só é Apache-2.0 quando porta ou incorpora código Apache-2.0, ou quando outra consequência legal de material Apache-2.0 o exige. Os quatro crates de fundação portam o cm6 (MIT) e são MIT. `THIRD-PARTY-NOTICES.md` guarda o aviso de copyright e de permissão do cm6 (um port do cm6 em Rust é obra derivada de código licenciado MIT); `LICENSE-APACHE` fica na raiz para os crates que vierem a precisar. Código externo sob licença copyleft (GPL, AGPL, por exemplo o crate `editor` do Zed) nunca é lido, copiado nem usado como dependência.
+**D9. Licenças. Decidida pelo mantenedor, 2026-11-04.** A licença é escolhida por crate: MIT sempre que possível. Um crate só é Apache-2.0 quando porta ou incorpora código Apache-2.0, ou quando outra consequência legal de material Apache-2.0 o exige. Os quatro crates de fundação portam o cm6 (MIT) e são MIT. [`THIRD-PARTY-NOTICES.md`](../../../../THIRD-PARTY-NOTICES.md) guarda o aviso de copyright e de permissão do cm6 (um port do cm6 em Rust é obra derivada de código licenciado MIT); `LICENSE-APACHE` fica na raiz para os crates que vierem a precisar. Código externo sob licença copyleft (GPL, AGPL, por exemplo o crate `editor` do Zed) nunca é lido, copiado nem usado como dependência.
 
 **D10. Escopo de curto prazo.** Quais funcionalidades do cm6 a fundação precisa ter antes que a primeira superfície seja reconstruída (por exemplo: ainda sem tooltips/painéis/diálogos, só o modelo dos gutters, sem `StreamLanguage`).
 

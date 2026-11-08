@@ -10,11 +10,11 @@ Um motor de editor de texto nativo e embutível em Rust, cujo núcleo reproduz a
 
 ## Documentos
 
-- `docs/foundation/ferrum-foundation.md`: propósito, objetivos, arquitetura, os crates de fundação, decisões em aberto.
-- `docs/foundation/maintainer-intent.md` e `docs/workflow/`: como o trabalho é decidido e conduzido.
-- `.claude/rules/`: regras que toda mudança segue.
-- `dev/maintainer/`: para o mantenedor, em português do Brasil: como conduzir o trabalho, rascunhos, relatórios.
-- `dev/ptbr/`: traduções para leitores em português do Brasil; os originais em inglês vencem.
+- [`docs/foundation/ferrum-foundation.md`](docs/foundation/ferrum-foundation-ptbr.md): propósito, objetivos, arquitetura, os crates de fundação, decisões em aberto.
+- [`docs/foundation/maintainer-intent.md`](docs/foundation/maintainer-intent-ptbr.md) e [`docs/workflow/`](docs/workflow/): como o trabalho é decidido e conduzido.
+- [`.claude/rules/`](claude/rules/): regras que toda mudança segue.
+- [`dev/maintainer/`](../maintainer/): para o mantenedor, em português do Brasil: como conduzir o trabalho, rascunhos, relatórios.
+- [`dev/ptbr/`](./): traduções para leitores em português do Brasil; os originais em inglês vencem.
 
 ## Licença
 

@@ -1,10 +1,10 @@
-> Tradução para leitura de `docs/workflow/implementation.md` (commit `22cabd7`). O original em inglês é o que vale; as seções citadas (§3, §5…) seguem a numeração do original. Os modelos de cartão (apêndices) ficam em inglês, como no original, porque são texto que o orquestrador copia.
+> Tradução para leitura de `docs/workflow/implementation.md` (commit `22cabd7`). O original em inglês é o que vale; as seções citadas (§3, §5…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
 
 # Etapa de implementação
 
-Implementa um crate a partir da sua especificação aprovada, de modo que todo item no escopo se comporte como no cm6, provado por testes escritos a partir da especificação por um contexto que nunca viu o código. Conferida depois por `docs/workflow/conformance.md`. Papéis e decisões: `docs/workflow/README.md`. Regras de código, testes e anotações: `.claude/rules/rust-crates.md`; este roteiro não as repete.
+Implementa um crate a partir da sua especificação aprovada, de modo que todo item no escopo se comporte como no cm6, provado por testes escritos a partir da especificação por um contexto que nunca viu o código. Conferida depois por [`docs/workflow/conformance.md`](conformance-ptbr.md). Papéis e decisões: [`docs/workflow/README.md`](README-ptbr.md). Regras de código, testes e anotações: [`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md); este roteiro não as repete.
 
-A ser refinada com o que a etapa de especificação do primeiro crate ensinar (`README.md` §7).
+A ser refinada com o que a etapa de especificação do primeiro crate ensinar ([`README.md`](README-ptbr.md#7-refinando-o-método) §7).
 
 ---
 
@@ -12,7 +12,7 @@ A ser refinada com o que a etapa de especificação do primeiro crate ensinar (`
 
 O código de um crate só começa quando as três valem:
 
-1. Sua especificação foi aprovada pelo consultor (`specification.md` §9 S5).
+1. Sua especificação foi aprovada pelo consultor ([`specification.md`](specification-ptbr.md#9-passos) §9 S5).
 2. Toda decisão de que seus comportamentos dependem está em vigor. Os `deps` de um comportamento listam as decisões de que ele precisa, e uma decisão ainda num rascunho para o mantenedor não está em vigor. Só os itens cujas dependências ainda não estão em vigor esperam; o orquestrador os lista em `docs/progress/<crate>.md`.
 3. Os crates abaixo dele estão em conformidade nas capacidades de que ele precisa (`raw/xc.jsonl`). Um item que precisa de uma capacidade faltando é `BLOCKED` e listado; nunca é aproximado.
 
@@ -21,7 +21,7 @@ O código de um crate só começa quando as três valem:
 1. **A especificação é a lista de trabalho.** Implemente os itens aprovados no escopo e nada mais. Um comportamento que a especificação deixou passar é acrescentado a `raw/behaviors.jsonl`, com seu `file:line` do cm6, uma fixture e a marca `added during implementation`. Ele então ganha um teste do mesmo jeito que todo outro comportamento (§3, passo 2).
 2. **Nada diverge em silêncio.** Um item com nome do cm6 ou se comporta como o cm6 ou carrega um desvio aprovado com sua anotação.
 3. **Mesmo comportamento, meios de Rust.** Um mecanismo de que o cm6 precisa só por causa da sua pilha pode ser trocado quando isso serve a um objetivo do Ferrum. O projeto do crate (`implementation-plan.md`) lista essas oportunidades nativas. Os testes portados mostram que o comportamento não mudou. Uma mudança de comportamento observável ou de API pública é uma pergunta para o consultor.
-4. **Os testes vêm da especificação, nunca do código.** São escritos antes da implementação, por um contexto que não a vê. A implementação nunca os edita: `.claude/hooks/guard.py` impede o `implementer` de escrever em `crates/*/tests/`.
+4. **Os testes vêm da especificação, nunca do código.** São escritos antes da implementação, por um contexto que não a vê. A implementação nunca os edita: [`.claude/hooks/guard.py`](../../../../.claude/hooks/guard.py) impede o `implementer` de escrever em `crates/*/tests/`.
 5. **Uma pergunta só para o que depende dela.** Implementadores e escritores de testes relatam perguntas. O orquestrador as enfileira em `docs/parity/<crate>/questions.md` e continua com outros módulos.
 
 ## 3. Módulo por módulo
@@ -45,7 +45,7 @@ Itens com disposição `CONTRACT` precisam de um trait antes do código: o contr
 
 1. O consultor projeta o trait e seu fake determinístico a partir de `contracts.md`, e os registra no projeto do crate.
 2. O orquestrador os escreve no esqueleto. O doc comment de cada método lista os pontos de chamada do cm6 que ele substitui (`file:line`).
-3. Uma pergunta encontrada ao escrevê-los vai para o consultor (`CLAUDE.md` "Raising a question").
+3. Uma pergunta encontrada ao escrevê-los vai para o consultor ([`CLAUDE.md`](../../CLAUDE-ptbr.md) "Raising a question").
 4. A lógica por cima passa pela §3 como qualquer outro módulo. Testes `NEEDS LAYOUT` e `NEEDS GRAMMAR` rodam contra o fake ou contra a gramática decidida em D3.
 
 ## 5. Testes
@@ -58,7 +58,7 @@ Itens com disposição `CONTRACT` precisam de um trait antes do código: o contr
 
 ## 6. Documentação durante a etapa
 
-Só as anotações de correspondência e os doc comments necessários para usar a API. O README do crate e `src/README.md` (`.claude/rules/writing.md` "Goals and claims") são escritos depois do veredicto de conformidade. Eles dão a situação da paridade como o relatório a declara, e uma tabela de tudo o que não foi portado, encontrável pelo nome do cm6.
+Só as anotações de correspondência e os doc comments necessários para usar a API. O README do crate e `src/README.md` ([`.claude/rules/writing.md`](../../claude/rules/writing-ptbr.md) "Goals and claims") são escritos depois do veredicto de conformidade. Eles dão a situação da paridade como o relatório a declara, e uma tabela de tudo o que não foi portado, encontrável pelo nome do cm6.
 
 ## 7. Entrega
 
@@ -68,7 +68,7 @@ O crate vai para a conformidade quando todo item no escopo está implementado ou
 - todo id de `// covers:` existe;
 - arquivos de teste sem mudança desde o passo 2, exceto mudanças listadas;
 - replay das fixtures com 0 divergências;
-- `tools/check_refs.py` limpo;
+- [`tools/check_refs.py`](../../../../tools/check_refs.py) limpo;
 - `cargo test` e `cargo clippy` com zero warnings.
 
 ## 8. Não faça
@@ -84,29 +84,29 @@ O crate vai para a conformidade quando todo item no escopo está implementado ou
 ## Apêndice A. Modelo de cartão: `test-writer`
 
 ```
-# test-writer card: [crate], module [module]
+# cartão do test-writer: [crate], módulo [módulo]
 
-Read: rows of module [module] in docs/parity/[crate]/tests.md, behaviors.md, hazards.md; fixtures [files];
-helper specifications in tests.md; the skeleton at commit [commit] (signatures only).
-Do not open: [implementation files of the module beyond the skeleton].
-Write: crates/[crate]/tests/[files]. Rules: .claude/rules/rust-crates.md "Tests"; docs/workflow/implementation.md §5.
-Every behavior gets a test (// covers: <id>); every hazard a test; local/log items a scaling probe (n, 10n);
-the module's fixtures go through the replayer.
-Run: cargo test -p [crate] --test [name]. Every test compiles and fails at a todo!(); a test that passes is reported.
-Commit: test([crate]): [module], with explicit paths.
-Final report: counts per category, behaviors without a test ("none"), tests passing against the skeleton, questions.
+Leia: as linhas do módulo [módulo] em docs/parity/[crate]/tests.md, behaviors.md, hazards.md; as fixtures [arquivos];
+as especificações dos helpers em tests.md; o esqueleto no commit [commit] (só as assinaturas).
+Não abra: [arquivos de implementação do módulo além do esqueleto].
+Escreva: crates/[crate]/tests/[arquivos]. Regras: .claude/rules/rust-crates.md "Tests"; docs/workflow/implementation.md §5.
+Todo comportamento ganha um teste (// covers: <id>); todo risco um teste; itens locais/log uma sonda de escala (n, 10n);
+as fixtures do módulo passam pelo replayer.
+Rode: cargo test -p [crate] --test [nome]. Todo teste compila e falha num todo!(); um teste que passa é relatado.
+Commit: test([crate]): [módulo], com caminhos explícitos.
+Relatório final: contagens por categoria, comportamentos sem teste ("nenhum"), testes que passam contra o esqueleto, perguntas.
 ```
 
 ## Apêndice B. Modelo de cartão: `implementer`
 
 ```
-# implementer card: [crate], module [module]
+# cartão do implementer: [crate], módulo [módulo]
 
-Read: cm6 sources [mirrors/cm6/... files] and every helper they use; rows of module [module] in behaviors.md,
-hazards.md, stack.md, contracts.md; implementation-plan.md (the crate's design); decisions [ids].
-Tests: crates/[crate]/tests/[files], read-only for you.
-Done when: every test of the module passes; fixture replay 0 mismatches; scaling probes not superlinear;
-cargo build/test/clippy --workspace with zero warnings; implementation.md rows written.
-Commit per item or coupled group, citing behavior ids, with explicit paths.
-Final report: items done, items BLOCKED (with what blocks them), behaviors added, tests reported as wrong, questions.
+Leia: as fontes do cm6 [arquivos mirrors/cm6/...] e todo helper que elas usam; as linhas do módulo [módulo] em behaviors.md,
+hazards.md, stack.md, contracts.md; implementation-plan.md (o projeto do crate); as decisões [ids].
+Testes: crates/[crate]/tests/[arquivos], só leitura para você.
+Pronto quando: todo teste do módulo passa; replay das fixtures com 0 divergências; sondas de escala não superlineares;
+cargo build/test/clippy --workspace com zero warnings; linhas de implementation.md escritas.
+Commit por item ou grupo acoplado, citando ids de comportamento, com caminhos explícitos.
+Relatório final: itens feitos, itens BLOCKED (com o que os bloqueia), comportamentos acrescentados, testes relatados como errados, perguntas.
 ```

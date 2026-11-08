@@ -1,16 +1,16 @@
-> Tradução para leitura de `docs/workflow/conformance.md` (commit `22cabd7`). O original em inglês é o que vale; as seções citadas (§2, G5…) seguem a numeração do original. O modelo de cartão (apêndice) fica em inglês, como no original, porque é texto que o orquestrador copia.
+> Tradução para leitura de `docs/workflow/conformance.md` (commit `22cabd7`). O original em inglês é o que vale; as seções citadas (§2, G5…) seguem a numeração do original. O modelo de cartão (apêndice) também está traduzido; o orquestrador usa o do original, em inglês.
 
 # Etapa de conformidade
 
-Responde a uma pergunta sobre um crate implementado: **ele faz exatamente o que sua especificação aprovada diz?** Se não, lista exatamente onde não, com reproduções. Esta etapa relata achados e nunca os corrige: a etapa de implementação os corrige e os portões que falharam rodam de novo. Papéis e decisões: `docs/workflow/README.md`.
+Responde a uma pergunta sobre um crate implementado: **ele faz exatamente o que sua especificação aprovada diz?** Se não, lista exatamente onde não, com reproduções. Esta etapa relata achados e nunca os corrige: a etapa de implementação os corrige e os portões que falharam rodam de novo. Papéis e decisões: [`docs/workflow/README.md`](README-ptbr.md).
 
-A ser refinada com o que as etapas anteriores do primeiro crate ensinarem (`README.md` §7).
+A ser refinada com o que as etapas anteriores do primeiro crate ensinarem ([`README.md`](README-ptbr.md#7-refinando-o-método) §7).
 
 ---
 
 ## 0. O que um veredicto significa
 
-Um crate é `CONFORMANT` quando todo portão da §2 passa. Não há limiar percentual: uma diferença que nenhuma decisão explica o torna `NOT CONFORMANT`. Uma diferença explicada é uma que uma decisão permite (`.claude/rules/decisions.md`, ou a linha do item na especificação) e que o código anota (`.claude/rules/rust-crates.md` "Annotations").
+Um crate é `CONFORMANT` quando todo portão da §2 passa. Não há limiar percentual: uma diferença que nenhuma decisão explica o torna `NOT CONFORMANT`. Uma diferença explicada é uma que uma decisão permite ([`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md), ou a linha do item na especificação) e que o código anota ([`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md) "Annotations").
 
 **Veredictos de item:**
 
@@ -38,7 +38,7 @@ Um crate é `CONFORMANT` quando todo portão da §2 passa. Não há limiar perce
 
 **Registrar:**
 - `cargo --version` e a versão do Node;
-- a versão do cm6 (`@codemirror/<pacote>@<versão>`) e o commit do mirror dela, que precisam ser iguais àqueles em que a especificação foi aprovada (`/mirrors check`); o veredicto declara paridade só com essa versão (`docs/workflow/README.md` §1 "The cm6 reference").
+- a versão do cm6 (`@codemirror/<pacote>@<versão>`) e o commit do mirror dela, que precisam ser iguais àqueles em que a especificação foi aprovada (`/mirrors check`); o veredicto declara paridade só com essa versão ([`docs/workflow/README.md`](README-ptbr.md#1-forma) §1 "The cm6 reference").
 
 **Saídas:**
 - `docs/parity/<crate>/conformance.md`, renderizado a partir de `raw/conformance.jsonl` (`id, kind (item|behavior|test|fixture|gate), verdict, evidence, repro`);
@@ -49,7 +49,7 @@ Um crate é `CONFORMANT` quando todo portão da §2 passa. Não há limiar perce
 Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador. As verificações por leitura vão para workers `conformance-checker` por módulo (cartão: Apêndice A).
 
 **G1. Superfície pública.**
-- Todo item no escopo tem exatamente um correspondente anotado `/// cm6: <nome>` ou `/// cm6 contract: <nome>`, público no JSON do rustdoc (`tools/ferrum_pub.py`).
+- Todo item no escopo tem exatamente um correspondente anotado `/// cm6: <nome>` ou `/// cm6 contract: <nome>`, público no JSON do rustdoc ([`tools/ferrum_pub.py`](../../../../tools/ferrum_pub.py)).
 - Todo item público leva exatamente uma linha de correspondência.
 - Toda linha `ferrum-only` e todo qualificador `placement` citam um id de decisão que existe.
 - Nenhum mecanismo `@internal` do cm6 é público a menos que decidido.
@@ -73,7 +73,7 @@ Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador. 
 
 **G5. Oráculo diferencial.**
 - Para todo gerador em `oracle/cm6/`, um driver do Ferrum; o cm6 e o Ferrum rodam nas mesmas entradas com semente, pelo menos 5.000 casos por grupo de itens. Exigido: 0 divergências depois da conversão de unidade decidida.
-- **Cobertura:** contar, por entrada da lista de formas (`specification.md` §5), quantos casos a tiveram. Um gerador que nunca produziu uma entrada não passa.
+- **Cobertura:** contar, por entrada da lista de formas ([`specification.md`](specification-ptbr.md#5-comportamentos-e-evidência) §5), quantos casos a tiveram. Um gerador que nunca produziu uma entrada não passa.
 - **Sensibilidade:** numa cópia de rascunho, introduzir um desvio deliberado por grupo de itens (inverter o sinal de um `assoc`, remover uma deduplicação) e confirmar que o oráculo o relata. Um oráculo que fica em 0 não passa.
 
 **G6. Desvios.**
@@ -95,7 +95,7 @@ Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador. 
 
 **G9. Regras.**
 - As dependências seguem o grafo (`cargo tree`); nenhum crate de interface, janelas, shaping ou GPU na fundação.
-- Licenças como `.claude/rules/rust-crates.md` Code 6 exige.
+- Licenças como [`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md) Code 6 exige.
 - `cargo test` e `cargo clippy` com zero warnings.
 - Nenhum `unwrap()` ou `expect()` em condições que uma entrada válida pode disparar.
 
@@ -144,11 +144,11 @@ Isso vai em `dev/maintainer/reports/<crate>-conformance.md`. Depois da aceitaç�
 ## Apêndice A. Modelo de cartão: `conformance-checker`
 
 ```
-# conformance-checker card: [crate], module [module]
+# cartão do conformance-checker: [crate], módulo [módulo]
 
-Gates you check by reading: G2 (assertion quality), G3 (scenario and assertions), G7 (hazard tests) for items [ids].
-Inputs: docs/parity/[crate]/ rows of the module; crates/[crate]/ at commit [commit]; decisions [ids].
-Append one row per verdict to docs/parity/[crate]/raw/conformance-[module].jsonl
-({id, kind, verdict, evidence, repro}); evidence cites file:line on both sides.
-Never change code or tests. Final report: verdict counts, every failing id with a one-line reason, unchecked ids.
+Portões que você confere lendo: G2 (qualidade das asserções), G3 (cenário e asserções), G7 (testes de riscos) para os itens [ids].
+Entradas: as linhas do módulo em docs/parity/[crate]/; crates/[crate]/ no commit [commit]; as decisões [ids].
+Acrescente uma linha por veredicto a docs/parity/[crate]/raw/conformance-[módulo].jsonl
+({id, kind, verdict, evidence, repro}); a evidência cita file:line dos dois lados.
+Nunca mude código nem testes. Relatório final: contagem de veredictos, cada id que falhou com o motivo em uma linha, ids não conferidos.
 ```
