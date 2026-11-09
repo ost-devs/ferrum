@@ -1,0 +1,17 @@
+import {EditorState, Transaction, StateEffect, EditorSelection, StateField} from "@codemirror/state"
+let s = EditorState.create({doc: "ab\ncd", selection: {anchor: 1, head: 4}})
+console.log(JSON.stringify(s.phrase("a $ b $1 $2 $$ $0 $x", "X")))
+console.log(JSON.stringify(s.phrase("plain $1")))
+let tr = s.update({userEvent: "select.pointer"})
+console.log(tr.isUserEvent("select"), tr.isUserEvent("sel"), tr.isUserEvent("select.pointer"), tr.isUserEvent(""))
+let tr2 = s.update({userEvent: ""}); console.log("empty userEvent ann:", JSON.stringify(tr2.annotation(Transaction.userEvent)))
+let j = EditorState.fromJSON({doc: "xy", selection: {ranges: [{anchor: 1, head: 1}], main: 0}}, {doc: "ignored"} as any)
+console.log(JSON.stringify(j.doc.toString()), JSON.stringify(s.toJSON()))
+console.log(typeof tr.annotation(Transaction.time), Number.isInteger(tr.annotation(Transaction.time)))
+console.log("tr.reconfigured", tr.reconfigured, s.update({effects: StateEffect.reconfigure.of([])}).reconfigured)
+let e: any[] = []; console.log("mapEffects same", StateEffect.mapEffects(e, s.changes([])) === e)
+try { EditorState.create({doc: "ab", selection: {anchor: 5}}) } catch (x: any) { console.log(x.constructor.name, x.message) }
+console.log(JSON.stringify(s.wordAt(1)), s.wordAt(2), JSON.stringify(EditorState.create({doc: "a b"}).wordAt(1)))
+console.log(s.update({changes: {from: 0, insert: "z"}, filter: 0 as any}).changes.length)
+console.log(JSON.stringify(EditorState.create({doc: "a\r\nb", extensions: EditorState.lineSeparator.of("")}).doc.toJSON()))
+console.log(JSON.stringify(EditorState.create({doc: "abc", selection: EditorSelection.create([EditorSelection.cursor(0), EditorSelection.cursor(2)], 1)}).selection.toJSON()))

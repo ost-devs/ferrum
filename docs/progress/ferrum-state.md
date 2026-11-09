@@ -4,8 +4,8 @@ Current state only (`.claude/rules/writing.md` "Agent-loaded files and notes for
 
 - **Stage:** specification (`docs/workflow/specification.md`), `@codemirror/state` 6.7.6, mirror commit 651084c.
 - **Step:** S1 Facts in progress (2026-11-09). One `spec-auditor` per chunk writes `raw/<chunk>-facts.jsonl` (`id, does, platform, used_by` per inventory row), `raw/<chunk>-files.jsonl` (per source file), `raw/<chunk>-questions.jsonl`, `raw/<chunk>.progress`; the orchestrator then merges the facts into `raw/inventory.jsonl` and the questions into `questions.md`.
-  - Done: `text` (40/40 rows, 4/4 files, 3 questions), `change` (62/62, 2/2, 4 questions), `rangeset` (47/47, 1/1, 4 questions).
-  - Running or interrupted: `state` (77), `facet` (38).
+  - Done: `text` (40/40 rows, 4/4 files, 3 questions), `change` (62/62, 2/2, 4 questions), `rangeset` (47/47, 1/1, 4 questions), `state` (77/77, 2/2, 4 questions).
+  - Running or interrupted: `facet` (38).
   - **Resume:** for a chunk whose `raw/<chunk>.progress` is missing or has `remaining`, spawn a `spec-auditor` with the S1 Facts assignment for that chunk (the row format above; `used_by` one entry per calling package, every call site when 10 or fewer, else a count with one example; tests excluded), telling it to continue from `raw/<chunk>.progress`. At most 4 at a time.
 - **Read before acting:** `docs/workflow/specification.md` §2–§4, §9 (S1 rows); `docs/parity/ferrum-state/cards/spec-auditor.md`.
 
@@ -25,10 +25,10 @@ S1 Facts (264 rows, 12 source files), S1 Dispositions (consultant), S2 Chunks (5
 ## Open
 
 - **Questions for the consultant:** `docs/parity/ferrum-state/questions.md` (Q3, Q5, Q6). They block the design of S5, not the specification.
-- **Method gaps for the retrospective** (S0, 2026-11-09): `docs/workflow/specification.md` §4 gives no schema for (a) the contract facts of a `CONTRACT` item before `contracts.md` (the card uses `raw/<chunk>-contracts.jsonl`), (b) derived-test ids (the card uses `derived:<behavior id>`), (c) the S1 facts of a source file (no file in §4 holds them). (d) the S1 assignment did not say where the probes behind a fact go: `change` kept its probe in `oracle/cm6/change/`, `text` and `rangeset` left theirs in the session scratchpad, so the values those rows quote from cm6 runs have no committed probe (S4 re-runs them from the rows). `tools/cm6/setup_harness.py` failed to rebuild an existing harness (read-only copies of the mirror); fixed in S0.
+- **Method gaps for the retrospective** (S0, 2026-11-09): `docs/workflow/specification.md` §4 gives no schema for (a) the contract facts of a `CONTRACT` item before `contracts.md` (the card uses `raw/<chunk>-contracts.jsonl`), (b) derived-test ids (the card uses `derived:<behavior id>`), (c) the S1 facts of a source file (no file in §4 holds them). (d) the S1 assignment did not say where the probes behind a fact go: `change` kept its probe in `oracle/cm6/change/`, `state`'s were copied there after its run (`oracle/cm6/state/s1-probe-*.ts`); `text` and `rangeset` left theirs in the session scratchpad, which all workers shared (one overwrote another's file mid-run), so the values those rows quote from cm6 runs have no committed probe (S4 re-runs them from the rows). `tools/cm6/setup_harness.py` failed to rebuild an existing harness (read-only copies of the mirror); fixed in S0.
 - **Blocked:** nothing.
 
 ## Tokens per step
 
 - S0: not measured (main session, no workers).
-- S1 Facts: `text` 157,899; `change` 146,315; `rangeset` 183,884.
+- S1 Facts: `text` 157,899; `change` 146,315; `rangeset` 183,884; `state` 232,355.
