@@ -49,7 +49,8 @@ Mechanical gates run first, for the whole crate, by the orchestrator. Reading ch
 **G1. Public surface.**
 - Every in-scope item has exactly one counterpart annotated `/// cm6: <name>` or `/// cm6 contract: <name>`, public in rustdoc JSON (`tools/ferrum_pub.py`).
 - Every public item carries exactly one mapping line.
-- Every `ferrum-only` line and `placement` qualifier cites a decision id that exists.
+- Every `ferrum-only` line and every `placement` and `name` qualifier cites a decision id that exists.
+- Every public item whose Rust name is not the mechanical conversion of its mapping name (`.claude/rules/rust-crates.md` Architecture 4) carries a `name` qualifier.
 - No cm6 `@internal` mechanism is public unless decided.
 - A not-ported item has no stand-in carrying its cm6 name.
 

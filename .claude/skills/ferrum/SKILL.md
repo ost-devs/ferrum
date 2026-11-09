@@ -25,7 +25,7 @@ A headless, embeddable Rust editor engine whose core has cm6's architecture and 
 | cm6 DOM code is not translated | Each item is classified first (behavioral / contract / surface / not ported); a DOM mechanism becomes a trait question or a surface job, never a port. Native-relevant behavior implemented with the DOM is not dropped either | `ferrum-foundation.md` §2, §4.2 table; `.claude/rules/rust-crates.md` |
 | Ferrum may use what cm6's stack cannot (other threads, no garbage collector) | Many cm6 mechanisms work around one JavaScript thread and the browser; parity is of behavior, not of mechanism. A capability used only because Rust has it is not a reason | `ferrum-foundation.md` §2 |
 | No public item beyond cm6 and the specification | An invented public item is a promise cm6 does not make and a cost to the stable API; every public item maps to a cm6 export or a decided `ferrum-only` item | `.claude/rules/rust-crates.md` |
-| cm6 names kept in Rust conventions; Rust idiom wins on conflict | A cm6 developer recognizes the API without giving up std traits and conventions (`len`, `Display`) | `.claude/rules/rust-crates.md` **Names**; `.claude/rules/rust-naming-decisions.md` |
+| cm6 names kept in Rust conventions; Rust idiom wins on conflict | A cm6 developer recognizes the API without giving up std traits and conventions (`len`, `Display`) | `.claude/rules/rust-crates.md` **Names**; `.claude/rules/decisions.md` "Names" |
 | Dependency order is state → view → language → commands (commands is the top, not the base) | Many cm6 commands take an `EditorView`; keymaps live in view; indentation and syntax come from language | `ferrum-foundation.md` §3 |
 | Mirror dependencies pinned at the newest version npm resolves, not the range minimum | The oracle runs what npm installs; another version produces false mismatches | `.claude/rules/mirrors.md` "Dependency pins" |
 | The maintainer is not asked technical questions; the `consultant` agent decides them | Their intent: not judge choices beyond their knowledge, not stop the work waiting on them, and find every decision recorded as the consultant's. The agents that produce the work bring facts and questions; the consultant derives the decisions | `docs/foundation/maintainer-intent.md`; `docs/workflow/README.md` §3 |
@@ -41,7 +41,6 @@ A headless, embeddable Rust editor engine whose core has cm6's architecture and 
 | Purpose, goals, architecture, crate ownership, decisions D1–D10, later crates | `docs/foundation/ferrum-foundation.md` |
 | Rules for crate code, tests, annotations, dependencies | `.claude/rules/rust-crates.md` (loads on `crates/**`) |
 | Rules for docs, claims vs goals, references | `.claude/rules/writing.md` |
-| cm6 → Rust naming decisions | `.claude/rules/rust-naming-decisions.md` |
 | Mirrors (cm6 as specification, citations) | `.claude/rules/mirrors.md`; edits denied in `.claude/settings.json` |
 | Licensing (per crate, outside code) | `ferrum-foundation.md` §6 D9 |
 | cm6 package dependencies and size | `ferrum-foundation.md` §3 |
@@ -49,7 +48,7 @@ A headless, embeddable Rust editor engine whose core has cm6's architecture and 
 | The maintainer's intent (binding) | `docs/foundation/maintainer-intent.md` |
 | How the work runs: stages, roles, decisions, drafts | `docs/workflow/README.md`; stage briefs `docs/workflow/specification.md`, `implementation.md`, `conformance.md` |
 | Agents: who decides, researches, audits, tests, implements, checks | `.claude/agents/` (`consultant`, `cm6-researcher`, `rust-researcher`, `spec-auditor`, `verifier`, `test-writer`, `implementer`, `conformance-checker`); write and spawn limits in `.claude/hooks/guard.py` |
-| Decisions taken | binding text: `.claude/rules/decisions.md`, the naming registry, or the item's specification row; authorship: `git log --grep='^Decided-by:'` |
+| Decisions taken | binding text: `.claude/rules/decisions.md` (cross-cutting and names), the crate's `implementation-plan.md` (its design), or the item's specification row; authorship: `git log --grep='^Decided-by:'` |
 | A crate's specification, questions and conformance | `docs/parity/<crate>/` |
 | cm6 harness, inventory, renderer, reference checker | `tools/README.md` |
 | Work in progress: state, next step | `docs/progress/` |

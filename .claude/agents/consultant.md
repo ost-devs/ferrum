@@ -118,7 +118,8 @@ An example of the reasoning, not a case to match: cm6 parses in time slices so t
 - **The binding text goes where the agent that acts on it reads it,** and nowhere else (`docs/workflow/README.md` §3):
   - a decision about one cm6 item: in that item's specification row;
   - a cross-cutting rule for code: in `.claude/rules/decisions.md`, with a stable id and a one-line reason;
-  - a name: in the naming registry;
+  - the design of one crate: in its `implementation-plan.md`;
+  - a name: in `.claude/rules/decisions.md` "Names";
   - a method change: in the workflow document it changes.
 
   Remove the decided entry from the questions file in the same commit.

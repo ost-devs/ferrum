@@ -22,12 +22,12 @@ Purpose and architecture: `docs/foundation/ferrum-foundation.md`. cm6's source a
    - Getters have no `get_` prefix.
    - Methods live on the type that owns them in cm6; free functions live in the module matching their cm6 package.
 
-   **Interpretive cases.** Resolve only through `.claude/rules/rust-naming-decisions.md`:
+   **Interpretive cases.** Resolve only through `.claude/rules/decisions.md` "Names":
    - A cm6 member that maps to a std trait or std naming convention (`length`, `toString`, `eq`, iteration, serialization).
    - The form of a cm6 static member or property (const, static, associated function, field or method). Once the form is set, its name follows the mechanical conversion.
    - Any other name that departs from cm6.
 
-   For an interpretive case, apply the registry entry that covers it. Entries apply by category, not by occurrence. If no entry covers the case, do not choose a name: stop, ask for a decision, and add the approved entry to the registry before writing the code.
+   For an interpretive case, apply the entry that covers it. Entries apply by category, not by occurrence. If no entry covers the case, do not choose a name: raise the question (`CLAUDE.md` "Raising a question") and leave the item until the `consultant` agent has added the entry.
 5. **Not ported:** code that exists only for the DOM, CSS or browsers. **Not dropped:** behavior a native editor needs that cm6 implements with the DOM; it becomes a contract (trait) or surface job. When unsure, ask.
 6. **No API beyond the specification.** Public items exist only if cm6 exports them and the specification lists them, or an approved decision adds them. cm6 `@internal` items stay `pub(crate)`.
 7. The facade `ferrum` only re-exports, with feature flags that follow the dependency graph. Application logic (PKM indexing, vaults) is never in an engine crate.
@@ -41,9 +41,9 @@ Purpose and architecture: `docs/foundation/ferrum-foundation.md`. cm6's source a
 6. Ported and derived tests live in `crates/<crate>/tests/`, written by a context that has not seen the implementation; the implementation never edits them (`docs/workflow/implementation.md` §3). Unit tests inside `src/` cover private helpers only.
 
 ## Annotations
-Every public item carries one mapping line plus the qualifiers that apply; cm6 names exactly as cm6 exports them. `<decision>` is the id of an entry in `.claude/rules/decisions.md` or `.claude/rules/rust-naming-decisions.md`.
+Every public item carries one mapping line plus the qualifiers that apply; cm6 names exactly as cm6 exports them. `<decision>` is the id of an entry in `.claude/rules/decisions.md` (`D<n>`, `N<n>`) or the inventory id of the item's specification row (`state.cm6.042`) when the decision is about that item alone.
 - Mapping: `/// cm6: EditorState.changeByRange`; `/// cm6 contract: <cm6 API it replaces>` (trait methods replacing a DOM or Lezer query); `/// ferrum-only: <reason>, see <decision>`.
-- Qualifiers: `/// cm6 deviation: <what differs>, see <decision>`; `/// placement: cm6 has this in <package>, see <decision>`.
+- Qualifiers: `/// cm6 deviation: <what differs>, see <decision>` (observable behavior or public API differs); `/// placement: cm6 has this in <package>, see <decision>`; `/// name: see <decision>` (the Rust name is not the mechanical conversion of the cm6 name).
 
 ## Code
 1. **Positions** use the unit decided in D1; conversions go through named functions, never implicitly.
@@ -53,4 +53,4 @@ Every public item carries one mapping line plus the qualifiers that apply; cm6 n
 5. **Zero warnings** in `cargo build`, `cargo test` and `cargo clippy` for the workspace. Run them after every change and report failures with their output.
 6. **Dependencies**: no copyleft dependency, direct or transitive. A new direct dependency not licensed MIT or Apache-2.0 needs the maintainer's approval. A crate manifest declares the license decided in D9 (`docs/foundation/ferrum-foundation.md` §6): `MIT` for the foundation crates.
 7. **Port the behavior, not cm6's stack** (`docs/foundation/ferrum-foundation.md` §2). A mechanism cm6 needs only because of JavaScript or the browser may be replaced by one that serves a Ferrum goal better; the ported tests show the behavior is unchanged. A replacement that changes observable behavior or public API needs an approved decision.
-8. **Decisions are not yours.** A decision (D1–D10 of `docs/foundation/ferrum-foundation.md` §6, a deviation, an exception, a design or error contract the specification leaves open) is taken by the `consultant` or the maintainer, never by the agent that proposed it (`docs/workflow/README.md` §3). Where a rule here says *ask*, report the question with its options and evidence, and continue with what does not depend on it. Decisions in force: `.claude/rules/decisions.md` (once the first is taken) and `.claude/rules/rust-naming-decisions.md`.
+8. **Decisions are not yours.** A decision (D1–D10 of `docs/foundation/ferrum-foundation.md` §6, a deviation, an exception, a design or error contract that the specification, the crate's design and `.claude/rules/decisions.md` leave open) is taken by the `consultant` agent or the maintainer (`docs/workflow/README.md` §3). Where a rule here says *ask*, raise the question as `CLAUDE.md` "Raising a question" shows, and continue with what does not depend on it. A private choice that changes nothing observable (a helper, an internal data layout) is yours, shown by the tests.

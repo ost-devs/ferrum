@@ -64,10 +64,11 @@ Following cm6's code where the specification already says what to do is not a de
 
 | Decision | Place |
 |---|---|
-| About one cm6 item (disposition, the error contract of one precondition, reproducing one quirk, porting one test) | the crate's specification: the row of that item (`docs/parity/<crate>/`) |
+| About one cm6 item (disposition, the error contract of one precondition, reproducing one quirk, porting one test) | the crate's specification: the row of that item (`docs/parity/<crate>/`); annotations cite its inventory id |
 | About one cm6 item whose crate has no inventory yet | `docs/parity/<crate>/early-decisions.md`, one entry per item; S1 of that crate writes each entry into its row as decided and deletes the file (`docs/workflow/specification.md` §9) |
-| Cross-cutting for code (D1–D8, a general error or identity policy, a design rule) | `.claude/rules/decisions.md`, path-scoped to the files it governs. One entry per decision: a stable id (`D1`–`D10` for the foundational ones of `ferrum-foundation.md` §6, `D11` onward for later ones), the decision, a one-line reason, what it applies to. Code annotations cite the id (`/// cm6 deviation: …, see D11`) |
-| A name | `.claude/rules/rust-naming-decisions.md` |
+| The design of one crate (module map, types, contract traits, error contracts, ownership) | `docs/parity/<crate>/implementation-plan.md`, written by the consultant (`docs/workflow/specification.md` §7). A design choice that changes observable behavior or public API is a deviation, recorded in the item's row or in `.claude/rules/decisions.md` |
+| Cross-cutting for code (D1–D8, a general error or identity policy, a design rule for several crates) | `.claude/rules/decisions.md` "Cross-cutting decisions", path-scoped to crate code. One entry per decision: a stable id (`D1`–`D10` for the foundational ones of `ferrum-foundation.md` §6, `D11` onward for later ones), the decision, a one-line reason, what it applies to. Code annotations cite the id (`/// cm6 deviation: …, see D11`) |
+| How a cm6 name becomes a Rust name where the mechanical conversion does not settle it | `.claude/rules/decisions.md` "Names" (`N<n>`) |
 | The method | the workflow document it changes |
 
 `ferrum-foundation.md` §6 keeps the questions D1–D10 for human readers; when one is decided, its entry points to the rule instead of repeating it.
@@ -90,7 +91,7 @@ Following cm6's code where the specification already says what to do is not a de
 **Conflicts between documents.**
 - Precedence, highest first:
   1. the maintainer's intent and the goals and principles of `ferrum-foundation.md` §1–§2;
-  2. `.claude/rules/decisions.md` and `.claude/rules/rust-naming-decisions.md`;
+  2. `.claude/rules/decisions.md`;
   3. the other rules;
   4. the approved specification of the crate;
   5. the workflow documents;
