@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/specification.md` (commit `22cabd7`). O original em inglês é o que vale; as seções citadas (§5, §9…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
+> Tradução para leitura de `docs/workflow/specification.md` (commit `e92273d`). O original em inglês é o que vale; as seções citadas (§5, §9…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
 
 # Etapa de especificação
 
@@ -8,9 +8,9 @@ Transforma um pacote do cm6 na especificação do seu crate do Ferrum: o que o c
 
 ## 1. Entradas
 
-- O pacote do cm6 no commit fixado em `mirrors/mirrors.json`, e o harness construído a partir dele (§9 S0).
+- O pacote do cm6 na sua release mais recente e o harness construído a partir dele, ambos preparados no S0 (§9), como exige [`docs/workflow/README.md`](README-ptbr.md#1-forma) §1 "The cm6 reference".
 - O escopo de [`docs/foundation/ferrum-foundation.md`](../foundation/ferrum-foundation-ptbr.md#42-o-que-pertence-a-cada-crate-de-fundação) §4.2: o que pertence ao crate.
-- Os crates abaixo dele: sua especificação aprovada (`docs/parity/<crate>/`) e, quando existir, seu relatório de conformidade.
+- Os crates abaixo dele: sua especificação aprovada (`docs/parity/<crate>/`) e seu relatório de conformidade.
 - As decisões em vigor: [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) e [`.claude/rules/rust-naming-decisions.md`](../../claude/rules/rust-naming-decisions-ptbr.md).
 - Só para `ferrum-state`: o lado cm6 da auditoria de estado anterior, no branch `bad-start` (`docs/parity/state/behaviors.md`, `fixtures/`, `oracle/cm6-probes/`, `decisions-evidence.md`). Ele é lido só na verificação (§8), depois de as linhas estarem escritas, como checagem cruzada de completude, nunca como fonte. Tudo o que ele diz sobre o Ferrum descreve código apagado. Esta entrada termina quando a especificação de `ferrum-state` é aprovada.
 
@@ -47,7 +47,7 @@ Membros `@internal` e privados são lidos como helpers mas não ganham linha. Co
 | `ELSEWHERE: <crate>` | Pertence a outro crate do Ferrum | qual e por quê |
 | `DROP` | Existe só por causa do DOM, do CSS, dos navegadores ou do sistema de tipos do TypeScript | o motivo específico do item, e se uma superfície precisa de um equivalente nativo |
 
-Não existe disposição "depois". Todo item no escopo é especificado. Se o consultor decide que um item não é necessário (por exemplo sob D10), essa decisão é registrada e o item é listado em todo veredicto ([`README.md`](README-ptbr.md#4-etapas-e-suas-aprovações) §4).
+Não existe disposição "depois" (D10, [`ferrum-foundation.md`](../foundation/ferrum-foundation-ptbr.md#6-decisões-fundamentais-antes-de-qualquer-implementação) §6): todo item do pacote recebe uma das disposições acima, e todo item no escopo é especificado. Todo item não portado é listado em todo veredicto ([`README.md`](README-ptbr.md#4-etapas-e-suas-aprovações) §4).
 
 ## 4. Entregáveis e esquemas
 
@@ -67,6 +67,7 @@ dispositions.md            por arquivo-fonte: disposição e motivo; disposiçõ
 contracts.md               por item CONTRACT: a pergunta, a lógica em volta, o menor fake
 hazards.md                 riscos JS→Rust por item
 stack.md                   mecanismos que existem por causa da pilha do cm6, por item (§5)
+names.md                   nomes que a conversão mecânica não pode resolver (§7)
 implementation-plan.md     o projeto do crate, escrito pelo consultor no S5 (§7)
 questions.md               perguntas em aberto para o consultor (README.md §3)
 verification.md            §8
@@ -188,9 +189,10 @@ O orquestrador escreve, a partir das linhas juntadas:
   - toda peculiaridade ou bug aparente do cm6 cuja reprodução é uma escolha.
 
   Cada pergunta tem o formato de [`CLAUDE.md`](../../CLAUDE-ptbr.md) "Raising a question": sem opções, sem recomendação.
+- `names.md`: toda linha do inventário cujo nome a conversão mecânica de [`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md) Architecture 4 não pode resolver, com o que o membro faz e sua assinatura: um membro estático; um nome que é método ou convenção de trait da std (os nomes da tabela `should_implement_trait` do clippy, como `next`, `from_str`, `default`, `add`, `hash`; e `len`, `is_empty`, `to_string`, `iter`, `into_iter`, `from`, `as_ref`); serialização (`toJSON`, `fromJSON`); um nome que uma entrada de [`.claude/rules/rust-naming-decisions.md`](../../claude/rules/rust-naming-decisions-ptbr.md) cobre, para conferir se a categoria da entrada lhe serve. Só fatos: o consultor decide as entradas no S5.
 - em `hazards.md`, para cada throw do cm6: sua condição (`file:line`), o que ele protege, e se um chamador consegue checar a condição antes.
 
-O consultor escreve no S5 (§9), a partir desses fatos, `implementation-plan.md`: o projeto do crate. Ele registra decisões, cada uma com seu motivo, e nada nele pode mudar um comportamento especificado. Ele contém:
+O consultor escreve no S5 (§9), a partir desses fatos, `implementation-plan.md`: o projeto do crate. Ele registra decisões, cada uma com seu motivo. Uma escolha nele que muda comportamento observável ou a API pública é um desvio: é registrada na linha do item ou em [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md), onde as anotações podem citá-la, o plano aponta para ela, e uma primeira iteração de D1–D10 vai para um rascunho para o mantenedor ([`docs/workflow/README.md`](README-ptbr.md#3-decisões) §3). Ele contém:
 - **Mapa de módulos**: um módulo Rust por arquivo-fonte do cm6 no escopo, seus itens públicos, o que fica `pub(crate)`.
 - **Tipos centrais e invariantes**, e como cada invariante é mantido.
 - **A forma em Rust de cada idioma do cm6 que o crate usa**, com o que precisa valer qualquer que seja a forma:
@@ -208,10 +210,10 @@ O consultor escreve no S5 (§9), a partir desses fatos, `implementation-plan.md`
   | contador de nível de módulo, `Date.now()` | determinismo nos testes |
   | strings e offsets UTF-16 | posições na unidade de D1; nenhuma `String` do documento inteiro |
 
-- **Contrato de erro por pré-condição**, a partir dos fatos de throw em `hazards.md`.
+- **Contrato de erro por pré-condição**, a partir dos fatos de throw em `hazards.md`: o que um chamador Rust observa quando a pré-condição falha onde o cm6 lança uma exceção, e como um teste verifica isso.
 - **Posse e threads** (D6), **dependências** com licença, **ordem de implementação**, e o **plano de testes**: ordem de port, fakes, o replayer de fixtures, drivers do oráculo.
 - **Decisões óbvias**: uma linha cada, `OBVIOUS-<n>: <decisão>: <motivo>`, para escolhas com uma única resposta razoável.
-- **Oportunidades nativas**: onde um mecanismo em `stack.md` existe só por causa da pilha do cm6 e outro serve melhor a um objetivo do Ferrum: o que o cm6 faz (`file:line`), o mecanismo escolhido, o objetivo, a medição que confirma o benefício, e o impacto no comportamento. Sem impacto, o implementador o adota com um teste de prova.
+- **Oportunidades nativas**: onde um mecanismo em `stack.md` existe só por causa da pilha do cm6 e outro serve melhor a um objetivo do Ferrum: o que o cm6 faz (`file:line`), o mecanismo escolhido, o objetivo, a medição que confirma o benefício, e o impacto no comportamento. Sem impacto observável, o implementador o adota com um teste de prova; um impacto observável o torna um desvio, registrado como acima.
 
 ## 8. Verificação
 
@@ -239,17 +241,16 @@ Um `verifier` que não escreveu nenhuma linha roda isto (cartão: Apêndice B):
 
 | Passo | Quem | Trabalho | Termina com (em commit) |
 |---|---|---|---|
-| S0 Preparação | orquestrador | Fixar o pacote e os pacotes centrais que ele lê para valores de consumidores na versão mais recente, e enfileirar um delta de versão para todo crate em conformidade cujo pacote andou ([`docs/workflow/README.md`](README-ptbr.md#1-forma) §1 "The cm6 reference"). Conferir os mirrors (`/mirrors check`) e construir o harness ([`tools/cm6/setup_harness.py`](../../../../tools/cm6/setup_harness.py)). Rodar as ferramentas de inventário e de testes; expandir os casos de teste gerados. Declarar os totais. Listar o escopo: arquivos-fonte, arquivos de teste, pacotes consumidores. Dividir em pedaços de cerca de 40–80 linhas de inventário ou até 1.000 linhas de fonte. Escrever os dois cartões e `docs/progress/<crate>.md` | linhas brutas, cartões, progresso |
+| S0 Preparação | orquestrador | Fixar o pacote e os pacotes centrais que ele lê para valores de consumidores na versão mais recente (`npm view @codemirror/<package> version`, depois `/mirrors pin cm6/<package> @<version>`), refazer a resolução dos pins de dependência ([`.claude/rules/mirrors.md`](../../claude/rules/mirrors-ptbr.md) "Dependency pins"), e enfileirar um delta de versão para todo crate em conformidade cujo pacote andou ([`docs/workflow/README.md`](README-ptbr.md#1-forma) §1 "The cm6 reference"). Commitar `mirrors/mirrors.json`. Conferir os mirrors (`/mirrors check`) e construir o harness ([`tools/cm6/setup_harness.py`](../../../../tools/cm6/setup_harness.py)). Rodar as ferramentas de inventário e de testes; expandir os casos de teste gerados. Declarar os totais. Listar o escopo: arquivos-fonte, arquivos de teste, pacotes consumidores. Dividir em pedaços de cerca de 40–80 linhas de inventário ou até 1.000 linhas de fonte. Escrever os dois cartões e `docs/progress/<crate>.md` | linhas brutas, cartões, progresso |
 | S1 Fatos | orquestrador. Para um pacote grande demais para ler num contexto, `spec-auditor`s por grupo de arquivos | Os fatos de toda linha (`does`, `platform`, `used_by`, §4) e de todo arquivo-fonte, sem disposição. As entradas de `docs/parity/<crate>/early-decisions.md`, se existir, são escritas nas suas linhas como decididas e o arquivo é apagado ([`docs/workflow/README.md`](README-ptbr.md#3-decisões) §3) | fatos em `raw/inventory.jsonl` |
 | S1 Disposições | `consultant` | Deriva uma disposição e um motivo específico do item para toda linha e todo arquivo, a partir dos fatos e do código do cm6; verifica a premissa de todo `DROP` contra o cm6 | disposições nas linhas, `dispositions.md`, `Decided-by: consultant` |
 | S2 Pedaços | `spec-auditor`, um por pedaço, no máximo 4 ao mesmo tempo | §5, §6 para os itens e casos de teste do pedaço | linhas, fixtures e sondas por pedaço; tokens por pedaço no progresso |
 | S3 Síntese | orquestrador | §7; renderizar as visões em Markdown; [`tools/check_refs.py`](../../../../tools/check_refs.py) | os entregáveis restantes |
 | S4 Verificação | `verifier` | §8 | `verification.md` |
-| S5 Decisão | `consultant` | Decide o `questions.md`; escreve o projeto do crate (`implementation-plan.md`, §7); toma as decisões D1–D10 cuja evidência esta especificação fornece; aprova a especificação. Rascunhos para o mantenedor conforme [`README.md`](README-ptbr.md#3-decisões) §3 | decisões nos seus lugares; o arquivo de perguntas esvaziado das entradas decididas |
+| S5 Decisão | `consultant` | Decide o `questions.md`; decide uma entrada de [`.claude/rules/rust-naming-decisions.md`](../../claude/rules/rust-naming-decisions-ptbr.md) para todo caso de `names.md` que nenhuma entrada resolve; escreve o projeto do crate (`implementation-plan.md`, §7); toma as decisões D1–D10 cuja evidência esta especificação fornece; aprova a especificação. Rascunhos para o mantenedor conforme [`README.md`](README-ptbr.md#3-decisões) §3 | decisões nos seus lugares; o arquivo de perguntas esvaziado das entradas decididas |
 | S6 Retrospectiva | orquestrador | Entradas em [`docs/workflow/learnings.md`](learnings-ptbr.md); perguntas de método; o progresso aponta para a etapa de implementação | aprendizados, progresso |
 
-O S2 só começa depois das disposições do S1, porque os pedaços cobrem só os itens no escopo. O orquestrador pode rodar o S1 do próximo crate enquanto este crate está em S2–S5.
-
+O S2 só começa depois das disposições do S1, porque os pedaços cobrem só os itens no escopo.
 ## 10. Custo e orquestração
 
 A qualidade vem primeiro. Os passos que produzem evidência nunca são encurtados para economizar tokens:
@@ -283,7 +284,7 @@ O custo é cortado não repetindo trabalho:
 
 ## Apêndice A. Modelo de cartão: `spec-auditor`
 
-O orquestrador preenche os colchetes e escreve `docs/parity/<crate>/cards/spec-auditor.md`. Mantenha-o abaixo de cerca de 120 linhas; ele se soma à definição do agente e nunca relaxa as regras.
+O orquestrador preenche os colchetes e escreve `docs/parity/<crate>/cards/spec-auditor.md`. Ele contém o que um spec-auditor precisa para fazer seu pedaço sem abrir este roteiro, e nada que ele não possa usar ([`docs/workflow/README.md`](README-ptbr.md#5-conduzindo-o-trabalho) §5 "Context"); ele se soma à definição do agente e nunca relaxa as regras.
 
 ```
 # cartão do spec-auditor: [crate] ([pacote do cm6] [versão], commit do mirror [curto])

@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/learnings.md` (commit `22cabd7`). O original em inglês é o que vale.
+> Tradução para leitura de `docs/workflow/learnings.md` (commit `e92273d`). O original em inglês é o que vale.
 
 # Aprendizados do workflow
 
@@ -13,7 +13,7 @@ Ids `W<n>`, estáveis.
 
 ## Da tentativa anterior (branch `bad-start`)
 
-Fonte: `docs/fundation/LEARNINGS.md` no `bad-start` (L1–L34, lido com `git show bad-start:<caminho>`). O método dela foi escrito antes de rodar e foi da v1 à v5 em três dias. Só as conclusões que valem para o novo escopo são mantidas aqui. O código Rust, os testes, a API e as afirmações dela nunca são evidência (`docs/foundation/bad-start-quarry.md`).
+Fonte: `docs/fundation/LEARNINGS.md` no `bad-start` (L1–L34, lido com `git show bad-start:<caminho>`). O método dela foi escrito antes de rodar e foi da v1 à v5 em três dias. Só as conclusões que valem para o novo escopo são mantidas aqui. O código Rust, os testes, a API e as afirmações dela nunca são evidência.
 
 | Id | Base | Observação | Para onde foi |
 |---|---|---|---|
@@ -36,3 +36,5 @@ Fonte: `docs/fundation/LEARNINGS.md` no `bad-start` (L1–L34, lido com `git sho
 | Id | Base | Observação | Para onde foi |
 |---|---|---|---|
 | W14 | evidence (teste do `consultant` em três itens de `@codemirror/view` que nenhum documento cobria: `EditorView.lineWrapping`, `exceptionSink`/`logException`, `EditorView.announce`; respostas e comparação em `git show 3d2f9db:dev/maintainer/consultant-design.md` §7) | Recebendo só "decida a disposição de X", cada execução raciocinou a partir de por que o cm6 faz aquilo até uma disposição diferente, encontrou evidência que o projetista não tinha (um bug no CHANGELOG do cm6 em que a flag de quebra de linha e o layout discordavam; anúncios repetidos), e levantou perguntas que ninguém fez; as três encontraram de forma independente a entrada de nomes que faltava para membros estáticos do cm6. Três execuções em paralelo criaram o mesmo arquivo novo e tiveram de juntá-lo | um consultor por vez; um lugar para decisões de itens antes do inventário de um crate ([`README.md`](README-ptbr.md#3-decisões) §3); pergunta Q3 de [`docs/parity/ferrum-state/questions.md`](../../../../docs/parity/ferrum-state/questions.md) |
+| W15 | evidence (`docs/parity/ferrum-state/questions.md` Q4 antes de `b9f1dbe`) | Toda opção de uma pergunta enfileirada partilhava uma premissa (a referência do cm6 é um commit de `main`); nenhuma perguntava sobre releases publicadas, e o pin de `view` acabou contendo API não lançada (`scrollMargins` renomeado para `coveredMargins`, 7 commits depois de 6.43.15) | perguntas trazem fatos, sem opções ([`CLAUDE.md`](../../CLAUDE-ptbr.md) "Raising a question"); a referência é uma release ([`README.md`](README-ptbr.md#1-forma) §1) |
+| W16 | evidence (`7aae14b`) | Entradas de nomes herdadas sem um commit `Decided-by` aplicadas "por categoria" a todo `length` e todo `eq`; conferida contra cada membro, N1 daria a `ChangeDesc` um `len()` lido como contagem de mudanças e um `is_empty()` que contradiz o `empty` do cm6, e N3 não conseguiria expressar `eq(other, includeAssoc)` | as entradas listam os membros que cobrem; `names.md` dá a lista completa de membros antes do S5 ([`specification.md`](specification-ptbr.md#7-síntese) §7, §9) |

@@ -1,8 +1,8 @@
-> Tradução para leitura de `.claude/agents/consultant.md` (commit `22cabd7`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher, rust-researcher, Explore), AskUserQuestion`, `model: opus`, `effort: high`, `memory: project`, `skills: consultant-context`, `initialPrompt: /consultant-context`; um hook (`.claude/hooks/guard.py`) o impede de escrever em `crates/`, `Cargo.toml` e `mirrors/`, e só o deixa criar os subagentes `cm6-researcher`, `rust-researcher` e `Explore`.
+> Tradução para leitura de `.claude/agents/consultant.md` (commit `e92273d`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher, rust-researcher, Explore), AskUserQuestion`, `model: opus`, `effort: high`, `memory: project`, `skills: consultant-context`, `initialPrompt: /consultant-context`; um hook (`.claude/hooks/guard.py`) o impede de escrever em `crates/`, `Cargo.toml` e `mirrors/`, e só o deixa criar os subagentes `cm6-researcher`, `rust-researcher` e `Explore`.
 
 # Agente `consultant`
 
-**Descrição (quando o Claude o usa):** o consultor pessoal do mantenedor do Ferrum. Decide o que o mantenedor delega e registra cada decisão — disposições de itens do cm6, perguntas técnicas e de projeto, desvios em relação ao cm6, as decisões fundamentais D1-D10, aprovação de especificações, traits de contrato, veredictos de conformidade e mudanças de método — e conversa com o mantenedor sobre qualquer decisão. Usar sempre que o trabalho precisar de uma escolha que o código do cm6 e a especificação aprovada não ditam; quem propôs algo nunca o decide. Passe ponteiros para as perguntas e a evidência, não argumentos.
+**Descrição (quando o Claude o usa):** o consultor pessoal do mantenedor do Ferrum. Deriva a partir da evidência e registra toda decisão que o mantenedor delega — disposições de itens do cm6, o projeto de cada crate (tipos, traits de contrato, contratos de erro), desvios em relação ao cm6, as decisões fundamentais D1-D10, aprovação de especificações e veredictos de conformidade, mudanças de método — e conversa com o mantenedor sobre qualquer decisão. Usar sempre que o trabalho precisar de uma escolha que o código do cm6, a especificação aprovada e as decisões em vigor não ditam. Passe ponteiros para as perguntas e os fatos, não argumentos nem respostas propostas.
 
 ---
 
@@ -108,7 +108,8 @@ Um exemplo do raciocínio, não um caso a casar: o cm6 faz o parsing em fatias d
 - **O texto que obriga vai para onde o agente que age sobre ele o lê,** e para nenhum outro lugar ([`docs/workflow/README.md`](../../docs/workflow/README-ptbr.md#3-decisões) §3):
   - uma decisão sobre um item do cm6: na linha desse item na especificação;
   - uma regra transversal para o código: em [`.claude/rules/decisions.md`](../rules/decisions-ptbr.md), com id estável e motivo em uma linha;
-  - um nome: no registro de nomes;
+  - o projeto de um crate: no `implementation-plan.md` dele;
+  - como um nome do cm6 vira um nome em Rust, quando a conversão mecânica não resolve: em [`.claude/rules/rust-naming-decisions.md`](../rules/rust-naming-decisions-ptbr.md);
   - uma mudança de método: no documento do workflow que ela muda.
 
   Remova a entrada decidida do arquivo de perguntas no mesmo commit.

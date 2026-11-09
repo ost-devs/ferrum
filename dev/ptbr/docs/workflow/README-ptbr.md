@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/README.md` (commit `4483420`). O original em inglês é o que vale; as seções citadas (§1, §3…) seguem a numeração do original.
+> Tradução para leitura de `docs/workflow/README.md` (commit `e92273d`). O original em inglês é o que vale; as seções citadas (§1, §3…) seguem a numeração do original.
 
 # Como o trabalho do Ferrum corre
 
@@ -10,7 +10,7 @@ Como um crate de fundação vai do cm6 a um crate Rust em conformidade, quem faz
 
 - Os crates vão na ordem das dependências: `ferrum-state`, `ferrum-view`, `ferrum-language`, `ferrum-commands` ([`docs/foundation/ferrum-foundation.md`](../foundation/ferrum-foundation-ptbr.md#3-os-pacotes-do-cm6-e-suas-dependências-reais) §3). Cada um passa por três etapas: **especificação** (o que o cm6 faz, item por item, com valores produzidos rodando o cm6), **implementação** (testes a partir da especificação, depois o código), **conformidade** (prova de que o código faz o que a especificação diz).
 - A especificação é neutra quanto a decisões: registra o que o cm6 faz e quais perguntas o Ferrum precisa responder, não as respostas do Ferrum. As decisões são tomadas pelo consultor quando a especificação dá a evidência delas, antes da implementação que precisa delas (`ferrum-foundation.md` §6 pede que venham antes de qualquer implementação, não antes da auditoria).
-- A especificação de um crate pode começar enquanto o crate abaixo dele está sendo implementado: ela lê o cm6 e a especificação aprovada do crate de baixo. A implementação de um crate só começa quando os crates abaixo estão em conformidade nas capacidades de que ele precisa.
+- **Um crate e uma etapa por vez.** A especificação de um crate começa quando o crate abaixo dele está em conformidade, de modo que cada etapa roda com o método refinado por todas as etapas anteriores (§7). Uma capacidade que um crate posterior encontra faltando num crate em conformidade é uma pergunta no `questions.md` desse crate posterior; a mudança passa de novo pelas etapas dele, como um delta de versão.
 - **A referência do cm6 é uma versão publicada.** A paridade é declarada contra as versões que o npm publica, que são o que as aplicações rodam e o que um desenvolvedor de cm6 conhece; o `main` pode ter API não lançada (em 2026-11-08 o `main` de `view` estava 7 commits à frente de 6.43.15 e tinha renomeado `scrollMargins` para `coveredMargins`). Cada pacote central é fixado na tag da sua versão (`/mirrors pin cm6/<pacote> @<versão>`), nunca num commit não lançado, e toda especificação e todo veredicto nomeiam `@codemirror/<pacote>@<versão>`.
   - As fixações do pacote de um crate ficam congeladas desde o S0 dele até seu veredicto de conformidade; versões publicadas nesse meio-tempo esperam.
   - No S0 de cada crate, o pacote a especificar e os pacotes centrais que ele lê para valores de consumidores são fixados na versão mais recente. Todo crate já em conformidade cujo pacote tem versão mais nova recebe então um **delta de versão**: as entradas do `CHANGELOG.md` e o diff do código entre as duas tags, cada mudança classificada pelo consultor como tocando ou não um item, comportamento ou teste especificado; as linhas, testes e código tocados passam de novo pelas etapas, os portões rodam de novo e o veredicto é declarado de novo na versão nova. Deltas pequenos e frequentes custam menos que uma ressincronização tardia (`view` publicou 41 versões entre 2025-11 e 2026-10, a maioria correções de bugs), e o crate de cima precisa das versões que suas faixas do npm pedem (`view` 6.43.15 exige `@codemirror/state` `^6.7.0`).
@@ -38,7 +38,7 @@ Cada worker recebe seu papel da sua definição ([`.claude/agents/`](../../claud
 **O que é uma decisão.** Qualquer escolha que o código do cm6 e a especificação aprovada não ditam:
 - disposições;
 - desvios em relação ao cm6;
-- projeto em Rust (tipos, traits, contratos de erro, posse);
+- projeto em Rust visível fora de um módulo (tipos públicos, traits, contratos de erro, posse e threads). Uma escolha privada que não muda nada observável é do implementador, mostrada pelos testes;
 - escolha de bibliotecas;
 - se um bug ou peculiaridade do cm6 é reproduzido;
 - aprovação de uma especificação, um veredicto de conformidade;
@@ -66,10 +66,11 @@ Seguir o código do cm6 onde a especificação já diz o que fazer não é uma d
 
 | Decisão | Lugar |
 |---|---|
-| Sobre um item do cm6 (disposição, o contrato de erro de uma pré-condição, reproduzir uma peculiaridade, portar um teste) | a especificação do crate: a linha desse item (`docs/parity/<crate>/`) |
+| Sobre um item do cm6 (disposição, o contrato de erro de uma pré-condição, reproduzir uma peculiaridade, portar um teste) | a especificação do crate: a linha desse item (`docs/parity/<crate>/`); as anotações citam o id do inventário dela |
 | Sobre um item do cm6 cujo crate ainda não tem inventário | `docs/parity/<crate>/early-decisions.md`, uma entrada por item; o S1 desse crate escreve cada entrada na sua linha como decidida e apaga o arquivo ([`docs/workflow/specification.md`](specification-ptbr.md#9-passos) §9) |
-| Transversal para o código (D1–D8, uma política geral de erros ou de identidade, uma regra de projeto) | [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md), com escopo pelos caminhos dos arquivos que governa. Uma entrada por decisão: um id estável (`D1`–`D10` para as fundamentais de `ferrum-foundation.md` §6, `D11` em diante para as posteriores), a decisão, um motivo em uma linha, a que se aplica. As anotações no código citam o id (`/// cm6 deviation: …, see D11`) |
-| Um nome | [`.claude/rules/rust-naming-decisions.md`](../../claude/rules/rust-naming-decisions-ptbr.md) |
+| O projeto de um crate (mapa de módulos, tipos, traits de contrato, contratos de erro, posse) | `docs/parity/<crate>/implementation-plan.md`, escrito pelo consultor ([`docs/workflow/specification.md`](specification-ptbr.md) §7). Uma escolha de projeto que muda comportamento observável ou a API pública é um desvio, registrado na linha do item ou em [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) |
+| Transversal para o código (D1–D8, uma política geral de erros ou de identidade, uma regra de projeto para vários crates) | [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md), com escopo pelos caminhos do código dos crates. Uma entrada por decisão: um id estável (`D1`–`D10` para as fundamentais de `ferrum-foundation.md` §6, `D11` em diante para as posteriores), a decisão, um motivo em uma linha, a que se aplica. As anotações no código citam o id (`/// cm6 deviation: …, see D11`). Colocada por quem age sobre ela, não reunida por si mesma: uma decisão em que só alguns crates agem vai numa regra com escopo pelos caminhos deles (`crates/ferrum-view/**`, …), com o mesmo esquema de ids |
+| Como um nome do cm6 vira nome de Rust onde a conversão mecânica de Architecture 4 em [`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md) não resolve (um trait ou convenção da std, a forma de um membro estático, qualquer outro desvio) | [`.claude/rules/rust-naming-decisions.md`](../../claude/rules/rust-naming-decisions-ptbr.md) (`N<n>`) |
 | O método | o documento do workflow que ela muda |
 
 `ferrum-foundation.md` §6 guarda as perguntas D1–D10 para leitores humanos; quando uma é decidida, sua entrada aponta para a regra em vez de repeti-la.
@@ -120,6 +121,7 @@ Um crate só é descrito como em conformidade com esse relatório ([`.claude/rul
   - O orquestrador lê contagens, resumos de JSONL e relatórios curtos dos workers. Não lê as fontes que pertencem a um worker.
   - As ferramentas escrevem em arquivos e imprimem contagens.
   - Depois de uma compactação, o orquestrador relê as seções do roteiro que [`docs/progress/`](../../../../docs/progress/) nomeia.
+  - Um cartão traz o que seu worker precisa para fazer sua atribuição sem abrir os roteiros, e nada que o worker não possa usar. O relatório de cada worker diz o que ele consultou fora do cartão e o que nele ficou sem uso ([`CLAUDE.md`](../../CLAUDE-ptbr.md) "Reporting from a card"); o orquestrador registra os dois no arquivo de progresso, e a retrospectiva os transforma em mudanças nos cartões (§7).
 - **Commits.**
   - Commit depois de cada passo, no branch de trabalho, com caminhos explícitos: `git commit -m '…' -- <caminhos>`, nunca `git add -A`. Uma sessão do consultor pode estar trabalhando na mesma árvore.
   - O orquestrador faz commit da sua saída e da dos seus workers.
@@ -156,7 +158,7 @@ Cada entrada que põe o método em dúvida vira uma pergunta para o consultor ([
 
 ## 8. Restrições das ferramentas em que este projeto se apoia
 
-Verificadas no Claude Code 2.1.319 e no mirror da sua documentação (`mirrors/claude-code-docs/en/`), 2026-11-07. Confira de novo quando o Claude Code mudar.
+Verificadas no Claude Code 2.1.319 e no mirror da sua documentação (`mirrors/claude-code-docs/en/`), 2026-11-07. No início de cada etapa o orquestrador compara `claude --version` com essa versão; quando diferem, ele reverifica cada restrição abaixo contra o mirror (um agente `Explore` pode pesquisá-lo), atualiza aqui a versão e a data, e levanta uma pergunta para cada restrição que mudou.
 
 - Subagentes personalizados carregam o [`CLAUDE.md`](../../CLAUDE-ptbr.md) e as regras (as com escopo de caminho quando tocam arquivos correspondentes), não a memória automática principal (`sub-agents.md` "What loads at startup").
 - Uma regra com `paths:` carrega num Read, Write ou Edit de um arquivo correspondente, ou numa leitura de um único arquivo pelo Bash; uma regra sem `paths:` carrega na abertura (`memory.md` "Path-specific rules").

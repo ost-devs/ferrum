@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/implementation.md` (commit `22cabd7`). O original em inglês é o que vale; as seções citadas (§3, §5…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
+> Tradução para leitura de `docs/workflow/implementation.md` (commit `e92273d`). O original em inglês é o que vale; as seções citadas (§3, §5…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
 
 # Etapa de implementação
 
@@ -33,7 +33,7 @@ A unidade é um **módulo**: um arquivo-fonte do cm6 no escopo, ou o grupo de ar
 | 1. Esqueleto | orquestrador | Os itens públicos do módulo a partir do projeto do crate: tipos com campos privados, assinaturas com corpo `todo!()`, anotações de correspondência. No primeiro módulo, os manifestos do workspace e do crate, com as dev-dependencies que o plano de testes nomeia (por exemplo `serde_json` para o replayer de fixtures), já que os escritores de testes não podem editar manifestos. Compila | `feat(<crate>): <module> skeleton` |
 | 2. Testes | `test-writer`, contexto novo | Para as linhas do módulo: todo caso do cm6 classificado como `LOGIC-ONLY`, `NEEDS LAYOUT` ou `NEEDS GRAMMAR`, portado. Um teste derivado da sua fixture para todo comportamento sem teste do cm6. Um teste para todo risco listado. Uma sonda de escala (n e 10n) para todo item cuja classe de custo é local ou logarítmica. O replayer de fixtures para as fixtures do módulo. Todo teste compila e falha num `todo!()` | `test(<crate>): <module>`. O relatório lista: contagens por categoria; comportamentos sem teste (precisa ser nenhum); testes que passam contra o esqueleto, cada um corrigido ou explicado; perguntas |
 | 3. Implementação | `implementer` | Implementar até todo teste do módulo passar, seguindo o algoritmo do cm6 e todo comportamento que o código dele mostra. Replay das fixtures com 0 divergências. Sondas de escala não superlineares. `cargo build`, `cargo test` e `cargo clippy` com zero warnings no workspace. Um teste que parece errado é relatado, nunca mudado | commits por item ou por grupo fortemente acoplado, citando ids de comportamento. Linhas do módulo em `docs/parity/<crate>/implementation.md`: item, testes, fixtures, pontos em aberto |
-| 4. Conferência | orquestrador | A partir dos relatórios e do `git`, não das fontes. Todo id de comportamento do módulo é nomeado por uma linha `// covers:`. `git diff <commit do passo 2> -- crates/<crate>/tests/` está vazio, ou cada mudança foi decidida pelo consultor e está listada. Contagens registradas | `docs/progress/<crate>.md`: módulo pronto, tokens por passo |
+| 4. Conferência | orquestrador | A partir dos relatórios e do `git`, não das fontes. Todo id de comportamento do módulo é nomeado por uma linha `// covers:` em `crates/<crate>/tests/`. `git diff <commit do passo 2> -- crates/<crate>/tests/` está vazio, ou cada mudança foi decidida pelo consultor e está listada. Contagens registradas | `docs/progress/<crate>.md`: módulo pronto, tokens por passo |
 
 - **Mudanças de testes.** Só um `test-writer` muda um teste, depois que o consultor decide que o teste está errado. Casos típicos: uma fixture convertida para a unidade errada, ou um teste do cm6 cujo port o consultor resolveu. A mudança é listada em `implementation.md`.
 - **Paralelismo.** O `test-writer` do próximo módulo pode rodar enquanto o módulo atual é implementado, dentro do limite de 4 workers. Um módulo cujos tipos ainda estão mudando espera.
@@ -50,7 +50,6 @@ Itens com disposição `CONTRACT` precisam de um trait antes do código: o contr
 
 ## 5. Testes
 
-- Testes portados e derivados ficam em `crates/<crate>/tests/`. Testes unitários dentro de `src/` cobrem só helpers privados.
 - Nada de relógio real ou aleatoriedade sem uma semente registrada. Comportamento dependente de tempo (agrupamento do histórico, `Transaction.time`) usa tempos explícitos.
 - Valores esperados que diferem do cm6 por uma causa decidida (a unidade de D1, os separadores de D2, a gramática de D3) são calculados a partir do texto guardado na fixture, nunca digitados à mão. A causa é escrita ao lado da asserção.
 - Os helpers de teste espelham os do cm6, como `tests.md` os especifica, e têm testes próprios.

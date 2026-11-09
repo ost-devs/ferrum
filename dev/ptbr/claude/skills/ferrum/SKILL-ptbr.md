@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/ferrum/SKILL.md` (commit `22cabd7`). O original em inglês é o que vale. O Claude a carrega sozinho quando precisa (ou via `/ferrum`).
+> Tradução para leitura de `.claude/skills/ferrum/SKILL.md` (commit `e92273d`). O original em inglês é o que vale. O Claude a carrega sozinho quando precisa (ou via `/ferrum`).
 
 # Skill `/ferrum`
 
@@ -30,12 +30,13 @@ Um motor de editor em Rust, headless e embutível, cujo núcleo tem a arquitetur
 | Nenhum item público além do cm6 e da especificação | Um item público inventado é uma promessa que o cm6 não faz e um custo para a API estável; todo item público corresponde a um export do cm6 ou a um item `ferrum-only` decidido | [`.claude/rules/rust-crates.md`](../../rules/rust-crates-ptbr.md) |
 | Nomes do cm6 mantidos nas convenções de Rust; o idioma de Rust vence em conflito | Um desenvolvedor de cm6 reconhece a API sem abrir mão de traits e convenções da std (`len`, `Display`) | [`.claude/rules/rust-crates.md`](../../rules/rust-crates-ptbr.md) **Names**; [`.claude/rules/rust-naming-decisions.md`](../../rules/rust-naming-decisions-ptbr.md) |
 | A ordem das dependências é state → view → language → commands (commands é o topo, não a base) | Muitos comandos do cm6 recebem um `EditorView`; os keymaps ficam em view; indentação e sintaxe vêm de language | `ferrum-foundation.md` §3 |
+| A paridade é declarada contra uma versão publicada do cm6, não contra a `main` | As aplicações rodam versões publicadas; a `main` pode carregar API ainda não publicada | [`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md#1-forma) §1 "The cm6 reference" |
 | Dependências dos mirrors fixadas na versão mais nova que o npm resolve, não no mínimo da faixa | O oráculo roda o que o npm instala; outra versão produz divergências falsas | [`.claude/rules/mirrors.md`](../../rules/mirrors-ptbr.md) "Dependency pins" |
 | Não se fazem perguntas técnicas ao mantenedor; o agente `consultant` as decide | A intenção dele: não julgar escolhas além do seu conhecimento, não parar o trabalho esperando por ele, e encontrar toda decisão registrada como do consultor. Os agentes que produzem o trabalho trazem fatos e perguntas; o consultor deriva as decisões | [`docs/foundation/maintainer-intent.md`](../../../docs/foundation/maintainer-intent-ptbr.md); [`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md#3-decisões) §3 |
 | A especificação é auditada antes de D1–D10 serem tomadas | A auditoria registra o que o cm6 faz, neutra quanto a decisões; as decisões são tomadas com a evidência dela antes da implementação que precisa delas (`ferrum-foundation.md` §6 pede que venham antes da implementação, não antes da auditoria) | [`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md#1-forma) §1 |
 
 ## Lacunas abertas conhecidas
-- As decisões fundamentais D1–D8 e D10 (unidade de posição, quebras de linha e bibliotecas de `Text`, backend de sintaxe, contrato de layout, tipo de comando, threads, modelo de estilo, entrada/IME/acessibilidade, escopo da primeira versão) estão em aberto; D9 (licenças: MIT por crate, Apache-2.0 só para ports de código Apache) está decidida. O consultor as toma com a evidência da especificação de cada crate; onde serão registradas: [`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md#3-decisões) §3. `ferrum-foundation.md` §6.
+- As decisões fundamentais D1–D8 (unidade de posição, quebras de linha e bibliotecas de `Text`, backend de sintaxe, contrato de layout, tipo de comando, threads, modelo de estilo, entrada/IME/acessibilidade) estão em aberto; D9 (licenças: MIT por crate, Apache-2.0 só para ports de código Apache) e D10 (nada adiado: cada crate cobre todo o seu pacote do cm6, itens deixados de fora só pela disposição de cada um) estão decididas. O consultor as toma com a evidência da especificação de cada crate; onde serão registradas: [`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md#3-decisões) §3. `ferrum-foundation.md` §6.
 - Ainda não há código do Ferrum; o trabalho corre crate por crate pelo `/ferrum-run`; onde ele está: [`docs/progress/`](../../../../../docs/progress/).
 
 ## Onde cada tema mora
@@ -44,7 +45,7 @@ Um motor de editor em Rust, headless e embutível, cujo núcleo tem a arquitetur
 | Propósito, objetivos, arquitetura, o que pertence a cada crate, decisões D1–D10, crates posteriores | [`docs/foundation/ferrum-foundation.md`](../../../docs/foundation/ferrum-foundation-ptbr.md) |
 | Regras para código dos crates, testes, anotações, dependências | [`.claude/rules/rust-crates.md`](../../rules/rust-crates-ptbr.md) (carrega em `crates/**`) |
 | Regras para docs, afirmações vs objetivos, referências | [`.claude/rules/writing.md`](../../rules/writing-ptbr.md) |
-| Decisões de nomes cm6 → Rust | [`.claude/rules/rust-naming-decisions.md`](../../rules/rust-naming-decisions-ptbr.md) |
+| Como nomes do cm6 viram nomes de Rust, onde a conversão mecânica não resolve | [`.claude/rules/rust-naming-decisions.md`](../../rules/rust-naming-decisions-ptbr.md) |
 | Mirrors (cm6 como especificação, citações) | [`.claude/rules/mirrors.md`](../../rules/mirrors-ptbr.md); edições negadas em [`.claude/settings.json`](../../settings-ptbr.md) |
 | Licenças (por crate, código externo) | `ferrum-foundation.md` §6 D9 |
 | Dependências e tamanho dos pacotes do cm6 | `ferrum-foundation.md` §3 |
@@ -52,7 +53,7 @@ Um motor de editor em Rust, headless e embutível, cujo núcleo tem a arquitetur
 | A intenção do mantenedor (obrigatória) | [`docs/foundation/maintainer-intent.md`](../../../docs/foundation/maintainer-intent-ptbr.md) |
 | Como o trabalho corre: etapas, papéis, decisões, rascunhos | [`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md); roteiros das etapas [`docs/workflow/specification.md`](../../../docs/workflow/specification-ptbr.md), `implementation.md`, `conformance.md` |
 | Agentes: quem decide, pesquisa, audita, testa, implementa, confere | [`.claude/agents/`](../../agents/) (`consultant`, `cm6-researcher`, `rust-researcher`, `spec-auditor`, `verifier`, `test-writer`, `implementer`, `conformance-checker`); limites de escrita e de criação de subagentes em [`.claude/hooks/guard.py`](../../../../../.claude/hooks/guard.py) |
-| Decisões tomadas | texto que obriga: [`.claude/rules/decisions.md`](../../rules/decisions-ptbr.md), o registro de nomes ou a linha do item na especificação; autoria: `git log --grep='^Decided-by:'` |
+| Decisões tomadas | texto que obriga: [`.claude/rules/decisions.md`](../../rules/decisions-ptbr.md) (transversais), [`.claude/rules/rust-naming-decisions.md`](../../rules/rust-naming-decisions-ptbr.md) (nomes), o `implementation-plan.md` do crate (seu design) ou a linha do item na especificação; autoria: `git log --grep='^Decided-by:'` |
 | Especificação, perguntas e conformidade de um crate | `docs/parity/<crate>/` |
 | Harness do cm6, inventário, renderizador, verificador de referências | [`tools/README.md`](../../../tools/README-ptbr.md) |
 | Trabalho em andamento: estado, próximo passo | [`docs/progress/`](../../../../../docs/progress/) |

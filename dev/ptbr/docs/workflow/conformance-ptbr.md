@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/conformance.md` (commit `22cabd7`). O original em inglês é o que vale; as seções citadas (§2, G5…) seguem a numeração do original. O modelo de cartão (apêndice) também está traduzido; o orquestrador usa o do original, em inglês.
+> Tradução para leitura de `docs/workflow/conformance.md` (commit `e92273d`). O original em inglês é o que vale; as seções citadas (§2, G5…) seguem a numeração do original. O modelo de cartão (apêndice) também está traduzido; o orquestrador usa o do original, em inglês.
 
 # Etapa de conformidade
 
@@ -51,12 +51,13 @@ Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador. 
 **G1. Superfície pública.**
 - Todo item no escopo tem exatamente um correspondente anotado `/// cm6: <nome>` ou `/// cm6 contract: <nome>`, público no JSON do rustdoc ([`tools/ferrum_pub.py`](../../../../tools/ferrum_pub.py)).
 - Todo item público leva exatamente uma linha de correspondência.
-- Toda linha `ferrum-only` e todo qualificador `placement` citam um id de decisão que existe.
+- Toda linha `ferrum-only` e todo qualificador `placement` e `name` citam um id de decisão que existe.
+- Todo item público cujo nome em Rust não é a conversão mecânica do nome da sua correspondência ([`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md) Architecture 4) leva um qualificador `name`.
 - Nenhum mecanismo `@internal` do cm6 é público a menos que decidido.
 - Um item não portado não tem substituto com o nome dele do cm6.
 
 **G2. Comportamentos.**
-- Todo id de comportamento tem um teste que passa e o nomeia (`// covers:`).
+- Todo id de comportamento tem um teste que passa em `crates/<crate>/tests/` e o nomeia (`// covers:`).
 - Verificação por leitura: o teste realmente afirma o comportamento, na classe de entrada certa e sobre o resultado observável inteiro que o comportamento declara; senão o teste é `WEAKER`.
 - Todo teste derivado existe com o valor esperado da sua fixture.
 - Arquivos de teste sem mudança desde o commit do passo 2, exceto mudanças listadas (`git log`).

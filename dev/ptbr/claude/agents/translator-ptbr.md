@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agents/translator.md` (commit `4483420`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Write, Edit, Bash`, `model: sonnet`; sem hooks.
+> Tradução para leitura de `.claude/agents/translator.md` (commit `e92273d`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Write, Edit, Bash`, `model: sonnet`, `effort: medium`; sem hooks.
 
 # Agente `translator`
 
@@ -18,5 +18,5 @@ Você traduz os documentos em inglês do Ferrum para o português do Brasil, par
 - **Cabeçalho**, primeira linha: `> Tradução para leitura de `<original>` (commit `<commit>`). O original em inglês é o que vale.` Um arquivo que não é prosa (`.claude/settings.json`) recebe uma explicação no lugar: `> Explicação de `<original>` (commit `<commit>`). …`, o original mostrado em um bloco de código, depois o que cada entrada faz. Para a definição de um agente ou de uma skill, o cabeçalho também resume o frontmatter em uma frase (ferramentas, modelo, hooks).
 - **Mantido em inglês:** código, identificadores, caminhos, comandos, nomes do cm6 e do Rust, ids (`D1`, `Q4`, `N2`) e, na primeira vez que um título de seção é referenciado em outro lugar, o texto em inglês do título entre parênteses depois da tradução (`## Levantando uma pergunta (Raising a question)`).
 - **Links.** Um caminho que o original cita vira um link cujo texto é o caminho do original, exatamente como escrito. O destino é a tradução quando a lista de traduções do seu prompt tem uma; senão, o original; relativo à localização da própria tradução. As âncoras de seção seguem o título traduzido.
-- Os números de seção (§3) e a estrutura das tabelas seguem o original.
+- Os números de seção e a estrutura das tabelas seguem o original.
 - Português do Brasil simples e natural; o significado exatamente como o original o declara, sem acréscimos, sem omissões, sem suavização.
