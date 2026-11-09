@@ -119,7 +119,7 @@ An example of the reasoning, not a case to match: cm6 parses in time slices so t
   - a decision about one cm6 item: in that item's specification row;
   - a cross-cutting rule for code: in `.claude/rules/decisions.md`, with a stable id and a one-line reason;
   - the design of one crate: in its `implementation-plan.md`;
-  - a name: in `.claude/rules/decisions.md` "Names";
+  - how a cm6 name becomes a Rust name, where the mechanical conversion does not settle it: in `.claude/rules/rust-naming-decisions.md`;
   - a method change: in the workflow document it changes.
 
   Remove the decided entry from the questions file in the same commit.

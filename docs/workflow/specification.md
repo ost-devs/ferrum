@@ -9,7 +9,7 @@ Turns one cm6 package into the specification of its Ferrum crate: what the crate
 - The cm6 package at its latest release and the harness built from it, both set up in S0 (§9) as `docs/workflow/README.md` §1 "The cm6 reference" requires.
 - The scope from `docs/foundation/ferrum-foundation.md` §4.2: what the crate owns.
 - The crates below it: their approved specification (`docs/parity/<crate>/`) and their conformance report.
-- The decisions in force: `.claude/rules/decisions.md`.
+- The decisions in force: `.claude/rules/decisions.md` and `.claude/rules/rust-naming-decisions.md`.
 - For `ferrum-state` only: the cm6 side of the earlier state audit on branch `bad-start` (`docs/parity/state/behaviors.md`, `fixtures/`, `oracle/cm6-probes/`, `decisions-evidence.md`). It is read only in verification (§8), after the rows are written, as a completeness cross-check, never as a source. Everything it says about Ferrum describes deleted code. This input ends when the `ferrum-state` specification is approved.
 
 ## 2. Ground rules

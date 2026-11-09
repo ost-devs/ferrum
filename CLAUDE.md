@@ -4,7 +4,7 @@
 
 ## Raising a question
 
-Only the `consultant` agent (`.claude/agents/consultant.md`) or the maintainer decides (`docs/workflow/README.md` §3). Every other session and agent brings facts and questions, never a proposal to approve. When cm6's code, the specification and the decisions in force (`.claude/rules/decisions.md`, the crate's `implementation-plan.md`, the item's row) do not settle a choice, raise a question in this shape, in the file your card or brief names, or in your report if none does:
+Only the `consultant` agent (`.claude/agents/consultant.md`) or the maintainer decides (`docs/workflow/README.md` §3). Every other session and agent brings facts and questions, never a proposal to approve. When cm6's code, the specification and the decisions in force (`.claude/rules/decisions.md`, `.claude/rules/rust-naming-decisions.md`, the crate's `implementation-plan.md`, the item's row) do not settle a choice, raise a question in this shape, in the file your card or brief names, or in your report if none does:
 
 ```
 ## Q<n>. <the problem in one line, not a choice between answers>
