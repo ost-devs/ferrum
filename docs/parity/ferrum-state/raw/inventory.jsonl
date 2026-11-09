@@ -1,0 +1,264 @@
+{"id": "state.cm6.001", "item": "EditorStateConfig", "kind": "interface", "file": "mirrors/cm6/state/src/state.ts", "line": 14, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.002", "item": "EditorStateConfig.doc", "kind": "property", "file": "mirrors/cm6/state/src/state.ts", "line": 21, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.003", "item": "EditorStateConfig.selection", "kind": "property", "file": "mirrors/cm6/state/src/state.ts", "line": 24, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.004", "item": "EditorStateConfig.extensions", "kind": "property", "file": "mirrors/cm6/state/src/state.ts", "line": 26, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.005", "item": "EditorState", "kind": "class", "file": "mirrors/cm6/state/src/state.ts", "line": 36, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.006", "item": "EditorState.doc", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/state.ts", "line": 46, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.007", "item": "EditorState.selection", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/state.ts", "line": 48, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.008", "item": "EditorState.field", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 66, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.009", "item": "EditorState.update", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 91, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.010", "item": "EditorState.replaceSelection", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 129, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.011", "item": "EditorState.changeByRange", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 144, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.012", "item": "EditorState.changes", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 176, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.013", "item": "EditorState.toText", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 184, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.014", "item": "EditorState.sliceDoc", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 189, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.015", "item": "EditorState.facet", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 194, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.016", "item": "EditorState.toJSON", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 205, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.017", "item": "EditorState^fromJSON", "kind": "static method", "file": "mirrors/cm6/state/src/state.ts", "line": 222, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.018", "item": "EditorState^create", "kind": "static method", "file": "mirrors/cm6/state/src/state.ts", "line": 243, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.019", "item": "EditorState^allowMultipleSelections", "kind": "static property", "file": "mirrors/cm6/state/src/state.ts", "line": 262, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.020", "item": "EditorState^tabSize", "kind": "static property", "file": "mirrors/cm6/state/src/state.ts", "line": 267, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.021", "item": "EditorState.tabSize", "kind": "getter", "file": "mirrors/cm6/state/src/state.ts", "line": 273, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.022", "item": "EditorState^lineSeparator", "kind": "static property", "file": "mirrors/cm6/state/src/state.ts", "line": 282, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.023", "item": "EditorState.lineBreak", "kind": "getter", "file": "mirrors/cm6/state/src/state.ts", "line": 286, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.024", "item": "EditorState^readOnly", "kind": "static property", "file": "mirrors/cm6/state/src/state.ts", "line": 299, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.025", "item": "EditorState.readOnly", "kind": "getter", "file": "mirrors/cm6/state/src/state.ts", "line": 303, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.026", "item": "EditorState^phrases", "kind": "static property", "file": "mirrors/cm6/state/src/state.ts", "line": 309, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.027", "item": "EditorState.phrase", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 324, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.028", "item": "EditorState^languageData", "kind": "static property", "file": "mirrors/cm6/state/src/state.ts", "line": 337, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.029", "item": "EditorState.languageDataAt", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 353, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.030", "item": "EditorState.charCategorizer", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 373, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.031", "item": "EditorState.wordAt", "kind": "method", "file": "mirrors/cm6/state/src/state.ts", "line": 382, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.032", "item": "EditorState^changeFilter", "kind": "static property", "file": "mirrors/cm6/state/src/state.ts", "line": 411, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.033", "item": "EditorState^transactionFilter", "kind": "static property", "file": "mirrors/cm6/state/src/state.ts", "line": 430, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.034", "item": "EditorState^transactionExtender", "kind": "static property", "file": "mirrors/cm6/state/src/state.ts", "line": 443, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.035", "item": "StateCommand", "kind": "type", "file": "mirrors/cm6/state/src/extension.ts", "line": 10, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.036", "item": "Facet", "kind": "class", "file": "mirrors/cm6/state/src/facet.ts", "line": 43, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.037", "item": "Facet.reader", "kind": "getter", "file": "mirrors/cm6/state/src/facet.ts", "line": 67, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.038", "item": "Facet^define", "kind": "static method", "file": "mirrors/cm6/state/src/facet.ts", "line": 70, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.039", "item": "Facet.of", "kind": "method", "file": "mirrors/cm6/state/src/facet.ts", "line": 79, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.040", "item": "Facet.compute", "kind": "method", "file": "mirrors/cm6/state/src/facet.ts", "line": 90, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.041", "item": "Facet.computeN", "kind": "method", "file": "mirrors/cm6/state/src/facet.ts", "line": 97, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.042", "item": "Facet.from", "kind": "method", "file": "mirrors/cm6/state/src/facet.ts", "line": 106, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.043", "item": "Facet.tag", "kind": "property", "file": "mirrors/cm6/state/src/facet.ts", "line": 113, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.044", "item": "FacetReader", "kind": "type", "file": "mirrors/cm6/state/src/facet.ts", "line": 120, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.045", "item": "FacetReader.tag", "kind": "property", "file": "mirrors/cm6/state/src/facet.ts", "line": 128, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.046", "item": "StateField", "kind": "class", "file": "mirrors/cm6/state/src/facet.ts", "line": 296, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.047", "item": "StateField^define", "kind": "static method", "file": "mirrors/cm6/state/src/facet.ts", "line": 311, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.048", "item": "StateField.init", "kind": "method", "file": "mirrors/cm6/state/src/facet.ts", "line": 356, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.049", "item": "StateField.extension", "kind": "getter", "file": "mirrors/cm6/state/src/facet.ts", "line": 363, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.050", "item": "Extension", "kind": "type", "file": "mirrors/cm6/state/src/facet.ts", "line": 374, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.051", "item": "Prec", "kind": "const", "file": "mirrors/cm6/state/src/facet.ts", "line": 390, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.052", "item": "Prec.highest", "kind": "property", "file": "mirrors/cm6/state/src/facet.ts", "line": 393, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.053", "item": "Prec.high", "kind": "property", "file": "mirrors/cm6/state/src/facet.ts", "line": 396, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.054", "item": "Prec.default", "kind": "property", "file": "mirrors/cm6/state/src/facet.ts", "line": 399, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.055", "item": "Prec.low", "kind": "property", "file": "mirrors/cm6/state/src/facet.ts", "line": 401, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.056", "item": "Prec.lowest", "kind": "property", "file": "mirrors/cm6/state/src/facet.ts", "line": 404, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.057", "item": "Compartment", "kind": "class", "file": "mirrors/cm6/state/src/facet.ts", "line": 418, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.058", "item": "Compartment.of", "kind": "method", "file": "mirrors/cm6/state/src/facet.ts", "line": 421, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.059", "item": "Compartment.reconfigure", "kind": "method", "file": "mirrors/cm6/state/src/facet.ts", "line": 425, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.060", "item": "Compartment.get", "kind": "method", "file": "mirrors/cm6/state/src/facet.ts", "line": 431, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.061", "item": "EditorSelection", "kind": "class", "file": "mirrors/cm6/state/src/selection.ts", "line": 115, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.062", "item": "EditorSelection.ranges", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/selection.ts", "line": 119, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.063", "item": "EditorSelection.mainIndex", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/selection.ts", "line": 122, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.064", "item": "EditorSelection.map", "kind": "method", "file": "mirrors/cm6/state/src/selection.ts", "line": 127, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.065", "item": "EditorSelection.eq", "kind": "method", "file": "mirrors/cm6/state/src/selection.ts", "line": 136, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.066", "item": "EditorSelection.main", "kind": "getter", "file": "mirrors/cm6/state/src/selection.ts", "line": 147, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.067", "item": "EditorSelection.asSingle", "kind": "method", "file": "mirrors/cm6/state/src/selection.ts", "line": 151, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.068", "item": "EditorSelection.addRange", "kind": "method", "file": "mirrors/cm6/state/src/selection.ts", "line": 156, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.069", "item": "EditorSelection.replaceRange", "kind": "method", "file": "mirrors/cm6/state/src/selection.ts", "line": 162, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.070", "item": "EditorSelection.toJSON", "kind": "method", "file": "mirrors/cm6/state/src/selection.ts", "line": 170, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.071", "item": "EditorSelection^fromJSON", "kind": "static method", "file": "mirrors/cm6/state/src/selection.ts", "line": 175, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.072", "item": "EditorSelection^single", "kind": "static method", "file": "mirrors/cm6/state/src/selection.ts", "line": 182, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.073", "item": "EditorSelection^create", "kind": "static method", "file": "mirrors/cm6/state/src/selection.ts", "line": 188, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.074", "item": "EditorSelection^cursor", "kind": "static method", "file": "mirrors/cm6/state/src/selection.ts", "line": 200, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.075", "item": "EditorSelection^range", "kind": "static method", "file": "mirrors/cm6/state/src/selection.ts", "line": 208, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.076", "item": "EditorSelection^undirectionalRange", "kind": "static method", "file": "mirrors/cm6/state/src/selection.ts", "line": 218, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.077", "item": "SelectionRange", "kind": "class", "file": "mirrors/cm6/state/src/selection.ts", "line": 24, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.078", "item": "SelectionRange.from", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/selection.ts", "line": 27, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.079", "item": "SelectionRange.to", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/selection.ts", "line": 29, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.080", "item": "SelectionRange.goalColumn", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/selection.ts", "line": 35, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.081", "item": "SelectionRange.anchor", "kind": "getter", "file": "mirrors/cm6/state/src/selection.ts", "line": 40, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.082", "item": "SelectionRange.head", "kind": "getter", "file": "mirrors/cm6/state/src/selection.ts", "line": 44, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.083", "item": "SelectionRange.empty", "kind": "getter", "file": "mirrors/cm6/state/src/selection.ts", "line": 47, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.084", "item": "SelectionRange.assoc", "kind": "getter", "file": "mirrors/cm6/state/src/selection.ts", "line": 53, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.085", "item": "SelectionRange.undirectional", "kind": "getter", "file": "mirrors/cm6/state/src/selection.ts", "line": 60, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.086", "item": "SelectionRange.bidiLevel", "kind": "getter", "file": "mirrors/cm6/state/src/selection.ts", "line": 66, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.087", "item": "SelectionRange.map", "kind": "method", "file": "mirrors/cm6/state/src/selection.ts", "line": 73, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.088", "item": "SelectionRange.extend", "kind": "method", "file": "mirrors/cm6/state/src/selection.ts", "line": 85, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.089", "item": "SelectionRange.eq", "kind": "method", "file": "mirrors/cm6/state/src/selection.ts", "line": 92, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.090", "item": "SelectionRange.toJSON", "kind": "method", "file": "mirrors/cm6/state/src/selection.ts", "line": 98, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.091", "item": "SelectionRange^fromJSON", "kind": "static method", "file": "mirrors/cm6/state/src/selection.ts", "line": 102, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.092", "item": "Transaction", "kind": "class", "file": "mirrors/cm6/state/src/transaction.ts", "line": 163, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.093", "item": "Transaction.startState", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/transaction.ts", "line": 171, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.094", "item": "Transaction.changes", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/transaction.ts", "line": 173, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.095", "item": "Transaction.selection", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/transaction.ts", "line": 176, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.096", "item": "Transaction.effects", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/transaction.ts", "line": 178, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.097", "item": "Transaction.scrollIntoView", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/transaction.ts", "line": 183, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.098", "item": "Transaction.newDoc", "kind": "getter", "file": "mirrors/cm6/state/src/transaction.ts", "line": 203, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.099", "item": "Transaction.newSelection", "kind": "getter", "file": "mirrors/cm6/state/src/transaction.ts", "line": 211, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.100", "item": "Transaction.state", "kind": "getter", "file": "mirrors/cm6/state/src/transaction.ts", "line": 219, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.101", "item": "Transaction.annotation", "kind": "method", "file": "mirrors/cm6/state/src/transaction.ts", "line": 225, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.102", "item": "Transaction.docChanged", "kind": "getter", "file": "mirrors/cm6/state/src/transaction.ts", "line": 231, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.103", "item": "Transaction.reconfigured", "kind": "getter", "file": "mirrors/cm6/state/src/transaction.ts", "line": 237, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.104", "item": "Transaction.isUserEvent", "kind": "method", "file": "mirrors/cm6/state/src/transaction.ts", "line": 244, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.105", "item": "Transaction^time", "kind": "static property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 251, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.106", "item": "Transaction^userEvent", "kind": "static property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 277, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.107", "item": "Transaction^addToHistory", "kind": "static property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 281, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.108", "item": "Transaction^remote", "kind": "static property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 287, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.109", "item": "TransactionSpec", "kind": "interface", "file": "mirrors/cm6/state/src/transaction.ts", "line": 121, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.110", "item": "TransactionSpec.changes", "kind": "property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 123, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.111", "item": "TransactionSpec.selection", "kind": "property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 127, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.112", "item": "TransactionSpec.effects", "kind": "property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 132, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.113", "item": "TransactionSpec.annotations", "kind": "property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 134, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.114", "item": "TransactionSpec.userEvent", "kind": "property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 136, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.115", "item": "TransactionSpec.scrollIntoView", "kind": "property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 139, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.116", "item": "TransactionSpec.filter", "kind": "property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 146, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.117", "item": "TransactionSpec.sequential", "kind": "property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 153, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.118", "item": "Annotation", "kind": "class", "file": "mirrors/cm6/state/src/transaction.ts", "line": 15, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.119", "item": "Annotation.type", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/transaction.ts", "line": 19, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.120", "item": "Annotation.value", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/transaction.ts", "line": 21, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.121", "item": "Annotation^define", "kind": "static method", "file": "mirrors/cm6/state/src/transaction.ts", "line": 25, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.122", "item": "AnnotationType", "kind": "class", "file": "mirrors/cm6/state/src/transaction.ts", "line": 33, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.123", "item": "AnnotationType.of", "kind": "method", "file": "mirrors/cm6/state/src/transaction.ts", "line": 35, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.124", "item": "StateEffect", "kind": "class", "file": "mirrors/cm6/state/src/transaction.ts", "line": 69, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.125", "item": "StateEffect.value", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/transaction.ts", "line": 75, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.126", "item": "StateEffect.map", "kind": "method", "file": "mirrors/cm6/state/src/transaction.ts", "line": 79, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.127", "item": "StateEffect.is", "kind": "method", "file": "mirrors/cm6/state/src/transaction.ts", "line": 86, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.128", "item": "StateEffect^define", "kind": "static method", "file": "mirrors/cm6/state/src/transaction.ts", "line": 93, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.129", "item": "StateEffect^mapEffects", "kind": "static method", "file": "mirrors/cm6/state/src/transaction.ts", "line": 98, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.130", "item": "StateEffect^reconfigure", "kind": "static property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 113, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.131", "item": "StateEffect^appendConfig", "kind": "static property", "file": "mirrors/cm6/state/src/transaction.ts", "line": 116, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.132", "item": "StateEffectType", "kind": "class", "file": "mirrors/cm6/state/src/transaction.ts", "line": 48, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.133", "item": "StateEffectType.of", "kind": "method", "file": "mirrors/cm6/state/src/transaction.ts", "line": 61, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.134", "item": "combineConfig", "kind": "function", "file": "mirrors/cm6/state/src/config.ts", "line": 8, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.135", "item": "ChangeSpec", "kind": "type", "file": "mirrors/cm6/state/src/change.ts", "line": 188, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.136", "item": "ChangeSet", "kind": "class", "file": "mirrors/cm6/state/src/change.ts", "line": 196, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.137", "item": "ChangeSet.apply", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 207, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.138", "item": "ChangeSet.mapDesc", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 213, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.139", "item": "ChangeSet.invert", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 219, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.140", "item": "ChangeSet.compose", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 238, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.141", "item": "ChangeSet.map", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 251, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.142", "item": "ChangeSet.iterChanges", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 260, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.143", "item": "ChangeSet.desc", "kind": "getter", "file": "mirrors/cm6/state/src/change.ts", "line": 266, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.144", "item": "ChangeSet.toJSON", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 299, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.145", "item": "ChangeSet^of", "kind": "static method", "file": "mirrors/cm6/state/src/change.ts", "line": 312, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.146", "item": "ChangeSet^empty", "kind": "static method", "file": "mirrors/cm6/state/src/change.ts", "line": 352, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.147", "item": "ChangeSet^fromJSON", "kind": "static method", "file": "mirrors/cm6/state/src/change.ts", "line": 358, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.148", "item": "ChangeDesc", "kind": "class", "file": "mirrors/cm6/state/src/change.ts", "line": 21, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.149", "item": "ChangeDesc.length", "kind": "getter", "file": "mirrors/cm6/state/src/change.ts", "line": 34, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.150", "item": "ChangeDesc.newLength", "kind": "getter", "file": "mirrors/cm6/state/src/change.ts", "line": 41, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.151", "item": "ChangeDesc.empty", "kind": "getter", "file": "mirrors/cm6/state/src/change.ts", "line": 51, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.152", "item": "ChangeDesc.iterGaps", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 56, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.153", "item": "ChangeDesc.iterChangedRanges", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 79, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.154", "item": "ChangeDesc.invertedDesc", "kind": "getter", "file": "mirrors/cm6/state/src/change.ts", "line": 84, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 97, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.156", "item": "ChangeDesc.mapDesc", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 103, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.157", "item": "ChangeDesc.mapPos", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 120, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.158", "item": "ChangeDesc.touchesRange", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 147, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.159", "item": "ChangeDesc.toJSON", "kind": "method", "file": "mirrors/cm6/state/src/change.ts", "line": 167, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.160", "item": "ChangeDesc^fromJSON", "kind": "static method", "file": "mirrors/cm6/state/src/change.ts", "line": 171, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.161", "item": "MapMode", "kind": "enum", "file": "mirrors/cm6/state/src/change.ts", "line": 6, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.162", "item": "MapMode.Simple", "kind": "enum member", "file": "mirrors/cm6/state/src/change.ts", "line": 9, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.163", "item": "MapMode.TrackDel", "kind": "enum member", "file": "mirrors/cm6/state/src/change.ts", "line": 11, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.164", "item": "MapMode.TrackBefore", "kind": "enum member", "file": "mirrors/cm6/state/src/change.ts", "line": 13, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.165", "item": "MapMode.TrackAfter", "kind": "enum member", "file": "mirrors/cm6/state/src/change.ts", "line": 15, "chunk": "change", "disposition": null, "reason": null}
+{"id": "state.cm6.166", "item": "CharCategory", "kind": "enum", "file": "mirrors/cm6/state/src/charcategory.ts", "line": 4, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.167", "item": "CharCategory.Word", "kind": "enum member", "file": "mirrors/cm6/state/src/charcategory.ts", "line": 6, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.168", "item": "CharCategory.Space", "kind": "enum member", "file": "mirrors/cm6/state/src/charcategory.ts", "line": 8, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.169", "item": "CharCategory.Other", "kind": "enum member", "file": "mirrors/cm6/state/src/charcategory.ts", "line": 10, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.170", "item": "RangeValue", "kind": "class", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 5, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.171", "item": "RangeValue.eq", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 11, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.172", "item": "RangeValue.startSide", "kind": "property", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 15, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.173", "item": "RangeValue.endSide", "kind": "property", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 17, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.174", "item": "RangeValue.mapMode", "kind": "property", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 22, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.175", "item": "RangeValue.point", "kind": "property", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 28, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.176", "item": "RangeValue.range", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 31, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.177", "item": "Range", "kind": "class", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 43, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.178", "item": "Range.from", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 46, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.179", "item": "Range.to", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 48, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.180", "item": "Range.value", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 50, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.181", "item": "RangeSet", "kind": "class", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 226, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.182", "item": "RangeSet.size", "kind": "getter", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 252, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.183", "item": "RangeSet.update", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 271, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.184", "item": "RangeSet.map", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 303, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.185", "item": "RangeSet.between", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 339, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.186", "item": "RangeSet.iter", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 351, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.187", "item": "RangeSet^iter", "kind": "static method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 360, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.188", "item": "RangeSet^compare", "kind": "static method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 366, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.189", "item": "RangeSet^eq", "kind": "static method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 389, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.190", "item": "RangeSet^spans", "kind": "static method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 415, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.191", "item": "RangeSet^of", "kind": "static method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 448, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.192", "item": "RangeSet^join", "kind": "static method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 456, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.193", "item": "RangeSet^empty", "kind": "static property", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 467, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.194", "item": "RangeCursor", "kind": "interface", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 185, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.195", "item": "RangeCursor.next", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 187, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.196", "item": "RangeCursor.goto", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 189, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.197", "item": "RangeCursor.value", "kind": "property", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 192, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.198", "item": "RangeCursor.from", "kind": "property", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 194, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.199", "item": "RangeCursor.to", "kind": "property", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 196, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.200", "item": "RangeCursor.rank", "kind": "property", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 199, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.201", "item": "RangeSetBuilder", "kind": "class", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 487, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.202", "item": "RangeSetBuilder.constructor", "kind": "constructor", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 511, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.203", "item": "RangeSetBuilder.add", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 515, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.204", "item": "RangeSetBuilder.finish", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 557, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.205", "item": "RangeComparator", "kind": "interface", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 63, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.206", "item": "RangeComparator.compareRange", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 67, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.207", "item": "RangeComparator.comparePoint", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 69, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.208", "item": "RangeComparator.boundChange", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 74, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.209", "item": "SpanIterator", "kind": "interface", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 80, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.210", "item": "SpanIterator.span", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 85, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.211", "item": "SpanIterator.point", "kind": "method", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 92, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.212", "item": "findClusterBreak", "kind": "function", "file": "mirrors/cm6/state/src/char.ts", "line": 9, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.213", "item": "codePointAt", "kind": "function", "file": "mirrors/cm6/state/src/char.ts", "line": 19, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.214", "item": "fromCodePoint", "kind": "function", "file": "mirrors/cm6/state/src/char.ts", "line": 30, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.215", "item": "codePointSize", "kind": "function", "file": "mirrors/cm6/state/src/char.ts", "line": 37, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.216", "item": "countColumn", "kind": "function", "file": "mirrors/cm6/state/src/column.ts", "line": 5, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.217", "item": "findColumn", "kind": "function", "file": "mirrors/cm6/state/src/column.ts", "line": 24, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.218", "item": "Line", "kind": "class", "file": "mirrors/cm6/state/src/text.ts", "line": 562, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.219", "item": "Line.from", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/text.ts", "line": 566, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.220", "item": "Line.to", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/text.ts", "line": 569, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.221", "item": "Line.number", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/text.ts", "line": 571, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.222", "item": "Line.text", "kind": "property (ctor param)", "file": "mirrors/cm6/state/src/text.ts", "line": 573, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.223", "item": "Line.length", "kind": "getter", "file": "mirrors/cm6/state/src/text.ts", "line": 577, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.224", "item": "TextIterator", "kind": "interface", "file": "mirrors/cm6/state/src/text.ts", "line": 15, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.225", "item": "TextIterator.next", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 19, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.226", "item": "TextIterator.value", "kind": "property", "file": "mirrors/cm6/state/src/text.ts", "line": 22, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.227", "item": "TextIterator.done", "kind": "property", "file": "mirrors/cm6/state/src/text.ts", "line": 25, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.228", "item": "TextIterator.lineBreak", "kind": "property", "file": "mirrors/cm6/state/src/text.ts", "line": 27, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.229", "item": "Text", "kind": "class", "file": "mirrors/cm6/state/src/text.ts", "line": 31, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.230", "item": "Text.length", "kind": "property", "file": "mirrors/cm6/state/src/text.ts", "line": 33, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.231", "item": "Text.lines", "kind": "property", "file": "mirrors/cm6/state/src/text.ts", "line": 35, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.232", "item": "Text.lineAt", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 38, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.233", "item": "Text.line", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 45, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.234", "item": "Text.replace", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 54, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.235", "item": "Text.append", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 64, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.236", "item": "Text.slice", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 69, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.237", "item": "Text.sliceString", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 77, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.238", "item": "Text.eq", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 86, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.239", "item": "Text.iter", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 104, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.240", "item": "Text.iterRange", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 108, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.241", "item": "Text.iterLines", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 115, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.242", "item": "Text.toString", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 132, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.243", "item": "Text.toJSON", "kind": "method", "file": "mirrors/cm6/state/src/text.ts", "line": 136, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.244", "item": "Text.children", "kind": "property", "file": "mirrors/cm6/state/src/text.ts", "line": 147, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.245", "item": "Text.[Symbol.iterator]", "kind": "property", "file": "mirrors/cm6/state/src/text.ts", "line": 150, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.246", "item": "Text^of", "kind": "static method", "file": "mirrors/cm6/state/src/text.ts", "line": 153, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.247", "item": "Text^empty", "kind": "static property", "file": "mirrors/cm6/state/src/text.ts", "line": 160, "chunk": "text", "disposition": null, "reason": null}
+{"id": "state.cm6.248", "item": "Facet^define config FacetConfig.combine", "kind": "config field", "file": "mirrors/cm6/state/src/facet.ts", "line": 12, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.249", "item": "Facet^define config FacetConfig.compare", "kind": "config field", "file": "mirrors/cm6/state/src/facet.ts", "line": 17, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.250", "item": "Facet^define config FacetConfig.compareInput", "kind": "config field", "file": "mirrors/cm6/state/src/facet.ts", "line": 20, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.251", "item": "Facet^define config FacetConfig.static", "kind": "config field", "file": "mirrors/cm6/state/src/facet.ts", "line": 22, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.252", "item": "Facet^define config FacetConfig.enables", "kind": "config field", "file": "mirrors/cm6/state/src/facet.ts", "line": 29, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.253", "item": "StateField^define config StateFieldSpec.create", "kind": "config field", "file": "mirrors/cm6/state/src/facet.ts", "line": 262, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.254", "item": "StateField^define config StateFieldSpec.update", "kind": "config field", "file": "mirrors/cm6/state/src/facet.ts", "line": 266, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.255", "item": "StateField^define config StateFieldSpec.compare", "kind": "config field", "file": "mirrors/cm6/state/src/facet.ts", "line": 272, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.256", "item": "StateField^define config StateFieldSpec.provide", "kind": "config field", "file": "mirrors/cm6/state/src/facet.ts", "line": 280, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.257", "item": "StateField^define config StateFieldSpec.toJSON", "kind": "config field", "file": "mirrors/cm6/state/src/facet.ts", "line": 285, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.258", "item": "StateField^define config StateFieldSpec.fromJSON", "kind": "config field", "file": "mirrors/cm6/state/src/facet.ts", "line": 289, "chunk": "facet", "disposition": null, "reason": null}
+{"id": "state.cm6.259", "item": "StateEffect^define config StateEffectSpec.map", "kind": "config field", "file": "mirrors/cm6/state/src/transaction.ts", "line": 43, "chunk": "state", "disposition": null, "reason": null}
+{"id": "state.cm6.260", "item": "RangeSet.update config RangeSetUpdate.add", "kind": "config field", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 207, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.261", "item": "RangeSet.update config RangeSetUpdate.sort", "kind": "config field", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 210, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.262", "item": "RangeSet.update config RangeSetUpdate.filter", "kind": "config field", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 213, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.263", "item": "RangeSet.update config RangeSetUpdate.filterFrom", "kind": "config field", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 217, "chunk": "rangeset", "disposition": null, "reason": null}
+{"id": "state.cm6.264", "item": "RangeSet.update config RangeSetUpdate.filterTo", "kind": "config field", "file": "mirrors/cm6/state/src/rangeset.ts", "line": 219, "chunk": "rangeset", "disposition": null, "reason": null}

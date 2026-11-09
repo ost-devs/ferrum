@@ -18,6 +18,10 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(os.path.realpath(__file__)),
 CM6 = f'{REPO}/mirrors/cm6'
 ap = argparse.ArgumentParser(); ap.add_argument('package'); ap.add_argument('--dir'); ap.add_argument('--npm', nargs='*', default=[])
 a = ap.parse_args(); d = a.dir or f'{REPO}/.harness/{a.package}'
+def writable(top):  # mirror copies are read-only; the harness copy must be replaceable on the next run
+    for root, dirs, files in os.walk(top):
+        os.chmod(root, 0o755)
+        for f in files: os.chmod(os.path.join(root, f), 0o644)
 def pkgjson(name): return json.load(open(f'{CM6}/{name}/package.json'))
 todo, seen, third = [a.package], set(), {}
 while todo:
@@ -31,8 +35,9 @@ os.makedirs(d, exist_ok=True)
 paths = {}
 for p in sorted(seen):
     dst = f'{d}/cm6/{p}/src'
-    if os.path.isdir(dst): shutil.rmtree(dst)
+    if os.path.isdir(dst): writable(dst); shutil.rmtree(dst)
     shutil.copytree(f'{CM6}/{p}/src', dst)
+    writable(dst)
     paths[f'@codemirror/{p}'] = [f'{dst}/index.ts']
     paths[pkgjson(p)['name']] = [f'{dst}/index.ts']
 paths['@harness/lib'] = [f'{REPO}/tools/cm6/oracle-lib.ts']

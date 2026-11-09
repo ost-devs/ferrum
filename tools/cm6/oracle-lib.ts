@@ -1,5 +1,5 @@
 // Shared helpers for cm6 probes and generators (docs/workflow/specification.md §5).
-// Imported as "@harness/lib" (mapped by setup_cm6.py). Keep it small and stable: every audit uses it.
+// Imported as "@harness/lib" (mapped by tools/cm6/setup_harness.py). Keep it small and stable: every audit uses it.
 import {writeFileSync, appendFileSync} from "node:fs"
 
 /** Seeded PRNG (mulberry32). Record the seed in the generator header and in every fixture. */
