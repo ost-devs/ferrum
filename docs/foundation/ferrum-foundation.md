@@ -202,7 +202,7 @@ The libraries behind `Text` and `findClusterBreak` are part of this decision, no
 
 **D9. Licensing. Decided by the maintainer, 2026-11-04.** The license is chosen per crate: MIT whenever possible. A crate is Apache-2.0 only when it ports or incorporates Apache-2.0 code, or another legal consequence of Apache-2.0 material requires it. The four foundation crates port cm6 (MIT) and are MIT. `THIRD-PARTY-NOTICES.md` keeps cm6's copyright and permission notice (a Rust port of cm6 is a derived work of MIT-licensed code); `LICENSE-APACHE` stays at the root for crates that will need it. Outside code under a copyleft license (GPL, AGPL, for example Zed's `editor` crate) is never read, copied or used as a dependency.
 
-**D10. Short-term scope.** Which cm6 features the foundation must have before the first surface is rebuilt (for example: no tooltips/panels/dialogs yet, gutters model only, no `StreamLanguage`).
+**D10. Short-term scope. Decided 2026-11-09 (consultant, confirmed by the maintainer): nothing is deferred.** Each foundation crate covers every item of its cm6 package; an item is left out only by its own disposition, with its reason, and is listed in every verdict (`docs/workflow/specification.md` §3).
 
 ---
 

@@ -2,13 +2,6 @@
 
 Open questions only (`docs/workflow/README.md` §3): a decided entry is removed in the commit that records the decision. Ids are stable and never reused.
 
-## Q1. D10: does a first-version scope still apply?
-
-- **Question.** `docs/foundation/ferrum-foundation.md` §6 D10 asks which cm6 features the foundation needs before the first surface is rebuilt. Under the current scope (`ferrum-foundation.md` §5: nothing outside the four foundation crates starts before they are complete and stable), what is deferring an item for, and does D10 stay, change form, or go?
-- **Options.** (a) No deferral in the foundation: every in-scope item is specified and implemented; D10 is removed. (b) D10 stays for items no foundation crate and no first surface needs, each listed in every verdict. (c) D10 is reformulated for a later point (for example the first surface).
-- **Evidence.** On `bad-start`, deferred items were approved one by one and then left out of the conformance verdict (`docs/workflow/learnings.md` W10). The maintainer doubted D10 because it can let items be skipped silently (`docs/foundation/maintainer-intent.md`: skipping a cm6 item is never silent).
-- **Raised by.** The workflow design, 2026-11-07. **Blocks.** Nothing in the specification stage, which specifies every in-scope item either way; the scope of the implementation stage.
-
 ## Q2. Naming registry and annotations
 
 - **Question.** Does an entry of `.claude/rules/rust-naming-decisions.md` count as the decision that `.claude/rules/rust-crates.md` Architecture 6 requires for a public item cm6 does not export (N1 adds `is_empty()` beside `len()`)? Does a renamed item carry `/// cm6 deviation:` or only its mapping line, and what does an added item's `/// ferrum-only:` cite?

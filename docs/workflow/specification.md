@@ -45,7 +45,7 @@ Turns one cm6 package into the specification of its Ferrum crate: what the crate
 | `ELSEWHERE: <crate>` | Belongs to another Ferrum crate | which and why |
 | `DROP` | Exists only because of the DOM, CSS, browsers or the TypeScript type system | the item-specific reason, and whether a surface needs a native equivalent |
 
-There is no "later" disposition. Every item in scope is specified. If the consultant decides that an item is not needed (for example under D10), that decision is recorded and the item is listed in every verdict (`README.md` §4).
+There is no "later" disposition (D10, `ferrum-foundation.md` §6): every item of the package gets one of the dispositions above, and every item in scope is specified. Every item not ported is listed in every verdict (`README.md` §4).
 
 ## 4. Deliverables and schemas
 

@@ -32,7 +32,7 @@ A headless, embeddable Rust editor engine whose core has cm6's architecture and 
 | The specification is audited before D1–D10 are taken | The audit records what cm6 does, decision-neutral; decisions are taken with its evidence before the implementation that needs them (`ferrum-foundation.md` §6 asks for them before implementation, not before the audit) | `docs/workflow/README.md` §1 |
 
 ## Known open gaps
-- Foundational decisions D1–D8 and D10 (position unit, line breaks and `Text` libraries, syntax backend, layout contract, command type, threading, style model, input/IME/accessibility, first-version scope) are open; D9 (licensing: MIT per crate, Apache-2.0 only for ports of Apache code) is decided. The consultant takes them with the evidence of each crate's specification; where they will be recorded: `docs/workflow/README.md` §3. `ferrum-foundation.md` §6.
+- Foundational decisions D1–D8 (position unit, line breaks and `Text` libraries, syntax backend, layout contract, command type, threading, style model, input/IME/accessibility) are open; D9 (licensing: MIT per crate, Apache-2.0 only for ports of Apache code) and D10 (nothing deferred: each crate covers its whole cm6 package, items left out only by their own disposition) are decided. The consultant takes them with the evidence of each crate's specification; where they will be recorded: `docs/workflow/README.md` §3. `ferrum-foundation.md` §6.
 - No Ferrum code yet; the work runs crate by crate through `/ferrum-run`; where it is: `docs/progress/`.
 
 ## Where each topic lives
