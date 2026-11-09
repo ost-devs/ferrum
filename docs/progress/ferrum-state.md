@@ -3,8 +3,11 @@
 Current state only (`.claude/rules/writing.md` "Agent-loaded files and notes for later sessions"). The orchestrator updates it after every step (`docs/workflow/README.md` §5).
 
 - **Stage:** specification (`docs/workflow/specification.md`), `@codemirror/state` 6.7.6, mirror commit 651084c.
-- **Step:** S1 Facts done (2026-11-09). Next: S1 Dispositions (`consultant`).
-- **Read before acting:** `docs/workflow/specification.md` §3, §9 (S1 Dispositions and S2 rows), Appendix A; `docs/parity/ferrum-state/cards/spec-auditor.md`.
+- **Step:** S2 Chunks in progress (2026-11-09). One `spec-auditor` per chunk, card `docs/parity/ferrum-state/cards/spec-auditor.md`, at most 4 at a time.
+  - Running or interrupted: `state` (77 in scope), `change` (62), `rangeset` (47), `text` (39). Waiting: `facet` (35).
+  - **Resume:** for a chunk whose `raw/<chunk>.progress` is missing or has `remaining`, spawn a `spec-auditor` with the card and the chunk (its assignment as in the S2 assignment below), telling it to continue from `raw/<chunk>.progress`.
+  - S2 assignment, beyond the card: question ids `<chunk>-s2-q<n>` (S1 used `<chunk>-q<n>`, now Q7–Q22); the S1 facts of each row (`does`, `platform`, `used_by`) are in `raw/inventory.jsonl`; open questions bearing on an item are recorded as found, not settled. For `text`: the consultant asks that `codePointAt` and `codePointSize` at a position inside a character or past the end be recorded as hazards with fixtures (evidence for D1).
+- **Read before acting:** `docs/workflow/specification.md` §5–§6, §9 (S2 and S3 rows), Appendix A; `docs/parity/ferrum-state/cards/spec-auditor.md`.
 
 ## S0 results
 
@@ -22,9 +25,14 @@ Current state only (`.claude/rules/writing.md` "Agent-loaded files and notes for
 - `questions.md`: Q7–Q22 added (16 questions from the chunks).
 - How `used_by` was gathered differs by chunk: `text`, `change`, `facet` used the TypeScript checker's references cross-checked with grep; `state` and `rangeset` used grep with receiver-name filters (the `state` worker lists the filters' limits: a transaction under another variable name is missed; spec-field keys also match `changeByRange` results).
 
+## S1 Dispositions results
+
+- Decided by the consultant (`be272c7`): 260 `CORE`, 4 `DROP` (`state.cm6.043` `Facet.tag`, `state.cm6.045` `FacetReader.tag`, `state.cm6.049` `StateField.extension`, `state.cm6.214` `fromCodePoint`); no `CONTRACT`, `SURFACE` or `ELSEWHERE`; all 12 files `CORE`. Rendered in `docs/parity/ferrum-state/dispositions.md`. The `DROP` definition in `docs/workflow/specification.md` §3 now names cm6's stack, the JavaScript runtime included (method change, same commit).
+- For S3 (from the consultant): `names.md` must list `Text.[Symbol.iterator]` (iteration) and `combineConfig`.
+
 ## Remaining in the stage
 
-S1 Dispositions (consultant: 264 rows, 12 files), S2 Chunks (5), S3 Synthesis, S4 Verification, S5 Decision, S6 Retrospective.
+S2 Chunks (5 chunks, 260 rows in scope, 172 test cases), S3 Synthesis, S4 Verification, S5 Decision, S6 Retrospective.
 
 ## Open
 
@@ -37,3 +45,4 @@ S1 Dispositions (consultant: 264 rows, 12 files), S2 Chunks (5), S3 Synthesis, S
 
 - S0: not measured (main session, no workers).
 - S1 Facts: 871,719 in 5 workers (`text` 157,899; `change` 146,315; `facet` 151,666; `state` 232,355; `rangeset` 183,884), about 3,300 per row.
+- S1 Dispositions: 165,676 reported for the resumed run (`consultant`; the run before the usage limit is not counted).
