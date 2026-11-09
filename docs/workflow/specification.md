@@ -43,7 +43,7 @@ Turns one cm6 package into the specification of its Ferrum crate: what the crate
 | `CONTRACT` | The logic belongs here but asks something cm6 gets from the DOM or Lezer | the question asked and what the logic does with the answer |
 | `SURFACE` | Drawing, measuring or OS integration belongs to a surface crate | which model, facet or effect this crate still owns |
 | `ELSEWHERE: <crate>` | Belongs to another Ferrum crate | which and why |
-| `DROP` | Exists only because of the DOM, CSS, browsers or the TypeScript type system | the item-specific reason, and whether a surface needs a native equivalent |
+| `DROP` | Exists only because of cm6's stack: the DOM, CSS, browsers, the JavaScript runtime (UTF-16 strings, module loading) or the TypeScript type system (`ferrum-foundation.md` §2) | the item-specific reason, and whether a surface needs a native equivalent |
 
 There is no "later" disposition (D10, `ferrum-foundation.md` §6): every item of the package gets one of the dispositions above, and every item in scope is specified. Every item not ported is listed in every verdict (`README.md` §4).
 

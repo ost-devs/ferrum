@@ -10,6 +10,7 @@
 - Instruction limits (card size, file counts): replace proxies with a criterion plus a report that measures both gaps (missing, unused). `a3b36a9`
 - Overlapping stages or crates: no while the method is still being refined; correctness over speed. `a3b36a9`
 - Binding text with no Decided-by commit (inherited rules, registry rows): re-derive from facts before relying on it; a category rule must be checked against every member it covers. `7aae14b`
+- DROP vs CORE for TS/JS-shaped items: DROP only what has no runtime meaning or only builds a JS artifact (phantom `tag`, conformance getters, `fromCodePoint`); keep type-level guarantees (FacetReader), language protocols (`Symbol.iterator`) and anything taking a position (D1 reaches it). ferrum-state S1 dispositions commit
 - Keeping agents out of files: a permission deny (it also filters searches), plus one line of text only for what it cannot see. `4483420`
 
 ## Calibration
