@@ -3,7 +3,10 @@
 Current state only (`.claude/rules/writing.md` "Agent-loaded files and notes for later sessions"). The orchestrator updates it after every step (`docs/workflow/README.md` §5).
 
 - **Stage:** specification (`docs/workflow/specification.md`), `@codemirror/state` 6.7.6, mirror commit 651084c.
-- **Step:** S0 Setup done (2026-11-09). Next: S1 Facts.
+- **Step:** S1 Facts in progress (2026-11-09). One `spec-auditor` per chunk writes `raw/<chunk>-facts.jsonl` (`id, does, platform, used_by` per inventory row), `raw/<chunk>-files.jsonl` (per source file), `raw/<chunk>-questions.jsonl`, `raw/<chunk>.progress`; the orchestrator then merges the facts into `raw/inventory.jsonl` and the questions into `questions.md`.
+  - Done: `text` (40/40 rows, 4/4 files, 3 questions), `change` (62/62, 2/2, 4 questions).
+  - Running or interrupted: `state` (77), `rangeset` (47), `facet` (38).
+  - **Resume:** for a chunk whose `raw/<chunk>.progress` is missing or has `remaining`, spawn a `spec-auditor` with the S1 Facts assignment for that chunk (the row format above; `used_by` one entry per calling package, every call site when 10 or fewer, else a count with one example; tests excluded), telling it to continue from `raw/<chunk>.progress`. At most 4 at a time.
 - **Read before acting:** `docs/workflow/specification.md` §2–§4, §9 (S1 rows); `docs/parity/ferrum-state/cards/spec-auditor.md`.
 
 ## S0 results
@@ -28,3 +31,4 @@ S1 Facts (264 rows, 12 source files), S1 Dispositions (consultant), S2 Chunks (5
 ## Tokens per step
 
 - S0: not measured (main session, no workers).
+- S1 Facts: `text` 157,899; `change` 146,315.
