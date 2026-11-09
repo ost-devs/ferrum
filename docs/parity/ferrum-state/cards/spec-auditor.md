@@ -5,7 +5,7 @@ Your assignment names your chunk. Everything you need is here; `docs/workflow/sp
 Run probes: `npx tsx --tsconfig .harness/state/tsconfig.json <file>.ts` (from the repository root).
 Import cm6 as `"@codemirror/state"`, helpers as `"@harness/lib"` (`rng`, `capture`, `encode`, `fixtureWriter`; `tools/cm6/oracle-lib.ts`).
 Consumer packages to grep for values: `mirrors/cm6/view/src/`, `mirrors/cm6/language/src/`, `mirrors/cm6/commands/src/` (pinned at their releases), then every other `mirrors/cm6/*/src/` that uses the item.
-Write only: `docs/parity/ferrum-state/raw/<chunk>-behaviors.jsonl`, `raw/<chunk>-tests.jsonl`, `raw/<chunk>-questions.jsonl`, `raw/<chunk>-contracts.jsonl`, `raw/<chunk>.progress`, `fixtures/<chunk>.jsonl`, `oracle/cm6/<chunk>/` (probe and generator sources only).
+Write only: `docs/parity/ferrum-state/raw/<chunk>-behaviors.jsonl`, `raw/<chunk>-tests.jsonl`, `raw/<chunk>-questions.jsonl`, `raw/<chunk>-contracts.jsonl`, `raw/<chunk>.progress`, `fixtures/<chunk>.jsonl`, `oracle/cm6/<chunk>/` (probe and generator sources only), and `.scratch/<chunk>/` for scratch files (gitignored; other workers run at the same time, so never use a shared temporary folder). Every probe behind a value you record goes in `oracle/cm6/<chunk>/`, never only in scratch.
 
 ## Chunks
 
@@ -55,7 +55,7 @@ Ids are stable once written.
 
 ## Questions
 
-Write each question you cannot settle from cm6's code into `raw/<chunk>-questions.jsonl`, in the shape of `CLAUDE.md` "Raising a question": `{id, item_id, problem, found[], open_because, bears_on[], blocks}`, `id` `<chunk>-q<n>`. No options, no recommendation. Questions already open for the crate are in `docs/parity/ferrum-state/questions.md`; add new facts to one only as a new question citing it.
+Write each question you cannot settle from cm6's code into `raw/<chunk>-questions.jsonl`, in the shape of `CLAUDE.md` "Raising a question": `{id, item_id, problem, found[], open_because, bears_on[], blocks, raised_by}`, `id` `<chunk>-q<n>`. No options, no recommendation. Questions already open for the crate are in `docs/parity/ferrum-state/questions.md`; add new facts to one only as a new question citing it.
 
 ## Final report
 
