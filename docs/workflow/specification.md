@@ -6,9 +6,9 @@ Turns one cm6 package into the specification of its Ferrum crate: what the crate
 
 ## 1. Inputs
 
-- The cm6 package at the commit pinned in `mirrors/mirrors.json`, and the harness built from it (§9 S0).
+- The cm6 package at its latest release and the harness built from it, both set up in S0 (§9) as `docs/workflow/README.md` §1 "The cm6 reference" requires.
 - The scope from `docs/foundation/ferrum-foundation.md` §4.2: what the crate owns.
-- The crates below it: their approved specification (`docs/parity/<crate>/`) and, once it exists, their conformance report.
+- The crates below it: their approved specification (`docs/parity/<crate>/`) and their conformance report.
 - The decisions in force: `.claude/rules/decisions.md`.
 - For `ferrum-state` only: the cm6 side of the earlier state audit on branch `bad-start` (`docs/parity/state/behaviors.md`, `fixtures/`, `oracle/cm6-probes/`, `decisions-evidence.md`). It is read only in verification (§8), after the rows are written, as a completeness cross-check, never as a source. Everything it says about Ferrum describes deleted code. This input ends when the `ferrum-state` specification is approved.
 
@@ -188,7 +188,7 @@ The orchestrator writes, from the merged rows:
   Each question has the shape of `CLAUDE.md` "Raising a question": no options, no recommendation.
 - in `hazards.md`, for each cm6 throw: its condition (`file:line`), what it protects, and whether a caller can check the condition in advance.
 
-The consultant writes at S5 (§9), from those facts, `implementation-plan.md`: the crate's design. It records decisions, each with its reason, and nothing in it may change a specified behavior. It contains:
+The consultant writes at S5 (§9), from those facts, `implementation-plan.md`: the crate's design. It records decisions, each with its reason. A choice in it that changes observable behavior or public API is a deviation: it is recorded in the item's row or in `.claude/rules/decisions.md`, where annotations can cite it, the plan points to it, and a first iteration of D1–D10 goes to a draft for the maintainer (`docs/workflow/README.md` §3). It contains:
 - **Module map**: one Rust module per cm6 source file in scope, its public items, what stays `pub(crate)`.
 - **Core types and invariants**, and how each invariant is kept.
 - **The Rust form of each cm6 idiom the crate uses**, with what must hold whatever the form:
@@ -206,10 +206,10 @@ The consultant writes at S5 (§9), from those facts, `implementation-plan.md`: t
   | module-level counter, `Date.now()` | determinism in tests |
   | strings and UTF-16 offsets | positions in the unit of D1; no whole-document `String` |
 
-- **Error contract per precondition**, from the throw facts in `hazards.md`.
+- **Error contract per precondition**, from the throw facts in `hazards.md`: what a Rust caller observes when the precondition fails where cm6 throws, and how a test checks it.
 - **Ownership and threading** (D6), **dependencies** with license, **order of implementation**, and the **test plan**: port order, fakes, the fixture replayer, oracle drivers.
 - **Obvious decisions**: one line each, `OBVIOUS-<n>: <decision>: <reason>`, for choices with a single reasonable answer.
-- **Native opportunities**: where a mechanism in `stack.md` exists only because of cm6's stack and another serves a Ferrum goal better: what cm6 does (`file:line`), the mechanism chosen, the goal, the measurement that confirms the benefit, and the behavior impact. With no impact, the implementer adopts it with a proof test.
+- **Native opportunities**: where a mechanism in `stack.md` exists only because of cm6's stack and another serves a Ferrum goal better: what cm6 does (`file:line`), the mechanism chosen, the goal, the measurement that confirms the benefit, and the behavior impact. With no observable impact, the implementer adopts it with a proof test; an observable impact makes it a deviation, recorded as above.
 
 ## 8. Verification
 
@@ -237,7 +237,7 @@ A `verifier` that wrote no rows runs this (card: Appendix B):
 
 | Step | Who | Work | Ends with (committed) |
 |---|---|---|---|
-| S0 Setup | orchestrator | Pin the package and the core packages it reads for consumer values at their latest release, and queue a release delta for every conforming crate whose package moved (`docs/workflow/README.md` §1 "The cm6 reference"). Check the mirrors (`/mirrors check`) and build the harness (`tools/cm6/setup_harness.py`). Run the inventory and test tools; expand generated test cases. Declare the totals. List the scope: source files, test files, consumer packages. Split into chunks of about 40–80 inventory rows or up to 1,000 source lines. Write both cards and `docs/progress/<crate>.md` | raw rows, cards, progress |
+| S0 Setup | orchestrator | Pin the package and the core packages it reads for consumer values at their latest release (`npm view @codemirror/<package> version`, then `/mirrors pin cm6/<package> @<version>`), re-resolve the dependency pins (`.claude/rules/mirrors.md` "Dependency pins"), and queue a release delta for every conforming crate whose package moved (`docs/workflow/README.md` §1 "The cm6 reference"). Commit `mirrors/mirrors.json`. Check the mirrors (`/mirrors check`) and build the harness (`tools/cm6/setup_harness.py`). Run the inventory and test tools; expand generated test cases. Declare the totals. List the scope: source files, test files, consumer packages. Split into chunks of about 40–80 inventory rows or up to 1,000 source lines. Write both cards and `docs/progress/<crate>.md` | raw rows, cards, progress |
 | S1 Facts | orchestrator. For a package too large to read in one context, `spec-auditor`s per group of files | The facts of every row (`does`, `platform`, `used_by`, §4) and of every source file, no disposition. Entries of `docs/parity/<crate>/early-decisions.md`, if it exists, are written into their rows as decided and the file is deleted (`docs/workflow/README.md` §3) | facts in `raw/inventory.jsonl` |
 | S1 Dispositions | `consultant` | Derives a disposition and an item-specific reason for every row and every file from the facts and cm6's code; verifies the premise of every `DROP` against cm6 | dispositions in the rows, `dispositions.md`, `Decided-by: consultant` |
 | S2 Chunks | `spec-auditor`, one per chunk, at most 4 at a time | §5, §6 for the chunk's items and test cases | rows, fixtures and probes per chunk; tokens per chunk in progress |
@@ -246,7 +246,7 @@ A `verifier` that wrote no rows runs this (card: Appendix B):
 | S5 Decision | `consultant` | Decides `questions.md`; writes the crate's design (`implementation-plan.md`, §7); takes the decisions D1–D10 whose evidence this specification provides; approves the specification. Drafts for the maintainer per `README.md` §3 | decisions in their places; the questions file emptied of decided entries |
 | S6 Retrospective | orchestrator | `docs/workflow/learnings.md` entries; method questions; progress points to the implementation stage | learnings, progress |
 
-S2 starts only after the S1 dispositions, because chunks cover only the items in scope. The orchestrator may run S1 for the next crate while this crate is in S2–S5.
+S2 starts only after the S1 dispositions, because chunks cover only the items in scope.
 
 ## 10. Cost and orchestration
 
@@ -281,7 +281,7 @@ Cost is cut by not repeating work:
 
 ## Appendix A. Card template: `spec-auditor`
 
-The orchestrator fills in the brackets and writes `docs/parity/<crate>/cards/spec-auditor.md`. Keep it under about 120 lines; it adds to the agent's definition and never relaxes the rules.
+The orchestrator fills in the brackets and writes `docs/parity/<crate>/cards/spec-auditor.md`. It holds what a spec-auditor needs to do its chunk without opening this brief, and nothing it cannot act on (`docs/workflow/README.md` §5 "Context"); it adds to the agent's definition and never relaxes the rules.
 
 ```
 # spec-auditor card: [crate] ([cm6 package] [version], mirror commit [short])

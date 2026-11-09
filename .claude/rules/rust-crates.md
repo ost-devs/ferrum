@@ -38,7 +38,7 @@ Purpose and architecture: `docs/foundation/ferrum-foundation.md`. cm6's source a
 3. Ported tests are named `test_cm6_<cm6 file>_<nn>_<slug of the it() name>`. A test derived from cm6 source because cm6 has none is marked `// derived from cm6 source: <file:line>`.
 4. Helpers mirror cm6's (`mirrors/cm6/commands/test/state.ts`: `|` marks a cursor, `<…>` a selected range) and have tests of their own.
 5. A change starts from a failing test derived from the specification, never from the code.
-6. Ported and derived tests live in `crates/<crate>/tests/`, written by a context that has not seen the implementation; the implementation never edits them (`docs/workflow/implementation.md` §3). Unit tests inside `src/` cover private helpers only.
+6. Ported and derived tests live in `crates/<crate>/tests/`, written by a context that has not seen the implementation; the implementation never edits them (`docs/workflow/implementation.md` §3). Unit tests inside `src/` cover private helpers only and never carry `// covers:`: a behavior is covered only by a test in `crates/<crate>/tests/`.
 
 ## Annotations
 Every public item carries one mapping line plus the qualifiers that apply; cm6 names exactly as cm6 exports them. `<decision>` is the id of an entry in `.claude/rules/decisions.md` (`D<n>`, `N<n>`) or the inventory id of the item's specification row (`state.cm6.042`) when the decision is about that item alone.

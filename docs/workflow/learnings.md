@@ -11,7 +11,7 @@ Ids `W<n>`, stable.
 
 ## From the earlier attempt (branch `bad-start`)
 
-Source: `docs/fundation/LEARNINGS.md` on `bad-start` (L1–L34, read with `git show bad-start:<path>`). Its method was written before running and went from v1 to v5 in three days. Only its conclusions that hold for the new scope are kept here. Its Rust code, tests, API and claims are never evidence (`docs/foundation/bad-start-quarry.md`).
+Source: `docs/fundation/LEARNINGS.md` on `bad-start` (L1–L34, read with `git show bad-start:<path>`). Its method was written before running and went from v1 to v5 in three days. Only its conclusions that hold for the new scope are kept here. Its Rust code, tests, API and claims are never evidence.
 
 | Id | Basis | Observation | Where it went |
 |---|---|---|---|

@@ -55,7 +55,7 @@ Mechanical gates run first, for the whole crate, by the orchestrator. Reading ch
 - A not-ported item has no stand-in carrying its cm6 name.
 
 **G2. Behaviors.**
-- Every behavior id has a passing test that names it (`// covers:`).
+- Every behavior id has a passing test in `crates/<crate>/tests/` that names it (`// covers:`).
 - Reading check: the test really asserts the behavior, on the right input class and on the whole observable result the behavior states; otherwise the test is `WEAKER`.
 - Every derived test exists with its fixture's expected value.
 - Test files are unchanged since their step-2 commit, except listed changes (`git log`).

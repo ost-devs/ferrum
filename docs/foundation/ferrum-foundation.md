@@ -118,7 +118,7 @@ The four foundation packages of cm6 depend on each other like this (verified in 
                               │ ferrum-commands   │  → state, view, language
                               └─────────┬─────────┘
                               ┌─────────▼─────────┐
-                              │ ferrum-language   │  → state, view (+ syntax backend, e.g. tree-sitter)
+                              │ ferrum-language   │  → state, view (+ syntax backend, D3)
                               └─────────┬─────────┘
                               ┌─────────▼─────────┐
                               │ ferrum-view       │  → state (layout/input via traits)
@@ -134,25 +134,25 @@ The facade crate `ferrum` re-exports the foundation behind feature flags, so app
 
 ### 4.2 What each foundation crate owns
 
-**`ferrum-state`** ⇔ `@codemirror/state`. Behavioral parity, all of it.
+**`ferrum-state`** ⇔ `@codemirror/state`. A first reading found no DOM dependency in it.
 `Text`, `Line`, `ChangeSet`/`ChangeDesc`/`MapMode`, `EditorSelection`/`SelectionRange`, `EditorState`, `Transaction`, `Annotation`/`AnnotationType`, `StateEffect`/`StateEffectType`, `Facet`, `StateField`, `Compartment`, `Prec`, extension resolution, `RangeSet`/`RangeValue`/`RangeSetBuilder`, `findClusterBreak`, `countColumn`/`findColumn`, `CharCategory`, plus the built-in facets (`allowMultipleSelections`, `tabSize`, `lineSeparator`, `readOnly`, `phrases`, `languageData`, `changeFilter`, `transactionFilter`, `transactionExtender`) and `toJSON`/`fromJSON`.
 
-**`ferrum-view`** ⇔ the platform-independent part of `@codemirror/view`. Mixed: behavioral parity for logic, contract parity for geometry, nothing of the DOM. A preliminary file-by-file disposition, from a first reading of cm6 (the final one is decided per export when the crate is specified):
+**`ferrum-view`** ⇔ the platform-independent part of `@codemirror/view`. The package mixes platform-independent logic, logic that asks the DOM for geometry, and DOM machinery. What each file holds, from a first reading of cm6 (dispositions are decided per export when the crate is specified, `docs/workflow/specification.md` §3):
 
-| cm6 `view/src` file | Disposition |
+| cm6 `view/src` file | What it holds |
 |---|---|
-| `decoration.ts` | core (decoration model, `WidgetType` as a trait, `DecorationSet`) |
-| `heightmap.ts`, `viewstate.ts` | core (height estimation, viewport, line gaps, scaling) |
-| `extension.ts` | core (`ViewPlugin`, `ViewUpdate`, view facets such as `decorations`, `atomicRanges`, `editable`, `scrollMargins`) |
-| `keymap.ts` | core logic (key normalization, scopes, multi-stroke, platform modifiers); key names from the surface |
-| `bidi.ts` | core (cm6 computes bidi order itself; pure algorithm) |
-| `cursor.ts`, parts of `editorview.ts` | contract: motion logic in core, geometry through the layout trait |
-| `matchdecorator.ts`, `special-chars.ts`, `highlight-space.ts`, `active-line.ts`, `placeholder.ts` | core logic producing decorations; widget drawing is surface |
-| `gutter.ts`, `panel.ts`, `tooltip.ts`, `dialog.ts`, `layer.ts`, `draw-selection.ts`, `rectangular-selection.ts`, `dropcursor.ts`, `scrollpastend.ts` | split: model/state/facets in core, drawing in surface. Several are deferrable. |
-| `theme.ts`, `attributes.ts` | replaced by a typed style model (decision D7); CSS not ported |
-| `docview.ts`, `tile.ts`, `buildtile.ts`, `dom.ts`, `domchange.ts`, `domobserver.ts`, `domreader.ts`, `browser.ts`, `editcontext.d.ts`, DOM parts of `input.ts` | not ported. The *semantics* of input events (what a key press, paste, drop or composition does to the state) become a surface contract. |
+| `decoration.ts` | the decoration model: `Decoration`, `WidgetType`, `DecorationSet` |
+| `heightmap.ts`, `viewstate.ts` | height estimation, viewport, line gaps, scaling |
+| `extension.ts` | `ViewPlugin`, `ViewUpdate`, view facets such as `decorations`, `atomicRanges`, `editable`, `scrollMargins` |
+| `keymap.ts` | key normalization, scopes, multi-stroke bindings, platform modifiers; key names come from the browser's events |
+| `bidi.ts` | bidi ordering, computed by cm6 itself |
+| `cursor.ts`, parts of `editorview.ts` | cursor motion logic that asks the DOM for geometry |
+| `matchdecorator.ts`, `special-chars.ts`, `highlight-space.ts`, `active-line.ts`, `placeholder.ts` | logic that produces decorations, and the widgets it draws |
+| `gutter.ts`, `panel.ts`, `tooltip.ts`, `dialog.ts`, `layer.ts`, `draw-selection.ts`, `rectangular-selection.ts`, `dropcursor.ts`, `scrollpastend.ts` | each mixes a model (state, facets, effects) with DOM drawing |
+| `theme.ts`, `attributes.ts` | CSS themes and DOM attributes (the question of D7) |
+| `docview.ts`, `tile.ts`, `buildtile.ts`, `dom.ts`, `domchange.ts`, `domobserver.ts`, `domreader.ts`, `browser.ts`, `editcontext.d.ts`, `input.ts` | DOM reconciliation and reading, mutation observation, browser detection, `EditContext`; `input.ts` also holds what a key press, paste, drop or composition does to the state (the question of D8) |
 
-**`ferrum-language`** ⇔ `@codemirror/language`. Contract parity built on a Ferrum syntax abstraction, because cm6's language package is built on `@lezer/common` (`Tree`, `SyntaxNode`, `NodeType`, `NodeProp`, incremental parsing with fragments, mixed-language parsing) and on `@lezer/highlight` tags. Ferrum needs its own tree abstraction with a backend (tree-sitter is the stated choice, see D3). Scope: `Language`/`LanguageSupport`/`LanguageDescription`, the `language` facet, `syntaxTree`/`ensureSyntaxTree`/`forceParsing`, parse scheduling, language data, indentation (`indentService`, `indentUnit`, `IndentContext`, `getIndentation`, `indentRange`, node-based indentation strategies, `indentOnInput`), folding (`foldService`, `foldState`, fold effects and commands, fold gutter model), bracket matching, highlighting (style model), bidi isolates (`isolate.ts`). `StreamLanguage` is a separate decision (D3).
+**`ferrum-language`** ⇔ `@codemirror/language`. cm6's language package is built on `@lezer/common` (`Tree`, `SyntaxNode`, `NodeType`, `NodeProp`, incremental parsing with fragments, mixed-language parsing) and on `@lezer/highlight` tags, which Ferrum does not have; what replaces them is D3 (tree-sitter is the backend considered so far). Scope: `Language`/`LanguageSupport`/`LanguageDescription`, the `language` facet, `syntaxTree`/`ensureSyntaxTree`/`forceParsing`, parse scheduling, language data, indentation (`indentService`, `indentUnit`, `IndentContext`, `getIndentation`, `indentRange`, node-based indentation strategies, `indentOnInput`), folding (`foldService`, `foldState`, fold effects and commands, fold gutter model), bracket matching, highlighting (style model), bidi isolates (`isolate.ts`). `StreamLanguage` is a separate decision (D3).
 
 **`ferrum-commands`** ⇔ `@codemirror/commands` (`commands.ts`, `history.ts`, `comment.ts`). Behavioral parity for state-only commands, contract parity for view- and syntax-dependent ones. It must depend on `ferrum-view` and `ferrum-language`, and must expose cm6's two command kinds (`StateCommand` and a view-receiving `Command`, decision D5).
 
@@ -177,28 +177,24 @@ cm6 never lays out text; the browser does. In Ferrum:
 
 ## 6. Foundational decisions (before any implementation)
 
-These decisions shape the whole foundation; implementing before taking them risks doing the work twice. The consultant takes them with the evidence of each crate's specification, before the implementation that needs them; their first iteration is drafted for the maintainer to confirm (`docs/foundation/maintainer-intent.md`). A decision taken is written in `.claude/rules/decisions.md` under its id, and its entry below then points there instead of repeating it (`docs/workflow/README.md` §3). The recommendations below are earlier analyses, not decisions.
+These decisions shape the whole foundation; implementing before taking them risks doing the work twice. The `consultant` agent (`docs/workflow/README.md` §2) takes them with the evidence of each crate's specification, before the implementation that needs them; their first iteration is drafted for the maintainer to confirm (`docs/foundation/maintainer-intent.md`). A decision taken is written in `.claude/rules/decisions.md` under its id, and its entry below then points there instead of repeating it (`docs/workflow/README.md` §3). An open entry states the question and, where a first reading found them, facts that bear on it, preliminary until verified; it never states an answer.
 
-**D1. Position unit.** What does an integer position mean?
-- UTF-8 bytes: native to Rust strings, `regex`, tree-sitter (which also needs row/column points), `cosmic-text` and GPUI. Requires care never to land inside a code point.
-- Code points: convenient for `ropey`, but every boundary with tree-sitter, shapers and regex needs conversion.
-- UTF-16 code units: identical numbers to cm6 tests and to the LSP default, foreign to every Rust library involved.
-For ASCII-only tests all three give identical numbers, so the choice mostly affects non-ASCII tests and integration costs. *Recommendation: UTF-8 bytes, with explicit conversion functions to UTF-16 (LSP, IME) and documented translation of non-ASCII cm6 test values.*
+**D1. Position unit.** What does an integer position mean? Preliminary facts: cm6 counts UTF-16 code units, and so do its tests and the LSP default; Rust strings, `regex` and tree-sitter (which also uses row/column points) index UTF-8 bytes, as do the text systems the surfaces would use (`cosmic-text`, GPUI); `ropey` indexes chars and converts to bytes and UTF-16. For ASCII-only text every unit gives the same numbers, so the unit mostly affects non-ASCII tests and every boundary with those libraries.
 
-**D2. Line breaks and the `Text` model.** cm6 splits input on `\r\n?|\n` (or on `lineSeparator`), stores lines without separators, counts every line break as one position, and reinserts the separator on output (`state.lineBreak`, `sliceDoc`). *Recommendation: same semantics. Normalize on input, configure `ropey` so only `\n` counts as a line break (disable `unicode_lines` and `cr_lines`), keep the original separator in state for output.*
-The libraries behind `Text` and `findClusterBreak` are part of this decision, not taken yet (`ropey` and `unicode-segmentation` are candidates). cm6's `findClusterBreak` comes from `@marijn/find-cluster-break`; another implementation may place grapheme cluster boundaries differently for some sequences, which changes cursor motion and deletion. Before choosing: compare the rules and Unicode versions of both, record the observable consequences, and say whether each difference is cm6 design or a limitation of its stack (section 2).
+**D2. Line breaks and the `Text` model.** cm6 splits input on `\r\n?|\n` (or on `lineSeparator`), stores lines without separators, counts every line break as one position, and reinserts the separator on output (`state.lineBreak`, `sliceDoc`). How does Ferrum's `Text` reproduce that, and on which libraries? Preliminary fact: `ropey` by default also breaks lines on lone CR and other Unicode line separators (its `cr_lines` and `unicode_lines` features).
+The libraries behind `Text` and `findClusterBreak` are part of this decision (`ropey` and `unicode-segmentation` have been named as candidates). cm6's `findClusterBreak` comes from `@marijn/find-cluster-break`; another implementation may place grapheme cluster boundaries differently for some sequences, which changes cursor motion and deletion. Before choosing: compare the rules and Unicode versions of both, record the observable consequences, and say whether each difference is cm6 design or a limitation of its stack (section 2).
 
-**D3. Syntax backend and tree abstraction.** Which Ferrum types replace `Tree`, `SyntaxNode`, `NodeType`, `NodeProp`? How are tree-sitter grammars wrapped? How are cm6 node-prop-based strategies (indentation, folding, bracket matching, language data) expressed: Rust node props, tree-sitter queries (`indents.scm`, `folds.scm`, `highlights.scm`), or both? What replaces `@lezer/highlight` tags? Is `StreamLanguage` kept (useful for simple modes, used heavily by cm6's `legacy-modes`)? Is parsing synchronous with a time budget (cm6) or off-thread? Note that tree-sitter is C, which complicates `wasm32-unknown-unknown`.
+**D3. Syntax backend and tree abstraction.** Which backend parses, and which Ferrum types replace `Tree`, `SyntaxNode`, `NodeType`, `NodeProp`? How are cm6's node-prop-based strategies (indentation, folding, bracket matching, language data) expressed? What replaces `@lezer/highlight` tags? What becomes of `StreamLanguage` (cm6's `legacy-modes` use it heavily)? When does a syntax tree become available after an edit (cm6 parses in time slices on its one thread)? Preliminary facts: tree-sitter, the backend considered so far, is written in C, which complicates `wasm32-unknown-unknown`, and ships its own query files (`indents.scm`, `folds.scm`, `highlights.scm`).
 
-**D4. Layout contract.** The exact trait `ferrum-view` uses to ask a surface about geometry, and its unit (logical pixels as `f32`?). Who computes bidi order: Ferrum (port of `bidi.ts`, as cm6 does) or the shaper?
+**D4. Layout contract.** The exact trait `ferrum-view` uses to ask a surface about geometry, and its unit. Where is bidi order computed (cm6 computes it itself, in `bidi.ts`, while a shaper also computes it)?
 
 **D5. Command type.** cm6 has `StateCommand = (target: {state, dispatch}) => boolean` and `Command = (view) => boolean`. Decide both Rust signatures, and how view-dependent commands run in headless tests.
 
-**D6. Ownership and threading.** `Arc` + `Send + Sync` everywhere or not; whether parsing or indexing may run on other threads; how determinism is kept in tests.
+**D6. Ownership and threading.** Which values are shared, and across which threads; whether parsing or indexing may run on other threads; how determinism is kept in tests.
 
-**D7. Style model.** cm6 decorations and themes carry CSS classes and attributes. Ferrum needs a typed replacement (style tags resolved by a theme facet, or typed attributes) that surfaces understand.
+**D7. Style model.** cm6 decorations and themes carry CSS classes and attributes. What typed replacement do surfaces understand?
 
-**D8. Input, IME and accessibility.** Which crate owns the semantics of text input and composition (cm6: `input.ts`, `domchange.ts`, `webtest-composition.ts`)? Accessibility (cm6 gets it from the DOM) needs a native story (for example AccessKit) in surfaces; the view core must expose what they need.
+**D8. Input, IME and accessibility.** Which crate owns the semantics of text input and composition (cm6: `input.ts`, `domchange.ts`, `webtest-composition.ts`)? Accessibility (cm6 gets it from the DOM) needs a native story in surfaces; what must the view core expose for it?
 
 **D9. Licensing. Decided by the maintainer, 2026-11-04.** The license is chosen per crate: MIT whenever possible. A crate is Apache-2.0 only when it ports or incorporates Apache-2.0 code, or another legal consequence of Apache-2.0 material requires it. The four foundation crates port cm6 (MIT) and are MIT. `THIRD-PARTY-NOTICES.md` keeps cm6's copyright and permission notice (a Rust port of cm6 is a derived work of MIT-licensed code); `LICENSE-APACHE` stays at the root for crates that will need it. Outside code under a copyleft license (GPL, AGPL, for example Zed's `editor` crate) is never read, copied or used as a dependency.
 

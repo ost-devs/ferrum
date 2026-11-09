@@ -8,7 +8,7 @@ How a foundation crate goes from cm6 to a conforming Rust crate, who does each p
 
 - Crates go in dependency order: `ferrum-state`, `ferrum-view`, `ferrum-language`, `ferrum-commands` (`docs/foundation/ferrum-foundation.md` §3). Each passes three stages: **specification** (what cm6 does, item by item, with values produced by running cm6), **implementation** (tests from the specification, then code), **conformance** (proof that the code does what the specification says).
 - The specification is decision-neutral: it records what cm6 does and which questions Ferrum must answer, not Ferrum's answers. Decisions are taken by the consultant once the specification gives their evidence, before the implementation that needs them (`ferrum-foundation.md` §6 asks for them before any implementation, not before the audit).
-- The specification of a crate may start while the crate below it is implemented: it reads cm6 and the lower crate's approved specification. The implementation of a crate starts only when the crates below are conformant for the capabilities it needs.
+- **One crate and one stage at a time.** The specification of a crate starts when the crate below it is conforming, so each stage runs with the method refined by every stage before it (§7). A capability a later crate finds missing in a conforming one is a question in that crate's `questions.md`; the change goes through its stages again, as a release delta does.
 - **The cm6 reference is a published release.** Parity is stated against the versions npm publishes, which are what applications run and what a cm6 developer knows; `main` can carry unreleased API (on 2026-11-08 `view`'s `main` was 7 commits past 6.43.15 and had renamed `scrollMargins` to `coveredMargins`). Each core package is pinned at its release tag (`/mirrors pin cm6/<package> @<version>`), never at an unreleased commit, and every specification and verdict names `@codemirror/<package>@<version>`.
   - The pins of a crate's package are fixed from its S0 until its conformance verdict; releases published meanwhile wait.
   - At the S0 of each crate, the package to specify and the core packages it reads for consumer values are pinned at their latest release. Every crate already conforming whose package has a newer release then gets a **release delta**: the `CHANGELOG.md` entries and the source diff between the two tags, each change classified by the consultant as touching a specified item, behavior or test, or not; the touched rows, tests and code go through their stages again, the gates run again, and the verdict is restated at the new version. Small, frequent deltas are cheaper than one late re-sync (`view` published 41 releases between 2025-11 and 2026-10, mostly bug fixes), and the crate above needs the versions its npm ranges ask for (`view` 6.43.15 requires `@codemirror/state` `^6.7.0`).
@@ -36,7 +36,7 @@ Each worker gets its role from its definition (`.claude/agents/`) and its task f
 **What is a decision.** Any choice that cm6's code and the approved specification do not dictate:
 - dispositions;
 - deviations from cm6;
-- Rust design (types, traits, error contracts, ownership);
+- Rust design visible outside a module (public types, traits, error contracts, ownership and threading). A private choice that changes nothing observable is the implementer's, shown by the tests;
 - library choices;
 - whether a cm6 bug or quirk is reproduced;
 - approval of a specification, a conformance verdict;
@@ -119,6 +119,7 @@ A crate is described as conforming only with that report (`.claude/rules/writing
   - The orchestrator reads counts, JSONL summaries and short worker reports. It does not read the sources a worker owns.
   - Tools write to files and print counts.
   - After a compaction, the orchestrator re-reads the brief sections that `docs/progress/` names.
+  - A card holds what its worker needs to do its assignment without opening the briefs, and nothing the worker cannot act on. Each worker's report says what it looked up outside its card and what in it went unused (`CLAUDE.md` "Reporting from a card"); the orchestrator records both in the progress file, and the retrospective turns them into card changes (§7).
 - **Commits.**
   - Commit after each step, on the working branch, with paths given explicitly: `git commit -m '…' -- <paths>`, never `git add -A`. A consultant session may be working in the same tree.
   - The orchestrator commits its own and its workers' output.
@@ -155,7 +156,7 @@ Each entry that calls the method into question becomes a question for the consul
 
 ## 8. Tool constraints this design relies on
 
-Verified against Claude Code 2.1.319 and its documentation mirror (`mirrors/claude-code-docs/en/`), 2026-11-07. Re-check them when Claude Code changes.
+Verified against Claude Code 2.1.319 and its documentation mirror (`mirrors/claude-code-docs/en/`), 2026-11-07. At the start of each stage the orchestrator compares `claude --version` with that version; when it differs, it re-verifies each constraint below against the mirror (an `Explore` agent can search it), updates the version and date here, and raises a question for each constraint that changed.
 
 - Custom subagents load `CLAUDE.md` and rules (path-scoped ones when they touch matching files), not the main auto memory (`sub-agents.md` "What loads at startup").
 - A rule with `paths:` loads on Read, Write or Edit of a matching file, or a single-file read through Bash; a rule without `paths:` loads at launch (`memory.md` "Path-specific rules").
