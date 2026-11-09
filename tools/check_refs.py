@@ -25,6 +25,7 @@ PATH = re.compile(r'(?<![\w/.@:-])((?:mirrors|crates|docs|tools|dev|\.claude)/[\
 SCRATCH = re.compile(r'/tmp/\S|scratchpad/|/home/\w|~/\.')
 SEC = re.compile(r'(?:`?([\w./-]*[\w-]+\.md)`?\s+)?§\s?(\d+(?:\.\d+)?)')
 MIRRORS = json.loads((ROOT / 'mirrors/mirrors.json').read_text())['mirrors']
+FETCHED = ('.mirror-commit', '.mirror-pages.json')  # markers a fetch leaves: git mirrors, pages mirrors
 skipped = collections.Counter()
 _sections, _lines = {}, {}
 
@@ -79,7 +80,7 @@ def check(md, out):
             parts = rel.split('/')
             if parts[0] == 'mirrors' and len(parts) > 1 and rel != 'mirrors/mirrors.json':
                 root = mirror_root(parts)
-                if root and not (ROOT / root / '.mirror-commit').exists():
+                if root and not any((ROOT / root / m).exists() for m in FETCHED):
                     skipped[root] += 1
                     continue
             p = ROOT / rel
