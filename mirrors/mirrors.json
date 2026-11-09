@@ -9,19 +9,19 @@
       ],
       "members": {
         "state": {
-          "ref": "refs/heads/main",
+          "ref": "refs/tags/6.7.6",
           "commit": "651084c8a322b3a19b2bb3e00eee7d4a61d641af"
         },
         "view": {
-          "ref": "refs/heads/main",
-          "commit": "7b7882d327970a21a395e93c2f62cbb52ead2708"
+          "ref": "refs/tags/6.43.15",
+          "commit": "da63d53a7b1f9011a09481f5fa2397294104d73a"
         },
         "language": {
-          "ref": "refs/heads/main",
+          "ref": "refs/tags/6.13.1",
           "commit": "21a38068286652eceb17d8e02da88cbed52f8263"
         },
         "commands": {
-          "ref": "refs/heads/main",
+          "ref": "refs/tags/6.11.1",
           "commit": "5d2ddbbf485a7e8b17c69cf58ebaebf8e375036c"
         },
         "streamparser": {
@@ -178,16 +178,16 @@
       ],
       "members": {
         "common": {
-          "ref": "refs/tags/1.5.4",
-          "commit": "ac5937bfa48c32cb51b618f60708241459d8528f"
+          "ref": "refs/tags/1.5.5",
+          "commit": "af1e821a617cac7ae7a63105a9e5578e7888c9d9"
         },
         "highlight": {
           "ref": "refs/tags/1.2.5",
           "commit": "411321ba47cffc8845e79e1a3c773e0bcaf8b5b5"
         },
         "lr": {
-          "ref": "refs/tags/1.4.11",
-          "commit": "22814e6ac99851b40c706f743b19f33bb076411a"
+          "ref": "refs/tags/1.4.12",
+          "commit": "c23463c85b7b84000d6d64a6f0b898e906cc9143"
         }
       }
     },
