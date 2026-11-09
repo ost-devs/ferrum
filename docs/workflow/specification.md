@@ -65,6 +65,7 @@ dispositions.md            per source file: disposition and reason; per-row disp
 contracts.md               per CONTRACT item: the question, the logic around it, the smallest fake
 hazards.md                 JS→Rust hazards per item
 stack.md                   mechanisms that exist because of cm6's stack, per item (§5)
+names.md                   names the mechanical conversion may not settle (§7)
 implementation-plan.md     the crate's design, written by the consultant at S5 (§7)
 questions.md               open questions for the consultant (README.md §3)
 verification.md            §8
@@ -186,6 +187,7 @@ The orchestrator writes, from the merged rows:
   - every quirk or apparent bug of cm6 whose reproduction is a choice.
 
   Each question has the shape of `CLAUDE.md` "Raising a question": no options, no recommendation.
+- `names.md`: every inventory row whose name the mechanical conversion of `.claude/rules/rust-crates.md` Architecture 4 may not settle, with what the member does and its signature: a static member; a name that is a std trait method or convention (the names in clippy's `should_implement_trait` table, such as `next`, `from_str`, `default`, `add`, `hash`; and `len`, `is_empty`, `to_string`, `iter`, `into_iter`, `from`, `as_ref`); serialization (`toJSON`, `fromJSON`); a name an entry of `.claude/rules/rust-naming-decisions.md` covers, to check that the entry's category fits it. Facts only: the consultant decides the entries at S5.
 - in `hazards.md`, for each cm6 throw: its condition (`file:line`), what it protects, and whether a caller can check the condition in advance.
 
 The consultant writes at S5 (§9), from those facts, `implementation-plan.md`: the crate's design. It records decisions, each with its reason. A choice in it that changes observable behavior or public API is a deviation: it is recorded in the item's row or in `.claude/rules/decisions.md`, where annotations can cite it, the plan points to it, and a first iteration of D1–D10 goes to a draft for the maintainer (`docs/workflow/README.md` §3). It contains:
@@ -243,7 +245,7 @@ A `verifier` that wrote no rows runs this (card: Appendix B):
 | S2 Chunks | `spec-auditor`, one per chunk, at most 4 at a time | §5, §6 for the chunk's items and test cases | rows, fixtures and probes per chunk; tokens per chunk in progress |
 | S3 Synthesis | orchestrator | §7; render the Markdown views; `tools/check_refs.py` | the remaining deliverables |
 | S4 Verification | `verifier` | §8 | `verification.md` |
-| S5 Decision | `consultant` | Decides `questions.md`; writes the crate's design (`implementation-plan.md`, §7); takes the decisions D1–D10 whose evidence this specification provides; approves the specification. Drafts for the maintainer per `README.md` §3 | decisions in their places; the questions file emptied of decided entries |
+| S5 Decision | `consultant` | Decides `questions.md`; decides an entry of `.claude/rules/rust-naming-decisions.md` for every case in `names.md` that no entry settles; writes the crate's design (`implementation-plan.md`, §7); takes the decisions D1–D10 whose evidence this specification provides; approves the specification. Drafts for the maintainer per `README.md` §3 | decisions in their places; the questions file emptied of decided entries |
 | S6 Retrospective | orchestrator | `docs/workflow/learnings.md` entries; method questions; progress points to the implementation stage | learnings, progress |
 
 S2 starts only after the S1 dispositions, because chunks cover only the items in scope.
