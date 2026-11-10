@@ -779,3 +779,15 @@ Open questions only (`docs/workflow/README.md` §3): a decided entry is removed 
   - A port that normalizes sections on read, or rejects them, does not throw where cm6 throws.
 - **Blocks.** The error contract of `state.cm6.156` and `state.cm6.141` in the `ferrum-state` design (S5).
 - **Raised by.** spec-auditor (S3 gap fill), 2026-11-10.
+
+## Q53. The `DROP` disposition of `StateField.extension` rests on "nothing in cm6 reads this getter", and a consumer package reads it
+
+- **Found.** Item `state.cm6.049` (`StateField.extension`, `mirrors/cm6/state/src/facet.ts:363`), disposition `DROP` (consultant, `be272c7`; `docs/parity/ferrum-state/dispositions.md`). Its row says `does` "nothing in cm6 reads this getter", `used_by` `[]`, and the reason says the getter is only reached when duplicate copies of `@codemirror/state` break `instanceof`. The S4 verifier (seed 4101, mismatch V1 in `docs/parity/ferrum-state/verification.md`) found `mirrors/cm6/lsp-client/src/client.ts:264` (`LSPClient` constructor) reading `(ext as any).extension` to tell an `Extension` from an `LSPClientExtension` in `config.extensions` (type at `mirrors/cm6/lsp-client/src/client.ts:205`); its probe shows `field.extension === field`, so a `StateField` passed there is recognized only through this getter.
+- **Open because.** The earlier decision was taken on the row's facts, and one of them is now shown false; whether the item stays out of scope is a disposition, which only the consultant derives (`docs/workflow/specification.md` §3).
+- **Bears on it.**
+  - The read is through an `as any` cast, which the TypeScript checker's reference search used for `used_by` in chunk `facet` does not report (deduction from the S1 method in `docs/progress/ferrum-state.md` "S1 Facts results"; the other `DROP` rows were rechecked by the verifier and their facts hold).
+  - `@codemirror/lsp-client` is a feature package, outside the three consumer packages pinned for this crate (`mirrors/mirrors.json`).
+  - The sibling getters on other classes were added for the same structural `Extension` claim (CHANGELOG 6.7.1, cited in the row's reason); whether any other consumer reads `.extension` on a facet or a compartment through a cast was not checked.
+  - The row's `does` and `used_by` are being corrected to the verified facts by the S4 fix step; the disposition and reason are left as decided until re-decided.
+- **Blocks.** Whether `state.cm6.049` gets behaviors, fixtures and tests before S4 can come back clean.
+- **Raised by.** orchestrator (S4 seed 4101, from the verifier's V1), 2026-11-10.
