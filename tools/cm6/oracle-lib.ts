@@ -14,7 +14,7 @@ export function encodeStr(s: string): string | {utf16: number[]} {
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i)
     if (c >= 0xD800 && c <= 0xDBFF) { const d = s.charCodeAt(i + 1); if (d >= 0xDC00 && d <= 0xDFFF) { i++; continue } }
-    if (c >= 0xD800 && c <= 0xDFFF) return {utf16: Array.from(s, (_, j) => s.charCodeAt(j)).slice(0, s.length)}
+    if (c >= 0xD800 && c <= 0xDFFF) return {utf16: Array.from({length: s.length}, (_, j) => s.charCodeAt(j))}  // every code unit, not code points
   }
   return s
 }
