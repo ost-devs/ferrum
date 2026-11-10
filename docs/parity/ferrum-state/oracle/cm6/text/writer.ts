@@ -10,6 +10,7 @@
 //   gen-category.ts      F3500-F3999   generator: categorizer
 //   gen-text.ts          F4000-F4999   generator: Text operations
 //   probe-tests.ts       F5000-F5199   values behind the cm6 test cases of test-text.ts / test-charcategory.ts
+//   probe-gapfill.ts     F5200-F5299   S3 gap fill: NaN / dir 0 throws on node documents (Text.lineAt B7, Text.line B4, Text.iter B3)
 // Rerunning a probe deletes the fixtures of its range and writes them again, in order.
 //
 // Encoding (applied here to inputs and outputs before fixtureWriter sees them):

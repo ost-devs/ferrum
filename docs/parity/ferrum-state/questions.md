@@ -766,3 +766,16 @@ Open questions only (`docs/workflow/README.md` §3): a decided entry is removed 
   - A port that implements comparisons as PartialEq or a single (a, b) convention fixes one order for all three (deduction); the fixture replayer compares callback logs in order (see Q32 on log comparison).
 - **Blocks.** The S5 signatures of facet, field and RangeValue comparisons and the replayer's comparison of callback logs for the fixtures listed.
 - **Raised by.** cm6-researcher (S3 synthesis), 2026-11-10 (as `s3-quirk7`).
+
+## Q52. `mapDesc` and `map` report "Mismatched change set lengths" for operands of equal length when one holds a zero-length unchanged section or an `ins` value below -1
+
+- **Found.** Items `state.cm6.156`, `state.cm6.141`.
+  - `mirrors/cm6/state/src/change.ts:486-487` (`mapSet`, final else). Fixtures `fixtures/change.jsonl` F5453–F5456 (`state.ChangeDesc.mapDesc.B7`) and F5457–F5458 (`state.ChangeSet.map.B3`): operands of lengths 0/0, 2/2, 0/0, 1/1, 0/0 and 0/0 all throw `Error("Mismatched change set lengths")`.
+  - `ChangeSet.fromJSON([0])` produces the sections `[0,-1]` (`mirrors/cm6/state/src/change.ts:364`).
+- **Open because.** Q12 records that the `fromJSON` readers accept shapes no other constructor builds, and Q11 that whether a mismatch is reported depends on the code path; neither covers operands of equal length reported as mismatched. No decision in force covers it.
+- **Bears on it.**
+  - `addSection` never builds zero-length unchanged sections (`mirrors/cm6/state/src/change.ts:385`), and every constructor other than the JSON readers uses it (deduction from reading `change.ts`); `invertedDesc` copies sections unchanged (`mirrors/cm6/state/src/change.ts:84-92`). So only `fromJSON` input reaches `:487`.
+  - History persistence reads `ChangeSet.fromJSON` and `ChangeDesc.fromJSON` (`mirrors/cm6/commands/src/history.ts:206-213`, cited in Q12); whether a real serializer emits `[0]` was not verified.
+  - A port that normalizes sections on read, or rejects them, does not throw where cm6 throws.
+- **Blocks.** The error contract of `state.cm6.156` and `state.cm6.141` in the `ferrum-state` design (S5).
+- **Raised by.** spec-auditor (S3 gap fill), 2026-11-10.
