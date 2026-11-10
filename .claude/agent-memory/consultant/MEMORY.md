@@ -13,6 +13,7 @@
 - DROP vs CORE for TS/JS-shaped items: DROP only what has no runtime meaning or only builds a JS artifact (phantom `tag`, conformance getters, `fromCodePoint`); keep type-level guarantees (FacetReader), language protocols (`Symbol.iterator`) and anything taking a position (D1 reaches it). A protocol member (`StateField.extension`) is CORE even if Rust's form is static; DROP must not presuppose the S5 design, and "nobody reads it" needs a search covering untyped reads. `be272c7`, corrected `474fff6`
 - Worker effort: pin it in each definition (session default and the spawn parameter change it silently); lower a producer only on a paired run vs verified rows; gates stay high. Cost: estimate from inventory rows, not source lines. M1/M6 commit
 - Row tags/criteria: define by what the consumer of the field needs (deps -> which assertion an answer changes, since it drives fixture coverage), add a mechanical check; a sample-found rule-wide error is fixed on all rows. `0cab8fb`
+- Decision tags beyond D1: a tag follows where the decision's code runs (text the behavior reads), not every number that text once produced; D1 alone reaches derived numbers because its unit re-expresses every position. Keep the excluded answer visible as a counted fact in the decision's question. M7 commit
 - Keeping agents out of files: a permission deny (it also filters searches), plus one line of text only for what it cannot see. `4483420`
 
 ## Calibration
