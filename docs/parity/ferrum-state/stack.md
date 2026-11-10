@@ -2,7 +2,7 @@
 
 - **What:** the stack notes of `raw/behaviors.jsonl` (`stack` field), grouped by inventory item, identical notes merged; each note ends with the behaviors (`B<n>` of that item) that carry it. Generated from the rows; items whose behaviors all say `none found` are left out. Facts, not proposals (`docs/workflow/specification.md` §5, §7).
 - **cm6:** `@codemirror/state` 6.7.6, mirror commit 651084c; `mirrors/...` line numbers refer to it.
-- **Ferrum commit:** 5a8c009; line numbers in `docs/` and `tools/` refer to it.
+- **Ferrum commit:** 9dd2e08; line numbers in `docs/` and `tools/` refer to it.
 - **Ids:** behaviors `state.<item>.B<n>`; inventory rows `state.cm6.<nnn>`
 
 Items with notes: 94 of 261; distinct notes: 226.

@@ -2,7 +2,7 @@
 
 - **What:** every cm6 test case of `mirrors/cm6/state/test/` in catalog order, then one derived test per behavior no cm6 test covers (`docs/workflow/specification.md` §6), rendered from `raw/tests.jsonl` with `tools/render.py`.
 - **cm6:** `@codemirror/state` 6.7.6, mirror commit 651084c; `mirrors/...` line numbers refer to it.
-- **Ferrum commit:** 5a8c009; line numbers in `docs/` and `tools/` refer to it.
+- **Ferrum commit:** 9dd2e08; line numbers in `docs/` and `tools/` refer to it.
 - **Ids:** cm6 tests `<file>#<nn>`; derived tests `derived:<behavior id>`; behaviors `state.<item>.B<n>`
 
 
