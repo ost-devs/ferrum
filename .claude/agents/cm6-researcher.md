@@ -3,6 +3,7 @@ name: cm6-researcher
 description: Verifies CodeMirror 6 facts (what a cm6 function, class, facet or test does; exports; edge cases; test scenarios and expected values; package dependencies; why a mechanism exists, from code comments and CHANGELOG; lezer and marijn helper behavior) against the pinned mirrors, and can run cm6 in the harness to settle a behavior. Use proactively when the answer is not already in docs/foundation/ or may have changed since it was verified.
 tools: Read, Grep, Glob, Bash
 model: opus
+effort: high
 memory: project
 hooks:
   PreToolUse:

@@ -3,6 +3,7 @@ name: test-writer
 description: Writes the tests of one module of a Ferrum crate from its approved specification - ported cm6 tests, derived tests from fixtures, hazard tests, scaling probes and the fixture replayer - without seeing the implementation. Use for step 2 of docs/workflow/implementation.md §3.
 tools: Read, Grep, Glob, Bash, Write, Edit
 model: opus
+effort: high
 hooks:
   PreToolUse:
     - matcher: "Write|Edit|NotebookEdit"

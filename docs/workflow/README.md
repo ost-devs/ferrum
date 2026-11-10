@@ -114,6 +114,7 @@ A crate is described as conforming only with that report (`.claude/rules/writing
 - **Start and resume.** The maintainer starts a Claude Code session at the repository root and types `/ferrum-run`. The orchestrator reads `docs/progress/`, which names the crate, the stage, the step and the brief sections to read, and continues. A new session after a crash, a usage limit or `/clear` resumes the same way; nothing depends on an earlier conversation.
 - **Unattended.** Use an interactive session: only it continues by itself after a usage-limit reset (§8). Choose a permission mode that does not stop on routine commands.
 - **Questions do not stop the work.** The orchestrator queues each question, continues with what it does not block, and calls the consultant when a batch is ready or when nothing else can advance. It stops only when every remaining step waits on the maintainer. Its last message then says, in Portuguese, what is done and what awaits the maintainer.
+- **Effort.** Every worker and researcher runs at the `effort` its definition sets (`.claude/agents/*.md`): `high` for all of them except the `translator` (`medium`). The orchestrator passes no `effort` parameter when it spawns them, because the parameter overrides the definition and a lower level silently thins the evidence a later gate is measured against. A role moves to another level only by a consultant decision that rests on a paired run: the same assignment run at both levels, the outputs compared by a `verifier` against verified rows, tokens recorded. Gates (`verifier`, `conformance-checker`) stay at `high` whatever the producers run at.
 - **Parallelism.** At most 4 workers at a time. A usage limit then interrupts few at once, and work already appended to files survives (`docs/workflow/learnings.md` W3).
 - **Context.**
   - The orchestrator reads counts, JSONL summaries and short worker reports. It does not read the sources a worker owns.
@@ -129,7 +130,7 @@ A crate is described as conforming only with that report (`.claude/rules/writing
   - what is done and what remains, with counts;
   - the items blocked and what blocks each;
   - the brief sections to re-read;
-  - tokens per step.
+  - tokens per step, and what each step found in an earlier step's output (rows added or corrected, with ids and the step that produced them), so the retrospective can tell which steps pay for themselves.
 
   It holds the current state only (`.claude/rules/writing.md` "Agent-loaded files and notes for later sessions").
 

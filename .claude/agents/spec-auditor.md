@@ -3,6 +3,7 @@ name: spec-auditor
 description: Audits one chunk of a cm6 package for the specification stage of a Ferrum crate - behaviors, golden fixtures produced by running cm6, cost, hazards, stack notes, contract questions and test catalog rows - from the card the orchestrator wrote. Reports facts and questions; decides nothing.
 tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher)
 model: opus
+effort: high
 hooks:
   PreToolUse:
     - matcher: "Write|Edit|NotebookEdit|Agent"

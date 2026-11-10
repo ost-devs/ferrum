@@ -3,6 +3,7 @@ name: rust-researcher
 description: Verifies facts about Rust and the native side of Ferrum - the language and std, crates (ropey, unicode-segmentation, tree-sitter, AccessKit, cosmic-text, serde, ...), their behavior, versions, Unicode versions, features, licenses and dependency trees, and native platform APIs (text input, IME, accessibility) - by reading their source and docs and by running probes and benchmarks. Use when a decision or a design depends on how Rust or a Rust library behaves or performs.
 tools: Read, Grep, Glob, Bash, Write, Edit, WebFetch, WebSearch
 model: opus
+effort: high
 memory: project
 hooks:
   PreToolUse:

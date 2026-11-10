@@ -3,6 +3,7 @@ name: implementer
 description: Implements one module of a Ferrum crate until its tests pass, following the cm6 algorithm and the approved specification, decisions and the crate's design. Cannot change tests. Use for step 3 of docs/workflow/implementation.md §3.
 tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher, rust-researcher)
 model: opus
+effort: high
 hooks:
   PreToolUse:
     - matcher: "Write|Edit|NotebookEdit|Agent"

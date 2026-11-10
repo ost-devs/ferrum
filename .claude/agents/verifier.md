@@ -3,6 +3,7 @@ name: verifier
 description: Fresh-context verification for Ferrum - re-checks a recorded sample of rows, fixtures or verdicts another agent produced against cm6 and the crate, and runs the mechanical checks the card lists. Never used on work it produced.
 tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher)
 model: opus
+effort: high
 hooks:
   PreToolUse:
     - matcher: "Write|Edit|NotebookEdit|Agent"

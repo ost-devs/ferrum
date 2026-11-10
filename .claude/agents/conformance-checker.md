@@ -3,6 +3,7 @@ name: conformance-checker
 description: Checks one module of an implemented Ferrum crate against its approved specification for the conformance stage - whether each test really asserts its behavior, whether each ported test is the same as cm6's, whether hazards are covered - and records verdicts with reproductions. Never fixes anything.
 tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher)
 model: opus
+effort: high
 hooks:
   PreToolUse:
     - matcher: "Write|Edit|NotebookEdit|Agent"
