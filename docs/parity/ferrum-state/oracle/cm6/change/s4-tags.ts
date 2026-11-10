@@ -13,8 +13,7 @@
 // so that they can be mapped to another unit; no op reads it (ops that read a document use `doc`).
 // Inputs on which cm6 does not terminate run in a child process with a 5 s limit (as s2-fixtures.ts `fh`).
 import {readFileSync, writeFileSync} from "node:fs"
-import {spawnSync} from "node:child_process"
-import {fixtureWriter} from "@harness/lib"
+import {fixtureWriter, runIsolated} from "@harness/lib"
 import {run} from "./interp"
 
 const ROOT = "docs/parity/ferrum-state"
@@ -42,8 +41,7 @@ function f(bs: string[], input: any, output = run(input)) {
 }
 function fh(bs: string[], input: any) {
   let ms = 5000
-  let r = spawnSync("npx", ["tsx", "--tsconfig", ".harness/state/tsconfig.json", `${ROOT}/oracle/cm6/change/interp-cli.ts`, JSON.stringify(input)], {timeout: ms, encoding: "utf8"})
-  f(bs, input, r.error && (r.error as any).code == "ETIMEDOUT" ? {timeout: ms} : JSON.parse(r.stdout))
+  f(bs, input, runIsolated(`${ROOT}/oracle/cm6/change/interp-cli.ts`, JSON.stringify(input), ms))
 }
 const E = "\u{1F600}"   // astral character, two UTF-16 code units
 const LS = "\u2028"

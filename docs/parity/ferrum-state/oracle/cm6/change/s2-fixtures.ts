@@ -4,8 +4,7 @@
 // Ids F0001... follow the order of the `f(...)` calls below; new fixtures are only ever appended, so ids stay stable.
 // Each fixture's `input` is replayed by interp.ts (`run`), which documents the input and output encoding.
 import {readFileSync} from "node:fs"
-import {spawnSync} from "node:child_process"
-import {fixtureWriter} from "@harness/lib"
+import {fixtureWriter, runIsolated} from "@harness/lib"
 import {run} from "./interp"
 
 const ROOT = "docs/parity/ferrum-state"
@@ -24,8 +23,7 @@ function f(item: string, bs: number[], input: any, extra: string[] = []) {
 function fh(item: string, bs: number[], input: any, extra: string[] = []) {
   count++
   let ms = 5000
-  let r = spawnSync("npx", ["tsx", "--tsconfig", ".harness/state/tsconfig.json", `${ROOT}/oracle/cm6/change/interp-cli.ts`, JSON.stringify(input)], {timeout: ms, encoding: "utf8"})
-  let output = r.error && (r.error as any).code == "ETIMEDOUT" ? {timeout: ms} : JSON.parse(r.stdout)
+  let output = runIsolated(`${ROOT}/oracle/cm6/change/interp-cli.ts`, JSON.stringify(input), ms)
   write(ids[item], bs.map(b => `state.${item}.B${b}`).concat(extra), input, output)
 }
 // "4 0:2 4" (the test-change.ts `mk` notation) -> sections [4,-1,0,2,4,-1]

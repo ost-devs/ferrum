@@ -4,6 +4,7 @@ Your assignment names your chunk. Everything you need is here; `docs/workflow/sp
 
 Run probes: `npx tsx --tsconfig .harness/state/tsconfig.json <file>.ts` (from the repository root).
 Import cm6 as `"@codemirror/state"`, helpers as `"@harness/lib"` (`rng`, `capture`, `encode`, `fixtureWriter`; `tools/cm6/oracle-lib.ts`).
+An input on which cm6 may not terminate goes through `runIsolated` (time limit, records `{"timeout": ms}`) and a script that calls `isolatedMain`, as `oracle/cm6/change/interp-cli.ts` does; never spawn `npx` or `tsx` yourself (a timeout kills only the wrapper and leaves cm6 looping).
 Consumer packages to grep for values: `mirrors/cm6/view/src/`, `mirrors/cm6/language/src/`, `mirrors/cm6/commands/src/` (pinned at their releases), then every other `mirrors/cm6/*/src/` that uses the item.
 Write only: `docs/parity/ferrum-state/raw/<chunk>-behaviors.jsonl`, `raw/<chunk>-tests.jsonl`, `raw/<chunk>-questions.jsonl`, `raw/<chunk>-contracts.jsonl`, `raw/<chunk>.progress`, `fixtures/<chunk>.jsonl`, `oracle/cm6/<chunk>/` (probe and generator sources only), and `.scratch/<chunk>/` at the repository root (not under `docs/`) for scratch files (gitignored; other workers run at the same time, so never use a shared temporary folder). Every probe behind a value you record goes in `oracle/cm6/<chunk>/`, never only in scratch.
 
