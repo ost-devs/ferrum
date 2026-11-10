@@ -101,8 +101,14 @@ For every item in scope (`CORE`, `CONTRACT`, the core-owned part of `SURFACE`, a
    - the input class;
    - the observable result;
    - cm6 `file:line`;
-   - the decisions it depends on (`D1`, `D2`, …);
+   - the decisions it depends on (`deps`: `D1`, `D2`, …), by the tests below;
    - the cm6 tests that cover it, or `none`.
+
+   **Decision tags.** A tag says that some answer to that decision changes what this behavior asserts. It decides which fixtures the behavior needs (item 3), when its item can be implemented (`docs/workflow/implementation.md` §1), and it is evidence for the decision. Apply each test to the behavior's own assertion, not to every value its input carries. When a test cannot be settled, tag: a missing tag leaves a conversion untested and nothing fails, an extra one costs a fixture.
+   - `D1` (position unit): put an astral character in the text the behavior reads, or that its inputs were built from (a document, a line, a string, an inserted text), before or inside the positions involved. Tag `D1` if a number the behavior asserts (a position, length, offset, column offset, count of code units) or its outcome (a range check, a throw, a split inside a character) would differ with positions counted in UTF-8 bytes or in chars instead of UTF-16 code units. Not `D1`: numbers the behavior only carries without relating them to any text (a `Range` triple, the order of given positions), and assertions about something else (identity of the result, order, emptiness), even when the values hold positions.
+   - `D2` (line breaks, the `Text` model, grapheme clusters): tag `D2` if what the behavior asserts depends on how cm6 splits text into lines (`\r\n?|\n`, or `lineSeparator`), counts a line break as one position, numbers lines or places line boundaries, reinserts the separator on output, or places grapheme cluster boundaries (`findClusterBreak`).
+   - `D6` (ownership and threading): tag `D6` if the behavior asserts identity, reuse or sharing a caller can observe (the same object returned, a value compared with `===` or used as a `Map` key, a cached value), a mutation visible to another holder, or state shared across instances (module-level counters, ids).
+   - `D5` (command type): the behavior is about a command's target or signature (`StateCommand`, `Command`). `D3`, `D4`, `D7`, `D8`: only when the code shows the behavior asking that decision's question (a syntax tree, geometry, a class or attribute, an input event).
 
    Dimensions to consider (add whatever the code shows):
    - the return value, including "did nothing";
@@ -116,7 +122,7 @@ For every item in scope (`CORE`, `CONTRACT`, the core-owned part of `SURFACE`, a
 3. **Golden fixtures** for every behavior that runs headless. A fixture is one cm6 run, written by `fixtureWriter`:
    - never written by hand; the recorded input is the input actually used;
    - positions in UTF-16 code units, as cm6 produces them, with the text stored so they can be mapped to the unit of D1;
-   - every behavior that depends on D1 or D2 gets one ASCII fixture and one with astral characters, CRLF or U+2028, as relevant;
+   - every behavior tagged `D1` gets one ASCII fixture and one whose text has an astral character before or inside the positions involved; every behavior tagged `D2` gets, besides the ASCII one, one for each case its assertion turns on: CRLF, lone CR, U+2028 (with and without `lineSeparator`), a grapheme cluster of several code points;
    - exceptions are outputs (`capture`);
    - lone surrogates are encoded (`encode`).
 
@@ -221,6 +227,7 @@ A `verifier` that wrote no rows runs this (card: Appendix B):
    - totals recounted with the tools; no duplicate ids;
    - every in-scope item has behaviors;
    - every behavior has fixtures or a `golden_note`;
+   - every behavior tagged `D1` cites a fixture whose input has an astral character or an encoded lone surrogate, and every behavior tagged `D2` one whose input has `\r`, U+2028 or a non-ASCII character, unless it has a `golden_note`; a script lists the exceptions, and each is checked by hand against §5 item 3;
    - every generator, re-run with its seed, reproduces its fixtures exactly;
    - every test case is classified;
    - every repeated reason text is listed and checked against each row that carries it;
@@ -231,9 +238,9 @@ A `verifier` that wrote no rows runs this (card: Appendix B):
    - every `DROP` row;
    - a sample of dispositions.
 
-   For each sampled item, re-derive the behavior list from cm6's source and look for missing behaviors, re-run three fixtures, and check the test classifications and the stack notes.
+   For each sampled item, re-derive the behavior list from cm6's source and look for missing behaviors, re-run three fixtures, and check the test classifications, the stack notes and the decision tags by the tests of §5 item 2, both ways: a tag missing, and a tag the tests do not support.
 3. **For `ferrum-state`:** compare with the cm6 side of the earlier state audit (§1). Every cm6 behavior or fixture there that has no counterpart here is a finding. It is verified against cm6 before anyone acts on it.
-4. The orchestrator fixes every mismatch. The verifier then draws a new sample with a new seed, until a sample comes back clean.
+4. The orchestrator fixes every mismatch. A mismatch that comes from a rule applied to every row (a criterion, a field left empty across a chunk) is fixed on every row the rule covers, not on the sampled ones only: a sample measures the rows, and fixing only what it drew leaves the same error in the rest unseen. The verifier then draws a new sample with a new seed, until a sample comes back clean.
 
 ## 9. Steps
 
@@ -294,7 +301,7 @@ Consumer packages to grep for values: [mirrors/cm6/... list].
 Write only: docs/parity/[crate]/raw/[chunk]-*.jsonl, fixtures/[chunk].jsonl, oracle/cm6/[chunk]/, raw/[chunk].progress.
 
 ## For every item you own (docs/workflow/specification.md §5)
-[the nine points of §5, condensed: read; behaviors with their fields; fixtures; consumer values;
+[the nine points of §5, condensed: read; behaviors with their fields, and the decision-tag tests of §5 item 2 verbatim; fixtures; consumer values;
  generators with the checklist; cost; hazards (list); stack notes; contract questions]
 
 ## For every test case you own (§6)
