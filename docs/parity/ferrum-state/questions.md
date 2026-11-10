@@ -542,3 +542,23 @@ Open questions only (`docs/workflow/README.md` §3): a decided entry is removed 
   - Side arithmetic in cm6 is JS number subtraction; the bound values decide the integer width a Rust side type needs (differences up to 1.6e9 with consumer values).
 - **Blocks.** The side type and the between/goto bounds in S5.
 - **Raised by.** spec-auditor (S2, chunk rangeset), 2026-11-09 (as `rangeset-s2-q5`).
+
+## Q40. Fixtures write the JavaScript values JSON cannot hold (NaN, ±Infinity, `undefined`, functions) in four different ways, and some fixture files cannot tell them from `null`
+
+- **Found.**
+  - `tools/cm6/oracle-lib.ts:40` (`fixtureWriter`) writes `output` with `JSON.stringify` and no encoding: NaN and ±Infinity become `null`, an `undefined` property is dropped. `encode` (`tools/cm6/oracle-lib.ts:23`) handles lone surrogates in `input` only.
+  - Each chunk's oracle encodes these values itself before writing, each its own way (counts from the committed files):
+    - `fixtures/text.jsonl`: `{"js_number": "NaN" | "Infinity" | "-Infinity"}` (201) and `{"js_undefined": true}` (9), stated in `docs/parity/ferrum-state/oracle/cm6/text/writer.ts:19-21`.
+    - `fixtures/change.jsonl`: `{"num": "NaN" | "Infinity" | "-Infinity"}` (39); in argument lists `null` stands for an omitted argument and `goalColumn` `undefined` is written `null` (`docs/parity/ferrum-state/oracle/cm6/change/interp.ts:5-7`, `:22`, `:92`), so a `null` there means `undefined` or `null` depending on the field.
+    - `fixtures/facet.jsonl`: `{"num": "NaN"}` (104), `"<undefined>"` (158), `"<function>"` for a function value (`docs/parity/ferrum-state/oracle/cm6/facet/s2-fixtures.ts:7-8`).
+    - `fixtures/state.jsonl`: the strings `"<undefined>"` (104) and `"<wall-clock>"` (14, the automatic `Transaction.time`), with `"<NaN>"`, `"<Infinity>"`, `"<-Infinity>"` defined but unused (`docs/parity/ferrum-state/oracle/cm6/state/s2-lib.ts:33` (`norm`)).
+    - `fixtures/rangeset.jsonl`: no convention; its probes write through `fixtureWriter` as they are (22 `null` values, among them `textDiff.spec`). Inputs with `undefined` are described as strings (`"update({filter: undefined})"`). Whether any rangeset output held NaN, ±Infinity or `undefined` before writing was not checked.
+  - Every fixture row carries `"encoding": "utf16"`, which says nothing about these values.
+- **Open because.** `docs/workflow/specification.md` §4 gives the fixture schema (`id, item_id, behaviors[], input, output, encoding`) but no representation for non-JSON values, and the spec-auditor card (`docs/parity/ferrum-state/cards/spec-auditor.md`) names `encode` only for lone surrogates. No decision in force covers it.
+- **Bears on it.**
+  - The fixture replayer of the implementation stage (`docs/workflow/specification.md` §7 "test plan") reads all five files; with four conventions it needs per-chunk decoding, and where `null` was written for `undefined` the two cannot be told apart from the file alone.
+  - The values matter for behaviors where cm6 returns NaN or `undefined` (Q9, Q25 on out-of-domain inputs; `codePointAt` past the end; `combine` functions returning `undefined` in `facet`) and for the D1 question of what a position type can hold.
+  - Regenerating a chunk's fixtures is cheap: every chunk has its generator in `docs/parity/ferrum-state/oracle/cm6/<chunk>/` (commands in `docs/progress/ferrum-state.md`), and fixture ids are stable only if the regeneration keeps the order.
+  - The same question will recur for every crate whose cm6 package returns such values (`ferrum-view` geometry returns NaN-free numbers in most paths; not checked).
+- **Blocks.** The fixture replayer and the derived tests that read fixtures (implementation stage); S4 re-runs fixtures and compares them byte for byte, which works as they are.
+- **Raised by.** Orchestrator (S3 synthesis), 2026-11-10.
