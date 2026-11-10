@@ -61,4 +61,5 @@ S4 Verification, S5 Decision, S6 Retrospective.
 - S1 Facts: 871,719 in 5 workers (`text` 157,899; `change` 146,315; `facet` 151,666; `state` 232,355; `rangeset` 183,884), about 3,300 per row.
 - S2 Chunks: `rangeset` 307,086 (6,530 per item); `change` 359,821; `text` 324,244; `state` 413,711 (each: the count reported at the end of the resumed run); `facet` about 290,000 (not reported; the context size at its last turn).
 - S3 Synthesis: throw facts 159,151 (`cm6-researcher`); quirk sweep 226,606 (`cm6-researcher`); decision questions 273,231 (`cm6-researcher`); gap fill 96,994 + 165,575 (`spec-auditor`, two rounds); total 921,557.
+- Method questions M1, M6: 92,478 (`consultant`, 2026-11-10).
 - S1 Dispositions: 165,676 reported for the resumed run (`consultant`; the run before the usage limit is not counted).
