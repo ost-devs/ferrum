@@ -779,3 +779,20 @@ Open questions only (`docs/workflow/README.md` §3): a decided entry is removed 
   - A port that normalizes sections on read, or rejects them, does not throw where cm6 throws.
 - **Blocks.** The error contract of `state.cm6.156` and `state.cm6.141` in the `ferrum-state` design (S5).
 - **Raised by.** spec-auditor (S3 gap fill), 2026-11-10.
+
+## Q54. A state whose doc lines contain the separator `fromJSON` splits on comes back from the JSON round trip with different lines, and possibly a different length
+
+- **Found.**
+  - `toJSON` writes `doc: this.sliceDoc()` (`mirrors/cm6/state/src/state.ts:207`, `EditorState.toJSON`). `fromJSON` passes `json.doc` to `create` (`mirrors/cm6/state/src/state.ts:233-234`), which splits it on `lineSeparator` or `/\r\n?|\n/` (`mirrors/cm6/state/src/state.ts:246`).
+  - Without a config, `Text.of(["a\rb","c"])` and `Text.of(["a\nb","c"])` come back as lines a, b, c with the same length (`fixtures/state.jsonl` F2016, F2091).
+  - With `lineSeparator` `"\r\n"` on both sides, `Text.of(["a\r\nb","c"])` comes back as a, b, c and the length goes from 6 to 5 (F2093); a cursor at 6 makes `fromJSON` throw `RangeError("Selection points outside of document")` (F2094).
+  - A doc split from a string with the same separator on both sides round-trips (F2015; F2092: lines "a\nb", "c" kept under `"\r\n"`).
+  - Behavior: `state.EditorState^fromJSON.B7`.
+- **Open because.** Q9 records that `Text.of` stores lines as given and that its string form disagrees with its lines; it does not record this consequence for `EditorState`. cm6 validates lines in none of `Text.of`, `create`, `toJSON`; its docs only say `toJSON` property names should avoid `doc` and `selection` (`mirrors/cm6/state/src/state.ts:201-204`). test-state#10 round-trips a string-built doc only. D2 is open (`docs/foundation/ferrum-foundation.md` §6) and does not say whether a Ferrum state must be able to hold such lines.
+- **Bears on it.**
+  - Who can build such a doc: any caller passing a `Text` to `create` (`mirrors/cm6/state/src/state.ts:245`, used as is) or to `replaceSelection` (`mirrors/cm6/state/src/state.ts:130`, not re-split; F2034, F1317); view code that passes pre-split arrays to `Text.of` (`mirrors/cm6/view/src/domchange.ts:128`, `:137`, `:150`, `:168`, cited in Q9); whether those arrays can hold a break character was not verified.
+  - Where it is observable: the restored state has more lines; when the separator is two characters (`"\r\n"`) it also has a shorter length, so positions after the break move, and a selection or JSON field past the new end makes `fromJSON` throw. Not observable for docs built only from strings by cm6's own splitting (F2015, F2092).
+  - Deduction, not verified: a `Text` model that splits every inserted line on breaks could not hold such lines at all, so the original state would already differ from cm6 before any round trip.
+  - Why cm6 behaves this way: `Text.of` does not validate, which avoids copying or scanning on a hot path (deduction from `mirrors/cm6/state/src/text.ts:153-157`; no comment or CHANGELOG entry found).
+- **Blocks.** The D2 decision (S5) and whether the conformance replayer must build docs through `Text.of` with lines holding break characters. Nothing in S4: the row states the facts.
+- **Raised by.** spec-auditor (chunk `state`, S4 re-tag follow-up), 2026-11-10.
