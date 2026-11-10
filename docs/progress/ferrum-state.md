@@ -32,7 +32,7 @@ Current state only (`.claude/rules/writing.md` "Agent-loaded files and notes for
 ## S1 Dispositions results
 
 - Decided by the consultant (`be272c7`): 260 `CORE`, 4 `DROP` (`state.cm6.043` `Facet.tag`, `state.cm6.045` `FacetReader.tag`, `state.cm6.049` `StateField.extension`, `state.cm6.214` `fromCodePoint`); no `CONTRACT`, `SURFACE` or `ELSEWHERE`; all 12 files `CORE`. Rendered in `docs/parity/ferrum-state/dispositions.md`. The `DROP` definition in `docs/workflow/specification.md` §3 now names cm6's stack, the JavaScript runtime included (method change, same commit).
-- For S3 (from the consultant): `names.md` must list `Text.[Symbol.iterator]` (iteration) and `combineConfig`.
+- S3 started before the `facet` chunk ended: `names.md` written (77 rows, from `raw/names.jsonl`; includes `Text.[Symbol.iterator]` and `combineConfig`, as the consultant asked).
 
 ## Remaining in the stage
 
