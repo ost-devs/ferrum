@@ -68,3 +68,18 @@ Compared the cm6 side of `docs/parity/state/behaviors.md` for the 28 sampled ite
 Item 1: 264 inventory rows and 172 cm6 tests recounted; 885 behaviors, 734 test rows, 4066 fixtures in 5 files cross-checked; 20 generators re-run, 0 differences; 9 repeated `class_reason` texts, 3 `platform` texts, 1 `golden_note` text and 2 `port_notes` texts checked against all rows that carry them. Item 2: 28 items, 4 `DROP` rows, 32 row dispositions and 3 file dispositions; 76 fixtures re-run independently. Item 3: 32 sections compared.
 
 Mismatches: V1 (`state.cm6.049`), V2 (`state.cm6.064`, `hazards.md` `selection.ts:189`), V3 and V4 (`state.cm6.017`), V5 (16 `deps` rows), V6 (132 `facet` behaviors with empty `stack`), V7 (`rangeset:F0168`). **Seed 4101 is not clean.**
+
+## Seed 4102
+
+**Sample** (drawn by the orchestrator, 2026-11-10, after the fixes of seed 4101 and the tag passes of M3 and M7: Python `random.Random(4102)`; for each chunk in the order `text`, `change`, `facet`, `state`, `rangeset`, `rng.sample` of ⌈10%⌉ of its `CORE` rows in `raw/inventory.jsonl` order; then `rng.sample` of 3 rows of `raw/files.jsonl`):
+
+- In-scope items, 28 of 261:
+  - `text` (4 of 39): `state.cm6.218` `Line`, `state.cm6.241` `Text.iterLines`, `state.cm6.244` `Text.children`, `state.cm6.246` `Text^of`.
+  - `change` (7 of 62): `state.cm6.065` `EditorSelection.eq`, `state.cm6.067` `EditorSelection.asSingle`, `state.cm6.077` `SelectionRange`, `state.cm6.078` `SelectionRange.from`, `state.cm6.079` `SelectionRange.to`, `state.cm6.146` `ChangeSet^empty`, `state.cm6.158` `ChangeDesc.touchesRange`.
+  - `facet` (4 of 36): `state.cm6.040` `Facet.compute`, `state.cm6.050` `Extension`, `state.cm6.057` `Compartment`, `state.cm6.255` `StateFieldSpec.compare`.
+  - `state` (8 of 77): `state.cm6.018` `EditorState^create`, `state.cm6.019` `EditorState^allowMultipleSelections`, `state.cm6.024` `EditorState^readOnly`, `state.cm6.028` `EditorState^languageData`, `state.cm6.030` `EditorState.charCategorizer`, `state.cm6.031` `EditorState.wordAt`, `state.cm6.115` `TransactionSpec.scrollIntoView`, `state.cm6.133` `StateEffectType.of`.
+  - `rangeset` (5 of 47): `state.cm6.173` `RangeValue.endSide`, `state.cm6.181` `RangeSet`, `state.cm6.196` `RangeCursor.goto`, `state.cm6.210` `SpanIterator.span`, `state.cm6.261` `RangeSetUpdate.sort`.
+- `DROP` rows, all 3: `state.cm6.043` `Facet.tag`, `state.cm6.045` `FacetReader.tag`, `state.cm6.214` `fromCodePoint`.
+- `CONTRACT` items: none exist.
+- Dispositions: the 28 sampled items and the 3 `DROP` rows, and the source files `mirrors/cm6/state/src/charcategory.ts`, `mirrors/cm6/state/src/config.ts`, `mirrors/cm6/state/src/facet.ts` (`raw/files.jsonl`).
+- Also: the fixes of seed 4101's mismatches V1–V7 (`state.cm6.049` is now `CORE`, Q53).
