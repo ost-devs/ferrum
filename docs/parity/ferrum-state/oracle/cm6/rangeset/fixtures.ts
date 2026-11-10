@@ -451,7 +451,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   // goto
   let G = new Pool([{name: "a"}, {name: "b"}])
   fx(ID.goto, [...B("RangeCursor.goto", 1, 2, 3), ...B("RangeCursor.from", 1), ...B("RangeCursor.to", 1)], {sets: [setInput(G, [[0, 2, 0], [4, 6, 0], [8, 10, 0]]), setInput(G, [[1, 9, 1]])],
-     op: "c = RangeSet.iter(sets); read; goto(5); read; goto(1); read; goto(11); read; goto(0); read"}, () => {
+     op: "multi: c = RangeSet.iter(sets); read; goto(5); read; goto(1); read; goto(11); read; goto(0); read; next(); read (read = [from, to, value index, rank]). single: d = sets[0].iter(7); read [from, to]; goto(3); read [from, to]; goto(100); read [from, to, value]"}, () => {
     let c = RangeSet.iter([G.set([[0, 2, 0], [4, 6, 0], [8, 10, 0]]), G.set([[1, 9, 1]])]), out: any[] = []
     let rd = () => out.push([c.from, c.to, G.idx(c.value), c.rank])
     rd(); c.goto(5); rd(); c.goto(1); rd(); c.goto(11); rd(); c.goto(0); rd(); c.next(); rd()
