@@ -2,10 +2,10 @@
 
 - **What:** the hazards the cm6 implementation relies on (`docs/workflow/specification.md` §5 point 7), from the `hazards` field of `raw/behaviors.jsonl` grouped by inventory item, identical notes merged, each ending with the behaviors (`B<n>`) that carry it; then every throw with its condition, what it protects and whether a caller can check it in advance (§7). Generated from the rows and the throw facts.
 - **cm6:** `@codemirror/state` 6.7.6, mirror commit 651084c; `mirrors/...` line numbers refer to it.
-- **Ferrum commit:** b3b0e8f; line numbers in `docs/` and `tools/` refer to it.
+- **Ferrum commit:** 5a8c009; line numbers in `docs/` and `tools/` refer to it.
 - **Ids:** behaviors `state.<item>.B<n>`; inventory rows `state.cm6.<nnn>`; fixtures `<chunk>:F<nnnn>` in `fixtures/<chunk>.jsonl`; cm6 tests `<file>#<nn>`
 
-Throws: 41. Items with hazards: 206; distinct notes: 567.
+Throws: 41. Items with hazards: 207; distinct notes: 580.
 
 ## Throws
 
@@ -192,6 +192,7 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - Without a separator CRLF is normalized: toJSON returns "\n" (B4)
 - An unsorted selection that no other constructor produces reaches the state (Q12) (B5)
 - Lossy round trip of selection flags (B7)
+- mirrors/cm6/state/src/state.ts:207, :246 the round trip re-splits the string form: lines holding the split separator (a Text given directly, mirrors/cm6/state/src/text.ts:153-157) are not restored, and the length can change (F2093, F2094) (B7)
 - mirrors/cm6/state/src/facet.ts:318 `find` over the initField values: the first entry wins (B8)
 - mirrors/cm6/state/src/state.ts:226 `for...in` over `fields`: JS property order (integer-like keys first, ascending; then insertion order) (B8)
 - Precedence wrappers in `config.extensions` reorder initializers ahead of the JSON ones (B8)
@@ -372,6 +373,21 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 ## state.cm6.048 `StateField.init`
 
 - identity of the entry object decides re-initialization (B3)
+
+## state.cm6.049 `StateField.extension`
+
+- identity: the result is `===` the field, and `flatten` deduplicates by that object (`seen` Map<Extension, number>, mirrors/cm6/state/src/facet.ts:522-531) (B1)
+- prototype accessor, not an own property: JS reflection (`Object.keys`, `JSON.stringify`, spread) does not show it, `in` does (B1)
+- identity: the second occurrence is skipped because it is the same object at the same precedence (`known <= prec`, mirrors/cm6/state/src/facet.ts:526) (B2)
+- identity: the move to a higher level finds the earlier placement with `indexOf` and removes it with `splice` (mirrors/cm6/state/src/facet.ts:527-528) (B3)
+- order of user callbacks (create, update, provide) is observable (B3)
+- identity: the value included is the field object itself; any code keyed on the field (`state.field(field)`, `Configuration.address[field.id]`) finds it (B4)
+- duck typing: truthiness of an untyped property read decides whether a value is an extension (mirrors/cm6/lsp-client/src/client.ts:264) (B5)
+- union-typed parameter: `readonly (Extension | LSPClientExtension)[]` (mirrors/cm6/lsp-client/src/client.ts:205) (B5)
+- prototype dispatch: `instanceof` tests in a fixed order (Array.isArray, CompartmentInstance, PrecExtension, StateField, FacetProvider) precede duck typing (mirrors/cm6/state/src/facet.ts:532-549) (B6)
+- identity: `content == ext` decides the second message (mirrors/cm6/state/src/facet.ts:551) (B7)
+- `instanceof` fails across package copies (B7)
+- throw: Error at mirrors/cm6/state/src/facet.ts:551; condition: a value whose `extension` is itself and that matches no `instanceof` test of this copy; protects against infinite recursion; a caller can check `x instanceof StateField` in advance (B7)
 
 ## state.cm6.050 `Extension`
 

@@ -2,10 +2,10 @@
 
 - **What:** the stack notes of `raw/behaviors.jsonl` (`stack` field), grouped by inventory item, identical notes merged; each note ends with the behaviors (`B<n>` of that item) that carry it. Generated from the rows; items whose behaviors all say `none found` are left out. Facts, not proposals (`docs/workflow/specification.md` §5, §7).
 - **cm6:** `@codemirror/state` 6.7.6, mirror commit 651084c; `mirrors/...` line numbers refer to it.
-- **Ferrum commit:** b3b0e8f; line numbers in `docs/` and `tools/` refer to it.
+- **Ferrum commit:** 5a8c009; line numbers in `docs/` and `tools/` refer to it.
 - **Ids:** behaviors `state.<item>.B<n>`; inventory rows `state.cm6.<nnn>`
 
-Items with notes: 93 of 260; distinct notes: 221.
+Items with notes: 94 of 261; distinct notes: 226.
 
 ## state.cm6.002 `EditorStateConfig.doc`
 
@@ -164,6 +164,14 @@ Items with notes: 93 of 260; distinct notes: 221.
 - CHANGELOG 6.5.2 (mirrors/cm6/state/CHANGELOG.md:69) (B3)
 - Mechanism: deduplication of extension values by JS object identity in `flatten`'s `seen` Map<Extension, number> (mirrors/cm6/state/src/facet.ts:522-531; `indexOf`/`splice` on the bucket array to move an entry, mirrors/cm6/state/src/facet.ts:527-528). Evidence: code structure; mirrors/cm6/state/CHANGELOG.md:201 (0.20.0, "if an extension value occurs multiple times, its lowest, rather than highest precedence is used" fixed). Editor need underneath: an extension reached through several paths (a shared dependency of two extensions) is applied once. (B4)
 - Mechanism: on-demand, re-entrant slot evaluation on a partly built state: user code (getter, create, update) receives the EditorState under construction and reading another slot computes it through `ensureAddr` (mirrors/cm6/state/src/facet.ts:566-575) using the mutable `status` array and `computeSlot` callback, cleared after construction (mirrors/cm6/state/src/state.ts:54-60). Evidence: code structure; comment mirrors/cm6/state/src/state.ts:56-57 ("Fill in the computed state immediately, so that further queries for it made during the update return this state"). Relies on one JS thread (no other reader can see the half-built state). Editor need underneath: slots may read each other's new values in any order. (B5)
+
+## state.cm6.049 `StateField.extension`
+
+- Mechanism: a self-returning getter `get extension(): Extension { return this }` (mirrors/cm6/state/src/facet.ts:363) so that the class conforms to the structural TypeScript type `Extension = {extension: Extension} | readonly Extension[]` (mirrors/cm6/state/src/facet.ts:374); nothing in this package reads it for its own fields, since `flatten` dispatches a `StateField` by `instanceof` (mirrors/cm6/state/src/facet.ts:542) before its untyped read (mirrors/cm6/state/src/facet.ts:549). Evidence: doc comment mirrors/cm6/state/src/facet.ts:360-362 ("State field instances can be used as Extension values to enable the field"); mirrors/cm6/state/CHANGELOG.md:35 (6.7.1, the same getter added to facet providers, precedence extensions and compartment instances "the `Extension` type claims they have"); code structure. Editor need underneath: a field is accepted and enabled wherever an extension is accepted. (B1, B4, B6)
+- Mechanism: deduplication of extension values by JS object identity in `flatten`'s `seen` Map (mirrors/cm6/state/src/facet.ts:522-531); `field.extension` is that same object, so it is deduplicated with the field. Evidence: code structure; mirrors/cm6/state/CHANGELOG.md:201 (0.20.0, a repeated value takes its highest precedence). Editor need underneath: an extension reached through several paths is applied once. (B2)
+- Mechanism: precedence buckets and a move of an already seen object to a higher bucket, keyed by JS identity (mirrors/cm6/state/src/facet.ts:521-531, :556). Evidence: code structure; mirrors/cm6/state/CHANGELOG.md:201 (0.20.0). Editor need underneath: the strongest precedence requested for one extension wins. (B3)
+- Mechanism: duck typing on the JS property `.extension` by code that receives values whose TypeScript union is erased at run time: the LSPClient constructor tells a CodeMirror extension from an `LSPClientExtension` in one list typed `readonly (Extension | LSPClientExtension)[]` (mirrors/cm6/lsp-client/src/client.ts:205) by `Array.isArray(ext) || (ext as any).extension` (mirrors/cm6/lsp-client/src/client.ts:264). Evidence: code structure (type-only union, untyped read). Editor need underneath: telling an editor extension from a client-capability object in one configuration list. (B5)
+- Mechanism: the second error message of `flatten` (mirrors/cm6/state/src/facet.ts:551) exists because a bundle can load two copies of @codemirror/state, so `instanceof StateField` fails for a field of the other copy; the self-returning getter is what makes such a field reach `content == ext`. Evidence: the message text at mirrors/cm6/state/src/facet.ts:551 ("This sometimes happens because multiple instances of @codemirror/state are loaded, breaking instanceof checks"); the same mechanism is state.Extension.B4. Editor need underneath: none. (B7)
 
 ## state.cm6.050 `Extension`
 

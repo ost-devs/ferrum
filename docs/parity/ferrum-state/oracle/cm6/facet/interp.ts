@@ -15,12 +15,14 @@
 //                                                          provide's Node is built when cm6 calls it.
 //   ["compartment", name] | ["effect", name] (StateEffect.define with no map) | ["shared", name, Node]
 //   (a shared Node is built once; {"ref": name} reuses that very object, so identity is preserved).
+//   ["builtin", name, "lineSeparator"] binds facet `name` to EditorState.lineSeparator (added in S4, s4-tags.ts).
 // Node (extension):
 //   [Node...] (a new array) | {"of": [facet, value]} | {"compute": [facet, [Dep], G], "tag"?: t}
 //   | {"computeN": [facet, [Dep], G], "tag"?: t} | {"from": [facet, field], "get"?: "x10" | "len"}
 //   | {"prec": ["highest"|"high"|"default"|"low"|"lowest", Node]} | {"comp": [compartment, Node]}
 //   | {"field": name} | {"init": [field, G]} | {"ref": name} | {"wrap": Node} ({extension: Node})
 //   | {"label": l, "node": Node} (records the built object under label l, for Compartment.get reads)
+//   | {"extOf": Node} (the value of the built Node's `extension` property, e.g. StateField.extension; S4)
 //   | {"raw": "null" | "undefined" | "plainObject" | "selfExtension" | "number" | "string" | "nullExtension"}
 //   Dep: "doc" | "selection" | {"facet": f} | {"reader": f} (facet.reader) | {"field": f}
 // G (getter, state => value; field create, init create, compute and computeN getters):
@@ -43,7 +45,8 @@
 //   TrSpec: {changes?, selection?, effects?: [{"reconfigure": Node} | {"append": Node} | {"comp": [c, Node]}
 //            | {"eff": [effect, value]}]}
 // Read: {"facet": f} | {"reader": f} | {"field": f} | {"fieldOpt": f} | {"comp": c} (label, "<undefined>"
-//   or "<unlabeled>") | {"toJSON": {prop: field}} | "doc"
+//   or "<unlabeled>") | {"toJSON": {prop: field}} | "doc" (doc.toString(), lines joined with "\n")
+//   | "lines" (doc.lines) | "sliceDoc" (state.sliceDoc(), lines joined with state.lineBreak) (the last two added in S4)
 // Output: {states: [{reads: [{v, same} | {error}]}], log: [string], error?: {name, message, at},
 //   retry?: {first, second, secondReads?}} (`at` is "defs", "create" or the step index; `retry` records the two
 //   `tr.state` captures of a retryState step: "<state>" or {error}, and the reads made on the second one)
@@ -173,6 +176,7 @@ export function run(input: any) {
     if ("ref" in n) return shared[n.ref]
     if ("wrap" in n) return {extension: build(n.wrap)}
     if ("label" in n) { const v = build(n.node); labels.set(v, n.label); return v }
+    if ("extOf" in n) return build(n.extOf).extension
     if ("raw" in n) {
       if (n.raw == "null") return null
       if (n.raw == "undefined") return undefined
@@ -222,6 +226,9 @@ export function run(input: any) {
         if ("toJSON" in spec) cfg.toJSON = jsonFn(spec.toJSON)
         if ("fromJSON" in spec) cfg.fromJSON = jsonFn(spec.fromJSON)
         fields[name] = StateField.define(cfg)
+      } else if (kind == "builtin") {
+        if (spec != "lineSeparator") throw new Error("bad builtin " + spec)
+        facets[name] = EditorState.lineSeparator
       } else if (kind == "compartment") comps[name] = new Compartment
       else if (kind == "effect") effects[name] = StateEffect.define()
       else if (kind == "shared") shared[name] = build(spec)
@@ -233,6 +240,8 @@ export function run(input: any) {
 
   const readOne = (s: EditorState, r: any): any => {
     if (r == "doc") return s.doc.toString()
+    if (r == "lines") return s.doc.lines
+    if (r == "sliceDoc") return s.sliceDoc()
     if ("facet" in r) return s.facet(facets[r.facet])
     if ("reader" in r) return s.facet(facets[r.reader].reader)
     if ("field" in r) return s.field(fields[r.field])

@@ -216,7 +216,7 @@ S("Extension", ["Extension.B6"], {defs: [["facet", "s", {}], ["shared", "arr", [
 S("Extension", ["Extension.B6"], {defs: [["facet", "s", {}], ["shared", "x", {of: ["s", "x"]}]], ext: [{ref: "x"}, {of: ["s", "a"]}, {ref: "x"}, {prec: ["default", {ref: "x"}]}, {prec: ["low", {ref: "x"}]}], reads: [{facet: "s"}]})
 S("Extension", ["Extension.B6", "StateField^define config StateFieldSpec.provide.B3"], {defs: [["facet", "s", {}], ["field", "f", {create: {const: "F"}, update: "keep", provide: {from: ["s", "f"]}}]],
   ext: [{of: ["s", "a"]}, {prec: ["low", {field: "f"}]}, {of: ["s", "b"]}, {prec: ["highest", {field: "f"}]}], reads: [{facet: "s"}]})
-api("Extension", ["Extension.B7"], {api: "extensionGetters", code: "[f.of(1).extension === p, Prec.high(p).extension === it, c.of(p).extension === it, field.extension === field]"},
+api("Extension", ["Extension.B7", "StateField.extension.B1"], {api: "extensionGetters", code: "[f.of(1).extension === p, Prec.high(p).extension === it, c.of(p).extension === it, field.extension === field]"},
   () => { const f = Facet.define<number>(); const p: any = f.of(1); const pr: any = Prec.high(p); const ci: any = new Compartment().of(p); const fld: any = StateField.define({create: () => 0, update: v => v}); return [p.extension === p, pr.extension === pr, ci.extension === ci, fld.extension === fld] })
 S("Extension", ["Extension.B8"], {defs: [["facet", "s", {}]], ext: {of: ["s", "a"]}, steps: [tr({effects: [{append: {raw: "plainObject"}}]})], reads: [{facet: "s"}]})
 

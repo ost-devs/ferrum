@@ -2,7 +2,7 @@
 
 - **What:** every exported and internal item of `@codemirror/state` with its S1 facts and the consultant's disposition (`docs/workflow/specification.md` §3), rendered from `raw/inventory.jsonl` with `tools/render.py`.
 - **cm6:** `@codemirror/state` 6.7.6, mirror commit 651084c; `mirrors/...` line numbers refer to it.
-- **Ferrum commit:** ab44f07; line numbers in `docs/` and `tools/` refer to it.
+- **Ferrum commit:** 5a8c009; line numbers in `docs/` and `tools/` refer to it.
 - **Ids:** inventory rows `state.cm6.<nnn>`
 
 

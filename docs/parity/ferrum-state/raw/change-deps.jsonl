@@ -1,0 +1,103 @@
+{"id": "state.ChangeDesc.B1", "before": ["D1"], "after": ["D1"], "why": "asserts section lengths; an insertion length is counted from the inserted text, so an astral insert changes the asserted numbers", "fixtures_added": ["F6000", "F6001"]}
+{"id": "state.ChangeDesc.B3", "before": [], "after": ["D6"], "why": "the constructor stores the given array object (shared with the caller); the length/newLength example uses given numbers with no text", "fixtures_added": []}
+{"id": "state.ChangeDesc.B4", "before": [], "after": ["D6"], "why": "asserts subtyping and that composeDesc returns the other operand object itself; no number asserted", "fixtures_added": []}
+{"id": "state.ChangeDesc.length.B2", "before": ["D1"], "after": [], "why": "out-of-domain numbers given through fromJSON; no text behind them", "fixtures_added": []}
+{"id": "state.ChangeDesc.newLength.B1", "before": ["D1", "D2"], "after": ["D1", "D2"], "why": "new length counts an astral insert as 2 and an inserted CRLF as one position; only CRLF changes the count (lone CR and U+2028 are 1 unit as break or as character). D2 fixtures: only CRLF changes the count (a lone CR or U+2028 is one code unit whether it is a break or a character); the CRLF fixture exists, so none is added.", "fixtures_added": []}
+{"id": "state.ChangeDesc.iterChangedRanges.B1", "before": ["D1"], "after": ["D1"], "why": "fromA..toB of merged runs are positions shifted by insertion lengths", "fixtures_added": ["F6002"]}
+{"id": "state.ChangeDesc.iterChangedRanges.B2", "before": [], "after": ["D1"], "why": "per-section fromA..toB are positions shifted by insertion lengths", "fixtures_added": ["F6003"]}
+{"id": "state.ChangeDesc.iterChangedRanges.B4", "before": ["D1"], "after": ["D2"], "why": "asserts the concatenated inserted Text (Text.append joins lines; inserted strings were split by ChangeSet.of); no number asserted, so an astral character does not change it", "fixtures_added": ["F6119", "F6120", "F6121", "F6122"]}
+{"id": "state.ChangeDesc.invertedDesc.B1", "before": [], "after": ["D6"], "why": "swaps carried section numbers (no relation to text); asserts a new object on every access", "fixtures_added": []}
+{"id": "state.ChangeDesc.composeDesc.B1", "before": [], "after": ["D6"], "why": "asserts identity of the returned operand", "fixtures_added": []}
+{"id": "state.ChangeDesc.composeDesc.B2", "before": [], "after": ["D6"], "why": "asserts identity of the returned operand", "fixtures_added": []}
+{"id": "state.ChangeDesc.composeDesc.B3", "before": ["D1"], "after": ["D1"], "why": "composed section lengths come from text lengths", "fixtures_added": ["F6004"]}
+{"id": "state.ChangeDesc.composeDesc.B4", "before": ["D1"], "after": ["D1"], "why": "composed section lengths include B insertion lengths", "fixtures_added": ["F6005"]}
+{"id": "state.ChangeDesc.composeDesc.B5", "before": ["D1"], "after": ["D1"], "why": "piece lengths min(a.len,b.len) and B ins come from text lengths", "fixtures_added": ["F6006"]}
+{"id": "state.ChangeDesc.composeDesc.B6", "before": ["D1"], "after": ["D1"], "why": "piece length and A text slice (textBit) are counted in code units", "fixtures_added": ["F6007", "F6008"]}
+{"id": "state.ChangeDesc.composeDesc.B7", "before": ["D1"], "after": ["D1"], "why": "composed lengths when B deletes A insertions", "fixtures_added": ["F6009"]}
+{"id": "state.ChangeDesc.composeDesc.B8", "before": ["D1"], "after": ["D1"], "why": "joined section lengths are sums of text lengths", "fixtures_added": ["F6010"]}
+{"id": "state.ChangeDesc.composeDesc.B9", "before": [], "after": ["D1"], "why": "UNSETTLED: the throw is a length check; it differs by unit only when one length is measured from text and the other given as a number", "fixtures_added": ["F6013"]}
+{"id": "state.ChangeDesc.composeDesc.B10", "before": ["D1"], "after": ["D1"], "why": "merged lengths are sums of text lengths", "fixtures_added": ["F6011", "F6012"]}
+{"id": "state.ChangeDesc.composeDesc.B11", "before": [], "after": ["D6"], "why": "asserts a new plain object (no identity with either operand)", "fixtures_added": []}
+{"id": "state.ChangeDesc.mapDesc.B1", "before": [], "after": ["D6"], "why": "asserts identity of the returned receiver", "fixtures_added": []}
+{"id": "state.ChangeDesc.mapDesc.B2", "before": ["D1"], "after": ["D1"], "why": "copied unchanged-span lengths are min of lengths counted from text", "fixtures_added": ["F6015"]}
+{"id": "state.ChangeDesc.mapDesc.B3", "before": ["D1"], "after": ["D1"], "why": "B insertion length becomes a gap length; A insertion lengths survive", "fixtures_added": ["F6016", "F6017"]}
+{"id": "state.ChangeDesc.mapDesc.B4", "before": ["D1"], "after": ["D1"], "why": "gap lengths before/after the ordered insertions", "fixtures_added": ["F6018", "F6019"]}
+{"id": "state.ChangeDesc.mapDesc.B5", "before": ["D1"], "after": ["D1"], "why": "split A change lengths around B insertions", "fixtures_added": ["F6020"]}
+{"id": "state.ChangeDesc.mapDesc.B6", "before": ["D1"], "after": ["D1"], "why": "remaining deletion length and insertion lengths of overlapping replacements", "fixtures_added": ["F6021", "F6022"]}
+{"id": "state.ChangeDesc.mapDesc.B7", "before": [], "after": ["D1"], "why": "UNSETTLED: the throw is a length check (or a non-canonical section from fromJSON); it differs by unit only when one length is measured from text and the other given", "fixtures_added": ["F6023"]}
+{"id": "state.ChangeDesc.mapDesc.B8", "before": [], "after": ["D6"], "why": "asserts a new plain object", "fixtures_added": []}
+{"id": "state.ChangeDesc.mapDesc.B9", "before": [], "after": ["D1"], "why": "UNSETTLED: non-termination on a length mismatch; differs by unit only when one length is measured from text and the other given. The astral fixture records a timeout (cm6 does not terminate; run in a child process with a 5 s limit).", "fixtures_added": ["F6025"]}
+{"id": "state.ChangeDesc.mapPos.B2", "before": ["D1"], "after": ["D1"], "why": "maps to a change start or start + insertion length", "fixtures_added": ["F6041", "F6042", "F6043", "F6044", "F6045", "F6046", "F6065"]}
+{"id": "state.ChangeDesc.mapPos.B6", "before": ["D1"], "after": ["D1"], "why": "range check of pos against the old length; message carries both numbers", "fixtures_added": ["F6034"]}
+{"id": "state.ChangeDesc.mapPos.B7", "before": ["D1"], "after": ["D1"], "why": "null versus position depends on pos relative to change extents; returned positions", "fixtures_added": ["F6047", "F6048", "F6049", "F6050", "F6051", "F6052", "F6053", "F6054", "F6055", "F6056", "F6057", "F6058", "F6059", "F6060", "F6061", "F6062", "F6063", "F6064", "F6066", "F6067", "F6068"]}
+{"id": "state.ChangeDesc.mapPos.B8", "before": ["D1"], "after": ["D1"], "why": "null versus position at a point after an insertion; returned positions", "fixtures_added": ["F6026", "F6027", "F6028"]}
+{"id": "state.ChangeDesc.mapPos.B9", "before": ["D1"], "after": ["D1"], "why": "a negative pos before a first change maps to posB + ins, ins counted from text", "fixtures_added": ["F6029", "F6030", "F6031"]}
+{"id": "state.ChangeDesc.mapPos.B11", "before": ["D1"], "after": ["D1"], "why": "UNSETTLED: identity mapping of carried numbers plus a range check against a length that may come from a document", "fixtures_added": ["F6032", "F6033", "F6034"]}
+{"id": "state.ChangeDesc.touchesRange.B3", "before": ["D1"], "after": ["D1"], "why": "\"cover\" is a strict containment check against change extents", "fixtures_added": ["F6035", "F6036"]}
+{"id": "state.ChangeDesc.touchesRange.B4", "before": ["D1"], "after": ["D1"], "why": "range check against change extents", "fixtures_added": ["F6037"]}
+{"id": "state.ChangeDesc.touchesRange.B5", "before": ["D1"], "after": ["D1"], "why": "range check with from > to against change extents", "fixtures_added": ["F6038", "F6039"]}
+{"id": "state.ChangeDesc.touchesRange.B6", "before": ["D1"], "after": ["D1"], "why": "UNSETTLED: zero-length change from fromJSON at a position that earlier text-derived sections place", "fixtures_added": ["F6040"]}
+{"id": "state.ChangeDesc.toJSON.B1", "before": [], "after": ["D6"], "why": "asserts the same internal array is returned", "fixtures_added": []}
+{"id": "state.ChangeDesc^fromJSON.B1", "before": [], "after": ["D6"], "why": "asserts the given array object is kept", "fixtures_added": []}
+{"id": "state.MapMode.Simple.B1", "before": [], "after": ["D1"], "why": "a position inside a deletion maps to its start; returned positions", "fixtures_added": ["F6041", "F6042", "F6043", "F6044", "F6045", "F6046", "F6065"]}
+{"id": "state.MapMode.TrackDel.B1", "before": [], "after": ["D1"], "why": "null versus position depends on pos relative to change extents", "fixtures_added": ["F6047", "F6048", "F6049", "F6050", "F6051", "F6052", "F6066"]}
+{"id": "state.MapMode.TrackBefore.B1", "before": [], "after": ["D1"], "why": "null versus position depends on pos relative to change extents", "fixtures_added": ["F6053", "F6054", "F6055", "F6056", "F6057", "F6058", "F6067"]}
+{"id": "state.MapMode.TrackAfter.B1", "before": [], "after": ["D1"], "why": "null versus position depends on pos relative to change extents", "fixtures_added": ["F6026", "F6059", "F6060", "F6061", "F6062", "F6063", "F6064", "F6068"]}
+{"id": "state.ChangeSpec.B2", "before": ["D2"], "after": ["D2"], "why": "a string insert is split on lineSep or DefaultSplit, a Text is used as is", "fixtures_added": ["F6102", "F6103", "F6104", "F6105", "F6106"]}
+{"id": "state.ChangeSpec.B3", "before": [], "after": ["D1"], "why": "the length check message carries the set length; combined sections carry insertion lengths", "fixtures_added": ["F6069", "F6070"]}
+{"id": "state.ChangeSpec.B4", "before": [], "after": ["D1"], "why": "combined section lengths include insertion lengths", "fixtures_added": ["F6072"]}
+{"id": "state.ChangeSet^of.B1", "before": ["D1"], "after": ["D1", "D2"], "why": "sections (to-from, insert length) and inserted text lines: insert length counts code units and counts a split CRLF as one position", "fixtures_added": ["F6105", "F6107"]}
+{"id": "state.ChangeSet^of.B2", "before": [], "after": ["D1", "D2"], "why": "merged insertion length and the merged Text (append joins lines of split strings)", "fixtures_added": ["F6073", "F6108", "F6109", "F6110", "F6111"]}
+{"id": "state.ChangeSet^of.B3", "before": [], "after": [], "why": "asserts which sections merge or stay separate; numbers carried from given positions", "fixtures_added": ["F6000"]}
+{"id": "state.ChangeSet^of.B4", "before": [], "after": ["D1", "D2"], "why": "combined runs: sections with insertion lengths and the merged inserted text lines", "fixtures_added": ["F6112"]}
+{"id": "state.ChangeSet^of.B5", "before": [], "after": ["D1", "D6"], "why": "returns the same ChangeSet object; the mismatch message carries a length measured from a document", "fixtures_added": ["F6069", "F6070", "F6071"]}
+{"id": "state.ChangeSet^of.B6", "before": [], "after": ["D1"], "why": "range check of from/to against the document length (a position inside a surrogate pair passes)", "fixtures_added": ["F6074", "F6075", "F6076"]}
+{"id": "state.ChangeSet^of.B8", "before": ["D1", "D2"], "after": ["D1", "D2"], "why": "splitting on lineSep/DefaultSplit and lengths in code units", "fixtures_added": ["F6105"]}
+{"id": "state.ChangeSet^of.B9", "before": [], "after": ["D1"], "why": "boundary sections at 0 and at the document length; insertion length", "fixtures_added": ["F6077", "F6078", "F6079", "F6080"]}
+{"id": "state.ChangeSet^empty.B2", "before": ["D1"], "after": [], "why": "out-of-domain numbers", "fixtures_added": []}
+{"id": "state.ChangeSet^fromJSON.B1", "before": ["D1", "D2"], "after": ["D1", "D2"], "why": "section ins = Text.of(lines).length: code units, one position per line break. D2 fixtures: no CRLF, lone CR or lineSep fixture can exercise this assertion: the JSON holds lines already split and fromJSON takes no lineSep; a separator inside a line string is the assertion of state.ChangeSet^fromJSON.B3 (F6081-F6084). U+2028 inside a line exists.", "fixtures_added": []}
+{"id": "state.ChangeSet^fromJSON.B3", "before": ["D2"], "after": ["D1", "D2"], "why": "a string with an embedded separator becomes one line whose length newLength counts (code units, separator kept inside the line). D2 fixtures: the U+2028-with-lineSep case does not apply (fromJSON takes no lineSep).", "fixtures_added": ["F6081", "F6082", "F6083", "F6084"]}
+{"id": "state.ChangeSet^fromJSON.B4", "before": ["D2"], "after": ["D2"], "why": "[len,\"\",\"\"] counts one line break as one position. D2 fixtures: no CRLF, lone CR, U+2028 or lineSep case applies: the strings are lines already split and fromJSON takes no lineSep; the assertion is that one break between two lines counts one position, which the existing fixtures show.", "fixtures_added": []}
+{"id": "state.ChangeSet.toJSON.B1", "before": ["D1", "D2"], "after": ["D2"], "why": "serializes inserted Text lines; separators not recorded; the numbers are carried section lengths", "fixtures_added": ["F6113", "F6114"]}
+{"id": "state.ChangeSet.B1", "before": ["D1"], "after": [], "why": "asserts the representation of `inserted` by section index", "fixtures_added": []}
+{"id": "state.ChangeSet.apply.B1", "before": [], "after": ["D1"], "why": "length check of the set against the document length measured in code units", "fixtures_added": ["F6085", "F6086"]}
+{"id": "state.ChangeSet.apply.B2", "before": ["D1", "D2"], "after": ["D1", "D2"], "why": "replace positions in code units (can split a surrogate pair); result document lines", "fixtures_added": ["F6086", "F6115"]}
+{"id": "state.ChangeSet.apply.B3", "before": [], "after": ["D6"], "why": "returns the given document object itself", "fixtures_added": []}
+{"id": "state.ChangeSet.mapDesc.B1", "before": [], "after": ["D1", "D6"], "why": "returns a new object (identity \"new\"); UNSETTLED: the throw on an empty other of another length is a length check", "fixtures_added": ["F6087", "F6088"]}
+{"id": "state.ChangeSet.mapDesc.B2", "before": [], "after": ["D1"], "why": "mapped section lengths include insertion lengths; text carried whole", "fixtures_added": ["F6089"]}
+{"id": "state.ChangeSet.invert.B1", "before": ["D1", "D2"], "after": ["D1", "D2"], "why": "doc.slice(pos, pos+len) in code units across line breaks. D2 fixtures: the U+2028-with-lineSep case does not apply: invert slices the document Text it is given, and lineSep acts only where ChangeSet.of splits a string; CRLF, lone CR and U+2028 fixtures exist.", "fixtures_added": []}
+{"id": "state.ChangeSet.invert.B2", "before": [], "after": ["D1"], "why": "slices of a document of another length; asserted newLength and applied length count code units", "fixtures_added": ["F6090"]}
+{"id": "state.ChangeSet.compose.B1", "before": [], "after": ["D6"], "why": "returns the other operand itself", "fixtures_added": []}
+{"id": "state.ChangeSet.compose.B2", "before": [], "after": ["D6"], "why": "returns the receiver itself", "fixtures_added": []}
+{"id": "state.ChangeSet.compose.B3", "before": ["D1", "D2"], "after": ["D1", "D2"], "why": "textBit slices inserted Text in code units (lone surrogates) and across line breaks", "fixtures_added": ["F6008", "F6116"]}
+{"id": "state.ChangeSet.compose.B4", "before": [], "after": ["D1"], "why": "UNSETTLED: length-mismatch throw; differs by unit only when one length is measured and the other given", "fixtures_added": ["F6014"]}
+{"id": "state.ChangeSet.map.B1", "before": [], "after": ["D6"], "why": "returns the receiver itself", "fixtures_added": []}
+{"id": "state.ChangeSet.map.B2", "before": [], "after": ["D1"], "why": "mapped section lengths include insertion lengths; text carried whole, documents compared for equality", "fixtures_added": []}
+{"id": "state.ChangeSet.map.B3", "before": [], "after": ["D1"], "why": "UNSETTLED: length-mismatch throw; differs by unit only when one length is measured and the other given", "fixtures_added": ["F6024"]}
+{"id": "state.ChangeSet.iterChanges.B1", "before": ["D1", "D2"], "after": ["D1", "D2"], "why": "positions in code units and the run text (append joins lines)", "fixtures_added": ["F6117"]}
+{"id": "state.ChangeSet.iterChanges.B2", "before": [], "after": ["D1", "D2"], "why": "per-section positions in code units and each section text lines", "fixtures_added": ["F6118"]}
+{"id": "state.ChangeSet.desc.B1", "before": [], "after": ["D6"], "why": "new object per access sharing the sections array", "fixtures_added": []}
+{"id": "state.SelectionRange.B2", "before": [], "after": ["D1"], "why": "map of a range inside a replacement gives from = start + insertion length > to", "fixtures_added": ["F6091"]}
+{"id": "state.SelectionRange.from.B1", "before": ["D1"], "after": [], "why": "stored number carried", "fixtures_added": []}
+{"id": "state.SelectionRange.to.B1", "before": ["D1"], "after": [], "why": "stored number carried", "fixtures_added": []}
+{"id": "state.SelectionRange.anchor.B1", "before": ["D1"], "after": [], "why": "derived from carried from/to and a flag", "fixtures_added": []}
+{"id": "state.SelectionRange.head.B1", "before": ["D1"], "after": [], "why": "derived from carried from/to and a flag", "fixtures_added": []}
+{"id": "state.SelectionRange.map.B2", "before": ["D1"], "after": ["D1"], "why": "mapped range ends", "fixtures_added": ["F6093", "F6094"]}
+{"id": "state.SelectionRange.map.B3", "before": [], "after": ["D6"], "why": "returns the same object when unchanged", "fixtures_added": []}
+{"id": "state.SelectionRange.map.B4", "before": ["D1"], "after": ["D6"], "why": "asserts a new object keeping flags and goalColumn; the example position 0 is unit-independent", "fixtures_added": []}
+{"id": "state.SelectionRange.map.B5", "before": ["D1"], "after": ["D1"], "why": "from = replacement start + insertion length", "fixtures_added": ["F6091", "F6092"]}
+{"id": "state.SelectionRange.map.B6", "before": ["D1"], "after": ["D1"], "why": "range check of a range end against the change length", "fixtures_added": ["F6095"]}
+{"id": "state.SelectionRange.map.B7", "before": ["D1"], "after": ["D1"], "why": "maps to the change start or end", "fixtures_added": ["F6096", "F6097"]}
+{"id": "state.SelectionRange.extend.B2", "before": [], "after": ["D1"], "why": "compares distances |from-anchor| and |to-anchor| in code units: an astral character between them can change which end is farther", "fixtures_added": ["F6098", "F6099"]}
+{"id": "state.EditorSelection^create.B2", "before": [], "after": ["D6"], "why": "stores the caller array object; order checks of given positions", "fixtures_added": []}
+{"id": "state.EditorSelection^create.B3", "before": [], "after": ["D6"], "why": "main found again by indexOf (object identity); sort order of given positions", "fixtures_added": []}
+{"id": "state.EditorSelection.B1", "before": [], "after": ["D6"], "why": "immutability: operations return a new selection or this", "fixtures_added": []}
+{"id": "state.EditorSelection.ranges.B1", "before": [], "after": ["D6"], "why": "the caller array is aliased when not normalized", "fixtures_added": []}
+{"id": "state.EditorSelection.mainIndex.B2", "before": [], "after": ["D6"], "why": "index of the original main object (identity)", "fixtures_added": []}
+{"id": "state.EditorSelection.map.B1", "before": [], "after": ["D6"], "why": "returns this on an empty change", "fixtures_added": []}
+{"id": "state.EditorSelection.map.B2", "before": ["D1"], "after": ["D1", "D6"], "why": "mapped positions; unchanged range objects reused, array and selection new", "fixtures_added": []}
+{"id": "state.EditorSelection.map.B4", "before": ["D1"], "after": ["D1"], "why": "mapped from > to ends", "fixtures_added": ["F6100"]}
+{"id": "state.EditorSelection.map.B5", "before": ["D1"], "after": ["D1"], "why": "range check of a range end against the change length", "fixtures_added": ["F6101"]}
+{"id": "state.EditorSelection.asSingle.B1", "before": [], "after": ["D6"], "why": "returns this, or a selection holding the main range object", "fixtures_added": []}
+{"id": "state.EditorSelection.addRange.B4", "before": [], "after": ["D6"], "why": "indexOf finds the first occurrence of a reused object", "fixtures_added": []}
+{"id": "state.EditorSelection.replaceRange.B1", "before": [], "after": ["D6"], "why": "the old main object keeps the main role through indexOf", "fixtures_added": []}

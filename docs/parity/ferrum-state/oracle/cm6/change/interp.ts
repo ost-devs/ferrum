@@ -18,6 +18,8 @@
 //   bidiLevel, assoc]}, {"undir": [from, to]}, {"json": {...}} (SelectionRange.fromJSON), or {"ref": k}:
 //   the k-th range object built so far in this fixture (in decode order), reused by identity.
 // - selection spec: {"create": [range specs], "main"?: n}, {"single": [anchor, head]}, {"json": {...}}.
+// - "text" (line array, s4-tags.ts): the document the input positions refer to, stored so that they can be mapped to
+//   another unit; no op reads it (ops that read a document use "doc").
 //
 // Output conventions: non-finite numbers are written {"num": "..."}; goalColumn undefined is written null;
 // `src` of a range is the index of the input range object it is (by ===), or -1 for a new object.
