@@ -282,3 +282,263 @@ Open questions only (`docs/workflow/README.md` §3): a decided entry is removed 
   - The over-the-bound check affects gutter redraw decisions at the viewport end (gutter.ts:372 passes vp.from, vp.to).
 - **Blocks.** The S2 behaviors of RangeSet^eq (state.cm6.189) and their fixtures.
 - **Raised by.** spec-auditor (S1 facts, chunk rangeset), 2026-11-09 (as `rangeset-q4`).
+
+## Q23. countColumn and findColumn give inconsistent columns for a tab followed by an Extend code point or a ZWJ
+
+- **Found.** Item `state.cm6.216`.
+  - mirrors/cm6/state/src/column.ts:8-10 (countColumn) steps over a tab with i++ and then counts the next code point as a cluster of its own, while mirrors/cm6/state/src/column.ts:28-29 (findColumn) steps from the tab with findClusterBreak, which absorbs a following Extend code point or ZWJ (mirrors/marijn/find-cluster-break/src/index.js:53).
+  - Fixtures: countColumn("\t\u0301x", 4) is 6 and countColumn("\t\u0301x", 4, 2) is 5 (F0482, F0483); findColumn("\t\u0301x", 4, 4) is 2 and findColumn("\t\u0301x", 5, 4) is 3 (F0486, F0485), so findColumn(s, countColumn(s, 4, 2), 4) is 3, not 2.
+  - Behaviors state.countColumn.B7 and state.findColumn.B8.
+- **Open because.** The code of both functions is explicit, and neither their doc comments (column.ts:3-4, :19-23) nor any test in mirrors/cm6/state/test (grep: neither function is tested there) says whether the two are meant to be inverse; no decision in force covers it.
+- **Bears on it.**
+  - view rectangular-selection.ts:48 computes a column with countColumn and rectangular-selection.ts:26-30 maps columns back with findColumn, so a rectangle over a line starting with a tab followed by a combining mark selects at an offset one column off from the one clicked (deduction from the code; not run in a view).
+  - In gen-column.ts (seed 20261111), findColumn(s, countColumn(s, tabSize, i), tabSize) == i fails at some cluster boundary i for 20 of 150 random strings (field roundTrip of F3000-F3149); every failing string contains a tab followed by an Extend code point or a ZWJ, and none of the 130 others does. A tab after a ZWJ is handled the same way by both functions (countColumn B8, findColumn B9).
+  - A tab followed by a combining mark or ZWJ is rare in source text (deduction).
+  - Reproducing cm6 exactly requires stepping tabs differently in the two functions; a shared cluster walker would change one of them.
+- **Blocks.** The implementation of countColumn and findColumn (state.cm6.216, state.cm6.217), from S5; no other S2 work.
+- **Raised by.** spec-auditor (S2, chunk text), 2026-11-09 (as `text-s2-q1`).
+
+## Q24. A partial text cursor (Text.iterRange) given a skip can return text outside its range or skip the wrong distance
+
+- **Found.** Item `state.cm6.225`.
+  - mirrors/cm6/state/src/text.ts:507-511 (PartialTextCursor.next) clips a positive skip with Math.min(skip, this.to - this.pos) and a negative one with Math.max(skip, this.from - this.pos), the forward bounds, whatever the cursor direction; pos starts at 0 for a forward cursor and at text.length for a reverse one (:485).
+  - Reverse cursor, first call: Text.of(["one", "two", "", "three", "four"]).iterRange(12, 2).next(2).value is "four" (positions 15-19, outside [2, 12)) (F0870); Text.of(["abcdefgh"]).iterRange(6, 2).next(1).value is "cdefgh" (positions 2-8) (F0872); iterRange(8, 2).next(1) returns "cdefgh", the skip ignored (F0873).
+  - Forward cursor, first call with a negative skip: iterRange(2, 12).next(-5).value is "two" (position 4) where the next() without skip gives "e" at 2 (F0869).
+  - After the first step the forward cursor behaves as a clipped raw cursor (F0868, gen-text.ts checks skips in -3..3 after the first step on forward ranges).
+  - Behaviors state.TextIterator.next.B7 and state.TextIterator.next.B8.
+- **Open because.** The interface documents next(skip) as skipping positions after the current position (mirrors/cm6/state/src/text.ts:16-19) and iterRange as running in reverse when from > to (:106-108), which the code does not do in these cases; no cm6 test passes a skip to an iterRange cursor (mirrors/cm6/state/test/test-text.ts:151-168 call next() only), and no decision in force covers it.
+- **Bears on it.**
+  - No cm6 consumer passes a skip to an iterRange cursor: search cursor.ts:52, merge deco.ts:55, view matchdecorator.ts:8 and language matchbrackets.ts:197 call next() without arguments (grep of mirrors/cm6/*/src); skips are passed only to raw cursors from Text.iter (language.ts:267, isolate.ts:107, lint.ts:138, regexp.ts:50, buildtile.ts:267).
+  - Third-party code calling iterRange(...).next(skip) observes the values recorded in F0869-F0873; reproducing them requires the same clipping formula (deduction).
+  - The forward cursor without skip, the reverse cursor without skip and the raw cursors with any skip match the position model checked on 300 seeded cases (gen-text.ts).
+- **Blocks.** The behaviors and port of PartialTextCursor.next with a skip (state.cm6.225 B7, B8), from S5.
+- **Raised by.** spec-auditor (S2, chunk text), 2026-11-09 (as `text-s2-q2`).
+
+## Q25. The cm6 test "returns the correct strings for slice" overwrites its random range and checks one fixed slice 400 times
+
+- **Found.** Item `state.cm6.236`.
+  - mirrors/cm6/state/test/test-text.ts:93-98: each of 400 iterations draws start and end with Math.random() (:94-95) and then sets start = 4150; end = 4160 (:96) before asserting doc.slice(start, end).toString() == str.slice(start, end) (:97).
+  - Both sides are "0830\n0831\n" on every iteration (F5005); the random values are never used, including the i == 0 and i == 399 special cases at :94-95 that aim at the document start and end.
+  - Test row test-text#13 records the test as it is.
+- **Open because.** The code is unambiguous about what runs; whether the test is meant to cover random ranges (as the loop and the special cases at :94-95 suggest) cannot be read from the code, and the specification method records such a test as found and never corrects it (docs/workflow/specification.md §6).
+- **Bears on it.**
+  - A port that reproduces the test exactly covers one slice inside a single leaf; random slices of the same document are covered elsewhere by test-text#28 (sliceString and slice on doc0 at 500 random ranges) and by gen-text.ts (seeded slices checked against a string model).
+  - The slice 4150-4160 lies inside one leaf of a 1000-line node document, so Text.slice B3 (sharing whole children) is not exercised by this test (deduction from the shape: lines 830-831 sit in one 32-line leaf).
+- **Blocks.** How test-text#13 is ported (test writing, S2 tests stage onward); no behavior waits on it.
+- **Raised by.** spec-auditor (S2, chunk text), 2026-11-09 (as `text-s2-q3`).
+
+## Q26. Mapping a selection through a replacement that strictly encloses a non-empty range yields a range whose from is greater than its to, and EditorSelection.create keeps it
+
+- **Found.** Item `state.cm6.087`.
+  - mirrors/cm6/state/src/selection.ts:78-81 (SelectionRange.map) maps `from` with assoc 1 and `to` with assoc -1; mirrors/cm6/state/src/change.ts:134-135 (mapPos) returns posB + ins for assoc >= 0 and posB for assoc < 0 when the position is strictly inside a change, so for a change with ins > 0 enclosing both ends, the new from (posB + ins) exceeds the new to (posB).
+  - Fixtures (fixtures/change.jsonl): F0432 range 2-4 through replacing 1-5 with "xyz" gives from 4, to 1, anchor 4, head 1, empty false; F0433 the inverted range 4->2 through replacing 1-5 with "x" gives from 2, to 1, anchor 1, head 2; F0434 (pure deletion) collapses to 1-1; F0435 (replacement exactly covering the range) gives 2-5.
+  - Probe docs/parity/ferrum-state/oracle/cm6/change/s2-probe-state-map.ts: EditorState.create({doc: "abcdef", selection: EditorSelection.range(2, 4)}).update({changes: {from: 1, to: 5, insert: "xyz"}}) gives main from 4, to 1, anchor 4, head 1, empty false, doc "axyzf"; with an extra cursor at 5 and allowMultipleSelections the ranges are [4-1, 4-4], neither sorted nor merged (also fixture F0571). The path is Transaction.newSelection -> EditorSelection.map (mirrors/cm6/state/src/transaction.ts:211-213).
+  - mirrors/cm6/state/src/selection.ts:190-194 (create) checks order with `range.from < pos` and then sets pos = range.to, so a range with from > to passes; checkSelection (selection.ts:239-241) checks only `to > docLength`.
+  - The documentation says `from` is "The lower boundary of the range" (selection.ts:26) and that ranges are "sorted by position" and "cannot overlap" (selection.ts:117-118). mirrors/cm6/state/CHANGELOG.md 0.19.9 (line 217): "Mapping a non-empty selection range now always puts any newly inserted text on the sides of the range outside of the mapped version."
+  - No cm6 test maps a range lying strictly inside a replacement (grep of mirrors/cm6/state/test/test-selection.ts, test-change.ts, test-state.ts).
+- **Open because.** cm6's code is unambiguous about the value it produces, but no comment, test or changelog entry says whether a range with from > to is intended; the changelog entry states the rule for insertions at the edges, not for enclosing replacements; the decisions in force (.claude/rules/decisions.md, .claude/rules/rust-naming-decisions.md) and the open questions (Q10 is about undirectionalRange only) do not cover it.
+- **Bears on it.**
+  - Reached by every transaction that changes the document without giving a selection, when another edit replaces text around a non-empty selection (deduction from transaction.ts:211-213; examples not run: a remote collaborative update replacing an enclosing range, a formatter replacing a block).
+  - Observable: from > to, `empty` false, anchor/head as in F0432-F0433; a following cursor inside the old range is not merged (F0571).
+  - Consumers that assume from <= to were not traced (view drawing, commands); deduction: code computing `to - from` gets a negative length.
+  - A Rust range type that enforces from <= to cannot hold this value; one that copies cm6 must allow it.
+- **Blocks.** The SelectionRange invariant in the ferrum-state design (S5); the S2 rows state.SelectionRange.map.B5, state.SelectionRange.B2 and state.EditorSelection.map.B4 record the facts now.
+- **Raised by.** spec-auditor (chunk change, S2), 2026-11-09 (as `change-s2-q1`).
+
+## Q27. Mapping a change over another whose change sections extend past the end of the first does not terminate instead of reporting the length mismatch
+
+- **Found.** Item `state.cm6.156`.
+  - mirrors/cm6/state/src/change.ts:446-462 (mapSet): the branch that lets a change of B go first loops `while (len)` with `piece = Math.min(a.len, len)`; once A is exhausted SectionIter.next sets len 0 and ins -2 (change.ts:545-546), so piece is 0, `a.forward(0)` calls next again (change.ts:566-567) and len never decreases.
+  - Fixtures F0094 (desc '2 0:1 2' mapped over '2 3:0') and F0095 ('3' over '1 3:0') were run in a child process and cut off after 5 s (docs/parity/ferrum-state/oracle/cm6/change/s2-fixtures.ts `fh`); other mismatches throw Error("Mismatched change set lengths") (change.ts:438-439, :486-487; fixtures F0089, F0090).
+  - The same walk serves ChangeDesc.mapDesc (change.ts:103), ChangeSet.mapDesc (:213) and ChangeSet.map (:251).
+  - cm6 tests check mismatches only for composeDesc (mirrors/cm6/state/test/test-change.ts:63-66).
+- **Open because.** Q11 (docs/parity/ferrum-state/questions.md) records that whether a mismatch is reported depends on the code path; it does not cover a path that never returns. cm6's code gives no result to reproduce, and no decision in force says what Ferrum does on inconsistent lengths.
+- **Bears on it.**
+  - In cm6 a hang blocks the browser tab's single JavaScript thread; cm6's own callers pass consistent lengths (Q11 lists them), so only inconsistent external input reaches it (deduction; for example collaboration updates applied to the wrong version, mirrors/cm6/collab/src/collab.ts:97-116).
+  - A conformance fixture cannot assert a hang; F0094 and F0095 record the timeout only.
+  - Related: Q11 for the other mismatch paths.
+- **Blocks.** The error contract of ChangeDesc.mapDesc, ChangeSet.map and ChangeSet.mapDesc in the ferrum-state design (S5), together with Q11.
+- **Raised by.** spec-auditor (chunk change, S2), 2026-11-09 (as `change-s2-q2`).
+
+## Q28. Two @codemirror/view call sites pass values to EditorSelection constructors that do not match the parameters' meaning
+
+- **Found.** Item `state.cm6.075`.
+  - mirrors/cm6/view/src/input.ts:623 (basicMouseSelection.get) calls `EditorSelection.range(from, to, range.assoc)`; the third parameter of EditorSelection.range is goalColumn (mirrors/cm6/state/src/selection.ts:208). `range` comes from rangeForClick (input.ts:582-594): a cursor with assoc -1 or 1 for a single click, an undirectional range (assoc 0) for double and triple clicks. So a mouse-drag selection that spans two click positions stores goalColumn -1, 0 or 1 (fixtures F0506, F0507 show range(1, 4, 1) and range(1, 4, -1) storing them).
+  - mirrors/cm6/view/src/cursor.ts:164-169 (skipAtomsForSelection) computes the skipped `from` and `to` but for an undirectional range builds `EditorSelection.undirectionalRange(range.from, range.to)`, the original ends.
+  - SelectionRange.eq compares goalColumn (mirrors/cm6/state/src/selection.ts:93; CHANGELOG 6.5.4); view moveVertically uses `start.goalColumn` as the pixel goal when it is not null (mirrors/cm6/view/src/cursor.ts:115-119).
+- **Open because.** These are consumer facts in @codemirror/view, not in the state package; state's items behave as recorded. Nothing in cm6 (comment, test, changelog) says these arguments are intended, and no decision in force says whether Ferrum's view port reproduces apparent consumer mistakes.
+- **Bears on it.**
+  - Deduction, not run (needs layout): after a mouse drag, Shift+ArrowDown/Up extends from a goal of -1, 0 or 1 pixels instead of the head's x coordinate; EditorSelection.eq treats the drag selection as different from the same range built without a goal column.
+  - Deduction, not run: atomic ranges are not skipped for undirectional ranges (double/triple-click and drag selections) because the rebuilt range has the original ends.
+  - For ferrum-state these only widen the domain of goalColumn (small integers) recorded in state.SelectionRange.goalColumn.B1 and state.EditorSelection^range.B4.
+- **Blocks.** The ferrum-view port of basicMouseSelection and skipAtomsForSelection; nothing in ferrum-state S2.
+- **Raised by.** spec-auditor (chunk change, S2), 2026-11-09 (as `change-s2-q3`).
+
+## Q29. ChangeSet.of reads change specs by duck typing, so malformed specs produce NaN sections, are ignored, or fail later instead of at the call
+
+- **Found.** Item `state.cm6.135`.
+  - mirrors/cm6/state/src/change.ts:323-343 (ChangeSet.of process): Array.isArray, then `instanceof ChangeSet`, else unchecked destructuring `{from, to = from, insert}`; the range check `from > to || from < 0 || to > length` (change.ts:333) is false for undefined and for numeric strings in range.
+  - Fixtures: F0261 {insert: "x"} without from gives sections [NaN, 1] (JSON [[NaN, "x"]], length NaN); F0262 a plain ChangeDesc as a spec is skipped silently (result empty); F0263 string positions "1", "2" give a normal replacement; F0264 insert 7 (a number) builds a set whose toJSON throws TypeError; F0284 fractional positions are accepted; F0303 insert null inserts nothing.
+  - Q12 (docs/parity/ferrum-state/questions.md) lists the JSON readers and constructors that accept out-of-domain values; ChangeSet.of's spec reader is not in it.
+- **Open because.** TypeScript types are cm6's only guard here; cm6 documents no behavior for malformed specs and has no test for them; no decision in force covers inputs outside the ChangeSpec type.
+- **Bears on it.**
+  - cm6 callers pass typed specs (EditorState.changes, mirrors/cm6/state/src/state.ts:176-178; TransactionSpec.changes, mirrors/cm6/state/src/transaction.ts:335; merge, mirrors/cm6/merge/src/unified.ts:228); an exhaustive search for malformed specs at cm6 call sites was not done.
+  - A typed Rust ChangeSpec cannot express F0261-F0264; whether these fixtures belong to the conformance target depends on the answer.
+  - Related: Q12 (same kind of facts for other readers).
+- **Blocks.** The ChangeSpec design in ferrum-state (S5) and whether fixtures F0261-F0264, F0284 and F0303 are conformance targets.
+- **Raised by.** spec-auditor (chunk change, S2), 2026-11-09 (as `change-s2-q4`).
+
+## Q30. When a field or facet function throws while a transaction's new state is being built, the transaction keeps the partly built state and returns it on the next access to `tr.state`
+
+- **Found.** Item `state.cm6.036`.
+  - mirrors/cm6/state/src/state.ts:58 (EditorState constructor) sets `tr._state = this` before the loop at :59 that computes every dynamic slot with `ensureAddr`; :60 resets `computeSlot` only after the loop.
+  - mirrors/cm6/state/src/transaction.ts:219-222 (Transaction.state) calls `applyTransaction` only when `_state` is unset, so after a throw the second access returns the stored object.
+  - mirrors/cm6/state/src/facet.ts:566-575 (ensureAddr) marks a slot `Computing` before calling its function and never resets it on a throw; a later read of that slot throws `Error("Cyclic dependency between fields and/or facets")` (:570).
+  - Fixture docs/parity/ferrum-state/fixtures/facet.jsonl F0019 (behavior state.Facet.B10): a field whose `update` throws once; the first `tr.state` throws `Error("update failed")`, the second returns a state, and reading the field on it throws the cyclic-dependency error. F0179: the same throw seen through `update(...).state`.
+  - No cm6 test exercises a throwing field or facet function (mirrors/cm6/state/test/test-facet.ts, test-state.ts; grep for `throw` in test functions).
+- **Open because.** cm6's code is the specification and it leaves the half-built state reachable; no comment or CHANGELOG entry addresses exceptions from user callbacks during state construction, and no decision in force (D6 in docs/foundation/ferrum-foundation.md §6, the crate's implementation plan) says how errors raised by user field/facet functions propagate or what a transaction holds afterwards. Q16 (docs/parity/ferrum-state/questions.md) covers reaching the partly built state during a successful build, not after a failure.
+- **Bears on it.**
+  - Why cm6 does it: the early `tr._state = this` exists so that queries made during the update see the new state (comment at state.ts:56-57); the failure case follows from it and from JS exceptions unwinding through `ensureAddr` without cleanup (deduction from the code structure). none found for an intended failure behavior.
+  - Observable: only to code that catches the exception and reads `tr.state` again (or keeps the Transaction); the returned state has the new doc and selection and slots in Unresolved or Computing status, so reads throw the misleading cyclic-dependency error or return values computed before the throw.
+  - For whom: @codemirror/view dispatches transactions and reports exceptions through `logException` (deduction, not run: view is not in the harness); user fields and computed facets that can throw.
+  - In a native port an error from a user callback is a Result or a panic; whether a later `state()` on the same transaction is possible, and what it returns, has no counterpart fixed by cm6's tests.
+- **Blocks.** S5 design of EditorState construction, Transaction::state and the error contract of user field/facet callbacks; the replay of fixtures F0019 and F0179.
+- **Raised by.** spec-auditor (S2, chunk facet), 2026-11-10 (as `facet-s2-q1`).
+
+## Q31. combineConfig treats keys named after Object.prototype members as already set, so a single value for such a key throws a merge conflict and a default for it is never applied
+
+- **Found.** Item `state.cm6.134`.
+  - mirrors/cm6/state/src/config.ts:13 starts from `let result: any = {}`, which inherits Object.prototype; :15 reads `current = result[key]`, so for a key such as `toString` or `constructor` `current` is the inherited function, not `undefined`.
+  - config.ts:16-19: a first value for such a key is compared with the inherited function, so with no `combine` entry it throws `Error("Config merge conflict for field toString")` (fixture F0187, one config `{toString: 1}`; F0188 for `constructor`; F0156 for two configs); with a `combine` entry the function is combined with the first value (F0157: `sum` gives the string "function toString() { [native code] }12").
+  - config.ts:21: `result[key] === undefined` is false for inherited names, so `defaults` `{toString: 5, valueOf: 6}` add nothing (F0189: entries []).
+  - Consumers' config keys (mirrors/cm6/commands/src/history.ts:38-46, mirrors/cm6/view/src/gutter.ts:462, mirrors/cm6/language/src/fold.ts:311, mirrors/cm6/view/src/draw-selection.ts:24) contain no Object.prototype name (grep of the combineConfig call sites listed in raw/inventory.jsonl state.cm6.134 used_by).
+- **Open because.** cm6's code is the specification; the doc comment (config.ts:1-7) promises an error only "when a field gets two values that aren't ===-equal", which a single value does not satisfy, and no CHANGELOG entry, test or decision in force covers inherited property names.
+- **Bears on it.**
+  - Why cm6 does it: none found; it is a consequence of using a plain object literal as a map in JavaScript (stack: prototype inheritance), not an editor need (deduction from config.ts:13-21).
+  - Observable only for configuration keys that collide with Object.prototype names (`toString`, `constructor`, `valueOf`, `hasOwnProperty`, `isPrototypeOf`, `propertyIsEnumerable`, `toLocaleString`, `__proto__`); no mirrored consumer uses one (grep above). A native map has no inherited keys, so a port that merges by key gives the documented behavior for them.
+  - No cm6 test covers it (mirrors/cm6/state/test/ has no combineConfig test; grep).
+- **Blocks.** S2 conformance class of fixtures F0156, F0157, F0187-F0189 and the S5 design of combineConfig's Rust form (already open in state.cm6.134's reason).
+- **Raised by.** spec-auditor (S2, chunk facet), 2026-11-10 (as `facet-s2-q2`).
+
+## Q32. The order in which a new state computes its facets, and so calls their getters and combine functions, follows the order in which the facets were defined in the process
+
+- **Found.** Item `state.cm6.036`.
+  - mirrors/cm6/state/src/facet.ts:4 (`let nextID = 0`), :45 (Facet.id), :140 (FacetProvider.id), :312 (StateField.define): one module-level counter numbers every facet, provider and field in creation order.
+  - facet.ts:489 (Configuration.resolve) iterates `for (let id in facets)` over an object keyed by facet id; JavaScript iterates integer-like keys in ascending numeric order, so facet slots are laid out by facet id, not by the order the extensions were given. Fields come first, in flattened (precedence) order (:483-486).
+  - mirrors/cm6/state/src/state.ts:59 computes slots in index order; a slot read by another is computed earlier, on demand (facet.ts:566-575).
+  - Fixture F0007 (behaviors state.Facet.B6, state.StateField.B7): facet `b` defined before `a`, extensions list `a`'s provider first; the log is `create f2, create f1, get b1, get a1, get a2`.
+  - No cm6 test asserts an evaluation order between independent slots (mirrors/cm6/state/test/test-facet.ts).
+- **Open because.** The values computed do not depend on the order unless a function has side effects or reads undeclared state; cm6's code fixes the order through a JS object-key rule and a process-global counter, and no decision in force (D6, docs/foundation/ferrum-foundation.md §6) or specification row says whether the order of user callbacks during state construction is part of the contract.
+- **Bears on it.**
+  - Why cm6 does it: none found for the order itself; the id counter exists to key the `address` and `facets` objects (facet.ts:457, :471) and the order is a by-product of `for...in` over integer keys (stack: JS object key ordering) (deduction).
+  - Observable through side effects in getters, combine functions and field create/update (call order, counters such as test-facet.ts:67-68 `count++`), and through which slot first reads another during construction.
+  - With definitions from several threads or lazily initialized statics in a native port, definition order can differ between runs (deduction); Q3 (docs/parity/ferrum-state/questions.md) is the open question on the form of static members such as facets.
+  - A differential oracle comparing callback logs, as the facet fixtures do (F0007, F5062-F5122), sees the order.
+- **Blocks.** S5 design of facet identity and Configuration layout; whether fixture logs are compared in order or as multisets.
+- **Raised by.** spec-auditor (S2, chunk facet), 2026-11-10 (as `facet-s2-q3`).
+
+## Q33. A transaction extender's result is resolved as a full transaction spec, so keys outside `effects`/`annotations` throw, remap earlier effects or survive, and whether an out-of-range effect position throws depends on whether any extender contributed
+
+- **Found.** Item `state.cm6.034`.
+  - mirrors/cm6/state/src/transaction.ts:392-401 (extendTransaction): each non-empty extender result goes through `resolveTransactionInner(state, extension, tr.changes.newLength)` and `mergeTransaction(spec, ..., true)`; the final Transaction keeps `tr.changes` and `tr.selection` but takes `spec.effects`, `spec.annotations`, `spec.scrollIntoView` (:399-400).
+  - mirrors/cm6/state/src/extension.ts:26-27 types the result as `Pick<TransactionSpec, "effects" | "annotations">`; nothing checks it at runtime.
+  - Fixture F0746 (behavior state.EditorState^transactionExtender.B4): an extender returning {scrollIntoView, changes: insert "Z" at 0, selection, userEvent: "x.y"} gives scrollIntoView true, the userEvent annotation "x.y", no change and no selection from the extender, and the transaction's own effect pos 3 mapped to 4 through the dropped insertion.
+  - Fixture F0747: an extender returning only {changes: insert "ZZ" at 0} leaves the document unchanged but maps pos 2 to 4 and a fold-like range {1,2} to {3,4}.
+  - Fixture F0748: an extender returning {changes: {from: 10}} on a 3-character doc makes `update` throw RangeError "Invalid change range 10 to 10 (in doc of length 3)".
+  - mirrors/cm6/state/src/transaction.ts:312-314, :324 (mergeTransaction, sequential): the merged effects are mapped through `b.changes` and `ChangeSet.empty(b.changes.length)`; mirrors/cm6/state/src/change.ts:140 (mapPos) throws for a position past the set's length. Fixtures F0751, F0753, F0739: an effect position past the doc end throws RangeError "Position <pos> is out of range for changeset of length <len>" when an extender contributes; F0756: the same effect is accepted with no extender; F0752: types without map never throw.
+- **Open because.** cm6's code produces these results on every path through extendTransaction; its doc comment (mirrors/cm6/state/src/state.ts:432-442) says extenders "can only add annotations and effects", the CHANGELOG mentions extenders only for the 6.1.2 multiple-extender fix (mirrors/cm6/state/CHANGELOG.md:157), and no specification row or decision in force (.claude/rules/decisions.md, rust-naming-decisions.md) says what an extender result outside that shape does in Ferrum.
+- **Bears on it.**
+  - Why cm6 does it: extendTransaction reuses the general spec resolver and merger (structure of mirrors/cm6/state/src/transaction.ts:392-401); the narrow result type exists only in TypeScript. No comment states an intent for the extra keys (none found).
+  - Observable: dropped changes still shift earlier effects' positions (F0746, F0747); invalid dropped changes throw; scrollIntoView and userEvent from an extender survive; an out-of-range effect position is an error only when some extender contributed, so adding an unrelated extension can turn an accepted update into an exception (F0751 vs F0756).
+  - For whom: no mirrored package registers a transactionExtender outside mirrors/cm6/state/src (grep of `transactionExtender` in mirrors/cm6/*/src); application extensions are the users. Effects with out-of-range positions are not produced by mirrored consumers as far as read (deduction, not verified).
+  - A typed Rust extender result restricted to effects and annotations cannot express the extra keys at all (deduction); an implementation that maps through empty change sets reproduces the range check, one that skips mapping does not.
+- **Blocks.** The S2 behaviors state.EditorState^transactionExtender.B4 and B6 are recorded as found; the ferrum-state design (S5) of the extender result type and of effect position checking waits on it.
+- **Raised by.** spec-auditor (chunk state, S2), 2026-11-10 (as `state-s2-q1`).
+
+## Q34. The ranges a change filter returns are used unchecked: an unsorted array from a single filter suppresses only part of what it lists, and range ends are bounded by a 1e9 sentinel
+
+- **Found.** Item `state.cm6.032`.
+  - mirrors/cm6/state/src/transaction.ts:364 (filterTransaction): the first array is kept as is (`result === true ? value : joinRanges(result, value)`); joinRanges (mirrors/cm6/state/src/transaction.ts:290-300) merges two lists assuming each is sorted.
+  - mirrors/cm6/state/src/change.ts:269-297 (ChangeSet.filter) walks the ranges in order; :273 uses `1e9` as the position after the last range.
+  - Fixture F0723 (behavior state.EditorState^changeFilter.B8): one filter returning [4, 6, 0, 2] on "abcdef" with a deletion of 0-6 leaves "ef": 4-6 is suppressed, 0-2 is not.
+  - Fixture F0724: a range end of 1e9 + 5 on a 3-character doc behaves as the document end.
+  - mirrors/cm6/state/src/state.ts:404-410 documents the result as "an array of numbers, with each pair of two numbers indicating the start and end of a range" without stating an order; mirrors/cm6/state/test/test-state.ts:202-217 uses sorted masks only.
+- **Open because.** The code shows the result for unsorted input but neither the documentation nor a test states whether sorted input is required; no decision in force covers input outside a documented but unchecked domain (Q9 and Q12 are the related open questions for text and JSON inputs; Q20 is the same 1e9 sentinel pattern in rangeset.ts).
+- **Bears on it.**
+  - Why cm6 does it: none found; the single-array shortcut avoids a merge (code structure, deduction).
+  - Observable: which parts of a change survive filtering for unsorted or overlapping masks from a single filter (F0723); with two or more filters joinRanges's result for unsorted input is also order-dependent (deduction from mirrors/cm6/state/src/transaction.ts:294-298, not probed).
+  - For whom: no mirrored package registers a changeFilter outside mirrors/cm6/state (grep of `changeFilter` in mirrors/cm6/*/src); applications that protect regions of a document are the users.
+  - Documents longer than 1e9 UTF-16 code units are outside every cm6 test; Q20 records the same sentinel for range sets.
+- **Blocks.** The S2 behavior state.EditorState^changeFilter.B8 is recorded as found; the ferrum-state design (S5) of the change filter result type waits on it.
+- **Raised by.** spec-auditor (chunk state, S2), 2026-11-10 (as `state-s2-q2`).
+
+## Q35. An empty range whose endSide is below its startSide survives mapping only while no change touches its chunk; any change in the same chunk, even far from it, deletes it
+
+- **Found.** Item `state.cm6.184`.
+  - mirrors/cm6/state/src/rangeset.ts:151 (Chunk.map) drops a mapped range when `(newTo - newFrom || val.endSide - val.startSide) < 0`; this applies to ranges that were empty before mapping as well as to collapsed ones; :149 is a subset of the same rule for non-empty ranges.
+  - mirrors/cm6/state/src/rangeset.ts:314-318 (RangeSet.map): a chunk that touchesRange reports as untouched is kept as is, so the rule does not run for its ranges.
+  - Fixtures docs/parity/ferrum-state/fixtures/rangeset.jsonl F0051-F0054 (behavior state.RangeValue.endSide.B4): an empty point at 3 with sides -2 / -599999999, in a chunk with a mark [8,10], is dropped by an insertion at 9 (same chunk) and kept by an insertion at 15 (outside the chunk); same for sides 499999999 / 2.
+  - mirrors/cm6/view/src/decoration.ts:251-254 (Decoration.replace) gives startSide -2 and endSide -599999999 for {inclusiveStart: true} and 499999999 / 2 for {inclusiveEnd: true}; PointDecoration.range (decoration.ts:354-358) rejects an empty replace range only when startSide > 0 and endSide <= 0, so both are accepted at an empty range.
+  - No cm6 test covers an empty range with endSide < startSide (mirrors/cm6/state/test/test-rangeset.ts).
+- **Open because.** The code has no comment on applying :151 to ranges that were already empty; mirrors/cm6/state/CHANGELOG.md has no entry about it (6.7.2-6.7.4 concern point ordering). The specification rows and decisions in force do not say which inputs RangeSet.map must keep. Q19 (docs/parity/ferrum-state/questions.md) is the same chunk-dependence for a different input class.
+- **Bears on it.**
+  - Observable for every empty range with endSide < startSide: in cm6's consumers, empty replace decorations with exactly one inclusive side (deduction from decoration.ts:251-254; not run in view, the harness holds only @codemirror/state).
+  - The result depends on chunk boundaries (250 ranges per chunk, rangeset.ts:97) and on which other ranges share the chunk, which callers cannot see; a differential oracle against cm6 on random sets hits it whenever such a range is in a touched chunk.
+  - Why cm6 does it: not stated; the rule reads as written for collapsed non-empty ranges (deduction from :146-151).
+- **Blocks.** The RangeSet.map design (S5) and the replayer of fixtures F0051-F0054.
+- **Raised by.** spec-auditor (S2, chunk rangeset), 2026-11-09 (as `rangeset-s2-q1`).
+
+## Q36. Ranges equal in from, startSide, set rank, to and endSide are iterated in an order set by the binary heap's layout, not by insertion order
+
+- **Found.** Item `state.cm6.186`.
+  - mirrors/cm6/state/src/rangeset.ts:664-667 (LayerCursor.compare) has no key after endSide; mirrors/cm6/state/src/rangeset.ts:725-739 (heapBubble) picks the right child on a tie (`>= 0`, :730).
+  - Fixtures docs/parity/ferrum-state/fixtures/rangeset.jsonl F0060 (of([1,3,a],[1,3,b]) iterates b, a), F0061 (four alternating duplicates iterate a, a, b, b), F0108 (update merge: list p, q for top layer q, second layer p), F0232 (sorted input b, a at [1,2] iterates a, b), F0224 (spans active [b, a, c] for three identical marks a, b, c).
+  - mirrors/cm6/state/src/rangeset.ts:793 (SpanCursor.addActive) inserts a range before active ranges with equal (rank, to), which combines with the heap order in RangeSet.spans.
+- **Open because.** No comment or CHANGELOG entry states an order for such ties; the specification rows and decisions in force do not settle whether Ferrum reproduces the heap layout or any other tie order.
+- **Bears on it.**
+  - Observable through RangeSet.iter, RangeSet^iter and the `active` order of RangeSet.spans when one set holds identical ranges (same positions and sides) in different layers, for example two identical mark decorations from one source; deduction: view nests mark elements by active order (CHANGELOG 6.4.0), so the DOM nesting of identical marks follows this order; not verified in view.
+  - Fixtures and the random fixtures F5001-F5081 record cm6's order, so a replayer that compares iteration order exactly needs the same tie order.
+  - Why: the heap exists because one cursor merges many layers (structure); the tie order is a by-product.
+- **Blocks.** The cursor design in S5 and the fixture replayer's comparison rule for iteration order.
+- **Raised by.** spec-auditor (S2, chunk rangeset), 2026-11-09 (as `rangeset-s2-q2`).
+
+## Q37. Unsorted `add` without `sort` throws when the set is empty and is accepted silently when it is not
+
+- **Found.** Item `state.cm6.183`.
+  - mirrors/cm6/state/src/rangeset.ts:276 (RangeSet.update) sends `add` to RangeSet.of (strict) when the set is empty; mirrors/cm6/state/src/rangeset.ts:283 adds with strict = false otherwise.
+  - Fixtures docs/parity/ferrum-state/fixtures/rangeset.jsonl F0105 (empty set: Error 'Ranges must be added sorted by `from` position and `startSide`'), F0106 and F0107 (non-empty set: no error, out-of-order ranges go to lower layers).
+  - Doc comment mirrors/cm6/state/src/rangeset.ts:203-206: add 'should be sorted by `from` position and `startSide` unless sort is given as true'.
+  - Consumers that pass add without sort: mirrors/cm6/language/src/fold.ts:122 (ranges from fold effects, in effect order), mirrors/cm6/view/src/matchdecorator.ts:143 (ranges produced by decorate callbacks), mirrors/cm6/autocomplete/src/closebrackets.ts:50 (one range).
+- **Open because.** cm6's code checks the order on one path only and no comment or CHANGELOG entry explains the difference; the decisions in force do not set an error contract for RangeSet.update.
+- **Bears on it.**
+  - For a caller, the same unsorted input fails or succeeds depending on whether the set is empty; fold effects applied in descending position order to an empty folded set would throw (deduction from fold.ts:122; not run).
+  - On the non-empty path the result is valid (each layer stays ordered) but holds more layers than a sorted add would.
+- **Blocks.** The RangeSet.update error contract in S5.
+- **Raised by.** spec-auditor (S2, chunk rangeset), 2026-11-09 (as `rangeset-s2-q3`).
+
+## Q38. Invalid builder input (negative positions, use after finish) silently corrupts the set or fails with JavaScript TypeErrors instead of a designed error
+
+- **Found.** Item `state.cm6.201`.
+  - mirrors/cm6/state/src/rangeset.ts:490, :530 (RangeSetBuilder): chunkStart uses -1 for 'unset', so a range at a negative position leaves it looking unset; fixture docs/parity/ferrum-state/fixtures/rangeset.jsonl F0089: of([-3,-1,v],[0,2,w]) stores both ranges as [0,2].
+  - mirrors/cm6/state/src/rangeset.ts:565 nulls `from` after finish ('Make sure further `add` calls produce errors'); fixture F0236: add of a fitting range after finish throws TypeError "Cannot read properties of null (reading 'length')", add of an overlapping range succeeds into a new nested builder and the next finish throws the same TypeError; finish twice throws it.
+  - mirrors/cm6/state/src/rangeset.ts:492-493, :525: a first range at -1e9 throws TypeError "Cannot read properties of null (reading 'endSide')" (fixtures F0091, F0092; Q20).
+  - No check of from <= to anywhere (mirrors/cm6/state/src/rangeset.ts:31, :53-55, :524-539): reversed ranges are stored (F0087, F0088, F0235).
+- **Open because.** These outcomes come from JavaScript runtime behavior (null property reads, sentinel collisions), not from a designed check; Q12 (docs/parity/ferrum-state/questions.md) raises the same kind of fact for change and selection constructors, and no decision sets the contract for range input.
+- **Bears on it.**
+  - cm6's consumers pass non-negative document positions and finish each builder once (grep of RangeSetBuilder uses in mirrors/cm6/*/src; not exhaustive per call site), so the corrupt cases need a caller bug.
+  - A Rust port with unsigned positions cannot represent the negative inputs at all; the TypeError messages cannot be reproduced as such.
+- **Blocks.** The RangeSetBuilder and Range error contract in S5; fixtures F0087-F0092 and F0235-F0236 depend on the answer.
+- **Raised by.** spec-auditor (S2, chunk rangeset), 2026-11-09 (as `rangeset-s2-q4`).
+
+## Q39. Range sides at or beyond plus or minus 1e9 fall outside the side bounds of between and goto, and the bounds treat the two ends differently
+
+- **Found.** Item `state.cm6.185`.
+  - mirrors/cm6/state/src/rangeset.ts:129 (Chunk.between) searches ends with side -1e9 and starts with side +1e9; mirrors/cm6/state/src/rangeset.ts:600, :695, :766 (goto default side -1e9).
+  - Fixtures docs/parity/ferrum-state/fixtures/rangeset.jsonl F0030-F0033: for between(5, 10) and iter(5), a range ending at 5 with endSide -1e9 is reported and one with endSide -1e9-1 is not; for between(5, 10), a range starting at 10 with startSide exactly 1e9 is not reported (nor 1e9+1), while iter(5) reports both.
+  - Consumer sides stay within -6e8 .. 5e8 plus the widget side clamp of 1e4 (mirrors/cm6/view/src/decoration.ts:170-185, :236-240).
+- **Open because.** Q20 (docs/parity/ferrum-state/questions.md) covers 1e9 as a position sentinel; these facts concern sides, which no decision bounds, and the asymmetry at exactly ±1e9 is not mentioned there.
+- **Bears on it.**
+  - Only callers that build values with sides of magnitude 1e9 or more reach it; no cm6 consumer does (deduction from the grep above).
+  - Side arithmetic in cm6 is JS number subtraction; the bound values decide the integer width a Rust side type needs (differences up to 1.6e9 with consumer values).
+- **Blocks.** The side type and the between/goto bounds in S5.
+- **Raised by.** spec-auditor (S2, chunk rangeset), 2026-11-09 (as `rangeset-s2-q5`).
