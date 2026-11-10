@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agent-memory/consultant/MEMORY.md` (commit `8e3ce5f`). O original em inglês é o que vale.
+> Tradução para leitura de `.claude/agent-memory/consultant/MEMORY.md` (commit `78a4d55`). O original em inglês é o que vale.
 
 # Memória do consultor
 
@@ -12,8 +12,10 @@
 - Limites em instruções (tamanho de card, número de arquivos): trocar os proxies por um critério mais um relatório que mede as duas falhas (o que falta, o que sobra). `a3b36a9`
 - Etapas ou crates sobrepostos: não, enquanto o método ainda está sendo refinado; correção antes de velocidade. `a3b36a9`
 - Texto que obriga sem commit Decided-by (regras herdadas, linhas de registro): re-derivar dos fatos antes de confiar nele; uma regra de categoria deve ser conferida contra cada membro que cobre. `7aae14b`
-- DROP vs CORE para itens com formato de TS/JS: só se faz DROP do que não tem significado em tempo de execução ou só serve para construir um artefato JS (`tag` fantasma, getters de conformidade, `fromCodePoint`); mantém-se garantias no nível de tipos (FacetReader), protocolos da linguagem (`Symbol.iterator`) e tudo o que recebe uma posição (D1 o alcança). commit das disposições S1 do ferrum-state
+- DROP vs CORE para itens com formato de TS/JS: só se faz DROP do que não tem significado em tempo de execução ou só serve para construir um artefato JS (`tag` fantasma, getters de conformidade, `fromCodePoint`); mantém-se garantias no nível de tipos (FacetReader), protocolos da linguagem (`Symbol.iterator`) e tudo o que recebe uma posição (D1 o alcança). Um membro de protocolo (`StateField.extension`) é CORE mesmo que a forma em Rust seja estática; DROP não pode pressupor o projeto do S5, e "ninguém lê isso" exige uma busca que cubra leituras sem tipo. `be272c7`, corrigido em `474fff6`
 - Esforço do worker: fixá-lo em cada definição (o padrão da sessão e o parâmetro de spawn o mudam em silêncio); só se baixa o de um produtor numa execução pareada contra linhas verificadas; os gates ficam altos. Custo: estimar a partir das linhas do inventário, não das linhas de código-fonte. commit M1/M6
+- Tags/critérios de linha: definir pelo que o consumidor do campo precisa (deps -> qual asserção uma resposta muda, já que isso orienta a cobertura de fixtures), acrescentar uma verificação mecânica; um erro de regra achado numa amostra se corrige em todas as linhas. `0cab8fb`
+- Tags de decisão além de D1: uma tag segue onde o código da decisão roda (o texto que o comportamento lê), não todo número que esse texto já produziu; só D1 alcança números derivados, porque sua unidade reexpressa toda posição. Manter a resposta excluída visível como fato contado na pergunta da decisão. commit M7
 - Manter agentes fora de arquivos: uma negação de permissão (que também filtra buscas), mais uma linha de texto só para o que ela não enxerga. `4483420`
 
 ## Calibração

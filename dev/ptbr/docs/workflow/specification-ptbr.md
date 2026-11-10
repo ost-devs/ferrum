@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/specification.md` (commit `8e3ce5f`). O original em inglês é o que vale; as seções citadas (§5, §9…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
+> Tradução para leitura de `docs/workflow/specification.md` (commit `78a4d55`). O original em inglês é o que vale; as seções citadas (§5, §9…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
 
 # Etapa de especificação
 
@@ -103,8 +103,14 @@ Para todo item no escopo (`CORE`, `CONTRACT`, a parte de `SURFACE` que pertence 
    - a classe de entrada;
    - o resultado observável;
    - `file:line` do cm6;
-   - as decisões de que depende (`D1`, `D2`, …);
+   - as decisões de que depende (`deps`: `D1`, `D2`, …), pelos testes abaixo;
    - os testes do cm6 que o cobrem, ou `none`.
+
+   **Tags de decisão.** Uma tag diz que alguma resposta a essa decisão muda o que este comportamento afirma. Ela decide de quais fixtures o comportamento precisa (item 3), quando seu item pode ser implementado ([`docs/workflow/implementation.md`](implementation-ptbr.md) §1) e é evidência para a decisão. Aplique cada teste à asserção do próprio comportamento, não a todo valor que sua entrada carrega. Quando um teste não puder ser resolvido, marque a tag: uma tag faltando deixa uma conversão sem teste e nada falha; uma tag a mais custa uma fixture.
+   - `D1` (unidade de posição): ponha um caractere astral no texto que o comportamento lê, ou do qual suas entradas foram construídas (um documento, uma linha, uma string, um texto inserido), antes ou dentro das posições envolvidas. Marque `D1` se um número que o comportamento afirma (uma posição, um comprimento, um offset, um offset de coluna, uma contagem de unidades de código) ou seu resultado (uma verificação de intervalo, um throw, uma divisão dentro de um caractere) diferiria com posições contadas em bytes UTF-8 ou em chars em vez de unidades de código UTF-16. Não é `D1`: números que o comportamento só carrega sem relacioná-los a nenhum texto (uma tripla de `Range`, a ordem de posições dadas) e asserções sobre outra coisa (identidade do resultado, ordem, vazio), mesmo quando os valores são posições.
+   - `D2` (quebras de linha, o modelo `Text`, clusters de grafemas): ponha um CRLF, um CR solitário, um U+2028 (com e sem `lineSeparator`) ou um cluster de grafemas de vários pontos de código no texto que o comportamento lê, antes ou dentro das posições envolvidas. Esse texto é uma string que o comportamento divide, mede ou percorre ele mesmo (uma string inserida que ele transforma em mudança, uma string que ele lê por clusters), ou um documento, `Text` ou linha que ele lê, tomado como a string que o cm6 dividiu para construí-lo. Marque `D2` se o que o comportamento afirma (um número, uma linha, uma string, um resultado) depende de como o cm6 divide o texto em linhas (`\r\n?|\n`, ou `lineSeparator`), conta uma quebra de linha como uma posição, numera linhas ou situa fronteiras de linha, reinsere o separador na saída, ou situa fronteiras de clusters de grafemas (`findClusterBreak`). Não é `D2`, ao contrário de `D1`: números que o comportamento recebe já medidos e não relaciona a nenhum texto que lê, como os comprimentos de seção de um conjunto de mudanças construído antes da chamada, ou posições numa seleção, num conjunto de ranges ou num efeito mapeados por ele (`ChangeDesc.mapPos`, `RangeSet.map`). O comportamento que os mediu carrega a tag, e entre as respostas a D2 só contar uma quebra de duas ou mais unidades de código como mais de uma posição os mudaria.
+   - `D6` (propriedade e threading): marque `D6` se o comportamento afirma identidade, reuso ou compartilhamento que um chamador pode observar (o mesmo objeto devolvido, um valor comparado com `===` ou usado como chave de `Map`, um valor em cache), uma mutação visível a outro detentor, ou estado compartilhado entre instâncias (contadores e ids no nível do módulo).
+   - `D5` (tipo de comando): o comportamento trata do alvo ou da assinatura de um comando (`StateCommand`, `Command`). `D3`, `D4`, `D7`, `D8`: só quando o código mostra o comportamento fazendo a pergunta dessa decisão (uma árvore sintática, geometria, uma classe ou atributo, um evento de entrada).
 
    Dimensões a considerar (acrescente o que o código mostrar):
    - o valor de retorno, incluindo "não fez nada";
@@ -118,7 +124,7 @@ Para todo item no escopo (`CORE`, `CONTRACT`, a parte de `SURFACE` que pertence 
 3. **Fixtures de referência (golden)** para todo comportamento que roda sem interface. Uma fixture é uma execução do cm6, escrita pelo `fixtureWriter`:
    - nunca escrita à mão; a entrada registrada é a entrada realmente usada;
    - posições em unidades de código UTF-16, como o cm6 as produz, com o texto guardado para que possam ser convertidas para a unidade de D1;
-   - todo comportamento que depende de D1 ou D2 ganha uma fixture ASCII e uma com caracteres astrais, CRLF ou U+2028, conforme o caso;
+   - todo comportamento marcado com `D1` ganha uma fixture ASCII e uma cujo texto tem um caractere astral antes ou dentro das posições envolvidas; todo comportamento marcado com `D2` ganha, além da ASCII, uma para cada caso em que sua asserção se apoia: CRLF, CR solitário, U+2028 (com e sem `lineSeparator`), um cluster de grafemas de vários pontos de código;
    - exceções são saídas (`capture`);
    - substitutos solitários são codificados (`encode`).
 
@@ -223,6 +229,7 @@ Um `verifier` que não escreveu nenhuma linha roda isto (cartão: Apêndice B):
    - totais recontados com as ferramentas; nenhum id duplicado;
    - todo item no escopo tem comportamentos;
    - todo comportamento tem fixtures ou um `golden_note`;
+   - todo comportamento marcado com `D1` cita uma fixture cuja entrada tem um caractere astral ou um substituto solitário codificado, e todo comportamento marcado com `D2` uma cuja entrada tem `\r`, U+2028 ou um caractere não ASCII, a menos que tenha um `golden_note`; um script lista as exceções, e cada uma é conferida à mão contra a §5 item 3;
    - todo gerador, rodado de novo com sua semente, reproduz exatamente suas fixtures;
    - todo caso de teste está classificado;
    - todo texto de motivo repetido é listado e conferido contra cada linha que o carrega;
@@ -233,16 +240,16 @@ Um `verifier` que não escreveu nenhuma linha roda isto (cartão: Apêndice B):
    - toda linha `DROP`;
    - uma amostra de disposições.
 
-   Para cada item da amostra, rederive a lista de comportamentos a partir do código do cm6 e procure comportamentos faltando, rode de novo três fixtures, e confira as classificações de testes e as notas de pilha.
+   Para cada item da amostra, rederive a lista de comportamentos a partir do código do cm6 e procure comportamentos faltando, rode de novo três fixtures, e confira as classificações de testes, as notas de pilha e as tags de decisão pelos testes da §5 item 2, nos dois sentidos: uma tag faltando e uma tag que os testes não sustentam.
 3. **Para `ferrum-state`:** compare com o lado cm6 da auditoria de estado anterior (§1). Todo comportamento ou fixture do cm6 de lá que não tem correspondente aqui é um achado. Ele é verificado contra o cm6 antes que alguém aja sobre ele.
-4. O orquestrador corrige toda divergência. O verificador então tira uma nova amostra com uma nova semente, até uma amostra voltar limpa.
+4. O orquestrador corrige toda divergência. Uma divergência que vem de uma regra aplicada a toda linha (um critério, um campo deixado vazio em um chunk inteiro) é corrigida em toda linha que a regra cobre, não só nas amostradas: uma amostra mede as linhas, e corrigir só o que ela sorteou deixa o mesmo erro, despercebido, nas demais. O verificador então tira uma nova amostra com uma nova semente, até uma amostra voltar limpa.
 
 ## 9. Passos
 
 | Passo | Quem | Trabalho | Termina com (em commit) |
 |---|---|---|---|
 | S0 Preparação | orquestrador | Fixar o pacote e os pacotes centrais que ele lê para valores de consumidores na versão mais recente (`npm view @codemirror/<package> version`, depois `/mirrors pin cm6/<package> @<version>`), refazer a resolução dos pins de dependência ([`.claude/rules/mirrors.md`](../../claude/rules/mirrors-ptbr.md) "Dependency pins"), e enfileirar um delta de versão para todo crate em conformidade cujo pacote andou ([`docs/workflow/README.md`](README-ptbr.md#1-forma) §1 "The cm6 reference"). Commitar `mirrors/mirrors.json`. Conferir os mirrors (`/mirrors check`) e construir o harness ([`tools/cm6/setup_harness.py`](../../../../tools/cm6/setup_harness.py)). Rodar as ferramentas de inventário e de testes; expandir os casos de teste gerados. Declarar os totais. Listar o escopo: arquivos-fonte, arquivos de teste, pacotes consumidores. Dividir em pedaços de cerca de 40–80 linhas de inventário ou até 1.000 linhas de fonte. Escrever os dois cartões e `docs/progress/<crate>.md` | linhas brutas, cartões, progresso |
-| S1 Fatos | orquestrador. Para um pacote grande demais para ler num contexto, `spec-auditor`s por grupo de arquivos | Os fatos de toda linha (`does`, `platform`, `used_by`, §4) e de todo arquivo-fonte, sem disposição. `used_by` parte de uma lista de referências por pacote que uma ferramenta compartilhada em `tools/cm6/` produz com o verificador de tipos do TypeScript sobre `mirrors/cm6/*/src` (escrita antes do primeiro S1 que não a tenha); o worker a confere com grep e julga cada referência, em vez de escrever a sua própria busca. As entradas de `docs/parity/<crate>/early-decisions.md`, se existir, são escritas nas suas linhas como decididas e o arquivo é apagado ([`docs/workflow/README.md`](README-ptbr.md#3-decisões) §3) | fatos em `raw/inventory.jsonl` |
+| S1 Fatos | orquestrador. Para um pacote grande demais para ler num contexto, `spec-auditor`s por grupo de arquivos | Os fatos de toda linha (`does`, `platform`, `used_by`, §4) e de todo arquivo-fonte, sem disposição. `used_by` parte de uma lista de referências por pacote que uma ferramenta compartilhada em `tools/cm6/` produz com o verificador de tipos do TypeScript sobre `mirrors/cm6/*/src` (escrita antes do primeiro S1 que não a tenha); o worker a confere com grep e julga cada referência, em vez de escrever a sua própria busca. O verificador de tipos não informa uma leitura por um receptor sem tipo (`(x as any).member`, um valor tipado `any`), então o grep cobre cada nome de membro nesses receptores, e um `used_by` vazio diz que o fez (no `ferrum-state` um `DROP` se apoiou num `used_by` vazio que deixou passar uma leitura assim: [`docs/parity/ferrum-state/verification.md`](../../../../docs/parity/ferrum-state/verification.md) "Seed 4101" V1). As entradas de `docs/parity/<crate>/early-decisions.md`, se existir, são escritas nas suas linhas como decididas e o arquivo é apagado ([`docs/workflow/README.md`](README-ptbr.md#3-decisões) §3) | fatos em `raw/inventory.jsonl` |
 | S1 Disposições | `consultant` | Deriva uma disposição e um motivo específico do item para toda linha e todo arquivo, a partir dos fatos e do código do cm6; verifica a premissa de todo `DROP` contra o cm6 | disposições nas linhas, `dispositions.md`, `Decided-by: consultant` |
 | S2 Pedaços | `spec-auditor`, um por pedaço, no máximo 4 ao mesmo tempo | §5, §6 para os itens e casos de teste do pedaço | linhas, fixtures e sondas por pedaço; tokens por pedaço no progresso |
 | S3 Síntese | orquestrador | §7; renderizar as visões em Markdown; [`tools/check_refs.py`](../../../../tools/check_refs.py) | os entregáveis restantes |
@@ -295,7 +302,7 @@ Pacotes consumidores em que fazer grep atrás de valores: [lista mirrors/cm6/...
 Escreva só: docs/parity/[crate]/raw/[chunk]-*.jsonl, fixtures/[chunk].jsonl, oracle/cm6/[chunk]/, raw/[chunk].progress.
 
 ## Para todo item que é seu (docs/workflow/specification.md §5)
-[os nove pontos da §5, condensados: ler; comportamentos com seus campos; fixtures; valores de consumidores;
+[os nove pontos da §5, condensados: ler; comportamentos com seus campos, e os testes de tags de decisão da §5 item 2 na íntegra; fixtures; valores de consumidores;
  geradores com a lista de formas; custo; riscos (lista); notas de pilha; perguntas de contrato]
 
 ## Para todo caso de teste que é seu (§6)
