@@ -2,8 +2,8 @@
 
 @codemirror/state 6.7.6, mirror commit 651084c.
 
-Seed and sample: in your assignment. Earlier samples: none yet.
-Checks: `docs/workflow/specification.md` §8, items 1–3.
+Seed and sample: in your assignment. Earlier samples: seed 4101, not clean (`docs/parity/ferrum-state/verification.md`).
+Checks: `docs/workflow/specification.md` §8, items 1–3. Items 1–2 include the decision-tag checks: the fixture each `D1` or `D2` tag requires (§5 item 3), and on the sample, tags missing and tags unsupported under the tag tests of §5 item 2.
 Run probes and generators with: `npx tsx --tsconfig .harness/state/tsconfig.json <file>.ts` (from the repository root).
 Recount totals with `node tools/cm6/inventory.cjs --harness .harness/state --package state --prefix state.cm6` and `node tools/cm6/tests.cjs --harness .harness/state --package state` (both print JSON Lines; compare counts and ids, do not overwrite the committed files).
 Item 3 (earlier state audit): read it with `git show bad-start:docs/parity/state/<file>` (`behaviors.md`, `oracle.md`, files under `oracle/`). Only its cm6 side counts; everything it says about Ferrum describes deleted code. Each behavior or fixture there with no counterpart here is a finding, verified against cm6 before you report it.
