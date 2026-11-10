@@ -663,7 +663,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
 // ---------------------------------------------------------------- join
 {
   let P = new Pool([{name: "a"}, {name: "b"}, pt("p", {startSide: 0, endSide: 0})])
-  fx(ID.join, B("RangeSet^join", 1, 2, 4), {op: "join([]) === empty; join([s]) === s; join([empty, s]) === s; join([s, empty]) === s"}, () => {
+  fx(ID.join, B("RangeSet^join", 1, 2, 4), {op: "join([]) === empty; join([s]) === s; join([empty, s]) === s; join([s, empty]) === s; dump(join([s, empty]))"}, () => {
     let s = P.set([[0, 2, 0]])
     return [RangeSet.join([]) === RangeSet.empty, RangeSet.join([s]) === s, RangeSet.join([RangeSet.empty, s]) === s, RangeSet.join([s, RangeSet.empty]) === s,
             P.dump(RangeSet.join([s, RangeSet.empty]))]

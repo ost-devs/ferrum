@@ -131,7 +131,7 @@ cpSync(".harness/state/cm6/state/src", COPY + "/src", {recursive: true})
 symlinkSync(process.cwd() + "/.harness/state/node_modules", COPY + "/node_modules")
 const Copy: any = createRequire(process.cwd() + "/")(process.cwd() + "/" + COPY + "/src/index.ts")
 const copyField = () => Copy.StateField.define({create: () => 1, update: (v: any) => v})
-api(SFE, ["StateField.extension.B7"], {api: "secondCopyField", code: "cf = <copy>.StateField.define(...); [cf instanceof StateField, cf.extension === cf]"},
+api(SFE, ["StateField.extension.B7"], {api: "secondCopyField", code: "cf = <copy>.StateField.define(...); [cf instanceof StateField, cf.extension === cf, <copy>.StateField === StateField]"},
   () => { const cf = copyField(); return [cf instanceof StateField, cf.extension === cf, Copy.StateField === StateField] })
 api(SFE, ["StateField.extension.B7"], {api: "secondCopyField", code: "EditorState.create({extensions: cf})"},
   () => EditorState.create({extensions: copyField()}) && "created")

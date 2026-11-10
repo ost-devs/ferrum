@@ -82,7 +82,7 @@ api("FacetReader", ["FacetReader.B3"], {api: "duckTypedReader", code: "EditorSta
   () => { const f: any = Facet.define<number>(); const s = EditorState.create({extensions: f.of(1)}); return [s.facet({id: f.id, default: "D"} as any), s.facet({id: -1, default: "D"} as any)] })
 
 // ---------------------------------------------------------------- state.cm6.038 Facet^define
-api("Facet^define", ["Facet^define.B1"], {api: "defineDefaults", code: "f = Facet.define(); [EditorState.create({}).facet(f), f.compute !== undefined]"}, () => { const f = Facet.define(); return EditorState.create({}).facet(f) })
+api("Facet^define", ["Facet^define.B1"], {api: "defineDefaults", code: "f = Facet.define(); EditorState.create({}).facet(f)"}, () => { const f = Facet.define(); return EditorState.create({}).facet(f) })
 S("Facet^define", ["Facet^define.B3", "Facet^define config FacetConfig.combine.B1"], {defs: [["facet", "f", {combine: "sum", log: true}], ["facet", "g", {combine: "length", log: true}]], ext: [], reads: [{facet: "f"}, {facet: "g"}]})
 S("Facet^define", ["Facet^define.B3"], {defs: [["facet", "f", {combine: "throwEmpty"}]], ext: [], reads: []})
 S("Facet^define", ["Facet^define.B4"], {defs: [["facet", "s", {combine: "<undefined>"}]], ext: [{of: ["s", 1]}, {of: ["s", 2]}],
@@ -158,7 +158,7 @@ S("Facet.computeN", ["Facet.computeN.B6"], {defs: [["facet", "n", {}]], doc: "ab
 // ---------------------------------------------------------------- state.cm6.042 Facet.from
 S("Facet.from", ["Facet.from.B1", "Facet.from.B2"], {defs: [["field", "x", {create: {const: 5}, update: "inc"}], ["facet", "a", {}], ["facet", "b", {}]],
   ext: [{field: "x"}, {from: ["a", "x"]}, {from: ["b", "x"], get: "x10"}], steps: [tr({})], reads: [{facet: "a"}, {facet: "b"}]})
-api("Facet.from", ["Facet.from.B1"], {api: "fromValueIdentity", code: "v = [1]; field create () => v; state.facet(f.from(field))[0] === state.field(field)"},
+api("Facet.from", ["Facet.from.B1"], {api: "fromValueIdentity", code: "v = [1]; field create () => v; state with [field, f.from(field)]; [state.facet(f)[0] === v, state.facet(f)[0] === state.field(field)]"},
   () => { const v = [1]; const fld = StateField.define({create: () => v, update: x => x}); const f = Facet.define<number[]>(); const s = EditorState.create({extensions: [fld, f.from(fld)]}); return [s.facet(f)[0] === v, s.facet(f)[0] === s.field(fld)] })
 S("Facet.from", ["Facet.from.B3", "StateField^define config StateFieldSpec.compare.B2"], {defs: [["field", "x", {create: {fresh: [1]}, update: "copy", compare: "length"}], ["field", "y", {create: {fresh: [1]}, update: "copy"}], ["facet", "n", {}], ["facet", "m", {}]],
   ext: [{field: "x"}, {field: "y"}, {from: ["n", "x"], get: "len"}, {from: ["m", "y"], get: "len"}], steps: [tr({})], reads: [{facet: "n"}, {facet: "m"}, {field: "x"}, {field: "y"}]})
@@ -239,7 +239,7 @@ api("Prec", ["Prec.B6"], {api: "precLazy", code: "Prec.high({}) does not throw; 
 S("Prec", ["Prec.B7"], {defs: [["field", "f1", {create: {const: 1}, update: "keep"}], ["field", "f2", {create: {const: 2}, update: "keep"}]],
   ext: [{field: "f1"}, {prec: ["high", {field: "f2"}]}], steps: [tr({})], reads: []})
 S("Prec", ["Prec.B8"], {defs: [["facet", "s", {}], ["shared", "x", {of: ["s", "x"]}]], ext: [{prec: ["low", {ref: "x"}]}, {of: ["s", "a"]}, {prec: ["low", {ref: "x"}]}, {prec: ["lowest", {ref: "x"}]}], reads: [{facet: "s"}]})
-api("Prec", ["Prec.B8"], {api: "precDistinct", code: "Prec.high(x) !== Prec.high(x); Prec.high(x).prec, Prec.lowest(x).prec"},
+api("Prec", ["Prec.B8"], {api: "precDistinct", code: "[Prec.high(x) !== Prec.high(x), Prec.highest(x).prec, Prec.high(x).prec, Prec.default(x).prec, Prec.low(x).prec, Prec.lowest(x).prec, Object.keys(Prec)]"},
   () => { const x = Facet.define<number>().of(1); const a: any = Prec.high(x), b: any = Prec.high(x); return [a !== b, (Prec.highest(x) as any).prec, a.prec, (Prec.default(x) as any).prec, (Prec.low(x) as any).prec, (Prec.lowest(x) as any).prec, Object.keys(Prec)] })
 // consumer shape: autocomplete completionKeymapExt = Prec.highest(keymap.computeN([completionConfig], ...)); keymap enables handleKeyEvents at Prec.default
 S("Prec.highest", ["Prec.highest.B2"], {defs: [["facet", "cfg", {}], ["facet", "km", {}], ["facet", "dom", {}], ["shared", "handle", {prec: ["default", {of: ["dom", "handleKeyEvents"]}]}], ["facet", "keymap", {enables: {ref: "handle"}}]],

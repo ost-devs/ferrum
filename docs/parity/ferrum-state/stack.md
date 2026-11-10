@@ -2,10 +2,10 @@
 
 - **What:** the stack notes of `raw/behaviors.jsonl` (`stack` field), grouped by inventory item, identical notes merged; each note ends with the behaviors (`B<n>` of that item) that carry it. Generated from the rows; items whose behaviors all say `none found` are left out. Facts, not proposals (`docs/workflow/specification.md` §5, §7).
 - **cm6:** `@codemirror/state` 6.7.6, mirror commit 651084c; `mirrors/...` line numbers refer to it.
-- **Ferrum commit:** fca162f; line numbers in `docs/` and `tools/` refer to it.
+- **Ferrum commit:** d8939e0; line numbers in `docs/` and `tools/` refer to it.
 - **Ids:** behaviors `state.<item>.B<n>`; inventory rows `state.cm6.<nnn>`
 
-Items with notes: 162 of 261; distinct notes: 370.
+Items with notes: 163 of 261; distinct notes: 427.
 
 ## state.cm6.001 `EditorStateConfig`
 
@@ -15,7 +15,10 @@ Items with notes: 162 of 261; distinct notes: 370.
 ## state.cm6.002 `EditorStateConfig.doc`
 
 - UTF-16 length unit of the resulting Text (mirrors/cm6/state/src/text.ts, D1): evidence is the JS string model; the editor need is a position unit, not this one. (B1)
+- Mechanism: the separator is chosen by JS truthiness: `configuration.staticFacet(EditorState.lineSeparator) || DefaultSplit` (mirrors/cm6/state/src/state.ts:246) and `lineBreak` is `this.facet(EditorState.lineSeparator) || "\n"` (mirrors/cm6/state/src/state.ts:286), while the facet's `combine` passes "" through as the value (`values.length ? values[0] : undefined`, mirrors/cm6/state/src/extension.ts:17-20), so the empty string, falsy in JS, counts as unset for both splitting and joining. Evidence: code structure. Editor need underneath: none (an empty separator cannot split lines). (B3)
 - Union-typed config fields told apart at runtime with `instanceof` (mirrors/cm6/state/src/state.ts:245 `config.doc instanceof Text`, mirrors/cm6/state/src/state.ts:248 `config.selection instanceof EditorSelection`); evidence: the TypeScript unions at mirrors/cm6/state/src/state.ts:21 and :24 and their doc comments ("Can be provided either as a plain string ... or an instance of the Text class"). Editor need underneath: accepting either a ready document/selection or a plain description is API convenience, not an editor requirement. (B4)
+- Mechanism: `(config.doc || "")` (mirrors/cm6/state/src/state.ts:246) falls back by JS truthiness, so an absent field, `undefined`, `null` (outside the TypeScript type `doc?: string | Text`, mirrors/cm6/state/src/state.ts:21) and "" all become "". Evidence: code structure; doc comment mirrors/cm6/state/src/state.ts:15 ("Defaults to an empty document"). Editor need underneath: a default empty document. (B5)
+- Mechanism: `Text.of` returns the module-level singleton `Text.empty` for a single empty line (mirrors/cm6/state/src/text.ts:155, created at mirrors/cm6/state/src/text.ts:376), so every empty document built this way is the same object. Evidence: code structure (immutable garbage-collected values shared by reference). Editor need underneath: none beyond avoiding allocations. (B5)
 
 ## state.cm6.003 `EditorStateConfig.selection`
 
@@ -26,10 +29,13 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 ## state.cm6.004 `EditorStateConfig.extensions`
 
+- Mechanism: `config.extensions || []` (mirrors/cm6/state/src/state.ts:244) falls back by JS truthiness on an optional field (`extensions?: Extension`, mirrors/cm6/state/src/state.ts:26), so an absent field, `undefined` and `null` (outside the TypeScript type) resolve as `[]`. Evidence: code structure. Editor need underneath: a state with no extensions. (B1)
 - The second unrecognized-extension message exists because several copies of the JS package can be loaded at once, breaking `instanceof` (mirrors/cm6/state/src/facet.ts:551 message text). (B2)
 
 ## state.cm6.005 `EditorState`
 
+- Mechanism: the state object is its own build context: the constructor stores the slot function in the mutable `@internal` field `computeSlot` (mirrors/cm6/state/src/state.ts:40, :55), computes every dynamic slot into the object's `values`/`status` arrays through `ensureAddr` (mirrors/cm6/state/src/state.ts:59; mirrors/cm6/state/src/facet.ts:566-575), then sets `computeSlot = null` (mirrors/cm6/state/src/state.ts:60); afterwards `ensureAddr` returns at the `Computed` status bit and never calls slot code. The arrays are TypeScript `readonly` (state.ts:38, :50), which forbids reassigning them, not writing their elements. Evidence: code structure; comment mirrors/cm6/state/src/state.ts:56-57. Editor need underneath: each field and computed facet evaluated once per state, in dependency order (Q16). (B1)
+- Mechanism: slot code receives the state object under construction, and its reads (`state.field`, `state.facet`, mirrors/cm6/state/src/state.ts:68-76, :194-199) recurse into `ensureAddr` (mirrors/cm6/state/src/facet.ts:566-575), which computes the missing slot on that same partly built object through its `computeSlot` closure. Evidence: code structure; comment mirrors/cm6/state/src/state.ts:56-57 for the same sharing through `tr.state`. Relies on one JS thread and shared references (as noted on `state.EditorState.B5`). Editor need underneath: fields and facets that depend on each other regardless of registration order (Q16). (B2)
 - Immutability by convention (TypeScript `readonly`, mirrors/cm6/state/src/state.ts:37-52); the editor need is persistent states, which cm6 gets from JS garbage collection and sharing (B4)
 - Sharing a partly initialized object through a mutable cache relies on one JS thread and garbage collection (comment mirrors/cm6/state/src/state.ts:56-57 states the intent: "so that further queries for it made during the update return this state"); editor need underneath: fields depending on each other's new values (Q16). (B5)
 
@@ -46,7 +52,9 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 ## state.cm6.008 `EditorState.field`
 
+- Mechanism: JS default parameter `require: boolean = true` (mirrors/cm6/state/src/state.ts:68) behind two TypeScript overloads (mirrors/cm6/state/src/state.ts:66-67): an omitted argument and an explicit `undefined` both select the default, so both throw for an absent field; absence itself is a missing key in the plain-object `config.address` read as `undefined` and caught by loose `addr == null` (mirrors/cm6/state/src/state.ts:69-71). Evidence: code structure. Editor need underneath: a lookup that fails loudly unless the caller opts out. (B2)
 - Two TypeScript overloads (mirrors/cm6/state/src/state.ts:66-67) express "value or undefined"; no editor need beyond an optional lookup (B3)
+- Mechanism: a field's `create` receives the state object under construction; `field` on it calls `ensureAddr` (mirrors/cm6/state/src/state.ts:74; mirrors/cm6/state/src/facet.ts:566-575), which computes the other field on that same partly built object through its `computeSlot` closure (mirrors/cm6/state/src/state.ts:55, :59). Evidence: code structure; comment mirrors/cm6/state/src/state.ts:56-57. Relies on one JS thread and shared references (as noted on `state.EditorState.B5`). Editor need underneath: fields that depend on each other regardless of registration order (Q16). (B5)
 
 ## state.cm6.010 `EditorState.replaceSelection`
 
@@ -78,10 +86,14 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 ## state.cm6.014 `EditorState.sliceDoc`
 
+- Mechanism: JS default parameters `from = 0, to = this.doc.length` (mirrors/cm6/state/src/state.ts:189): an omitted argument and an explicit `undefined` both take the default. Evidence: code structure. Editor need underneath: slicing the whole document or its tail. (B1)
 - UTF-16 strings: slicing by code unit is a JS string property (D1) (B4)
 
 ## state.cm6.015 `EditorState.facet`
 
+- Mechanism: the default is computed once as `combine([])` when the facet is defined and stored on the facet object (mirrors/cm6/state/src/facet.ts:61); a facet absent from the configuration, detected by loose `addr == null` on the plain-object `config.address` keyed by the module-level `id` (mirrors/cm6/state/src/state.ts:195-196; mirrors/cm6/state/src/facet.ts:4, :45), returns that stored object, so every state yields the same object (`===`). Evidence: code structure (garbage-collected values shared by reference). Consumers compare facet outputs across states by reference (`update.startState.facet(selectionConfig) != update.state.facet(selectionConfig)`, mirrors/cm6/view/src/draw-selection.ts:69). Editor need underneath: a facet value that reads as unchanged when nothing provides it. (B1)
+- Mechanism: static facet values are stored in the `Configuration`'s `staticValues` array (mirrors/cm6/state/src/facet.ts:480, :492-499; read at mirrors/cm6/state/src/facet.ts:578); a transaction without reconfiguration reuses the `Configuration` object (mirrors/cm6/state/src/state.ts:121, :124), and a reconfiguration keeps the old output object when `compare` says equal (mirrors/cm6/state/src/facet.ts:495, :498), so later states return the same object (`===`). Evidence: code structure (garbage-collected values shared by reference). Consumers detect change by reference (`update.startState.facet(editable) != update.state.facet(editable)`, mirrors/cm6/view/src/domobserver.ts:452). Editor need underneath: cheap change detection for facet values. (B2)
+- Mechanism: a dynamic facet slot keeps the previous output object when its dependencies report no change or `compare` says equal (`update`/`reconfigure` in `dynamicFacetSlot`, mirrors/cm6/state/src/facet.ts:235-256), the values array having been copied by reference from the start state (mirrors/cm6/state/src/state.ts:121). Evidence: code structure (garbage-collected values shared by reference). Consumers detect change by reference (mirrors/cm6/view/src/layer.ts:240, mirrors/cm6/view/src/gutter.ts:502). Editor need underneath: cheap change detection for computed facet values. (B3)
 - `FacetReader` exists for TypeScript typing (CHANGELOG 6.3.0/6.3.1: "read-only handle", "force TypeScript to infer the proper type") (B4)
 
 ## state.cm6.016 `EditorState.toJSON`
@@ -115,6 +127,7 @@ Items with notes: 162 of 261; distinct notes: 370.
 ## state.cm6.027 `EditorState.phrase`
 
 - Plain JS objects as string maps need the own-property guard against inherited keys (mirrors/cm6/state/src/state.ts:326) (B2)
+- Mechanism: marker numbers come from JS coercions in the `replace` callback: `+(i || 1)` turns "" into 1 and any digit string into a JS number, so leading zeros vanish ("01" is 1) and a long digit string becomes a large or rounded double that exceeds the argument count; `!n || n > insert.length` keeps the marker for 0 (mirrors/cm6/state/src/state.ts:327-330). The regex `/\$(\$|\d*)/g` has no `u` flag, so `\d` matches ASCII digits only. Evidence: code structure; doc comment mirrors/cm6/state/src/state.ts:320-323 ("A single `$` is equivalent to `$1`, and `$$` will produce a literal dollar sign"). Editor need underneath: positional interpolation of phrase arguments. (B3)
 - `insert: any[]` relies on JS's implicit string conversion; the editor need is string interpolation (B5)
 
 ## state.cm6.028 `EditorState^languageData`
@@ -131,9 +144,12 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 - Fallback regexes for engines without Unicode property escapes (mirrors/cm6/state/src/charcategory.ts:13, :16, :18-26: `try { new RegExp(..., "u") } catch`); evidence: code structure; editor need underneath: word classification by Unicode properties. (B2)
 - Per-code-unit string iteration is a UTF-16 artifact (mirrors/cm6/state/src/charcategory.ts:32); the editor need is per-character word sets (B3)
+- Mechanism: `makeCategorizer` returns a new JS closure on every call (mirrors/cm6/state/src/charcategory.ts:28-29, called from mirrors/cm6/state/src/state.ts:375), so two calls give two function objects that differ under `===`; nothing is cached. Evidence: code structure (functions as garbage-collected first-class values). Editor need underneath: none. (B4)
 
 ## state.cm6.031 `EditorState.wordAt`
 
+- Mechanism: positions and cluster strings are UTF-16 code units: `findClusterBreak` steps in code units and `text.slice(prev, start)` / `text.slice(end, next)` cut the JS line string (mirrors/cm6/state/src/state.ts:387-388, :392-393), so an astral letter counts 2 positions (D1). Evidence: the JS string model of `Text` (mirrors/cm6/state/src/text.ts). Editor need underneath: a position unit, not this one. (B4)
+- Mechanism: a cluster is Word when the JS regex `/[\p{Alphabetic}\p{Number}_]/u` matches anywhere in it (mirrors/cm6/state/src/charcategory.ts:16, :19, :31), so the classification of CJK ideographs, combining sequences and emoji follows the Unicode property tables of the JS engine running cm6, with a hand-written fallback where `\p{}` is unsupported (mirrors/cm6/state/src/charcategory.ts:13, :18-26); cluster boundaries come from the bundled tables of `@marijn/find-cluster-break` (mirrors/cm6/state/src/char.ts:9-11). Evidence: code structure (`try { new RegExp(..., "u") } catch`). Editor need underneath: word classification by Unicode properties. (B4)
 - UTF-16 positions (D1) (B7)
 
 ## state.cm6.032 `EditorState^changeFilter`
@@ -148,6 +164,7 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 ## state.cm6.034 `EditorState^transactionExtender`
 
+- Mechanism: an extender result counts as empty by JS truthiness and `Object.keys(extension).length` (mirrors/cm6/state/src/transaction.ts:396), so `null`, `undefined` and `{}` are skipped while an own key holding `undefined` counts; whether a new `Transaction` is built is decided by reference, `spec == tr` (mirrors/cm6/state/src/transaction.ts:399). Evidence: code structure. Editor need underneath: no new transaction when no extender contributes. (B3)
 - The narrowed result type exists only in TypeScript (mirrors/cm6/state/src/extension.ts:26-27); the runtime resolves the whole spec (B4)
 
 ## state.cm6.035 `StateCommand`
@@ -351,6 +368,7 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 - Reusing the caller's array when no normalization is needed avoids an allocation (structure, selection.ts:195); editor need: none beyond efficiency. (B2)
 - indexOf on the object after sorting tracks the main range without carrying indexes (structure, selection.ts:224-226); editor need: keep the main range through sorting and merging. (B3)
+- Mechanism: no check of mainIndex; `ranges[mainIndex]` out of range reads `undefined` (JS array semantics, no exception, mirrors/cm6/state/src/selection.ts:224), and `ranges.indexOf(undefined)` after the sort finds no identical element and gives -1 (mirrors/cm6/state/src/selection.ts:226), so the selection stores mainIndex -1 and `main` reads `undefined`. Evidence: code structure; open question Q12. Exists because of JS array semantics and identity-based lookup; editor need underneath: none (callers pass an index of a given range). (B6)
 
 ## state.cm6.074 `EditorSelection^cursor`
 
@@ -396,6 +414,8 @@ Items with notes: 162 of 261; distinct notes: 370.
 ## state.cm6.092 `Transaction`
 
 - Wall-clock time from the JS runtime with no injection point other than the annotation itself (Q15); editor need underneath: undo grouping by time (mirrors/cm6/commands/src/history.ts:340, :357). (B2)
+- Mechanism: the constructor reads the JS runtime clock `Date.now()` unless an annotation of type `Transaction.time` is already present, found by `==` on the `AnnotationType` object (mirrors/cm6/state/src/transaction.ts:186-187); supplying the annotation is the only way to fix a transaction's time (Q15). Evidence: code structure; doc comment mirrors/cm6/state/src/transaction.ts:249-250 ("Automatically added to every transaction, holding `Date.now()`"). Editor need underneath: undo grouping by time (mirrors/cm6/commands/src/history.ts:340, :357). (B3)
+- Mechanism: JS numbers as positions: no integer type, so nothing rejects negatives; the only guard is the upper bound `range.to > docLength` (mirrors/cm6/state/src/selection.ts:240, called from mirrors/cm6/state/src/transaction.ts:185). Evidence: code structure. Editor need underneath: positions inside the document. (B5)
 
 ## state.cm6.095 `Transaction.selection`
 
@@ -410,6 +430,11 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 ## state.cm6.100 `Transaction.state`
 
+- Mechanism: `state` is a getter caching into the mutable `@internal` field `_state` (mirrors/cm6/state/src/transaction.ts:167, :219-222) on an object whose public fields are TypeScript `readonly`; the field is written from outside by the `EditorState` constructor (mirrors/cm6/state/src/state.ts:58), and the getter returns it with a TypeScript non-null assertion `this._state!` (transaction.ts:221), so later reads return the same object (`===`). Evidence: doc comment mirrors/cm6/state/src/transaction.ts:215-218 ("Computed on demand (but retained for subsequent access)"); comment mirrors/cm6/state/src/state.ts:56-57. Relies on one JS thread (no synchronization around the cache). Editor need underneath: filters can avoid building the state. (B1)
+- Mechanism: without reconfiguration the start state's `Configuration` object is reused by reference and its slot values array is copied shallowly with `values.slice()` (mirrors/cm6/state/src/state.ts:121, :124), so unchanged slot values stay the same objects; `Transaction.reconfigured` reads configuration identity with `!=` (mirrors/cm6/state/src/transaction.ts:237). Evidence: code structure (garbage-collected values shared by reference). Editor need underneath: a state update that costs only the slots that change. (B2)
+- Mechanism: the compartment `Map` is shared by reference between `Configuration` objects and copied entry by entry into a new `Map` before the first write (mirrors/cm6/state/src/state.ts:100-104); compartments are `Map` keys by JS object identity (mirrors/cm6/state/src/state.ts:105). Evidence: code structure (states share Configuration objects by reference), as noted on `state.Compartment.reconfigure.B2`. Editor need underneath: the start state keeps its own configuration. (B3)
+- Mechanism: the field's `reconfigure` slot stores `oldState.field(this)` into the new values array (mirrors/cm6/state/src/facet.ts:344), so the carried-over value is the start state's object by reference before `update` runs. Evidence: code structure (garbage-collected values shared by reference). Editor need underneath: a field keeps its state across reconfiguration. (B4)
+- Mechanism: once a whole-configuration effect has set `conf = null`, a later `Compartment.reconfigure` skips the copy guarded by `if (conf)` and writes into `compartments`, which still references the start configuration's `Map` (mirrors/cm6/state/src/state.ts:97-106); the write is visible to every holder of that `Map`, i.e. the start state. Evidence: code structure (a mutable `Map` shared by reference between states); Q14. Editor need underneath: the start state keeps its own configuration (the intent of the copy at state.ts:100-104). (B7)
 - Publishing a partly built state relies on one JS thread and shared references (comment mirrors/cm6/state/src/state.ts:56-57) (B8)
 
 ## state.cm6.101 `Transaction.annotation`
@@ -429,6 +454,7 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 ## state.cm6.105 `Transaction^time`
 
+- Mechanism: the annotation holds a JS number (`Annotation.define<number>()`, mirrors/cm6/state/src/transaction.ts:251) and nothing validates it (mirrors/cm6/state/src/transaction.ts:186), so 0, negative, fractional and large values pass through as given. Evidence: code structure; doc comment mirrors/cm6/state/src/transaction.ts:249-250 (the automatic value is `Date.now()`, a JS number). Editor need underneath: a timestamp for undo grouping. (B1)
 - `Date.now()` is the JS runtime's clock (Q15) (B2)
 
 ## state.cm6.109 `TransactionSpec`
@@ -461,13 +487,17 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 - Mechanism: `specs[i].filter === false` (mirrors/cm6/state/src/transaction.ts:345, :347) is a strict JS comparison on the optional field `filter?: boolean` (mirrors/cm6/state/src/transaction.ts:146), so a missing field (`undefined`) and other falsy values (`0`, `null`) keep filtering on, unlike the truthiness used for `scrollIntoView` and `sequential` (mirrors/cm6/state/src/transaction.ts:339, :348). Evidence: code structure; doc comment mirrors/cm6/state/src/transaction.ts:140-145 ("You can set this to `false` to disable that"). Editor need underneath: filtering is on unless explicitly disabled. (B1)
 
+## state.cm6.117 `TransactionSpec.sequential`
+
+- Mechanism: `let seq = !!specs[i].sequential` (mirrors/cm6/state/src/transaction.ts:348) coerces any JS value to a boolean by truthiness; the TypeScript type is `sequential?: boolean` (mirrors/cm6/state/src/transaction.ts:153), so non-boolean values arrive only from untyped JS or casts. Evidence: code structure. Editor need underneath: a spec states whether its positions refer to the document produced by the specs before it (doc comment mirrors/cm6/state/src/transaction.ts:147-152). (B5)
+
 ## state.cm6.118 `Annotation`
 
 - The phantom `_isAnnotation` declaration exists only to keep TypeScript from treating StateEffect as an Annotation (mirrors/cm6/state/src/transaction.ts:27) (B1)
 
 ## state.cm6.119 `Annotation.type`
 
-- Types are identified by object identity only (no id or name): evidence mirrors/cm6/state/src/transaction.ts:25, :86, :226 (`==` on type objects); editor need underneath: distinct, unforgeable keys for metadata and effects (Q3 covers the Rust form of such static members). (B1)
+- Types are identified by object identity only (no id or name): evidence `Annotation.define` and `StateEffect.define` allocate a bare type object (mirrors/cm6/state/src/transaction.ts:25, :94; `AnnotationType` has no fields, :33-36) and types are compared with `==` on those objects (mirrors/cm6/state/src/transaction.ts:86 `StateEffect.is`, :186 the `Transaction.time` check in `Transaction.create`, :226 `Transaction.annotation`); editor need underneath: distinct, unforgeable keys for metadata and effects (Q3 covers the Rust form of such static members). (B1)
 
 ## state.cm6.120 `Annotation.value`
 
@@ -475,11 +505,11 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 ## state.cm6.121 `Annotation^define`
 
-- Types are identified by object identity only (no id or name): evidence mirrors/cm6/state/src/transaction.ts:25, :86, :226 (`==` on type objects); editor need underneath: distinct, unforgeable keys for metadata and effects (Q3 covers the Rust form of such static members). (B1)
+- Types are identified by object identity only (no id or name): evidence `Annotation.define` and `StateEffect.define` allocate a bare type object (mirrors/cm6/state/src/transaction.ts:25, :94; `AnnotationType` has no fields, :33-36) and types are compared with `==` on those objects (mirrors/cm6/state/src/transaction.ts:86 `StateEffect.is`, :186 the `Transaction.time` check in `Transaction.create`, :226 `Transaction.annotation`); editor need underneath: distinct, unforgeable keys for metadata and effects (Q3 covers the Rust form of such static members). (B1)
 
 ## state.cm6.122 `AnnotationType`
 
-- Types are identified by object identity only (no id or name): evidence mirrors/cm6/state/src/transaction.ts:25, :86, :226 (`==` on type objects); editor need underneath: distinct, unforgeable keys for metadata and effects (Q3 covers the Rust form of such static members). (B1)
+- Types are identified by object identity only (no id or name): evidence `Annotation.define` and `StateEffect.define` allocate a bare type object (mirrors/cm6/state/src/transaction.ts:25, :94; `AnnotationType` has no fields, :33-36) and types are compared with `==` on those objects (mirrors/cm6/state/src/transaction.ts:86 `StateEffect.is`, :186 the `Transaction.time` check in `Transaction.create`, :226 `Transaction.annotation`); editor need underneath: distinct, unforgeable keys for metadata and effects (Q3 covers the Rust form of such static members). (B1)
 
 ## state.cm6.124 `StateEffect`
 
@@ -487,16 +517,18 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 ## state.cm6.126 `StateEffect.map`
 
+- Mechanism: JS `undefined` is the deletion sentinel of effect mapping: `mapped === undefined ? undefined` (mirrors/cm6/state/src/transaction.ts:81), so an effect value cannot itself be `undefined` (doc comment mirrors/cm6/state/src/transaction.ts:88-92: the value type "should be a type that doesn't include `undefined`, since that is used in mapping to indicate that an effect is removed"; mirrors/cm6/state/src/transaction.ts:41-42). Evidence: those doc comments and the code structure. Editor need underneath: a mapping can delete an effect whose range was removed. (B1)
 - Loose `==` is a JS operator; editor need underneath: keep the effect object when mapping changed nothing (B2)
+- Mechanism: the result is decided by two JS comparisons (mirrors/cm6/state/src/transaction.ts:81): strict `=== undefined` for deletion, so `null` (a distinct JS value) does not delete, then loose `==` against the old value, which is reference identity for objects, so a new value object yields a new `StateEffect` instance. Evidence: code structure. Editor need underneath: delete, keep or replace an effect after mapping. (B3)
 
 ## state.cm6.127 `StateEffect.is`
 
 - TypeScript type guard `this is StateEffect<T>` (mirrors/cm6/state/src/transaction.ts:86) (B1)
-- Types are identified by object identity only (no id or name): evidence mirrors/cm6/state/src/transaction.ts:25, :86, :226 (`==` on type objects); editor need underneath: distinct, unforgeable keys for metadata and effects (Q3 covers the Rust form of such static members). (B1)
+- Types are identified by object identity only (no id or name): evidence `Annotation.define` and `StateEffect.define` allocate a bare type object (mirrors/cm6/state/src/transaction.ts:25, :94; `AnnotationType` has no fields, :33-36) and types are compared with `==` on those objects (mirrors/cm6/state/src/transaction.ts:86 `StateEffect.is`, :186 the `Transaction.time` check in `Transaction.create`, :226 `Transaction.annotation`); editor need underneath: distinct, unforgeable keys for metadata and effects (Q3 covers the Rust form of such static members). (B1)
 
 ## state.cm6.128 `StateEffect^define`
 
-- Types are identified by object identity only (no id or name): evidence mirrors/cm6/state/src/transaction.ts:25, :86, :226 (`==` on type objects); editor need underneath: distinct, unforgeable keys for metadata and effects (Q3 covers the Rust form of such static members). (B1)
+- Types are identified by object identity only (no id or name): evidence `Annotation.define` and `StateEffect.define` allocate a bare type object (mirrors/cm6/state/src/transaction.ts:25, :94; `AnnotationType` has no fields, :33-36) and types are compared with `==` on those objects (mirrors/cm6/state/src/transaction.ts:86 `StateEffect.is`, :186 the `Transaction.time` check in `Transaction.create`, :226 `Transaction.annotation`); editor need underneath: distinct, unforgeable keys for metadata and effects (Q3 covers the Rust form of such static members). (B1)
 
 ## state.cm6.129 `StateEffect^mapEffects`
 
@@ -506,7 +538,7 @@ Items with notes: 162 of 261; distinct notes: 370.
 ## state.cm6.132 `StateEffectType`
 
 - The `any` typing of `map` works around TypeScript issue #37631 (comment mirrors/cm6/state/src/transaction.ts:51-54) (B1)
-- Types are identified by object identity only (no id or name): evidence mirrors/cm6/state/src/transaction.ts:25, :86, :226 (`==` on type objects); editor need underneath: distinct, unforgeable keys for metadata and effects (Q3 covers the Rust form of such static members). (B1)
+- Types are identified by object identity only (no id or name): evidence `Annotation.define` and `StateEffect.define` allocate a bare type object (mirrors/cm6/state/src/transaction.ts:25, :94; `AnnotationType` has no fields, :33-36) and types are compared with `==` on those objects (mirrors/cm6/state/src/transaction.ts:86 `StateEffect.is`, :186 the `Transaction.time` check in `Transaction.create`, :226 `Transaction.annotation`); editor need underneath: distinct, unforgeable keys for metadata and effects (Q3 covers the Rust form of such static members). (B1)
 
 ## state.cm6.134 `combineConfig`
 
@@ -523,6 +555,10 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 ## state.cm6.135 `ChangeSpec`
 
+- Mechanism: JS destructuring and truthiness: `let {from, to = from, insert} = spec` (mirrors/cm6/state/src/change.ts:332) applies the default only when `to` is undefined (absent or explicitly undefined, not null), and `!insert` (mirrors/cm6/state/src/change.ts:335) treats any falsy value (absent, "", null) as nothing to insert; the TypeScript type `insert?: string | Text` (mirrors/cm6/state/src/change.ts:189) admits only absent, a string or a Text, so null arrives only from untyped JS or casts. Evidence: code structure. Editor need underneath: a change with an optional end and optional inserted text. (B1)
+- Mechanism: the `insert` field is the TypeScript union `string | Text` (mirrors/cm6/state/src/change.ts:189), resolved at runtime with `typeof insert == "string"` (mirrors/cm6/state/src/change.ts:335): a string is split on the line separator, anything else is used as a Text without a check. Evidence: code structure. Editor need underneath: inserting either plain text or an existing document fragment. (B2)
+- Mechanism: the ChangeSet variant of the union type ChangeSpec (mirrors/cm6/state/src/change.ts:188-191) is recognized at runtime with `instanceof ChangeSet` (mirrors/cm6/state/src/change.ts:326), after the Array.isArray test. Evidence: code structure. Editor need underneath: one entry point accepting single changes, sets and lists. (B3)
+- Mechanism: the array variant of the recursive union type ChangeSpec (`readonly ChangeSpec[]`, mirrors/cm6/state/src/change.ts:191) is recognized at runtime with `Array.isArray` and processed by recursion (mirrors/cm6/state/src/change.ts:324-325). Evidence: code structure. Editor need underneath: one entry point accepting single changes, sets and lists. (B4)
 - Union-typed parameter resolved at runtime (structure, change.ts:188-191, :323-343); editor need: one entry point accepting single changes, sets and lists. (B5)
 
 ## state.cm6.136 `ChangeSet`
@@ -558,6 +594,7 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 - Flat number array of (length, inserted) pairs with -1 marking an unchanged span: the comment at mirrors/cm6/state/src/change.ts:22-26 states the encoding but no reason; no CHANGELOG entry. Editor need underneath: a compact, ordered description of a change. Stack reason: none found. (B1)
 - JS `toString` hook: `String(x)` and template strings call it implicitly (test-change.ts:36, :72, :75). Editor need: none (debug/test format). (B2)
+- Mechanism: TypeScript visibility: the constructor is `protected` and `sections` is `readonly` and `@internal` (mirrors/cm6/state/src/change.ts:27-31), restrictions that exist at compile time only; at runtime the constructor stores any array without a check, and cm6's test helper reaches it through an `as any` cast (`new (ChangeDesc as any)(sections)`, mirrors/cm6/state/test/test-change.ts:11), which is how the unnormalized (3,-1),(0,0) desc is built. `ChangeDesc.create` (mirrors/cm6/state/src/change.ts:177-178) is the `@internal` runtime entry. Evidence: code structure. Editor need underneath: building descriptions only from already valid sections. (B3)
 - Class inheritance ChangeSet extends ChangeDesc (structure, change.ts:196); editor need: a set can be used wherever a description is (mapping positions through a transaction's changes). (B4)
 
 ## state.cm6.153 `ChangeDesc.iterChangedRanges`
@@ -595,6 +632,7 @@ Items with notes: 162 of 261; distinct notes: 370.
 ## state.cm6.166 `CharCategory`
 
 - Mechanism: the reverse-mapping object is what the TypeScript compiler emits for a numeric enum (structure; no editor use found). (B1)
+- Mechanism: step (3) iterates `wordChars` by index (`wordChars[i]`, mirrors/cm6/state/src/charcategory.ts:32), so it matches UTF-16 code units, not characters (as recorded for state.CharCategory.Word.B6); step (2) is the `\p{Alphabetic}\p{Number}_` RegExp only when the engine compiles it: a try/catch (mirrors/cm6/state/src/charcategory.ts:15-16) falls back to the /\w/ and case-comparison test of hasWordChar (mirrors/cm6/state/src/charcategory.ts:13, :18-25) on engines that reject \p{...}. Evidence: code structure, the try/catch; no CHANGELOG entry found. Exists because JS strings are UTF-16 (step 3) and for backward compatibility with older JS engines (step 2); editor need underneath: word, space and other categories for word motion and selection. (B2)
 
 ## state.cm6.167 `CharCategory.Word`
 
@@ -604,20 +642,24 @@ Items with notes: 162 of 261; distinct notes: 370.
 ## state.cm6.170 `RangeValue`
 
 - TypeScript `declare` fields with prototype-assigned defaults (mirrors/cm6/state/src/rangeset.ts:15-28, :34-36): evidence code structure (declare emits no field, so subclasses that assign on their prototype are not overwritten by class-field initializers); editor need underneath: per-kind default sides and map mode for decorations (B1)
+- Mechanism: `abstract class RangeValue` (mirrors/cm6/state/src/rangeset.ts:5) is abstract at the TypeScript type level only and declares no abstract member; its fields are `declare` fields (no emitted code, mirrors/cm6/state/src/rangeset.ts:15-28) whose defaults are assigned on the prototype (mirrors/cm6/state/src/rangeset.ts:34-36), and `eq` and `range` have default bodies (mirrors/cm6/state/src/rangeset.ts:11, :31), so an empty subclass instance reads complete values through the prototype chain. Evidence: code structure (as recorded for state.RangeValue.B1). Editor need underneath: value kinds that need no per-kind sides, map mode or equality. (B2)
 - mutable JS objects shared by reference; nothing in the code prevents mutation (structure, no comment) (B3)
 
 ## state.cm6.171 `RangeValue.eq`
 
 - object identity as default equality: garbage-collected objects have a stable identity for free (structure; doc comment rangeset.ts:7-10 advises overriding) (B1)
+- Mechanism: object identity before equality: cmpVal returns true for `a == b` without calling eq (mirrors/cm6/state/src/rangeset.ts:39), and sameValues tests `a[i] != b[i]` before cmpVal (mirrors/cm6/state/src/rangeset.ts:900). Evidence: code structure; the doc comment on the default eq, "The default implementation compares by identity" (mirrors/cm6/state/src/rangeset.ts:7-10). Relies on value objects being shared by reference between old and new sets; editor need underneath: cheap comparison of unchanged decorations. (B2)
 - dispatch on JS `constructor` identity; evidence CHANGELOG 6.5.3; editor need underneath: overrides only compare values of their own kind (B3)
 
 ## state.cm6.172 `RangeValue.startSide`
 
+- Mechanism: sides are JS `number` (IEEE-754 doubles, `declare startSide: number`, mirrors/cm6/state/src/rangeset.ts:15), compared by subtraction (mirrors/cm6/state/src/rangeset.ts:59, :664-667) with no integer check; the view builds them from a `const enum Side` spanning -6e8..5e8 (mirrors/cm6/view/src/decoration.ts:171-185) plus a widget `side` that it clamps to +-10000 but does not round (mirrors/cm6/view/src/decoration.ts:238), so fractional sides such as 1e8+0.5 reach RangeSet. The whole range stays within the bound commented "A large (fixnum) value to use for max/min values" (mirrors/cm6/state/src/rangeset.ts:98-99). Evidence: code structure and that comment. Exists because JS has a single number type; editor need underneath: a total order of ranges and widgets at one position. (B5)
 - 1e9 sentinel 'A large (fixnum) value to use for max/min values' (code comment rangeset.ts:98) (B6)
 
 ## state.cm6.177 `Range`
 
 - `private constructor` plus `@internal static create` (rangeset.ts:44, :52-55): TypeScript visibility used to keep construction internal while the class stays exported; editor need: ranges are made through a value's range() (B1)
+- Mechanism: the parameter of RangeSet.of is the TypeScript union `readonly Range<T>[] | Range<T>` (mirrors/cm6/state/src/rangeset.ts:448), resolved at runtime with the prototype check `ranges instanceof Range` (mirrors/cm6/state/src/rangeset.ts:450). Evidence: code structure. Editor need underneath: building a set from one range without wrapping it in an array. (B2)
 
 ## state.cm6.180 `Range.value`
 
@@ -646,7 +688,9 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 ## state.cm6.185 `RangeSet.between`
 
+- Mechanism: `if (this.isEmpty) return` (mirrors/cm6/state/src/rangeset.ts:340), where isEmpty is the object identity test `this.nextLayer == this` (mirrors/cm6/state/src/rangeset.ts:356): the empty set is a singleton whose nextLayer is patched to itself after construction (mirrors/cm6/state/src/rangeset.ts:467, :481-482, comment "Awkward patch-up to create a cyclic structure"), and every set with no ranges is that object (state.RangeSet.B4). The test also ends the recursion into `this.nextLayer.between` (mirrors/cm6/state/src/rangeset.ts:346) at the bottom layer; without it the call on the cyclic empty set would recurse into itself (deduction from the code, not run). Evidence: code structure and that comment. Editor need underneath: a terminal layer. (B1)
 - `void | false` return as a stop signal: JS callbacks return undefined by default (structure) (B4)
+- Mechanism: the search bounds are the sentinel `C.Far = 1e9` (`-C.Far` on range ends, `C.Far` on range starts, mirrors/cm6/state/src/rangeset.ts:129), a TypeScript `const enum` member commented "A large (fixnum) value to use for max/min values" (mirrors/cm6/state/src/rangeset.ts:98-99); "fixnum" refers to the JS engine's small-integer representation (as recorded for state.RangeValue.startSide.B6 and state.RangeSet^eq.B1; deduction from the comment, not verified against an engine). Sides beyond the sentinel escape the search. Evidence: that comment and code structure; open questions Q20, Q39. Editor need underneath: bounds that include every side the editor uses. (B5)
 
 ## state.cm6.186 `RangeSet.iter`
 
@@ -660,6 +704,9 @@ Items with notes: 162 of 261; distinct notes: 370.
 ## state.cm6.188 `RangeSet^compare`
 
 - skip by object identity of shared immutable chunks (structure); editor need: compare cost proportional to the changed part (B2)
+- Mechanism: a missing side is `null`: the SpanCursor `point` field is `T | null` (mirrors/cm6/state/src/rangeset.ts:750), tested by truthiness (`a.point || b.point`, mirrors/cm6/state/src/rangeset.ts:880) and passed straight to comparePoint, whose parameters are the TypeScript union `T | null` (mirrors/cm6/state/src/rangeset.ts:69). Evidence: code structure (as recorded for state.RangeComparator.comparePoint.B1). Editor need underneath: reporting an inserted or removed point. (B5)
+- Mechanism: the optional interface member `boundChange?` (mirrors/cm6/state/src/rangeset.ts:74) is detected at runtime by presence (`!!comparator.boundChange`, mirrors/cm6/state/src/rangeset.ts:876) and called through a non-null assertion (`comparator.boundChange!(pos)`, mirrors/cm6/state/src/rangeset.ts:887), so a comparator without it gets no boundary tracking. Evidence: code structure; mirrors/cm6/state/CHANGELOG.md:81 (6.5.0, "`RangeSet.compare` now supports a `boundChange` callback"): the member was added in a minor release as optional, so comparators written before it keep working (deduction from the release, not stated in the entry). Its consumer is the view (mirrors/cm6/view/src/docview.ts:637, :650). Editor need underneath: detecting a change in how ranges are split, for redrawing. (B6)
+- Mechanism: aliasing: `compare` passes the two SpanCursors' own `active` arrays by reference (mirrors/cm6/state/src/rangeset.ts:888, field mirrors/cm6/state/src/rangeset.ts:744), typed `T[]` in the interface (mirrors/cm6/state/src/rangeset.ts:67), and later cursor steps mutate them in place (insert, remove, `length = 0`, mirrors/cm6/state/src/rangeset.ts:768, :784-786, :794-796, helpers :904-913). Evidence: code structure (as recorded for state.RangeComparator.compareRange.B1). Editor need underneath: no allocation per reported stretch. (B11)
 
 ## state.cm6.189 `RangeSet^eq`
 
@@ -731,16 +778,28 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 ## state.cm6.212 `findClusterBreak`
 
+- Mechanism: an astral code point is two UTF-16 code units in a JS string, so the forward step assembles the surrogate pair (codePointAt) and advances by its UTF-16 size, 2 (codePointSize), mirrors/marijn/find-cluster-break/src/index.js:49-50, :77-83, :87. Evidence: code structure; the doc comment "Moves across surrogate pairs" (mirrors/cm6/state/src/char.ts:6); the same pair arithmetic is duplicated in mirrors/cm6/state/src/char.ts:19-25, :37. Exists because JS strings are UTF-16; editor need underneath: never split a character. (B3)
 - Mechanism: moving pos back one unit when it sits between surrogate halves. Evidence: code comment "If pos is in the middle of a surrogate pair, move to its start" (mirrors/marijn/find-cluster-break/src/index.js:47). Exists because JS strings are UTF-16 and positions can land inside a pair; editor need underneath: never split a character. (B4)
 - Mechanism: the Extend table stored as a base-36 delta string decoded at load. Evidence: comment "Compressed representation of the Grapheme_Cluster_Break=Extend information" (mirrors/marijn/find-cluster-break/src/index.js:6-11), bin/build-extenders.js. Exists for bundle size of a browser library; editor need underneath: the Extend property data. (B5)
+- Mechanism: the regional-indicator count steps back 2 code units at a time (`i = pos - 2`, `i -= 2`) and a joined indicator advances `pos += 2` (mirrors/marijn/find-cluster-break/src/index.js:57-60): 2 is the UTF-16 length of a regional indicator (U+1F1E6-U+1F1FF, astral), written as a literal rather than through codePointSize. Evidence: code structure; no comment or CHANGELOG entry found. Exists because JS strings are UTF-16; editor need underneath: a flag (indicator pair) is one cluster. (B8)
+- Mechanism: a JS string may hold unpaired surrogates (no validation of UTF-16 sequences); codePointAt returns a lone high or low surrogate as its own code unit (mirrors/marijn/find-cluster-break/src/index.js:79, :81) and codePointSize counts it 1 (mirrors/marijn/find-cluster-break/src/index.js:87); the move-back test checks only the unit just before pos (mirrors/marijn/find-cluster-break/src/index.js:48, surrogateLow/surrogateHigh :85-86). Evidence: code structure; no comment or CHANGELOG entry found. Exists because JS strings are UTF-16 code unit sequences that need not be well-formed; editor need underneath: none beyond not failing on any string content. (B11)
+- Mechanism: no argument check; out-of-range, negative, fractional and NaN positions produce results through JS runtime semantics: `str.charCodeAt` returns NaN for an index outside the string and truncates a fractional index (NaN reads index 0), `codePointSize(NaN)` is 2 because `NaN < 0x10000` is false, and the comparisons `pos == str.length`, `pos > 1`, `found < pos` are done on JS doubles (mirrors/marijn/find-cluster-break/src/index.js:46, :48-50, :69-71, :78, :87). Evidence: code structure; open question Q9. Exists because positions are untyped JS numbers handled by JS string methods; editor need underneath: none (callers pass positions inside the string). (B15)
 
 ## state.cm6.213 `codePointAt`
 
 - Mechanism: assembling a code point from a UTF-16 surrogate pair by hand, documented as "like the codePointAt string method" (mirrors/cm6/state/src/char.ts:16-18). Evidence: the doc comment and the code; why cm6 does not call String.prototype.codePointAt is not stated (no CHANGELOG entry found; the same helper is duplicated in mirrors/marijn/find-cluster-break/src/index.js:77-83). Exists because JS strings are UTF-16; editor need underneath: reading one character at a position. (B2)
+- Mechanism: a high surrogate in the last position is an unpaired surrogate, which a JS string may hold; the length test `pos + 1 == str.length` returns it as a code unit (mirrors/cm6/state/src/char.ts:21). Evidence: code structure; doc comment "like the codePointAt string method" (mirrors/cm6/state/src/char.ts:16-18). Exists because JS strings are UTF-16 code unit sequences that need not be well-formed; editor need underneath: none beyond not failing on any string content. (B3)
+- Mechanism: a high surrogate followed by a unit that is not a low surrogate is an unpaired surrogate, which a JS string may hold; the low-surrogate test returns the high unit alone (mirrors/cm6/state/src/char.ts:22-23, surrogateLow :13). Evidence: code structure. Exists because JS strings are UTF-16 code unit sequences that need not be well-formed; editor need underneath: none beyond not failing on any string content. (B4)
+- Mechanism: positions are UTF-16 code unit indexes, so pos can sit between the halves of a pair; charCodeAt then reads the low surrogate, which is not a high surrogate, and it is returned as is (mirrors/cm6/state/src/char.ts:20-21). Consumers rely on the result: autocomplete prevChar keeps only the last unit when codePointSize(codePointAt(prev, 0)) != prev.length (mirrors/cm6/autocomplete/src/closebrackets.ts:154). Evidence: code structure. Exists because JS strings are UTF-16; editor need underneath: reading the character before a position. (B5)
+- Mechanism: `String.prototype.charCodeAt` returns NaN for an index outside the string (negative, at or past the end, or on the empty string), and NaN fails the high-surrogate test, so NaN is returned (mirrors/cm6/state/src/char.ts:20-21); String.prototype.codePointAt, which the doc comment names as the model (mirrors/cm6/state/src/char.ts:16-18), would return undefined there. Consumers feed the NaN to codePointSize, which gives 2 (mirrors/cm6/autocomplete/src/closebrackets.ts:149). Evidence: code structure and doc comment. Exists because of JS string method semantics; editor need underneath: none (out-of-range reads). (B6)
+- Mechanism: JS number coercion: charCodeAt converts its index with ToIntegerOrInfinity (a fraction is truncated, NaN reads index 0), while the length test `pos + 1 == str.length` uses the untruncated double, so a fractional pos can combine a pair that the truncated index would not (mirrors/cm6/state/src/char.ts:20-22). No argument check. Evidence: code structure; open question Q9. Exists because positions are untyped JS numbers; editor need underneath: none (callers pass integer positions). (B7)
 
 ## state.cm6.215 `codePointSize`
 
+- Mechanism: the function counts UTF-16 code units (doc comment "The amount of positions a character takes up in a JavaScript string", mirrors/cm6/state/src/char.ts:36); a BMP value counts 1, including surrogate code unit values, which reach it only because a position can sit inside a pair or on a lone surrogate of a JS string (mirrors/cm6/state/src/char.ts:37). Evidence: that doc comment; code structure. Exists because positions are UTF-16 code units (D1); editor need underneath: stepping over one character. (B1)
 - Mechanism: the whole function: the number of UTF-16 code units of a code point (doc comment "The amount of positions a character takes up in a JavaScript string", mirrors/cm6/state/src/char.ts:36). Exists because positions are UTF-16 code units (D1); editor need underneath: stepping over one character. (B2)
+- Mechanism: the single test `code < 0x10000` (mirrors/cm6/state/src/char.ts:37) on a JS number with no check: NaN, Infinity and values above 0x10FFFF fail it and give 2, negative and fractional values below 0x10000 pass it and give 1; the declared return type `1 | 2` is a TypeScript literal union with no runtime check. NaN arrives from codePointAt at or past the end of the string (mirrors/cm6/state/src/char.ts:20-21). Evidence: code structure; open question Q9. Exists because code points are untyped JS numbers; editor need underneath: none (inputs outside code points). (B3)
+- Mechanism: the composition measures UTF-16 code units and inherits charCodeAt semantics: 2 at the start of a valid pair, 1 at a position between its halves or at a lone surrogate (positions are code unit indexes), 2 at or past the end because charCodeAt gives NaN and NaN < 0x10000 is false (mirrors/cm6/state/src/char.ts:19-25, :37). Consumers use the composition directly (mirrors/cm6/autocomplete/src/closebrackets.ts:149, :154). Evidence: code structure; doc comment mirrors/cm6/state/src/char.ts:36. Exists because JS strings are UTF-16; editor need underneath: the length of the character at a position. (B4)
 
 ## state.cm6.218 `Line`
 
@@ -769,6 +828,7 @@ Items with notes: 162 of 261; distinct notes: 370.
 
 ## state.cm6.238 `Text.eq`
 
+- Mechanism: object identity (`other == this` on Text objects) as a fast path for the whole document (mirrors/cm6/state/src/text.ts:87). Evidence: code structure; no comment or CHANGELOG entry found. Relies on immutable documents being shared by reference: a transaction that does not change the document keeps the same Text object, so the identical case is common for callers such as the view, which compares documents before applying a pending DOM change (mirrors/cm6/view/src/editorview.ts:289); the result does not depend on the fast path, since an identical object has identical content. Editor need underneath: cheap comparison of an unchanged document. (B1)
 - Mechanism: comparing children by object identity to skip shared subtrees. Evidence: code structure (mirrors/cm6/state/src/text.ts:328). Relies on the structural sharing of immutable versions; editor need underneath: cheap comparison of a document with an edited version of itself. (B5)
 
 ## state.cm6.242 `Text.toString`

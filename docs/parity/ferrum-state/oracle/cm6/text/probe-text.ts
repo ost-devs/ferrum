@@ -47,7 +47,7 @@ f("Line.length", [2], {doc: ["abc"], expr: "l = doc.line(1); l.length after assi
 // ---------- TextIterator ----------
 f("TextIterator", [1], {doc: ASCII, expr: "it = doc.iter(); it.next(); [...it]; [...it]; it[Symbol.iterator]() === it"}, () => { let it = of(ASCII).iter(); it.next(); return {rest: [...it], again: [...it], self: it[Symbol.iterator]() === it} })
 f("TextIterator", [1], {doc: ASCII, expr: "it = doc.iterRange(1, 9); [...it]; it2 = doc.iterLines(); [...it2]; self-iterable"}, () => { let d = of(ASCII), a = d.iterRange(1, 9), b = d.iterLines(); return {range: [...a], lines: [...b], selfRange: a[Symbol.iterator]() === a, selfLines: b[Symbol.iterator]() === b} })
-f("TextIterator", [1], {doc: ASCII, expr: "r = it.next(); r === it"}, () => { let d = of(ASCII); let a = d.iter(), b = d.iterRange(0, 3), c = d.iterLines(); return [a.next() === a, b.next() === b, c.next() === c] })
+f("TextIterator", [1], {doc: ASCII, expr: "a = doc.iter(), b = doc.iterRange(0, 3), c = doc.iterLines(); [a.next() === a, b.next() === b, c.next() === c]"}, () => { let d = of(ASCII); let a = d.iter(), b = d.iterRange(0, 3), c = d.iterLines(); return [a.next() === a, b.next() === b, c.next() === c] })
 for (let [name, mk] of [["iter()", (d: Text) => d.iter()], ["iter(-1)", (d: Text) => d.iter(-1)], ["iterRange(1, 9)", (d: Text) => d.iterRange(1, 9)], ["iterLines()", (d: Text) => d.iterLines()]] as const)
   f("TextIterator", [2, "state.TextIterator.value.B1", "state.TextIterator.done.B1", "state.TextIterator.lineBreak.B1"], {doc: ASCII, expr: `${name} before the first next()`}, () => { let it: any = mk(of(ASCII)); return {value: it.value, done: it.done, lineBreak: it.lineBreak} })
 
@@ -69,7 +69,7 @@ f("TextIterator.next", [4], {doc: ["one", "two", "", "three", "four"], expr: "do
 f("TextIterator.next", [4], {doc: ["one", "two", "three", "four"], expr: "doc.iter(); next(skip) (cm6 test test-text#19)", skips: [12, -12, 12, -1000]}, () => steps(of(["one", "two", "three", "four"]).iter(), [12, -12, 12, -1000]))
 f("TextIterator.next", [4], {doc: ["one", "two", "", "three", "four"], expr: "doc.iter(-1); next(skip)", skips: [0, 2, -1, -3, 3, -2, -100]}, () => steps(of(["one", "two", "", "three", "four"]).iter(-1), [0, 2, -1, -3, 3, -2, -100]))
 f("TextIterator.next", [4], {doc: ASTRAL, expr: "doc.iter(); next(skip)", skips: [3, -1, -1, 6, -3]}, () => steps(of(ASTRAL).iter(), [3, -1, -1, 6, -3]))
-f("TextIterator.next", [4], {doc: ["ab"], expr: "doc.iter(); next(-1) as the first call"}, () => steps(of(["ab"]).iter(), [-1, -1, 0]))
+f("TextIterator.next", [4], {doc: ["ab"], expr: "doc.iter(); next(skip) for each skip, next(-1) as the first call", skips: [-1, -1, 0]}, () => steps(of(["ab"]).iter(), [-1, -1, 0]))
 f("TextIterator.next", [4], {...BIG(200), expr: "doc.iter(); next(skip), language.ts:267 DocInput.syncTo pattern", skips: [5000, -4000, 2000, -3050]}, () => steps(big(200).iter(), [5000, -4000, 2000, -3050]))
 // next: done is sticky
 f("TextIterator.next", [5, "state.TextIterator.done.B1"], {doc: ["ab"], expr: "doc.iter(): next() four times; then next(-1)"}, () => steps(of(["ab"]).iter(), [0, 0, 0, 0, -1]))
@@ -208,7 +208,7 @@ f("Text.eq", [4], {...BIG(200), expr: "built by appends vs Text.of: eq both ways
   let a = big(200), b = Text.of([L100]); for (let i = 1; i < 200; i++) b = b.append(of(["", L100]))
   return {ab: a.eq(b), ba: b.eq(a), shapeA: shape(a), shapeB: shape(b)}
 })
-f("Text.eq", [5], {...BIG(200), expr: "d.eq(d.replace(5000, 5001, d.slice(5000, 5001))), d.eq(d.replace(5000, 5001, Text.of([\"y\"]))), d.eq(d.replace(19000, 19001, Text.of([\"y\"])))"}, () => {
+f("Text.eq", [5], {...BIG(200), expr: "d.eq(d.replace(5000, 5001, d.slice(5000, 5001))), d.eq(d.replace(5000, 5001, Text.of([\"y\"]))), d.eq(d.replace(19000, 19001, Text.of([\"y\"]))), d.eq(d.replace(0, 1, Text.of([\"y\"])))"}, () => {
   let d = big(200); return [d.eq(d.replace(5000, 5001, d.slice(5000, 5001))), d.eq(d.replace(5000, 5001, of(["y"]))), d.eq(d.replace(19000, 19001, of(["y"]))), d.eq(d.replace(0, 1, of(["y"])))]
 })
 // iter
