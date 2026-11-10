@@ -5,7 +5,7 @@ Current state only (`.claude/rules/writing.md` "Agent-loaded files and notes for
 - **Stage:** specification (`docs/workflow/specification.md`), `@codemirror/state` 6.7.6, mirror commit 651084c.
 - **Step:** S2 Chunks in progress (2026-11-09). One `spec-auditor` per chunk, card `docs/parity/ferrum-state/cards/spec-auditor.md`, at most 4 at a time.
   - Done: `rangeset` (47/47 items, 166 behaviors, 322 fixtures, 47 cm6 test rows + 95 derived, 5 questions `rangeset-s2-q1`–`q5`; regenerate with `oracle/cm6/rangeset/fixtures.ts` then `random.ts`).
-  - Running or interrupted: `state` (77 in scope), `change` (62), `text` (39). Waiting: `facet` (35), held until the usage limit resets.
+  - Running or interrupted: `state` (77 in scope), `change` (62), `text` (39), each resumed after the usage limit of 2026-11-10 from its saved files; `facet` (35), launched 2026-11-10.
   - **Resume:** for a chunk whose `raw/<chunk>.progress` is missing or has `remaining`, spawn a `spec-auditor` with the card and the chunk (its assignment as in the S2 assignment below), telling it to continue from `raw/<chunk>.progress`.
   - S2 assignment, beyond the card: question ids `<chunk>-s2-q<n>` (S1 used `<chunk>-q<n>`, now Q7–Q22); the S1 facts of each row (`does`, `platform`, `used_by`) are in `raw/inventory.jsonl`; open questions bearing on an item are recorded as found, not settled. For `text`: the consultant asks that `codePointAt` and `codePointSize` at a position inside a character or past the end be recorded as hazards with fixtures (evidence for D1).
 - **Read before acting:** `docs/workflow/specification.md` §5–§6, §9 (S2 and S3 rows), Appendix A; `docs/parity/ferrum-state/cards/spec-auditor.md`.
