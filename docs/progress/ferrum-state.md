@@ -32,7 +32,7 @@ Current state only (`.claude/rules/writing.md` "Agent-loaded files and notes for
 ## S1 Dispositions results
 
 - Decided by the consultant (`be272c7`): 260 `CORE`, 4 `DROP` (`state.cm6.043` `Facet.tag`, `state.cm6.045` `FacetReader.tag`, `state.cm6.049` `StateField.extension`, `state.cm6.214` `fromCodePoint`); no `CONTRACT`, `SURFACE` or `ELSEWHERE`; all 12 files `CORE`. Rendered in `docs/parity/ferrum-state/dispositions.md`. The `DROP` definition in `docs/workflow/specification.md` §3 now names cm6's stack, the JavaScript runtime included (method change, same commit).
-- S3 started before the `facet` chunk ended: `names.md` written (77 rows, from `raw/names.jsonl`; includes `Text.[Symbol.iterator]` and `combineConfig`, as the consultant asked).
+- S3 started before the `facet` chunk ended: `names.md` written (77 rows, from `raw/names.jsonl`; includes `Text.[Symbol.iterator]` and `combineConfig`, as the consultant asked); `raw/xc.jsonl` written (1,017 `offers` rows, one per item and using package, from the S1 `used_by` facts: `ferrum-view` 184, `ferrum-commands` 116, `ferrum-language` 98, feature packages 619; no `needs` rows, `ferrum-state` being the lowest crate). Remaining S3 after `facet`: merge the chunk files into `raw/behaviors.jsonl` and `raw/tests.jsonl`, the S2 questions into `questions.md`, then `contracts.md` (no `CONTRACT` item), `hazards.md`, `stack.md`, the rendered views, and one fixture convention for NaN, ±Infinity and `undefined`.
 
 ## Remaining in the stage
 
