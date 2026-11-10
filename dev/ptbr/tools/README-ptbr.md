@@ -1,4 +1,4 @@
-> Tradução para leitura de `tools/README.md` (commit `22cabd7`). O original em inglês é o que vale.
+> Tradução para leitura de `tools/README.md` (commit `8e3ce5f`). O original em inglês é o que vale.
 
 # Ferramentas
 
@@ -10,6 +10,7 @@ Ferramentas compartilhadas do workflow ([`docs/workflow/`](../docs/workflow/)). 
 | [`tools/cm6/oracle-lib.ts`](../../../tools/cm6/oracle-lib.ts) | toda sonda e todo gerador | `import {rng, capture, encode, fixtureWriter} from "@harness/lib"` | gerador pseudoaleatório com semente (mulberry32), captura de exceções, codificação de strings segura para Rust, escritor de fixtures |
 | [`tools/cm6/inventory.cjs`](../../../tools/cm6/inventory.cjs) | especificação S0 | `node tools/cm6/inventory.cjs --harness .harness/<pacote> --package <pacote> --prefix <crate>.cm6 > docs/parity/<crate>/raw/inventory.jsonl` | uma linha por export, membro público e campo de objeto de configuração |
 | [`tools/cm6/tests.cjs`](../../../tools/cm6/tests.cjs) | especificação S0 | `node tools/cm6/tests.cjs --harness .harness/<pacote> --package <pacote> > docs/parity/<crate>/raw/tests.jsonl` | uma linha por `it()`, `webtest-*` incluídos; `generated: true` marca casos criados em laços (expanda-os, uma linha por caso) |
+| [`tools/spec_synth.py`](../../../tools/spec_synth.py) | especificação S3, de novo após qualquer mudança de linhas | `python3 tools/spec_synth.py <crate> <curto> <pacote cm6> <versão> <commit do espelho> stack contracts hazards views` | `stack.md`, `contracts.md`, `hazards.md` (de `raw/behaviors.jsonl` e `raw/throws.jsonl`) e os `inventory.md`, `behaviors.md`, `tests.md` renderizados, cada um com o cabeçalho de [`docs/workflow/specification.md`](../docs/workflow/specification-ptbr.md) §4 |
 | [`tools/render.py`](../../../tools/render.py) | qualquer | `python3 tools/render.py <linhas.jsonl> --cols id,item,… [--title …] [--header …] > <arquivo>.md` | tabela Markdown a partir de JSON Lines |
 | [`tools/check_refs.py`](../../../tools/check_refs.py) | fim de todo passo que escreve documentos | `python3 tools/check_refs.py docs .claude tools --quiet` | contagem de referências que não resolvem (caminhos de rascunho, arquivos faltando, linhas além do fim, seções faltando) |
 | [`tools/ferrum_pub.py`](../../../tools/ferrum_pub.py) | conformidade G1 | `RUSTC_BOOTSTRAP=1 cargo rustdoc -p <crate> -- -Z unstable-options --output-format json`, depois `python3 tools/ferrum_pub.py target/doc/<crate_name>.json crates/<crate> > pub.jsonl` | itens públicos de um crate do Ferrum. Escrito para o formato 61 do JSON do rustdoc: confira `format_version` antes e adapte se tiver mudado |

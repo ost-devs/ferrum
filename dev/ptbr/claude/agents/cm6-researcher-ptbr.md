@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agents/cm6-researcher.md` (commit `22cabd7`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash`, `model: opus`, `memory: project`; um hook (`.claude/hooks/guard.py`) só o deixa escrever em `.claude/agent-memory/cm6-researcher/` e `.scratch/cm6-researcher/`.
+> Tradução para leitura de `.claude/agents/cm6-researcher.md` (commit `8e3ce5f`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash`, `model: opus`, `effort: high`, `memory: project`; um hook (`.claude/hooks/guard.py`) só o deixa escrever em `.claude/agent-memory/cm6-researcher/` e `.scratch/cm6-researcher/`.
 
 # Agente `cm6-researcher`
 

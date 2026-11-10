@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agents/test-writer.md` (commit `22cabd7`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit`, `model: opus`; um hook (`.claude/hooks/guard.py`) só o deixa escrever em `crates/*/tests/` e `.scratch/`.
+> Tradução para leitura de `.claude/agents/test-writer.md` (commit `8e3ce5f`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit`, `model: opus`, `effort: high`; um hook (`.claude/hooks/guard.py`) só o deixa escrever em `crates/*/tests/` e `.scratch/`.
 
 # Agente `test-writer`
 

@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agents/spec-auditor.md` (commit `22cabd7`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher)`, `model: opus`; um hook (`.claude/hooks/guard.py`) só o deixa escrever em `docs/parity/` e `.scratch/`, e só criar o subagente `cm6-researcher`.
+> Tradução para leitura de `.claude/agents/spec-auditor.md` (commit `8e3ce5f`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher)`, `model: opus`, `effort: high`; um hook (`.claude/hooks/guard.py`) só o deixa escrever em `docs/parity/` e `.scratch/`, e só criar o subagente `cm6-researcher`.
 
 # Agente `spec-auditor`
 

@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/README.md` (commit `e92273d`). O original em inglês é o que vale; as seções citadas (§1, §3…) seguem a numeração do original.
+> Tradução para leitura de `docs/workflow/README.md` (commit `8e3ce5f`). O original em inglês é o que vale; as seções citadas (§1, §3…) seguem a numeração do original.
 
 # Como o trabalho do Ferrum corre
 
@@ -116,6 +116,7 @@ Um crate só é descrito como em conformidade com esse relatório ([`.claude/rul
 - **Iniciar e retomar.** O mantenedor abre uma sessão do Claude Code na raiz do repositório e digita `/ferrum-run`. O orquestrador lê [`docs/progress/`](../../../../docs/progress/), que nomeia o crate, a etapa, o passo e as seções do roteiro a ler, e continua. Uma sessão nova depois de uma queda, de um limite de uso ou de `/clear` retoma do mesmo jeito; nada depende de uma conversa anterior.
 - **Sem supervisão.** Use uma sessão interativa: só ela continua sozinha depois que um limite de uso é renovado (§8). Escolha um modo de permissão que não pare em comandos de rotina.
 - **Perguntas não param o trabalho.** O orquestrador enfileira cada pergunta, continua com o que ela não bloqueia, e chama o consultor quando um lote está pronto ou quando nada mais consegue avançar. Ele só para quando todo passo restante espera pelo mantenedor. A última mensagem dele então diz, em português, o que está feito e o que espera pelo mantenedor.
+- **Esforço (Effort).** Todo worker e pesquisador roda no `effort` que sua definição fixa (`.claude/agents/*.md`): `high` para todos, exceto o `translator` (`medium`). O orquestrador não passa o parâmetro `effort` ao criá-los, porque o parâmetro sobrepõe a definição e um nível mais baixo afina em silêncio a evidência contra a qual um portão posterior é medido. Um papel muda de nível só por decisão do consultor apoiada em uma execução pareada: a mesma tarefa rodada nos dois níveis, as saídas comparadas por um `verifier` contra linhas verificadas, tokens registrados. Os portões (`verifier`, `conformance-checker`) ficam em `high` seja qual for o nível dos produtores.
 - **Paralelismo.** No máximo 4 workers ao mesmo tempo. Assim um limite de uso interrompe poucos de uma vez, e o trabalho já acrescentado aos arquivos sobrevive ([`docs/workflow/learnings.md`](learnings-ptbr.md) W3).
 - **Contexto.**
   - O orquestrador lê contagens, resumos de JSONL e relatórios curtos dos workers. Não lê as fontes que pertencem a um worker.
@@ -131,7 +132,7 @@ Um crate só é descrito como em conformidade com esse relatório ([`.claude/rul
   - o que está feito e o que falta, com contagens;
   - os itens bloqueados e o que bloqueia cada um;
   - as seções do roteiro a reler;
-  - tokens por passo.
+  - tokens por passo, e o que cada passo achou na saída de um passo anterior (linhas acrescentadas ou corrigidas, com ids e o passo que as produziu), para que a retrospectiva possa dizer quais passos se pagam.
 
   Ele guarda só o estado atual ([`.claude/rules/writing.md`](../../claude/rules/writing-ptbr.md) "Agent-loaded files and notes for later sessions").
 

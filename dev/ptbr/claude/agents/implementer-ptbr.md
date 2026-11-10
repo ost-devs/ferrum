@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agents/implementer.md` (commit `22cabd7`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher, rust-researcher)`, `model: opus`; um hook (`.claude/hooks/guard.py`) o impede de escrever em `crates/*/tests/`, `mirrors/` e `docs/parity/*/fixtures/`, e só o deixa criar os subagentes `cm6-researcher` e `rust-researcher`.
+> Tradução para leitura de `.claude/agents/implementer.md` (commit `8e3ce5f`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher, rust-researcher)`, `model: opus`, `effort: high`; um hook (`.claude/hooks/guard.py`) o impede de escrever em `crates/*/tests/`, `mirrors/` e `docs/parity/*/fixtures/`, e só o deixa criar os subagentes `cm6-researcher` e `rust-researcher`.
 
 # Agente `implementer`
 
