@@ -5,7 +5,8 @@ Current state only (`.claude/rules/writing.md` "Agent-loaded files and notes for
 - **Stage:** specification (`docs/workflow/specification.md`), `@codemirror/state` 6.7.6, mirror commit 651084c.
 - **Step:** S2 Chunks in progress (2026-11-09). One `spec-auditor` per chunk, card `docs/parity/ferrum-state/cards/spec-auditor.md`, at most 4 at a time.
   - Done: `rangeset` (47/47 items, 166 behaviors, 322 fixtures, 47 cm6 test rows + 95 derived, 5 questions `rangeset-s2-q1`–`q5`; regenerate with `oracle/cm6/rangeset/fixtures.ts` then `random.ts`).
-  - Running or interrupted: `state` (77 in scope), `change` (62), `text` (39), each resumed after the usage limit of 2026-11-10 from its saved files; `facet` (35), launched 2026-11-10.
+  - Done: `change` (62/62 items, 182 behaviors, 1,066 fixtures, 44 cm6 test rows + 119 derived, 4 questions `change-s2-q1`–`q4`; regenerate with `oracle/cm6/change/s2-fixtures.ts` then `s2-generator.ts`; `fixtures/change.jsonl` holds raw U+2028 inside JSON strings, so split it on `\n` only).
+  - Running or interrupted: `state` (77 in scope), `text` (39), each resumed after the usage limit of 2026-11-10 from its saved files; `facet` (35), launched 2026-11-10.
   - **Resume:** for a chunk whose `raw/<chunk>.progress` is missing or has `remaining`, spawn a `spec-auditor` with the card and the chunk (its assignment as in the S2 assignment below), telling it to continue from `raw/<chunk>.progress`.
   - S2 assignment, beyond the card: question ids `<chunk>-s2-q<n>` (S1 used `<chunk>-q<n>`, now Q7–Q22); the S1 facts of each row (`does`, `platform`, `used_by`) are in `raw/inventory.jsonl`; open questions bearing on an item are recorded as found, not settled. For `text`: the consultant asks that `codePointAt` and `codePointSize` at a position inside a character or past the end be recorded as hazards with fixtures (evidence for D1).
 - **Read before acting:** `docs/workflow/specification.md` §5–§6, §9 (S2 and S3 rows), Appendix A; `docs/parity/ferrum-state/cards/spec-auditor.md`.
@@ -46,5 +47,5 @@ S2 Chunks (5 chunks, 260 rows in scope, 172 test cases), S3 Synthesis, S4 Verifi
 
 - S0: not measured (main session, no workers).
 - S1 Facts: 871,719 in 5 workers (`text` 157,899; `change` 146,315; `facet` 151,666; `state` 232,355; `rangeset` 183,884), about 3,300 per row.
-- S2 Chunks: `rangeset` 307,086 (6,530 per item).
+- S2 Chunks: `rangeset` 307,086 (6,530 per item); `change` 359,821 (the count reported at the end of its resumed run).
 - S1 Dispositions: 165,676 reported for the resumed run (`consultant`; the run before the usage limit is not counted).
