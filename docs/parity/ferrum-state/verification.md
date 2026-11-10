@@ -131,3 +131,18 @@ Compared the cm6 side of `docs/parity/state/behaviors.md` for the 28 sampled ite
 Item 1: 264 inventory rows and 172 cm6 tests recounted; 896 behaviors, 745 test rows, 41 throws, 4,588 fixtures in 5 files cross-checked; 514 tagged behaviors through the tag-fixture check, 6 exceptions checked by hand (and the other 6 listed ones confirmed); 29 generators re-run, 0 differences; repeated texts: 10 `class_reason`, 34 `port_notes`, 2 `platform`, 1 `golden_note`, plus the fixture lists of 269 `derived:` rows. Item 2: 28 items (98 behaviors, tags checked both ways), 3 `DROP` rows, 31 row and 3 file dispositions; 89 fixtures re-run independently, 0 differences; seed 4101's V1–V7 confirmed fixed. Item 3: 29 sections compared.
 
 Mismatches: V8 (84 `derived:` rows), V9 (`state.ChangeDesc.touchesRange.B3`, `state.SpanIterator.span.B2`, `state.TransactionSpec.scrollIntoView.B1`), V10 (`state.Facet.compute.B11`). **Seed 4102 is not clean.**
+
+## Seed 4103
+
+**Sample** (drawn by the orchestrator, 2026-11-10, after the fixes of seed 4102: Python `random.Random(4103)`; for each chunk in the order `text`, `change`, `facet`, `state`, `rangeset`, `rng.sample` of ⌈10%⌉ of its `CORE` rows in `raw/inventory.jsonl` order; then `rng.sample` of 3 rows of `raw/files.jsonl`):
+
+- In-scope items, 28 of 261:
+  - `text` (4 of 39): `state.cm6.169` `CharCategory.Other`, `state.cm6.217` `findColumn`, `state.cm6.219` `Line.from`, `state.cm6.238` `Text.eq`.
+  - `change` (7 of 62): `state.cm6.079` `SelectionRange.to`, `state.cm6.083` `SelectionRange.empty`, `state.cm6.086` `SelectionRange.bidiLevel`, `state.cm6.088` `SelectionRange.extend`, `state.cm6.136` `ChangeSet`, `state.cm6.143` `ChangeSet.desc`, `state.cm6.154` `ChangeDesc.invertedDesc`.
+  - `facet` (4 of 36): `state.cm6.042` `Facet.from`, `state.cm6.058` `Compartment.of`, `state.cm6.250` `FacetConfig.compareInput`, `state.cm6.255` `StateFieldSpec.compare`.
+  - `state` (8 of 77): `state.cm6.016` `EditorState.toJSON`, `state.cm6.018` `EditorState^create`, `state.cm6.022` `EditorState^lineSeparator`, `state.cm6.030` `EditorState.charCategorizer`, `state.cm6.094` `Transaction.changes`, `state.cm6.117` `TransactionSpec.sequential`, `state.cm6.123` `AnnotationType.of`, `state.cm6.132` `StateEffectType`.
+  - `rangeset` (5 of 47): `state.cm6.179` `Range.to`, `state.cm6.182` `RangeSet.size`, `state.cm6.190` `RangeSet^spans`, `state.cm6.200` `RangeCursor.rank`, `state.cm6.210` `SpanIterator.span`.
+- `DROP` rows, all 3: `state.cm6.043` `Facet.tag`, `state.cm6.045` `FacetReader.tag`, `state.cm6.214` `fromCodePoint`.
+- `CONTRACT` items: none exist.
+- Dispositions: the 28 sampled items and the 3 `DROP` rows, and the source files `mirrors/cm6/state/src/char.ts`, `mirrors/cm6/state/src/facet.ts`, `mirrors/cm6/state/src/transaction.ts` (`raw/files.jsonl`).
+- Also: the fixes of seed 4102's mismatches V8–V10.
