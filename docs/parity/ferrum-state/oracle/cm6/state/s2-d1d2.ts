@@ -42,7 +42,7 @@ const out = (t: Transaction) => ({...tr(t), doc: t.newDoc.toString()})
 {
   const ld = EditorState.languageData
   let a = EditorState.create({extensions: ld.of(() => [{wordChars: "-"}])}).charCategorizer(0)
-  fx("state.cm6.030", [B("EditorState.charCategorizer", 3)], {call: "ASCII wordChars \"-\"; categorize \"-\", \"+\", \"a-\""}, {"-": CharCategory[a("-")], "+": CharCategory[a("+")], "a-": CharCategory[a("a-")]})
+  fx("state.cm6.030", [B("EditorState.charCategorizer", 3)], {call: "EditorState.create({extensions: languageData.of(() => [{wordChars: \"-\"}])}).charCategorizer(0) applied to \"-\", \"+\", \"a-\" (ASCII wordChars)"}, {"-": CharCategory[a("-")], "+": CharCategory[a("+")], "a-": CharCategory[a("a-")]})
   let w = EditorState.create({doc: "ab cd"})
   fx("state.cm6.031", [B("EditorState.wordAt", 4), B("EditorState.wordAt", 7)], {call: "EditorState.create({doc}).wordAt(pos) at 1 and 3 (ASCII, every unit is a cluster)", doc: "ab cd"},
      {at1: range(w.wordAt(1)!), at3: range(w.wordAt(3)!)})
@@ -50,7 +50,7 @@ const out = (t: Transaction) => ({...tr(t), doc: t.newDoc.toString()})
 {
   let s = EditorState.create({doc: "\u{1F600}"})
   for (let spec of [{changes: {from: 1, to: 3}}, {changes: {from: 1, insert: "x"}}, {selection: {anchor: 3}}, {selection: {anchor: 1}}])
-    fx("state.cm6.009", [B("EditorState.update", 5)], {call: "s.update(spec)", doc: "\u{1F600}", spec}, cap(() => out(s.update({...spec, annotations: T0}))))
+    fx("state.cm6.009", [B("EditorState.update", 5)], {call: "s.update({...spec, annotations: Transaction.time.of(1000)})", doc: "\u{1F600}", spec}, cap(() => out(s.update({...spec, annotations: T0}))))
   let p = EditorState.create({doc: "a\u{1F600}b", selection: {anchor: 1}})
   let spec = p.replaceSelection(Text.of(["\u{1F601}", "\u00e9"]))
   fx("state.cm6.010", [B("EditorState.replaceSelection", 4)], {call: "s.update(s.replaceSelection(Text.of([\"\\u{1F601}\", \"\\u00e9\"]))).state", doc: "a\u{1F600}b", selection: {anchor: 1}}, st(p.update(spec).state))
@@ -75,24 +75,24 @@ const out = (t: Transaction) => ({...tr(t), doc: t.newDoc.toString()})
        (() => { let x = s.update({changes}); return {changes: x.changes.toJSON(), doc: text(x.newDoc)} })())
   let u = EditorState.create({doc: "\u{1F600}\u{1F600}\u{1F600}"})
   fx("state.cm6.112", [B("TransactionSpec.effects", 2)],
-     {call: "s.update({effects: [foldLike {2,4}, pos 4, trackAfter 4]}, {changes: delete 2-4, effects: [foldLike {0,2}, pos 2]})", doc: "\u{1F600}\u{1F600}\u{1F600}"},
+     {call: "s.update({effects: [foldLike {2,4}, pos 4, trackAfter 4], annotations: Transaction.time.of(1000)}, {changes: delete 2-4, effects: [foldLike {0,2}, pos 2]})", doc: "\u{1F600}\u{1F600}\u{1F600}"},
      out(u.update({effects: [foldLike.of({from: 2, to: 4}), posEffect.of(4), trackAfter.of(4)], annotations: T0}, {changes: {from: 2, to: 4}, effects: [foldLike.of({from: 0, to: 2}), posEffect.of(2)]})))
 }
 {
   let s = EditorState.create({doc: "\u{1F600}", extensions: EditorState.changeFilter.of(() => false)})
-  fx("state.cm6.032", [B("EditorState^changeFilter", 1)], {call: "changeFilter false; update({changes: insert \"\\r\\n\\u{1F601}\" at 2, selection: {anchor: 5}, effects: pos 5})", doc: "\u{1F600}"},
+  fx("state.cm6.032", [B("EditorState^changeFilter", 1)], {call: "changeFilter false; update({changes: insert \"\\r\\n\\u{1F601}\" at 2, selection: {anchor: 5}, effects: pos 5, annotations: Transaction.time.of(1000)})", doc: "\u{1F600}"},
      out(s.update({changes: {from: 2, insert: "\r\n\u{1F601}"}, selection: {anchor: 5}, effects: posEffect.of(5), annotations: T0})))
   let un = EditorState.create({doc: "\u{1F600}\u{1F600}\u{1F600}", extensions: EditorState.changeFilter.of(() => [4, 6, 0, 2])})
-  fx("state.cm6.032", [B("EditorState^changeFilter", 8)], {call: "single changeFilter returning unsorted [4, 6, 0, 2]; update({changes: {from: 0, to: 6}})", doc: "\u{1F600}\u{1F600}\u{1F600}"},
+  fx("state.cm6.032", [B("EditorState^changeFilter", 8)], {call: "single changeFilter returning unsorted [4, 6, 0, 2]; update({changes: {from: 0, to: 6}, annotations: Transaction.time.of(1000)})", doc: "\u{1F600}\u{1F600}\u{1F600}"},
      cap(() => out(un.update({changes: {from: 0, to: 6}, annotations: T0}))))
   let ef = EditorState.create({doc: "\u{1F600}cdef", extensions: EditorState.changeFilter.of(() => [0, 2])})
-  fx("state.cm6.032", [B("EditorState^changeFilter", 9)], {call: "changeFilter [0, 2]; update({changes: [0-2 -> \"XYZ\", insert \"!\" at 4], selection: {anchor: 7}, effects: [pos 7, pos 3, foldLike {3,6}]})", doc: "\u{1F600}cdef"},
+  fx("state.cm6.032", [B("EditorState^changeFilter", 9)], {call: "changeFilter [0, 2]; update({changes: [0-2 -> \"XYZ\", insert \"!\" at 4], selection: {anchor: 7}, effects: [pos 7, pos 3, foldLike {3,6}], annotations: Transaction.time.of(1000)})", doc: "\u{1F600}cdef"},
      out(ef.update({changes: [{from: 0, to: 2, insert: "XYZ"}, {from: 4, insert: "!"}], selection: {anchor: 7}, effects: [posEffect.of(7), posEffect.of(3), foldLike.of({from: 3, to: 6})], annotations: T0})))
   let seq = EditorState.create({doc: "\u{1F600} two", extensions: EditorState.transactionFilter.of(t => [t, {changes: {from: t.changes.newLength, insert: "\u{1F601}"}, sequential: true}])})
-  fx("state.cm6.033", [B("EditorState^transactionFilter", 7)], {call: "filter appending \"\\u{1F601}\" at tr.changes.newLength (sequential); update({changes: insert \"\\r\\n\" at 2})", doc: "\u{1F600} two"},
+  fx("state.cm6.033", [B("EditorState^transactionFilter", 7)], {call: "filter appending \"\\u{1F601}\" at tr.changes.newLength (sequential); update({changes: insert \"\\r\\n\" at 2, annotations: Transaction.time.of(1000)})", doc: "\u{1F600} two"},
      out(seq.update({changes: {from: 2, insert: "\r\n"}, annotations: T0})))
   let px = EditorState.create({doc: "\u{1F600}", extensions: EditorState.transactionExtender.of(() => ({effects: posEffect.of(3)}))})
-  fx("state.cm6.034", [B("EditorState^transactionExtender", 6)], {call: "extender adding pos(3) on a doc of length 2 (one astral character); update({})", doc: "\u{1F600}"}, cap(() => out(px.update({annotations: T0}))))
+  fx("state.cm6.034", [B("EditorState^transactionExtender", 6)], {call: "extender adding pos(3) on a doc of length 2 (one astral character); update({annotations: Transaction.time.of(1000)})", doc: "\u{1F600}"}, cap(() => out(px.update({annotations: T0}))))
   for (let [range, change] of [[{from: 2, to: 4}, {from: 0, to: 2}], [{from: 2, to: 4}, {from: 2, to: 4, insert: "\u{1F601}"}]] as any[]) {
     let r1 = foldLike.of(range).map(ChangeSet.of(change, 6))
     fx("state.cm6.259", [B("StateEffect^define config StateEffectSpec.map", 2)], {call: "foldLike effect.map(ChangeSet.of(change, 6)) on doc \"\\u{1F600}\\u{1F600}\\u{1F600}\"", range, change},

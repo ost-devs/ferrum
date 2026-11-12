@@ -28,7 +28,7 @@ const B = (item: string, n: number) => `state.${item}.B${n}`
      {call: "e = StateEffect.define(); x = e.of(3); y = e.of(3)"},
      {value: x.value, typeIsE: x.type === e, distinctObjects: x !== y, isStateEffect: x instanceof StateEffect, typeIsStateEffectType: e instanceof StateEffectType,
       typeHasMapFunction: typeof (e as any).map == "function"})
-  fx("state.cm6.127", [B("StateEffect.is", 1)], {call: "x.is(e), x.is(e2) where e2 has the same value type and a map"},
+  fx("state.cm6.127", [B("StateEffect.is", 1)], {call: "e = StateEffect.define(); e2 = StateEffect.define({map: (v, m) => m.mapPos(v)}); x = e.of(3); x.is(e) (sameType), x.is(e2) (otherType), StateEffect.reconfigure.of([]).is(StateEffect.appendConfig) (reconfigureIsAppend)"},
      {sameType: x.is(e), otherType: x.is(e2 as any), reconfigureIsAppend: StateEffect.reconfigure.of([]).is(StateEffect.appendConfig)})
   let d1 = StateEffect.define(), d2 = StateEffect.define()
   let ch = ChangeSet.of({from: 0, insert: "xx"}, 3)
@@ -61,11 +61,11 @@ const B = (item: string, n: number) => `state.${item}.B${n}`
     let input = val === 0 ? m.of("num") : m.of(val)
     if (val === 0) (input as any).value = 0
     let mapped = input.map(ChangeSet.of({from: 0, insert: "x"}, 3))
-    fx("state.cm6.126", [B("StateEffect.map", val === "drop" ? 1 : val === "keep" || val === 0 ? 2 : 3)], {call: "effect.map(changes) where " + desc, value: val},
+    fx("state.cm6.126", [B("StateEffect.map", val === "drop" ? 1 : val === "keep" || val === 0 ? 2 : 3)], {call: "effect.map(ChangeSet.of({from: 0, insert: \"x\"}, 3)) where " + desc, value: val},
        {result: mapped === undefined ? "<undefined>" : {value: u(mapped.value), sameEffect: mapped === input, sameType: mapped.type === input.type}})
   }
   let p = plainEffect.of(5)
-  fx("state.cm6.126", [B("StateEffect.map", 2)], {call: "effect of a type defined without map; effect.map(any changes)"}, {sameEffect: p.map(ChangeSet.of({from: 0, to: 2}, 3)) === p})
+  fx("state.cm6.126", [B("StateEffect.map", 2)], {call: "p = plain.of(5), a type defined without map; p.map(ChangeSet.of({from: 0, to: 2}, 3)) === p"}, {sameEffect: p.map(ChangeSet.of({from: 0, to: 2}, 3)) === p})
   let fold = [[{from: 1, to: 3}, {from: 0, to: 2}], [{from: 1, to: 3}, {from: 1, to: 3, insert: "Z"}], [{from: 1, to: 3}, {from: 3, insert: "Y"}], [{from: 1, to: 3}, {from: 1, insert: "Y"}]] as any[]
   for (let [range, change] of fold) {
     let r1 = foldLike.of(range).map(ChangeSet.of(change, 4))
@@ -119,7 +119,7 @@ const B = (item: string, n: number) => `state.${item}.B${n}`
      {reconfigureThenAppend: both1.facet(f), appendThenReconfigure: both2.facet(f), twoAppends: two.facet(f), twoReconfigures: rr.facet(f)})
   let ch = ChangeSet.of({from: 0, insert: "xx"}, 0)
   let re = StateEffect.reconfigure.of(f.of("z")), ap = StateEffect.appendConfig.of(f.of("z"))
-  fx("state.cm6.130", [B("StateEffect^reconfigure", 4), B("StateEffect^appendConfig", 3)], {call: "reconfigure/appendConfig effects mapped through changes"},
+  fx("state.cm6.130", [B("StateEffect^reconfigure", 4), B("StateEffect^appendConfig", 3)], {call: "ch = ChangeSet.of({from: 0, insert: \"xx\"}, 0); re = StateEffect.reconfigure.of(f.of(\"z\")); ap = StateEffect.appendConfig.of(f.of(\"z\")); re.map(ch) === re (reconfigureSame), ap.map(ch) === ap (appendSame)", f: "Facet.define<string>()"},
      {reconfigureSame: re.map(ch) === re, appendSame: ap.map(ch) === ap})
   let fld = StateField.define<number>({create: () => 0, update: v => v + 1})
   let a0 = EditorState.create({extensions: f.of("base")})

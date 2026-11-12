@@ -140,14 +140,14 @@ const T0 = Transaction.time.of(1000)
     let ins = r.pick(inserts)
     let ns = st.update(st.replaceSelection(ins)).state
     fx("state.cm6.010", [B("EditorState.replaceSelection", 1), B("EditorState.replaceSelection", 2), B("EditorState.replaceSelection", 3)],
-       {generator: "G5", seed, case: i, call: "create({doc, selection: EditorSelection.create(ranges as [anchor, head], main), allowMultipleSelections}); update(replaceSelection(insert)).state", doc, ranges: raw, main, insert: ins},
+       {generator: "G5", seed, case: i, call: "s = EditorState.create({doc, selection: EditorSelection.create(ranges as [anchor, head], main), extensions: allowMultipleSelections.of(true)}); s.selection (normalizedSelection); s.update(s.replaceSelection(insert)).state", doc, ranges: raw, main, insert: ins},
        {normalizedSelection: sel(st.selection), doc: text(ns.doc), selection: sel(ns.selection)})
     let cbr = st.changeByRange(rg => rg.empty
       ? {changes: {from: Math.max(0, rg.from - 1), to: rg.from}, range: EditorSelection.cursor(Math.max(0, rg.from - 1))}
       : {changes: {from: rg.from, to: rg.to, insert: ins}, range: EditorSelection.range(rg.from, rg.from + st.toText(ins).length)})
     let cs = st.update(cbr).state
     fx("state.cm6.011", [B("EditorState.changeByRange", 2), B("EditorState.changeByRange", 5)],
-       {generator: "G5", seed, case: i, call: "same state; changeByRange(r => r.empty ? delete the unit before (from-1..from), cursor at from-1 : replace by insert, range(from, from + insert length))", doc, ranges: raw, main, insert: ins},
+       {generator: "G5", seed, case: i, call: "s = EditorState.create({doc, selection: EditorSelection.create(ranges as [anchor, head], main), extensions: allowMultipleSelections.of(true)}); r = s.changeByRange(r => r.empty ? {changes: {from: max(0, r.from - 1), to: r.from}, range: cursor(max(0, r.from - 1))} : {changes: {from: r.from, to: r.to, insert}, range: range(r.from, r.from + s.toText(insert).length)}); r.changes; s.update(r).state", doc, ranges: raw, main, insert: ins},
        {changes: cbr.changes.toJSON(), doc: text(cs.doc), selection: sel(cs.selection)})
   }
 }
@@ -202,6 +202,6 @@ const T0 = Transaction.time.of(1000)
     let changes = Array.from({length: nc}, () => { let a = r.int(len + 1), b = Math.min(len, a + r.int(4)); return {from: a, to: b, insert: r.pick(["", "X", "\u{1F601}"])} })
     let res = cap(() => { let t = st.update({changes, annotations: T0}); return {changes: t.changes.toJSON(), doc: text(t.newDoc)} })
     fx("state.cm6.032", [B("EditorState^changeFilter", 2), B("EditorState^changeFilter", 3), B("EditorState^changeFilter", 7)],
-       {generator: "G7", seed, case: i, call: "create({doc, extensions: masks.map(m => changeFilter.of(() => m))}).update({changes})", doc, masks, changes}, res)
+       {generator: "G7", seed, case: i, call: "create({doc, extensions: masks.map(m => changeFilter.of(() => m))}).update({changes, annotations: Transaction.time.of(1000)})", doc, masks, changes}, res)
   }
 }

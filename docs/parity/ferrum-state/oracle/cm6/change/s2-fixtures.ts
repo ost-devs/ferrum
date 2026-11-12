@@ -176,7 +176,7 @@ mp("2 2:2 2", [7], [[2, -1, 1], [2, -1, 2], [2, -1, 3], [3, -1, 1], [3, -1, 2], 
 mp("0:1 2:2 0:1", [3, 4], [[0, -1], [0, 1], [1, -1], [1, 1], [2, -1], [2, 1]])
 mp("2:2 2:2", [2, 4], [[2, -1], [2, 1]])
 f("ChangeDesc.mapPos", [6], {op: "desc.mapPos", desc: mk("4 0:2 4"), args: [9]})
-f("ChangeDesc.mapPos", [6], {op: "desc.mapPos", desc: {sections: []}, args: [1]})
+f("ChangeDesc.mapPos", [6, 11], {op: "desc.mapPos", desc: {sections: []}, args: [1]})
 f("ChangeDesc.mapPos", [11], {op: "desc.mapPos", desc: {sections: []}, args: [0]})
 f("ChangeDesc.mapPos", [11], {op: "desc.mapPos", desc: {empty: 6}, args: [6, 1]})
 f("ChangeDesc.mapPos", [11], {op: "desc.mapPos", desc: {empty: 6}, args: [3]})

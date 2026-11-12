@@ -75,7 +75,7 @@ const cat = (c: CharCategory) => CharCategory[c]
        {facet: s.facet(ro), getter: s.readOnly})
   }
   let s = EditorState.create({doc: "ab", extensions: ro.compute(["doc"], st => st.doc.length > 2)})
-  fx("state.cm6.024", [B("EditorState^readOnly", 2)], {call: "create({doc: \"ab\", extensions: readOnly.compute([\"doc\"], s => s.doc.length > 2)}); insert at 0", doc: "ab"},
+  fx("state.cm6.024", [B("EditorState^readOnly", 2)], {call: "s = EditorState.create({doc: \"ab\", extensions: readOnly.compute([\"doc\"], s => s.doc.length > 2)}); s.readOnly (before); s.update({changes: {from: 0, insert: \"x\"}}).state.readOnly (after)", doc: "ab"},
      {before: s.readOnly, after: s.update({changes: {from: 0, insert: "x"}}).state.readOnly})
   let r = EditorState.create({doc: "ab", extensions: ro.of(true)})
   let t = r.update({changes: {from: 0, insert: "x"}, selection: {anchor: 1}})
@@ -97,11 +97,11 @@ const cat = (c: CharCategory) => CharCategory[c]
   let equal = c0.update({effects: comp.reconfigure(ph.of({a: "x"}))}).state
   let differ = c0.update({effects: comp.reconfigure(ph.of({a: "z"}))}).state
   fx("state.cm6.026", [B("EditorState^phrases", 2)],
-     {call: "create({extensions: comp.of(phrases.of(obj))}); reconfigure comp to phrases.of(obj) (same object), to phrases.of({a: \"x\"}) (equal new object), to phrases.of({a: \"z\"})", obj: keep},
+     {call: "create({extensions: comp.of(phrases.of(obj))}); reconfigure comp to phrases.of(obj) (same object), to phrases.of({a: \"x\"}) (equal new object), to phrases.of({a: \"z\"}); each new state.facet(phrases) === start.facet(phrases); equal.phrase(\"a\") (phraseAfterEqual)", obj: keep},
      {sameObjectKeepsOutput: same.facet(ph) === c0.facet(ph), equalNewObjectKeepsOutput: equal.facet(ph) === c0.facet(ph), differentKeepsOutput: differ.facet(ph) === c0.facet(ph),
       phraseAfterEqual: equal.phrase("a")})
   let un = c0.update({effects: StateEffect.appendConfig.of([])}).state
-  fx("state.cm6.026", [B("EditorState^phrases", 2)], {call: "same start state; update({effects: appendConfig.of([])}) (providers unchanged)"},
+  fx("state.cm6.026", [B("EditorState^phrases", 2)], {call: "c0 = EditorState.create({extensions: comp.of(phrases.of(obj))}); c0.update({effects: appendConfig.of([])}).state.facet(phrases) === c0.facet(phrases) (providers unchanged)", obj: keep},
      {outputKept: un.facet(ph) === c0.facet(ph)})
 }
 
@@ -124,7 +124,7 @@ const cat = (c: CharCategory) => CharCategory[c]
   for (let [p, args, n] of cases)
     fx("state.cm6.027", [B("EditorState.phrase", n)], {call: "EditorState.create().phrase(phrase, ...args)", phrase: p, args: args.map(a => a === undefined ? "<undefined>" : a)},
        cap(() => e.phrase(p, ...args)))
-  fx("state.cm6.027", [B("EditorState.phrase", 6)], {call: "s.phrase(\"Count $1\", 3)", phrases: "as above"}, cap(() => s.phrase("Count $1", 3)))
+  fx("state.cm6.027", [B("EditorState.phrase", 6)], {call: "s = EditorState.create({extensions: phrases.map(p => EditorState.phrases.of(p))}); s.phrase(\"Count $1\", 3)", phrases: [{"Hello": "Olá", "Count $1": "Contagem $1", "x": "y"}, {"Hello": "Hallo", "Olá": "nope", "y": "z", "Bye": "Tchau"}]}, cap(() => s.phrase("Count $1", 3)))
 }
 
 // ---- languageData (028), languageDataAt (029)
@@ -140,7 +140,7 @@ const cat = (c: CharCategory) => CharCategory[c]
   calls = []
   let r1 = s.languageDataAt<string>("wordChars", 2)
   fx("state.cm6.029", [B("EditorState.languageDataAt", 1), B("EditorState.languageDataAt", 2), B("EditorState^languageData", 1)],
-     {call: "s.languageDataAt(\"wordChars\", 2)", p1: "returns [{wordChars: \"$\", commentTokens: {line: \"//\"}}, {wordChars: \"-\"}]", p2: "(Prec.high) returns [{wordChars: \"#\", inheritedOnly: undefined}]"},
+     {call: "s = EditorState.create({doc: \"abc\", extensions: [languageData.of(p1), Prec.high(languageData.of(p2))]}); s.languageDataAt(\"wordChars\", 2) (result); the (provider, pos, side) of each provider call (providerCalls)", p1: "returns [{wordChars: \"$\", commentTokens: {line: \"//\"}}, {wordChars: \"-\"}]", p2: "(Prec.high) returns [{wordChars: \"#\", inheritedOnly: undefined}]"},
      {result: r1, providerCalls: calls})
   calls = []
   let r2 = s.languageDataAt<any>("commentTokens", 1, 1)
@@ -148,7 +148,7 @@ const cat = (c: CharCategory) => CharCategory[c]
   let r4 = s.languageDataAt<any>("toString", 1)
   let r5 = s.languageDataAt<any>("absent", 99, -1)
   fx("state.cm6.029", [B("EditorState.languageDataAt", 1), B("EditorState.languageDataAt", 2), B("EditorState.languageDataAt", 3)],
-     {call: "s.languageDataAt(\"commentTokens\", 1, 1) (side 1 as commands/src/comment.ts:64); (\"inheritedOnly\", 1, 0); (\"toString\", 1); (\"absent\", 99, -1)"},
+     {call: "s = EditorState.create({doc: \"abc\", extensions: [languageData.of(p1), Prec.high(languageData.of(p2))]}); s.languageDataAt(\"commentTokens\", 1, 1) (side 1 as commands/src/comment.ts:64); (\"inheritedOnly\", 1, 0); (\"toString\", 1); (\"absent\", 99, -1); the (provider, pos, side) of each provider call over the four reads (providerCalls)", p1: "returns [{wordChars: \"$\", commentTokens: {line: \"//\"}}, {wordChars: \"-\"}]", p2: "(Prec.high) returns [{wordChars: \"#\", inheritedOnly: undefined}]"},
      {commentTokens: r2, inheritedOnly: r3.map(u), toString: r4, absent: r5, providerCalls: calls})
   let e = EditorState.create()
   let a = e.languageDataAt("x", 0), b = e.languageDataAt("x", 0)
@@ -165,15 +165,15 @@ const cat = (c: CharCategory) => CharCategory[c]
     fx("state.cm6.030", [B("EditorState.charCategorizer", 2)], {call: "EditorState.create().charCategorizer(0)(ch)", ch}, cat(plain(ch)))
   let s = EditorState.create({doc: "abc", extensions: [ld.of(() => [{wordChars: "$"}]), ld.of(() => [{wordChars: "-"}])]})
   let c = s.charCategorizer(1)
-  fx("state.cm6.030", [B("EditorState.charCategorizer", 1)], {call: "create with languageData providers [{wordChars: \"$\"}], [{wordChars: \"-\"}]; charCategorizer(1) on \"$\", \"-\", \"x$\", \"!\""},
+  fx("state.cm6.030", [B("EditorState.charCategorizer", 1)], {call: "EditorState.create({doc: \"abc\", extensions: [languageData.of(() => [{wordChars: \"$\"}]), languageData.of(() => [{wordChars: \"-\"}])]}).charCategorizer(1) applied to \"$\", \"-\", \"x$\", \"!\""},
      {"$": cat(c("$")), "-": cat(c("-")), "x$": cat(c("x$")), "!": cat(c("!"))})
   let a = EditorState.create({extensions: ld.of(() => [{wordChars: "\u{1F600}"}])}).charCategorizer(0)
-  fx("state.cm6.030", [B("EditorState.charCategorizer", 3)], {call: "wordChars \"\\u{1F600}\"; categorize \"\\u{1F600}\", \"\\u{1F603}\" (same high surrogate), \"\\uD83D\" (lone), \"\\u{1F468}\""},
+  fx("state.cm6.030", [B("EditorState.charCategorizer", 3)], {call: "EditorState.create({extensions: languageData.of(() => [{wordChars: \"\\u{1F600}\"}])}).charCategorizer(0) applied to \"\\u{1F600}\", \"\\u{1F603}\" (same high surrogate), \"\\uD83D\" (lone; key loneHigh), \"\\u{1F468}\""},
      {"\u{1F600}": cat(a("\u{1F600}")), "\u{1F603}": cat(a("\u{1F603}")), "loneHigh": cat(a("\uD83D")), "\u{1F468}": cat(a("\u{1F468}"))})
   let e = EditorState.create()
-  fx("state.cm6.030", [B("EditorState.charCategorizer", 4)], {call: "s.charCategorizer(0) === s.charCategorizer(0)"}, {sameFunction: e.charCategorizer(0) === e.charCategorizer(0)})
+  fx("state.cm6.030", [B("EditorState.charCategorizer", 4)], {call: "s = EditorState.create(); s.charCategorizer(0) === s.charCategorizer(0)"}, {sameFunction: e.charCategorizer(0) === e.charCategorizer(0)})
   let byPos = EditorState.create({doc: "ab", extensions: ld.of((st, pos) => pos == 0 ? [{wordChars: "!"}] : [])})
-  fx("state.cm6.030", [B("EditorState.charCategorizer", 1)], {call: "languageData provider returns [{wordChars: \"!\"}] only at pos 0; charCategorizer(0)(\"!\"), charCategorizer(1)(\"!\")"},
+  fx("state.cm6.030", [B("EditorState.charCategorizer", 1)], {call: "s = EditorState.create({doc: \"ab\", extensions: languageData.of((s, pos) => pos == 0 ? [{wordChars: \"!\"}] : [])}); s.charCategorizer(0)(\"!\") (at0), s.charCategorizer(1)(\"!\") (at1)"},
      {at0: cat(byPos.charCategorizer(0)("!")), at1: cat(byPos.charCategorizer(1)("!"))})
 }
 

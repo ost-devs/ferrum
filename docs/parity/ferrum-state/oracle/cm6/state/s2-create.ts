@@ -92,7 +92,7 @@ for (let selection of [{anchor: -1}, {anchor: 1.5, head: 0}, {anchor: -3, head: 
   fx(I.csel, [B("EditorStateConfig.selection", 7)], {call: "EditorState.create({doc, selection: EditorSelection.create([cursor(0), range(1,2), cursor(3)], 1)})", doc: "abc", allowMultipleSelections: false},
      {selection: sel(one.selection), mainRangeKept: one.selection.ranges[0] === ranges[1]})
   let many = EditorState.create({doc: "abc", selection: EditorSelection.create(ranges, 1), extensions: EditorState.allowMultipleSelections.of(true)})
-  fx(I.csel, [B("EditorStateConfig.selection", 7)], {call: "same, extensions: allowMultipleSelections.of(true)", doc: "abc", allowMultipleSelections: true},
+  fx(I.csel, [B("EditorStateConfig.selection", 7)], {call: "EditorState.create({doc, selection: EditorSelection.create([cursor(0), range(1,2), cursor(3)], 1), extensions: allowMultipleSelections.of(true)})", doc: "abc", allowMultipleSelections: true},
      {selection: sel(many.selection)})
 }
 for (let [doc, selection] of [["\u{1F600}", {anchor: 1}], ["\u{1F600}x", {anchor: 3, head: 0}], ["a\r\nb", {anchor: 3}], ["a\r\nb", {anchor: 4}]] as const) {
@@ -152,7 +152,7 @@ for (let extensions of [undefined, null, []]) {
   let e1 = StateField.define<number>({create: () => 0, update: (v, tr) => tr.state.field(e2)})
   e2 = StateField.define<number>({create: () => 0, update: (v, tr) => tr.state.field(e1)})
   let s3 = EditorState.create({extensions: [e1, e2]})
-  fx(I.state, [B("EditorState", 3)], {call: "state.update({}).state with E1 update tr.state.field(E2), E2 update tr.state.field(E1)"},
+  fx(I.state, [B("EditorState", 3)], {call: "s = EditorState.create({extensions: [E1, E2]}); s.update({}).state.field(E1)", E1: "create () => 0, update (v, tr) => tr.state.field(E2)", E2: "create () => 0, update (v, tr) => tr.state.field(E1)"},
      cap(() => s3.update({}).state.field(e1)))
 }
 {
@@ -291,18 +291,18 @@ for (let [str, sep] of [["a\nb", "\r\n"], ["a\r\nb\r\n", "\r\n"], ["a\rb\nc", "\
   let f = Facet.define<number>()
   let g = Facet.define<number, number>({combine: v => v.reduce((a, b) => a + b, 100)})
   let s1 = EditorState.create(), s2 = EditorState.create({doc: "x"})
-  fx(I.facet, [B("EditorState.facet", 1)], {call: "s.facet(F), s.facet(G) for facets absent from the state", F: "Facet.define<number>()", G: "combine: sum + 100"},
+  fx(I.facet, [B("EditorState.facet", 1)], {call: "s1 = EditorState.create(); s2 = EditorState.create({doc: \"x\"}); s1.facet(F) (F), s1.facet(G) (G), s1.facet(F) === s2.facet(F) (defaultSameObjectAcrossStates); F and G are absent from both states", F: "Facet.define<number>()", G: "Facet.define<number, number>({combine: v => v.reduce((a, b) => a + b, 100)})"},
      {F: s1.facet(f), G: s1.facet(g), defaultSameObjectAcrossStates: s1.facet(f) === s2.facet(f)})
   let s3 = EditorState.create({extensions: [f.of(1), f.of(2), Prec.high(f.of(3)), g.of(5)]})
   let s4 = s3.update({changes: {from: 0, insert: "z"}}).state
-  fx(I.facet, [B("EditorState.facet", 2)], {call: "create({extensions: [F.of(1), F.of(2), Prec.high(F.of(3)), G.of(5)]}); read F and G; then update with a change",},
+  fx(I.facet, [B("EditorState.facet", 2)], {call: "s3 = EditorState.create({extensions: [F.of(1), F.of(2), Prec.high(F.of(3)), G.of(5)]}); s4 = s3.update({changes: {from: 0, insert: \"z\"}}).state; s3.facet(F) (F), s3.facet(G) (G), s3.facet(F) === s4.facet(F) (FSameObjectAfterUpdate)", F: "Facet.define<number>()", G: "Facet.define<number, number>({combine: v => v.reduce((a, b) => a + b, 100)})"},
      {F: s3.facet(f), G: s3.facet(g), FSameObjectAfterUpdate: s3.facet(f) === s4.facet(f)})
   let field = StateField.define<number>({create: () => 1, update: (v, t) => t.docChanged ? v + 1 : v})
   let s5 = EditorState.create({extensions: [field, f.from(field), f.of(7)]})
   let s6 = s5.update({}).state, s7 = s5.update({changes: {from: 0, insert: "a"}}).state
-  fx(I.facet, [B("EditorState.facet", 3)], {call: "create({extensions: [field, F.from(field), F.of(7)]}); update({}); update with a change", field: "create 1, update docChanged ? v + 1 : v"},
+  fx(I.facet, [B("EditorState.facet", 3)], {call: "s5 = EditorState.create({extensions: [field, F.from(field), F.of(7)]}); s6 = s5.update({}).state; s7 = s5.update({changes: {from: 0, insert: \"a\"}}).state; s5.facet(F) (initial), s6.facet(F) (afterEmpty), s6.facet(F) === s5.facet(F) (sameObjectAfterEmpty), s7.facet(F) (afterChange)", F: "Facet.define<number>()", field: "StateField.define({create: () => 1, update: (v, tr) => tr.docChanged ? v + 1 : v})"},
      {initial: s5.facet(f), afterEmpty: s6.facet(f), sameObjectAfterEmpty: s6.facet(f) === s5.facet(f), afterChange: s7.facet(f)})
-  fx(I.facet, [B("EditorState.facet", 4)], {call: "s.facet(F.reader) vs s.facet(F)"}, {same: s3.facet(f.reader) === s3.facet(f), value: s3.facet(f.reader)})
+  fx(I.facet, [B("EditorState.facet", 4)], {call: "s3 = EditorState.create({extensions: [F.of(1), F.of(2), Prec.high(F.of(3)), G.of(5)]}); s3.facet(F.reader) === s3.facet(F) (same), s3.facet(F.reader) (value)", F: "Facet.define<number>()", G: "Facet.define<number, number>({combine: v => v.reduce((a, b) => a + b, 100)})"}, {same: s3.facet(f.reader) === s3.facet(f), value: s3.facet(f.reader)})
 }
 
 // ---- toJSON (016)
@@ -319,12 +319,12 @@ for (let [str, sep] of [["a\nb", "\r\n"], ["a\r\nb\r\n", "\r\n"], ["a\rb\nc", "\
   let absent = StateField.define<number>({create: () => 5, update: v => v, toJSON: v => v})
   let s2 = EditorState.create({doc: "xyz", extensions: [f1, f2]})
   fx(I.toJSON, [B("EditorState.toJSON", 2), B("EditorState.toJSON", 3)],
-     {call: "s.toJSON({z: f2, a: f1, missing: absentField, notAField: 42})", doc: "xyz", f1: "create 3, toJSON (v, st) => ({n: v, len: st.doc.length})", f2: "create 4, toJSON v => [v]"},
+     {call: "s = EditorState.create({doc: \"xyz\", extensions: [f1, f2]}); s.toJSON({z: f2, a: f1, missing: absentField, notAField: 42})", doc: "xyz", f1: "create 3, toJSON (v, st) => ({n: v, len: st.doc.length})", f2: "create 4, toJSON v => [v]", absentField: "create 5, toJSON v => v; not in the state"},
      s2.toJSON({z: f2, a: f1, missing: absent, notAField: 42 as any}))
   let noJSON = StateField.define<number>({create: () => 1, update: v => v})
   let s3 = EditorState.create({extensions: noJSON})
-  fx(I.toJSON, [B("EditorState.toJSON", 4)], {call: "s.toJSON({f: fieldWithoutToJSON})"}, cap(() => s3.toJSON({f: noJSON})))
-  fx(I.toJSON, [B("EditorState.toJSON", 5)], {call: "s.toJSON({doc: f1, selection: f2})", doc: "xyz"}, s2.toJSON({doc: f1, selection: f2}))
+  fx(I.toJSON, [B("EditorState.toJSON", 4)], {call: "EditorState.create({extensions: fieldWithoutToJSON}).toJSON({f: fieldWithoutToJSON})", fieldWithoutToJSON: "create () => 1, update v => v, no toJSON"}, cap(() => s3.toJSON({f: noJSON})))
+  fx(I.toJSON, [B("EditorState.toJSON", 5)], {call: "s = EditorState.create({doc: \"xyz\", extensions: [f1, f2]}); s.toJSON({doc: f1, selection: f2})", doc: "xyz", f1: "create 3, toJSON (v, st) => ({n: v, len: st.doc.length})", f2: "create 4, toJSON v => [v]"}, s2.toJSON({doc: f1, selection: f2}))
 }
 
 // ---- fromJSON (017)
@@ -338,9 +338,9 @@ for (let [str, sep] of [["a\nb", "\r\n"], ["a\r\nb\r\n", "\r\n"], ["a\rb\nc", "\
   let ok = {doc: "abc", selection: {ranges: [{anchor: 1, head: 1}], main: 0}}
   fx(I.fromJSON, [B("EditorState^fromJSON", 3)], {call: "EditorState.fromJSON({...json, f: 7}, {}, {f: field})", json: {...ok, f: 7}, field: "create {n: 0}, fromJSON (j, st) => ({n: j + st.doc.length})"},
      cap(() => EditorState.fromJSON({...ok, f: 7}, {}, {f: field}).field(field)))
-  fx(I.fromJSON, [B("EditorState^fromJSON", 3)], {call: "EditorState.fromJSON(json, {}, {f: field}) where json has no f", json: ok},
+  fx(I.fromJSON, [B("EditorState^fromJSON", 3)], {call: "EditorState.fromJSON(json, {}, {f: field}).field(field, false) where json has no f", json: ok, field: "create {n: 0}, fromJSON (j, st) => ({n: j + st.doc.length})"},
      cap(() => u(EditorState.fromJSON(ok, {}, {f: field}).field(field, false))))
-  fx(I.fromJSON, [B("EditorState^fromJSON", 3)], {call: "EditorState.fromJSON(json, {extensions: field}, {f: field}) where json has no f", json: ok},
+  fx(I.fromJSON, [B("EditorState^fromJSON", 3)], {call: "EditorState.fromJSON(json, {extensions: field}, {f: field}).field(field) where json has no f", json: ok, field: "create {n: 0}, fromJSON (j, st) => ({n: j + st.doc.length})"},
      cap(() => EditorState.fromJSON(ok, {extensions: field}, {f: field}).field(field)))
   let j2 = {doc: "a\r\nb\nc", selection: {ranges: [{anchor: 5, head: 5}], main: 0}}
   fx(I.fromJSON, [B("EditorState^fromJSON", 4)], {call: "EditorState.fromJSON(json, {extensions: lineSeparator.of(\"\\r\\n\")})", json: j2},

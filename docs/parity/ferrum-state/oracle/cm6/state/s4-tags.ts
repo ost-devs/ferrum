@@ -97,7 +97,7 @@ for (let [doc, p] of [["\u{1F600}", 2], ["\u{1F600}", 3], ["a\r\nb", 3], ["a\r\n
     let s = EditorState.create({doc: "ab\u2028cd", extensions: ext})
     let res: any = {lines: s.doc.toJSON()}
     for (let p of [1, 2, 3, 4]) { let w = s.wordAt(p); res["at" + p] = w ? range(w) : null; res["lineAt" + p] = {from: s.doc.lineAt(p).from, to: s.doc.lineAt(p).to} }
-    fx([S("EditorState.wordAt.B3")], {call: `EditorState.create({doc}).wordAt(p) for p in 1..4 (${d})`, doc: "ab\u2028cd", sep: ext.length === 0 ? "<undefined>" : "\u2028"}, res)
+    fx([S("EditorState.wordAt.B3")], {call: `s = EditorState.create({doc, extensions: ${ext.length === 0 ? "[]" : "lineSeparator.of(\"\\u2028\")"}}); s.doc.toJSON() (lines); for p in 1..4: s.wordAt(p) (at<p>), s.doc.lineAt(p) as {from, to} (lineAt<p>) (${d})`, doc: "ab\u2028cd", sep: ext.length === 0 ? "<undefined>" : "\u2028"}, res)
   }
 }
 
@@ -126,7 +126,7 @@ for (let doc of ["\u{1F600}", "a\r\nb"]) {
   let s = EditorState.create({doc: "a\r\nb"})
   for (let spec of [{changes: {from: 3, insert: "x"}}, {changes: {from: 4}},
                     {changes: {from: 3, insert: "\r\n"}, selection: {anchor: 4}}, {changes: {from: 3, insert: "\r\n"}, selection: {anchor: 5}}])
-    fx([S("EditorState.update.B5")], {call: "s.update(spec)", doc: "a\r\nb", spec}, cap(() => out(s.update({...spec, annotations: T0}))))
+    fx([S("EditorState.update.B5")], {call: "s.update({...spec, annotations: Transaction.time.of(1000)})", doc: "a\r\nb", spec}, cap(() => out(s.update({...spec, annotations: T0}))))
 }
 
 // ---- state.EditorState.replaceSelection.B1: lone CR with the default split; U+2028 with lineSeparator "\u2028"
@@ -172,7 +172,7 @@ for (let [doc, c2, ins, w] of [["\u{1F600}\u{1F600}", 2, "\u{1F601}", 2], ["a\r\
   let s = EditorState.create({doc, extensions: multi, selection: EditorSelection.create([EditorSelection.cursor(0), EditorSelection.cursor(c2)])})
   let r = s.changeByRange(rg => ({changes: {from: rg.from, insert: ins}, range: EditorSelection.cursor(rg.from + w),
                                   effects: [posEffect.of(rg.from + w), foldLike.of({from: rg.from, to: rg.from + w})]}))
-  fx([S("EditorState.changeByRange.B4")], {call: `cursors 0 and ${c2}; each inserts the text at its position with effects [pos(from + ${w}), foldLike {from, from + ${w}}]`, doc, text: ins},
+  fx([S("EditorState.changeByRange.B4")], {call: `cursors 0 and ${c2}; r = s.changeByRange(r => ({changes: {from: r.from, insert: text}, range: cursor(r.from + ${w}), effects: [pos(r.from + ${w}), foldLike {r.from, r.from + ${w}}]})); r.changes, r.selection, r.effects`, doc, text: ins, allowMultipleSelections: true},
      {changes: r.changes.toJSON(), selection: sel(r.selection), effects: r.effects.map(eff).map((e, i) => ({...e, value: r.effects[i].value}))})
 }
 
@@ -180,7 +180,7 @@ for (let [doc, c2, ins, w] of [["\u{1F600}\u{1F600}", 2, "\u{1F601}", 2], ["a\r\
 {
   let s = EditorState.create({doc: "a\r\nb", extensions: multi, selection: EditorSelection.create([EditorSelection.cursor(0), EditorSelection.cursor(3)])})
   let r = s.changeByRange(rg => ({changes: {from: 1, insert: rg.from == 0 ? "\r\n" : "x\r\n"}, range: EditorSelection.cursor(rg.from == 0 ? 2 : 3, rg.from == 0 ? -1 : 1)}))
-  fx([S("EditorState.changeByRange.B6")], {call: "cursors 0 and 3; both insert at 1 (\"\\r\\n\" for the first, \"x\\r\\n\" for the second); ranges cursor(2, -1) and cursor(3, 1)", doc: "a\r\nb"},
+  fx([S("EditorState.changeByRange.B6")], {call: "cursors 0 and 3; both insert at 1 (\"\\r\\n\" for the first, \"x\\r\\n\" for the second); ranges cursor(2, -1) and cursor(3, 1); r.changes; s.update(r).state", doc: "a\r\nb", allowMultipleSelections: true},
      {changes: r.changes.toJSON(), ...st(s.update(r).state)})
 }
 
@@ -214,8 +214,8 @@ for (let doc of ["\u{1F600}", "a\r\nb"]) {
       let t = s.update({changes: ChangeSet.of([], n), annotations: T0})
       return {updateOk: true, newDoc: cap(() => text(t.newDoc))}
     })
-    fx([S("Transaction.newDoc.B3")], {call: `s.update({changes: ChangeSet.of([], ${n})}).newDoc`, doc}, res)
-    fx([S("TransactionSpec.changes.B2")], {call: `s.update({changes: ChangeSet.of([], ${n})}).newDoc`, doc}, res)
+    fx([S("Transaction.newDoc.B3")], {call: `s.update({changes: ChangeSet.of([], ${n}), annotations: Transaction.time.of(1000)}).newDoc`, doc}, res)
+    fx([S("TransactionSpec.changes.B2")], {call: `s.update({changes: ChangeSet.of([], ${n}), annotations: Transaction.time.of(1000)}).newDoc`, doc}, res)
   }
 }
 
@@ -247,9 +247,9 @@ for (let [doc, at, ins] of [["\u{1F600}b", 2, "\u{1F601}"], ["a\r\nb", 3, "\r\n"
 // ---- state.TransactionSpec.changes.B4: invalid range, length of the space it is resolved against (astral, CRLF)
 for (let [doc, ins] of [["\u{1F600}", "\u{1F601}"], ["a\r\nb", "\r\n"]] as [string, string][]) {
   let s = EditorState.create({doc}), len = s.doc.length
-  fx([S("TransactionSpec.changes.B4")], {call: `s.update({changes: {from: ${len + 1}}})`, doc}, cap(() => out(s.update({changes: {from: len + 1}, annotations: T0}))))
+  fx([S("TransactionSpec.changes.B4")], {call: `s.update({changes: {from: ${len + 1}}, annotations: Transaction.time.of(1000)})`, doc}, cap(() => out(s.update({changes: {from: len + 1}, annotations: T0}))))
   let nl = s.changes({from: 0, insert: ins}).newLength
-  fx([S("TransactionSpec.changes.B4")], {call: `s.update({changes: {from: 0, insert}}, {changes: {from: ${nl + 1}}, sequential: true})`, doc, insert: ins},
+  fx([S("TransactionSpec.changes.B4")], {call: `s.update({changes: {from: 0, insert}, annotations: Transaction.time.of(1000)}, {changes: {from: ${nl + 1}}, sequential: true})`, doc, insert: ins},
      cap(() => out(s.update({changes: {from: 0, insert: ins}, annotations: T0}, {changes: {from: nl + 1}, sequential: true}))))
 }
 
@@ -258,7 +258,7 @@ for (let [doc, ins] of [["\u{1F600}", "\u{1F601}"], ["a\r\nb", "\r\n"]] as [stri
   let s = EditorState.create({doc: "abcd"})
   let t = s.update({changes: {from: 0, insert: "\r\n"}, effects: [posEffect.of(2), foldLike.of({from: 1, to: 3})], annotations: T0},
                    {changes: {from: 2, insert: "x\r\ny"}, effects: [posEffect.of(2), posEffect.of(5)]})
-  fx([S("TransactionSpec.effects.B2")], {call: "s.update({changes: insert \"\\r\\n\" at 0, effects: [pos 2, foldLike {1,3}]}, {changes: insert \"x\\r\\ny\" at 2, effects: [pos 2, pos 5]})", doc: "abcd"},
+  fx([S("TransactionSpec.effects.B2")], {call: "s.update({changes: insert \"\\r\\n\" at 0, effects: [pos 2, foldLike {1,3}], annotations: Transaction.time.of(1000)}, {changes: insert \"x\\r\\ny\" at 2, effects: [pos 2, pos 5]})", doc: "abcd"},
      out(t))
 }
 
@@ -266,7 +266,7 @@ for (let [doc, ins] of [["\u{1F600}", "\u{1F601}"], ["a\r\nb", "\r\n"]] as [stri
 for (let [doc, ins, p] of [["\u{1F600}", "\u{1F601}", 2], ["a\r\nb", "\r\n", 3]] as [string, string, number][]) {
   let s = EditorState.create({doc})
   let t = s.update({selection: {anchor: p}, effects: posEffect.of(p), annotations: T0}, {changes: {from: 0, insert: ins}, sequential: true, effects: posEffect.of(p)})
-  fx([S("TransactionSpec.sequential.B2")], {call: `s.update({selection: {anchor: ${p}}, effects: pos ${p}}, {changes: {from: 0, insert}, sequential: true, effects: pos ${p}})`, doc, insert: ins},
+  fx([S("TransactionSpec.sequential.B2")], {call: `s.update({selection: {anchor: ${p}}, effects: pos ${p}, annotations: Transaction.time.of(1000)}, {changes: {from: 0, insert}, sequential: true, effects: pos ${p}})`, doc, insert: ins},
      out(t))
 }
 
@@ -275,21 +275,21 @@ for (let [doc, ins] of [["\u{1F600}\u{1F600}", "\u{1F601}"], ["a\r\nb", "\r\n"]]
   let s = EditorState.create({doc})
   let nl = s.changes({from: 0, insert: ins}).newLength
   for (let seq of [true, false])
-    fx([S("TransactionSpec.sequential.B4")], {call: `s.update({changes: {from: 0, insert}}, {changes: {from: ${nl}, insert: "!"}, sequential: ${seq}})`, doc, insert: ins},
+    fx([S("TransactionSpec.sequential.B4")], {call: `s.update({changes: {from: 0, insert}, annotations: Transaction.time.of(1000)}, {changes: {from: ${nl}, insert: "!"}, sequential: ${seq}})`, doc, insert: ins},
        cap(() => out(s.update({changes: {from: 0, insert: ins}, annotations: T0}, {changes: {from: nl, insert: "!"}, sequential: seq}))))
 }
 
 // ---- state.EditorState^changeFilter.B2: a suppressed range over CRLF text
 {
   let s = EditorState.create({doc: "one\r\ntwo", extensions: EditorState.changeFilter.of(() => [2, 5])})
-  fx([S("EditorState^changeFilter.B2")], {call: "changeFilter [2, 5]; update({changes: {from: 0, to: 7}, selection: {anchor: 0}})", doc: "one\r\ntwo"},
+  fx([S("EditorState^changeFilter.B2")], {call: "changeFilter [2, 5]; update({changes: {from: 0, to: 7}, selection: {anchor: 0}, annotations: Transaction.time.of(1000)})", doc: "one\r\ntwo"},
      out(s.update({changes: {from: 0, to: 7}, selection: {anchor: 0}, annotations: T0})))
 }
 
 // ---- state.EditorState^changeFilter.B9: selection and effects mapped back through a dropped CRLF insertion (as F1328)
 {
   let s = EditorState.create({doc: "a\r\ncdef", extensions: EditorState.changeFilter.of(() => [0, 2])})
-  fx([S("EditorState^changeFilter.B9")], {call: "changeFilter [0, 2]; update({changes: [0-2 -> \"X\\r\\nZ\", insert \"!\" at 4], selection: {anchor: 7}, effects: [pos 7, pos 3, foldLike {3,6}]})", doc: "a\r\ncdef"},
+  fx([S("EditorState^changeFilter.B9")], {call: "changeFilter [0, 2]; update({changes: [0-2 -> \"X\\r\\nZ\", insert \"!\" at 4], selection: {anchor: 7}, effects: [pos 7, pos 3, foldLike {3,6}], annotations: Transaction.time.of(1000)})", doc: "a\r\ncdef"},
      cap(() => out(s.update({changes: [{from: 0, to: 2, insert: "X\r\nZ"}, {from: 4, insert: "!"}], selection: {anchor: 7}, effects: [posEffect.of(7), posEffect.of(3), foldLike.of({from: 3, to: 6})], annotations: T0}))))
 }
 
@@ -305,14 +305,14 @@ for (let [doc, ins] of [["ab", "\u{1F600}"], ["ab", "\r\n"], ["\u{1F600}", null]
   let s0 = EditorState.create({doc}), len = s0.doc.length
   let ext = ins != null ? {changes: {from: 0, insert: ins}} : {changes: {from: len + 1}}
   let s = EditorState.create({doc, extensions: EditorState.transactionExtender.of(() => ext)})
-  fx([S("EditorState^transactionExtender.B4")], {call: "extender returning {changes}; update({effects: [pos 1, foldLike {0, 1}]})", doc, extenderChanges: ext.changes},
+  fx([S("EditorState^transactionExtender.B4")], {call: "extender returning {changes}; update({effects: [pos 1, foldLike {0, 1}], annotations: Transaction.time.of(1000)})", doc, extenderChanges: ext.changes},
      cap(() => out(s.update({effects: [posEffect.of(1), foldLike.of({from: 0, to: 1})], annotations: T0}))))
 }
 
 // ---- state.EditorState^transactionExtender.B6: mapPos range check against the length after the changes (CRLF)
 for (let p of [3, 4]) {
   let s = EditorState.create({doc: "a\r\nb", extensions: EditorState.transactionExtender.of(() => ({annotations: Transaction.userEvent.of("x")}))})
-  fx([S("EditorState^transactionExtender.B6")], {call: `extender adding an annotation; update({effects: pos ${p}})`, doc: "a\r\nb"},
+  fx([S("EditorState^transactionExtender.B6")], {call: `extender returning {annotations: Transaction.userEvent.of("x")}; update({effects: pos ${p}, annotations: Transaction.time.of(1000)})`, doc: "a\r\nb"},
      cap(() => out(s.update({effects: posEffect.of(p), annotations: T0}))))
 }
 
@@ -322,7 +322,7 @@ for (let ins of ["\u{1F600}", "\r\n"]) {
   let rec = name(StateEffect.define<number>({map: (v, m: ChangeDesc) => { log.push({length: m.length, newLength: m.newLength}); return v }}), "recorder")
   let s = EditorState.create({doc: "abc"})
   s.update({effects: rec.of(0), annotations: T0}, {changes: {from: 0, insert: ins}})
-  fx([S("StateEffect^define config StateEffectSpec.map.B1")], {call: "s.update({effects: recorder.of(0)}, {changes: {from: 0, insert}})", doc: "abc", insert: ins}, {calls: log})
+  fx([S("StateEffect^define config StateEffectSpec.map.B1")], {call: "s.update({effects: recorder.of(0), annotations: Transaction.time.of(1000)}, {changes: {from: 0, insert}})", doc: "abc", insert: ins, recorder: "StateEffect.define({map: (v, m) => records {length: m.length, newLength: m.newLength}, returns v})"}, {calls: log})
 }
 
 // ---- state.StateEffect^define config StateEffectSpec.map.B2: fold-like and TrackAfter maps through CRLF insertions
