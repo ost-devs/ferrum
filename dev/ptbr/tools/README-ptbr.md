@@ -1,4 +1,4 @@
-> Tradução para leitura de `tools/README.md` (commit `8e3ce5f`). O original em inglês é o que vale.
+> Tradução para leitura de `tools/README.md` (commit `29b0f81`). O original em inglês é o que vale.
 
 # Ferramentas
 
@@ -7,7 +7,7 @@ Ferramentas compartilhadas do workflow ([`docs/workflow/`](../docs/workflow/)). 
 | Ferramenta | Usada em | Comando | Saída |
 |---|---|---|---|
 | [`tools/cm6/setup_harness.py`](../../../tools/cm6/setup_harness.py) | especificação S0, uma vez por crate | `python3 tools/cm6/setup_harness.py <pacote> [--npm <pkg@ver> …]` | `.harness/<pacote>/` (no gitignore): cópias do `src/` do pacote e de todo pacote `@codemirror/*` de que ele depende, suas dependências npm, TypeScript, um `tsconfig.json` que mapeia `@codemirror/<nome>` para as cópias e `@harness/lib` para [`tools/cm6/oracle-lib.ts`](../../../tools/cm6/oracle-lib.ts), `harness.json` com as versões |
-| [`tools/cm6/oracle-lib.ts`](../../../tools/cm6/oracle-lib.ts) | toda sonda e todo gerador | `import {rng, capture, encode, fixtureWriter} from "@harness/lib"` | gerador pseudoaleatório com semente (mulberry32), captura de exceções, codificação de strings segura para Rust, escritor de fixtures |
+| [`tools/cm6/oracle-lib.ts`](../../../tools/cm6/oracle-lib.ts) | toda sonda e todo gerador | `import {rng, capture, encode, fixtureWriter, runIsolated, isolatedMain} from "@harness/lib"` | gerador pseudoaleatório com semente (mulberry32), captura de exceções, codificação de strings segura para Rust, escritor de fixtures, execução de uma sonda que pode não terminar em um processo filho com limite de tempo que não sobrevive a esse limite |
 | [`tools/cm6/inventory.cjs`](../../../tools/cm6/inventory.cjs) | especificação S0 | `node tools/cm6/inventory.cjs --harness .harness/<pacote> --package <pacote> --prefix <crate>.cm6 > docs/parity/<crate>/raw/inventory.jsonl` | uma linha por export, membro público e campo de objeto de configuração |
 | [`tools/cm6/tests.cjs`](../../../tools/cm6/tests.cjs) | especificação S0 | `node tools/cm6/tests.cjs --harness .harness/<pacote> --package <pacote> > docs/parity/<crate>/raw/tests.jsonl` | uma linha por `it()`, `webtest-*` incluídos; `generated: true` marca casos criados em laços (expanda-os, uma linha por caso) |
 | [`tools/spec_synth.py`](../../../tools/spec_synth.py) | especificação S3, de novo após qualquer mudança de linhas | `python3 tools/spec_synth.py <crate> <curto> <pacote cm6> <versão> <commit do espelho> stack contracts hazards views` | `stack.md`, `contracts.md`, `hazards.md` (de `raw/behaviors.jsonl` e `raw/throws.jsonl`) e os `inventory.md`, `behaviors.md`, `tests.md` renderizados, cada um com o cabeçalho de [`docs/workflow/specification.md`](../docs/workflow/specification-ptbr.md) §4 |
