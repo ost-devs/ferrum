@@ -11,6 +11,9 @@
 //   gen-text.ts          F4000-F4999   generator: Text operations
 //   probe-tests.ts       F5000-F5199   values behind the cm6 test cases of test-text.ts / test-charcategory.ts
 //   probe-gapfill.ts     F5200-F5299   S3 gap fill: NaN / dir 0 throws on node documents (Text.lineAt B7, Text.line B4, Text.iter B3)
+//   s4-tags.ts           F6000-F6999   S4 re-tag pass: D1 / D2 fixtures
+//   s4-fix5.ts           F7000-F7099   S4 fixes of seed 4104
+//   s4-fix6.ts           F7100-F7199   S4 fixes of seed 4106 (fractional positions, Text.empty identity)
 // Rerunning a probe deletes the fixtures of its range and writes them again, in order.
 //
 // Encoding (applied here to inputs and outputs before fixtureWriter sees them):

@@ -5,7 +5,7 @@
 // that is the selection's main range, indexOf finds the prepended slot, not the original's. On a selection built by
 // create the two slots sort next to each other and merge, so an equal copy gives the same result; on an unsorted
 // selection built by EditorSelection.fromJSON (selection.ts:175-179, no create) they need not, and the main index differs.
-// Appends to fixtures/change.jsonl (fresh = false) with ids F7500-F7999; rerunning first drops that range.
+// Appends to fixtures/change.jsonl (fresh = false) with ids F7500-F7599; rerunning first drops that range.
 // Run order for the chunk: s2-fixtures.ts, s2-generator.ts, gapfill-mapset.ts, s4-fix.ts, s4-tags.ts, s4-m7.ts,
 // then this file. From the repository root:
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/change/s4-fix5.ts
@@ -17,7 +17,7 @@ import {run} from "./interp"
 
 const ROOT = "docs/parity/ferrum-state"
 const FILE = `${ROOT}/fixtures/change.jsonl`
-const FIRST = 7500, LAST = 7999
+const FIRST = 7500, LAST = 7599
 const ids: Record<string, string> = {}
 for (let line of readFileSync(`${ROOT}/raw/inventory.jsonl`, "utf8").split("\n")) if (line.trim()) {
   let r = JSON.parse(line); if (r.chunk == "change") ids[r.item] = r.id

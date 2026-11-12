@@ -2,10 +2,10 @@
 
 - **What:** the hazards the cm6 implementation relies on (`docs/workflow/specification.md` §5 point 7), from the `hazards` field of `raw/behaviors.jsonl` grouped by inventory item, identical notes merged, each ending with the behaviors (`B<n>`) that carry it; then every throw with its condition, what it protects and whether a caller can check it in advance (§7). Generated from the rows and the throw facts.
 - **cm6:** `@codemirror/state` 6.7.6, mirror commit 651084c; `mirrors/...` line numbers refer to it.
-- **Ferrum commit:** ea24c95; line numbers in `docs/` and `tools/` refer to it.
+- **Ferrum commit:** 5d01b0d; line numbers in `docs/` and `tools/` refer to it.
 - **Ids:** behaviors `state.<item>.B<n>`; inventory rows `state.cm6.<nnn>`; fixtures `<chunk>:F<nnnn>` in `fixtures/<chunk>.jsonl`; cm6 tests `<file>#<nn>`
 
-Throws: 41. Items with hazards: 207; distinct notes: 587.
+Throws: 74. Items with hazards: 216; distinct notes: 675.
 
 ## Throws
 
@@ -19,12 +19,12 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 | mirrors/cm6/state/src/selection.ts:241 (checkSelection) | explicit | RangeError("Selection points outside of document") | some range of the selection has range.to > docLength, where docLength is doc.length in EditorState.create (state.ts:250) or changes.newLength in the Transaction constructor (transaction.ts:185). Only the upper bound is checked: negative, fractional and NaN positions pass (state.EditorStateConfig.selection.B6; probe: {anchor: -1} accepted). Runs on every range before asSingle (state.ts:250-251). | A selection stored in a state or transaction must lie inside its document (deduction from the message; no comment). | yes: compare every range's to (SelectionRange.to, EditorSelection.ranges) with doc.length, or with ChangeSet.newLength / the length of the document the spec is resolved against for a transaction (sequential specs resolve against the intermediate length, transaction.ts:349). | EditorState.create, EditorState.fromJSON (via create, state.ts:233), EditorState.update (Transaction constructor, transaction.ts:185, also for a spec returned by a transaction filter) | state.EditorStateConfig.selection.B4, state.EditorStateConfig.selection.B5, state.EditorStateConfig.selection.B8, state.EditorState^fromJSON.B6, state.EditorState.update.B5, state.Transaction.B1, state.EditorState^transactionFilter.B9 | state:F0030, state:F0031, state:F0032, state:F0033, state:F0042, state:F0141, state:F0416, state:F0418, state:F0737, state:F1139, state:F1159, state:F1303, state:F1315 |  |
 | mirrors/cm6/state/src/change.ts:140 (ChangeDesc.mapPos) | explicit | RangeError(`Position ${pos} is out of range for changeset of length ${posA}`) | after the section loop found no section containing pos: pos > posA, posA being the description's length (this.length). No lower bound: negative and fractional positions are mapped arithmetically, NaN returns without throwing (state.ChangeDesc.mapPos.B9; probe: mapPos(NaN) and mapPos(-1) on ChangeSet.empty(3) return without throwing). | A position mapped through a change must lie in the change's start document (deduction from the message; no comment). | yes: pos <= desc.length (ChangeDesc.length). Through RangeSet.map, StateEffect.mapEffects and the transaction-extender merge the positions are not the caller's argument: the caller must check the set's / effect's positions against the change's length itself (deduction). | ChangeDesc.mapPos / ChangeSet.mapPos, SelectionRange.map, EditorSelection.map, RangeSet.map (rangeset.ts:318, :147-148), StateEffect.mapEffects / StateEffectType map functions (transaction.ts:102), EditorState.update (selection mapping in mergeTransaction, transaction.ts:323; transaction extenders, transaction.ts:313-314) | state.ChangeDesc.mapPos.B6, state.ChangeDesc.mapPos.B11, state.SelectionRange.map.B6, state.EditorSelection.map.B5, state.TransactionSpec.selection.B4, state.EditorState^transactionExtender.B6, state.StateEffect^mapEffects.B3, state.RangeSet.map.B11 | change:F0174, change:F0175, change:F0436, change:F0572, change:F5206, change:F5217, change:F5221, change:F5224, change:F5230, change:F5233, change:F5240, change:F5246, rangeset:F0138, rangeset:F0139, state:F0536, state:F0739, state:F0751, state:F0753, state:F0834, state:F1148, state:F1154, state:F1166, state:F1167, state:F1168, state:F1173, state:F1174, state:F1176, state:F1330 |  |
 | mirrors/cm6/state/src/change.ts:173 (ChangeDesc.fromJSON) | explicit | RangeError("Invalid JSON representation of ChangeDesc") | !Array.isArray(json) \|\| json.length % 2 \|\| json.some(a => typeof a != "number") (change.ts:172). Negative, fractional or NaN numbers, and lengths not paired with valid ins values, pass (deduction from the code). | Rejects input that is not a flat even-length number array, the sections layout (deduction). | yes: shape test on the caller's own value. | ChangeDesc.fromJSON | state.ChangeDesc^fromJSON.B2 | change:F0232, change:F0233, change:F0234, change:F0235, change:F0236 |  |
-| mirrors/cm6/state/src/change.ts:208 (ChangeSet.apply) | explicit | RangeError("Applying change set to a document with the wrong length") | this.length != doc.length | Class doc (change.ts:193-195): "It stores the document length, and can only be applied to documents with exactly that length." | yes: changes.length == doc.length (ChangeDesc.length, Text.length). EditorState.update does not check a top-level ChangeSet spec's length (transaction.ts:334), so it surfaces only at tr.newDoc / tr.state. | ChangeSet.apply, Transaction.newDoc (transaction.ts:204), Transaction.state (via applyTransaction) | state.ChangeSet.apply.B1, state.Transaction.newDoc.B3, state.TransactionSpec.changes.B2 | change:F0334, change:F0335, state:F0469 |  |
+| mirrors/cm6/state/src/change.ts:208 (ChangeSet.apply) | explicit | RangeError("Applying change set to a document with the wrong length") | this.length != doc.length | Class doc (change.ts:193-195): "It stores the document length, and can only be applied to documents with exactly that length." | yes: changes.length == doc.length (ChangeDesc.length, Text.length). EditorState.update does not check a top-level ChangeSet spec's length (transaction.ts:334), so with one spec, or a later spec merged with `sequential: true` (state:F7100), it surfaces only at tr.newDoc / tr.state; a later spec merged without `sequential` makes update itself throw from mapSet (change.ts:439, state:F7101). | ChangeSet.apply, Transaction.newDoc (transaction.ts:204), Transaction.state (via applyTransaction) | state.ChangeSet.apply.B1, state.Transaction.newDoc.B3, state.TransactionSpec.changes.B2 | change:F0334, change:F0335, state:F0469, state:F7100 |  |
 | mirrors/cm6/state/src/change.ts:328 (ChangeSet.of, process) | explicit | RangeError(`Mismatched change set length (got ${spec.length}, expected ${length})`) | a ChangeSet found in the spec (spec instanceof ChangeSet, at any nesting depth) with spec.length != length. Not reached for a top-level ChangeSet passed to EditorState.update (transaction.ts:334 uses it directly). | A nested ChangeSet is composed with changes for the same start document; its length must match (deduction from the message). | yes: nested.length == length (ChangeDesc.length). | ChangeSet.of, EditorState.changes, EditorState.update (a ChangeSet nested inside an array spec) | state.ChangeSpec.B3, state.ChangeSet^of.B5, state.EditorState.changes.B4 | change:F0258, change:F0279, state:F0444 |  |
 | mirrors/cm6/state/src/change.ts:334 (ChangeSet.of, process) | explicit | RangeError(`Invalid change range ${from} to ${to} (in doc of length ${length})`) | for a non-array, non-ChangeSet spec, with to defaulting to from: from > to \|\| from < 0 \|\| to > length (change.ts:333), checked before the no-op skip. NaN or undefined from passes (all comparisons false; state.ChangeSpec.B5). | A change must address a range of the document it is built for (deduction from the message). | yes: 0 <= from <= to <= length on the caller's spec, length being doc.length or, for a sequential transaction spec, the intermediate document length (transaction.ts:349); the length for transaction extenders is the new document length (transaction.ts:397). | ChangeSet.of, EditorState.changes, EditorState.update (each spec's changes; transaction extender results, transaction.ts:397) | state.ChangeSet^of.B6, state.EditorState.update.B5, state.EditorState.changes.B4, state.TransactionSpec.changes.B4, state.TransactionSpec.sequential.B4, state.EditorState^transactionExtender.B4 | change:F0280, change:F0281, change:F0282, change:F0283, state:F0411, state:F0412, state:F0413, state:F0414, state:F0442, state:F0443, state:F0559, state:F0560, state:F0748, state:F1313 | test-state#05 |
 | mirrors/cm6/state/src/change.ts:359 (ChangeSet.fromJSON) | explicit | RangeError("Invalid JSON representation of ChangeSet") | !Array.isArray(json) | Rejects a non-array JSON value (deduction). | yes: Array.isArray on the caller's value. | ChangeSet.fromJSON | state.ChangeSet^fromJSON.B2 | change:F0312, change:F0313 |  |
 | mirrors/cm6/state/src/change.ts:366 (ChangeSet.fromJSON) | explicit | RangeError("Invalid JSON representation of ChangeSet") | a part that is not a number and is not an array whose element 0 is a number and whose other elements are strings: !Array.isArray(part) \|\| typeof part[0] != "number" \|\| part.some((e, i) => i && typeof e != "string") (change.ts:365). | Rejects parts outside the toJSON layout: number = kept length, [len] = deletion, [len, ...lines] = replacement (deduction from toJSON, change.ts:296-307). | yes: shape test on the caller's own value. | ChangeSet.fromJSON | state.ChangeSet^fromJSON.B2 | change:F0314, change:F0315, change:F0316, change:F0317 |  |
-| mirrors/cm6/state/src/change.ts:439 (mapSet) | explicit | Error("Mismatched change set lengths") | during the parallel walk, one iterator is done while the other still has length: a.done && b.len \|\| b.done && a.len (change.ts:438). Reached only when the two descriptions have different lengths (deduction from the walk). Fixtures F0089, F0090, F0346, F0369 throw at this line (stack checked by oracle/cm6/change/gapfill-mapset.ts for F0089, F0090, F0369 and by oracle/cm6/text/s4-fix5.ts for all four); F5452-F5458 throw at change.ts:487. | Comment (change.ts:429-430): mapSet "Produce[s] a copy of setA that applies to the document after setB has been applied (assuming both start at the same document)". The throw rejects descriptions of different start documents. | yes: this.length == other.length (ChangeDesc.length). With unequal lengths the walk either throws here or at :487, or never terminates (state.ChangeDesc.mapDesc.B9); a probe of 3000 random unequal-length pairs with both non-empty found no silent success. | ChangeDesc.mapDesc (other non-empty), ChangeSet.map (other non-empty), ChangeSet.mapDesc (always, no empty shortcut) | state.ChangeDesc.mapDesc.B7, state.ChangeSet.mapDesc.B1, state.ChangeSet.map.B3 | change:F0089, change:F0090, change:F0346, change:F0369 |  |
+| mirrors/cm6/state/src/change.ts:439 (mapSet) | explicit | Error("Mismatched change set lengths") | during the parallel walk, one iterator is done while the other still has length: a.done && b.len \|\| b.done && a.len (change.ts:438). Reached only when the two descriptions have different lengths (deduction from the walk). Fixtures F0089, F0090, F0346, F0369 throw at this line (stack checked by oracle/cm6/change/gapfill-mapset.ts for F0089, F0090, F0369 and by oracle/cm6/text/s4-fix5.ts for all four); F5452-F5458 throw at change.ts:487. | Comment (change.ts:429-430): mapSet "Produce[s] a copy of setA that applies to the document after setB has been applied (assuming both start at the same document)". The throw rejects descriptions of different start documents. | yes: this.length == other.length (ChangeDesc.length). With unequal lengths the walk either throws here or at :487, or never terminates (state.ChangeDesc.mapDesc.B9); a probe of 3000 random unequal-length pairs with both non-empty found no silent success. | ChangeDesc.mapDesc (other non-empty), ChangeSet.map (other non-empty), ChangeSet.mapDesc (always, no empty shortcut), EditorState.update (a top-level ChangeSet whose length differs from the document, followed by a spec merged without `sequential`: mergeTransaction calls b.changes.map(a.changes), transaction.ts:317) | state.ChangeDesc.mapDesc.B7, state.ChangeSet.mapDesc.B1, state.ChangeSet.map.B3, state.Transaction.newDoc.B3 | change:F0089, change:F0090, change:F0346, change:F0369, state:F7101 |  |
 | mirrors/cm6/state/src/change.ts:487 (mapSet) | explicit | Error("Mismatched change set lengths") | final else of the walk: none of the earlier branches applies and not (a.done && b.done) (change.ts:484-487). Fixtures F5452-F5458 throw here, F5452 being [0,0,0,-1,2,1] (length 2) mapped over [0,2] (length 0) (stack checked by oracle/cm6/change/gapfill-mapset.ts and oracle/cm6/text/s4-fix5.ts); F0089, F0090, F0346, F0369 throw at change.ts:439. | Same as change.ts:439 (descriptions must start from the same document; comment change.ts:429-430). | yes: this.length == other.length (same as change.ts:439). | ChangeDesc.mapDesc (other non-empty), ChangeSet.map (other non-empty), ChangeSet.mapDesc | state.ChangeDesc.mapDesc.B7, state.ChangeSet.map.B3 | change:F5452, change:F5453, change:F5454, change:F5455, change:F5456, change:F5457, change:F5458 |  |
 | mirrors/cm6/state/src/change.ts:509 (composeSets) | explicit | Error("Mismatched change set lengths") | after deletions in A and insertions in B are consumed: a.done \|\| b.done while the other is not done (change.ts:508). Not reached when either side is empty: composeDesc/compose return the other side without a length check (change.ts:97, :238). | composeDesc doc (change.ts:94-96): "The length of the document after this set should match the length before `other`." | yes: this.newLength == other.length (ChangeDesc.newLength, ChangeDesc.length). With one side empty a mismatch is accepted silently (probe: [3,-1] composed with [0,0] gives [0,0]). | ChangeDesc.composeDesc (both non-empty), ChangeSet.compose (both non-empty) | state.ChangeDesc.composeDesc.B9, state.ChangeSet.compose.B4 | change:F0054, change:F0055, change:F0056, change:F0362 | test-change#08 |
 | mirrors/cm6/state/src/config.ts:19 (combineConfig) | explicit | Error("Config merge conflict for field " + (key as string)) | for a key of a later config: result[key] !== undefined && result[key] !== value && value !== undefined && !Object.hasOwnProperty.call(combine, key) (config.ts:15-19). result is a plain {} so keys named after Object.prototype members (toString, constructor, ...) already have a value (state.combineConfig.B8). Values equal in content but not === conflict (NaN, distinct objects, 0 vs false). | Doc (config.ts:5-7): "The function will, by default, error when a field gets two values that aren't `===`-equal, but you can provide combine functions per field to do something else." | partly: the caller of combineConfig holds the configs and combine object and can test the same condition; an extension that only contributes a config to a facet whose combine calls combineConfig cannot see the other contributions before the configuration resolves (deduction). | combineConfig, facet combine functions that call it (thrown while a configuration is resolved: EditorState.create, Transaction.state) | state.combineConfig.B3, state.combineConfig.B4, state.combineConfig.B8 | facet:F0146, facet:F0147, facet:F0148, facet:F0149, facet:F0150, facet:F0151, facet:F0156, facet:F0161, facet:F0187, facet:F0188, facet:F5123, facet:F5124, facet:F5125, facet:F5127, facet:F5128, facet:F5129, facet:F5130, facet:F5131, facet:F5136, facet:F5137, facet:F5139, facet:F5140, facet:F5142, facet:F5144, facet:F5146, facet:F5149, facet:F5150, facet:F5151, facet:F5152, facet:F5155, facet:F5157, facet:F5158, facet:F5160, facet:F5161, facet:F5163, facet:F5164, facet:F5167, facet:F5168, facet:F5169, facet:F5170, facet:F5171, facet:F5172, facet:F5173, facet:F5174, facet:F5175, facet:F5177, facet:F5178, facet:F5183 |  |
@@ -32,12 +32,12 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 | mirrors/cm6/state/src/text.ts:40 (Text.lineAt) | explicit | RangeError(`Invalid position ${pos} in document of length ${this.length}`) | pos < 0 \|\| pos > this.length (text.ts:39). -0.5, length + 0.5 and Infinity throw; NaN passes and throws a TypeError later (implicit row text.ts:177/261); -0 passes. | Positions must lie in the document (deduction from the message). | yes: 0 <= pos <= doc.length (Text.length); also !Number.isNaN(pos) for the implicit NaN throw. | Text.lineAt, EditorState.wordAt (state.ts:383), every caller passing a position to lineAt | state.Text.lineAt.B1, state.Text.lineAt.B5, state.EditorState.wordAt.B6 | state:F0334, state:F0335, state:F0336, text:F0904, text:F0905, text:F0906, text:F0907, text:F0908, text:F0917, text:F0918, text:F0919 | test-text#26 |
 | mirrors/cm6/state/src/text.ts:46 (Text.line) | explicit | RangeError(`Invalid line number ${n} in ${this.lines}-line document`) | n < 1 \|\| n > this.lines. 0.5, lines + 0.5 and Infinity throw; NaN passes (implicit row text.ts:177/261). Through iterLines(from, to): from outside 1..lines, or to > lines + 1 (reported as to - 1, text.ts:121-122). | Line numbers are 1-based and must exist (deduction from the message). | yes: 1 <= n <= doc.lines (Text.lines). | Text.line, Text.iterLines (text.ts:121-122) | state.Text.line.B1, state.Text.line.B3, state.Text.iterLines.B6 | text:F0922, text:F0923, text:F0924, text:F0925, text:F0931, text:F0933, text:F0934, text:F1035, text:F1036, text:F1037, text:F1038, text:F1039 | test-text#25 |
 | mirrors/cm6/state/src/text.ts:154 (Text.of) | explicit | RangeError("A document must have at least one line") | text.length == 0 | Text.lines is documented "(always >= 1)" (text.ts:34); an empty array has no line (deduction). | yes: lines.length > 0. Internal callers always pass at least one line (String.split results with a non-empty separator, change.ts:335, state.ts:185, :246; part.slice(1) of length >= 1, change.ts:371), so only a direct Text.of call reaches it (deduction). | Text.of | state.Text^of.B1 | text:F1072 |  |
-| mirrors/cm6/state/src/state.ts:71 (EditorState.field) | explicit | RangeError("Field is not present in this state") | this.config.address[field.id] == null && require, require defaulting to true (passing undefined gives the default; passing false, null or 0 returns undefined instead: probe). | Doc (state.ts:63-65): "Throws an error when the state doesn't have that field, unless you pass `false` as second parameter." | partly: state.field(f, false) returns undefined for an absent field, but also for a present field whose value is undefined; no other public API tells presence (deduction from the public surface). | EditorState.field, Facet.from getters (facet.ts:110, while a state is built), Transaction.state / EditorState.create when a slot reads an absent field | state.EditorState.field.B2, state.Facet.from.B4, state.StateField.B5 | facet:F0070, facet:F0078, state:F0076, state:F0077, facet:F5184, facet:F5185, facet:F5186, facet:F5191, facet:F5192 |  |
+| mirrors/cm6/state/src/state.ts:71 (EditorState.field) | explicit | RangeError("Field is not present in this state") | this.config.address[field.id] == null && require, require defaulting to true (passing undefined gives the default; passing false, null or 0 returns undefined instead: probe). | Doc (state.ts:63-65): "Throws an error when the state doesn't have that field, unless you pass `false` as second parameter." | partly: state.field(f, false) returns undefined for an absent field, but also for a present field whose value is undefined; presence shows by catching this RangeError of field(f), or through EditorState.toJSON({name: f}), which writes the property only for a present field (state.ts:212; state.EditorState.toJSON.B2, B3, F0120) and calls the field's spec.toJSON there (deduction from the public surface of state.ts). | EditorState.field, Facet.from getters (facet.ts:110, while a state is built), Transaction.state / EditorState.create when a slot reads an absent field | state.EditorState.field.B2, state.Facet.from.B4, state.StateField.B5 | facet:F0070, facet:F0078, state:F0076, state:F0077, facet:F5184, facet:F5185, facet:F5186, facet:F5191, facet:F5192 |  |
 | mirrors/cm6/state/src/state.ts:224 (EditorState.fromJSON) | explicit | RangeError("Invalid JSON representation for EditorState") | !json \|\| typeof json.doc != "string" (state.ts:223). The selection is checked afterwards by EditorSelection.fromJSON (no default). | Rejects a JSON value with no string doc (deduction). | yes: shape test on the caller's value. | EditorState.fromJSON | state.EditorState^fromJSON.B1 | state:F0123, state:F0124, state:F0125, state:F0126, state:F0127, state:F0128 |  |
 | mirrors/cm6/state/src/facet.ts:91 (Facet.compute) | explicit | Error("Can't compute a static facet") | this.isStatic (set from !!config.static in Facet.define, facet.ts:74). | FacetConfig.static doc (facet.ts:21): "Forbids dynamic inputs to this facet." Static facet values are read from the configuration before a state exists (configuration.staticFacet, state.ts:246, :251); the link is a deduction. | no public test: isStatic is private (facet.ts:58); the caller can only know it from the facet's definition (allowMultipleSelections and lineSeparator are static, extension.ts:14, :19). | Facet.compute, Facet.from (facet.ts:110), allowMultipleSelections.compute, EditorState.lineSeparator.compute | state.Facet.compute.B1, state.Facet.from.B5, state.Facet^define.B5, state.Facet^define config FacetConfig.static.B1, state.Facet^define config FacetConfig.static.B3, state.EditorState^allowMultipleSelections.B2, state.EditorState^lineSeparator.B2 | facet:F0030, facet:F0040, facet:F0041, facet:F0071, state:F0204, state:F0222 |  |
 | mirrors/cm6/state/src/facet.ts:98 (Facet.computeN) | explicit | Error("Can't compute a static facet") | this.isStatic | Same as facet.ts:91. | no public test: isStatic is private (facet.ts:58). | Facet.computeN, allowMultipleSelections.computeN | state.Facet.computeN.B1, state.Facet^define config FacetConfig.static.B1, state.EditorState^allowMultipleSelections.B2 | facet:F0060, state:F0205 |  |
 | mirrors/cm6/state/src/facet.ts:536 (flatten) | explicit | RangeError(`Duplicate use of compartment in extensions`) | a CompartmentInstance not seen before in this flatten (the seen map dedups the same instance object) whose compartment is already in newCompartments: two distinct instances (c.of(...) twice) of one compartment reached in one configuration, including one appended later or nested inside its own instance. | One compartment maps to one slot of content in the configuration (newCompartments: Map<Compartment, Extension>) and Compartment.reconfigure replaces that content (deduction). | no public API lists the compartments inside an extension value; the caller can only avoid creating two instances of one compartment (deduction). | EditorState.create, EditorState.fromJSON, Transaction.state after StateEffect.reconfigure / appendConfig / Compartment.reconfigure | state.Compartment.B2, state.EditorStateConfig.extensions.B2, state.EditorState^create.B1 | facet:F0122, facet:F0124, facet:F5015, facet:F5024, facet:F5030, facet:F5052, facet:F5059, facet:F5061, state:F0046, state:F0143 | test-state#13 |
-| mirrors/cm6/state/src/facet.ts:550 (flatten) | explicit | Error(`Unrecognized extension value in extension set (${ext}).`) | ext is not an array, CompartmentInstance, PrecExtension, StateField or FacetProvider, and (ext as any).extension is falsy (plain objects, numbers, strings, functions, false, 0, "", {extension: null}). null or undefined throw the implicit TypeError at the same line (facet.ts:549). A top-level falsy extensions value in EditorState.create is replaced by [] (state.ts:244). | Rejects values that are not extensions; the `extension` property is the escape hatch for wrapper objects (Extension type doc; deduction). | partly: a value can be tested for a truthy `extension` property or for being one of the package's exported classes; nested contents of compartments and wrappers resolve only at configuration time (deduction). | EditorState.create, EditorState.fromJSON, Transaction.state (reconfiguring effects), Prec.* wrappers (deferred, state.Prec.B6) | state.Extension.B3, state.EditorStateConfig.extensions.B2, state.Extension.B8, state.Prec.B6 | facet:F0092, facet:F0093, facet:F0094, facet:F0095, facet:F0096, facet:F0107, facet:F0116, state:F0047 |  |
+| mirrors/cm6/state/src/facet.ts:550 (flatten) | explicit | Error(`Unrecognized extension value in extension set (${ext}).`) | ext is not an array, CompartmentInstance, PrecExtension, StateField or FacetProvider, and (ext as any).extension is falsy (plain objects, numbers, strings, functions, false, 0, "", {extension: null}). null or undefined throw the implicit TypeError at the same line (facet.ts:549). A top-level falsy extensions value in EditorState.create is replaced by [] (state.ts:244). | Rejects values that are not extensions; the `extension` property is the escape hatch for wrapper objects (Extension type doc; deduction). | partly: a value can be tested for a truthy `extension` property or for being one of the package's exported classes; nested contents of compartments and wrappers resolve only at configuration time (deduction). | EditorState.create, EditorState.fromJSON, Transaction.state (reconfiguring effects), Prec.* wrappers (deferred, state.Prec.B6), Facet.define `enables` (deferred to the first configuration with a provider of the facet), StateField.define `provide` result (deferred to the first configuration holding the field) | state.Extension.B3, state.EditorStateConfig.extensions.B2, state.Extension.B8, state.Prec.B6, state.Facet^define config FacetConfig.enables.B5, state.StateField^define config StateFieldSpec.provide.B4, state.Extension.B9 | facet:F0092, facet:F0093, facet:F0094, facet:F0095, facet:F0096, facet:F0107, facet:F0116, state:F0047, facet:F7147, facet:F7148, facet:F7149, facet:F7160, facet:F7161, facet:F7162, facet:F7176, facet:F7179 |  |
 | mirrors/cm6/state/src/facet.ts:551 (flatten) | explicit | Error(`Unrecognized extension value in extension set (${ext}). This sometimes happens because multiple instances of @codemirror/state are loaded, breaking instanceof checks.`) | as facet.ts:550 but ext.extension is truthy and == ext (an object whose extension property is itself). | The message names the cause: extensions built by a second copy of @codemirror/state fail the instanceof checks; following `extension` would loop forever (deduction). | no meaningful advance check (the cause is two package copies); a caller can test ext.extension === ext (deduction). | EditorState.create, EditorState.fromJSON, Transaction.state (reconfiguring effects) | state.Extension.B4, state.EditorStateConfig.extensions.B2 | facet:F0097, state:F0048 |  |
 | mirrors/cm6/state/src/facet.ts:570 (ensureAddr) | explicit | Error("Cyclic dependency between fields and/or facets") | state.status[idx] == SlotStatus.Computing when a dynamic slot is requested: a slot read while it is being computed. Also when a slot was left Computing by an exception in a previous computation of the same state (state.Facet.B10). | Prevents infinite recursion between slot functions computed on demand (hazard on state.Facet.B9). | no: the dependency graph is formed by user functions at run time; a caller cannot query it. | EditorState.create, Transaction.state, EditorState.field / EditorState.facet called from slot functions | state.Facet.B9, state.Facet.B10, state.EditorState.B3, state.StateField^define config StateFieldSpec.create.B3, state.StateField^define config StateFieldSpec.update.B5 | facet:F0016, facet:F0017, facet:F0018, facet:F0019, facet:F0190, state:F0052, state:F0053 | test-facet#20 |
 | mirrors/cm6/state/src/text.ts:177 (TextLeaf.lineInner) | implicit | TypeError("Cannot read properties of undefined (reading 'length')") (V8 message) | pos NaN for lineAt or n NaN for line on a leaf document (at most 32 lines): NaN passes the range checks (text.ts:39, :46), the comparison against NaN is always false and the loop reads this.text[i] past the end (`string.length`). | Not a guard: an unchecked domain error (no NaN test in lineAt/line). | yes: Number.isNaN(pos) / Number.isNaN(n) before the call. | Text.lineAt, Text.line, EditorState.wordAt (deduction: same path) | state.Text.lineAt.B5, state.Text.line.B3 | text:F0916, text:F0932, text:F1506 |  |
@@ -48,12 +48,45 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 | mirrors/cm6/state/src/change.ts:305 (ChangeSet.toJSON) | implicit | TypeError("this.inserted[(i >> 1)].toJSON is not a function") (V8 message) | a change set whose inserted entry is not a Text: ChangeSet.of accepts any truthy non-string insert as a Text without a check (change.ts:335), e.g. insert: 7; toJSON then calls its toJSON. | Not a guard: the ChangeSpec type (string \| Text) is enforced only by TypeScript. | yes: pass insert as a string or a Text instance. | ChangeSet.of then ChangeSet.toJSON, EditorState.update / EditorState.changes with such a spec, then changes.toJSON (deduction) | state.ChangeSpec.B5 | change:F0264 |  |
 | mirrors/cm6/state/src/selection.ts:192 (EditorSelection.create) | implicit | TypeError("Cannot read properties of undefined (reading 'empty')") (V8 message) | a ranges array with a hole or an undefined entry before the scan stops: replaceRange(range, which) with which > ranges.length writes past the end (selection.ts:163-165), and create reads range.empty on the hole. | Not a guard: which is not validated. | yes: 0 <= which < selection.ranges.length (which == length appends a range; negative which is ignored, state.EditorSelection.replaceRange.B2, except on a selection of zero ranges, where the copy stays empty and selection.ts:189 throws). | EditorSelection.replaceRange, EditorSelection.create (sparse or undefined-containing array; deduction) | state.EditorSelection.replaceRange.B2 | change:F0600 |  |
 | mirrors/cm6/state/src/selection.ts:129 (EditorSelection.map) | implicit | TypeError("Cannot read properties of undefined (reading 'map')") (V8 message) | the selection's ranges array holds `undefined` and the change is not empty: `r.map(change, assoc)` on the undefined entry. EditorState.create without allowMultipleSelections turns a zero-range JSON selection into [undefined] through asSingle (selection.ts:151-152), and asSingle with an out-of-range mainIndex gives the same [undefined] (state.EditorSelection.asSingle.B2; that it then throws here is a deduction from the code, not run); the next transaction with changes maps it (transaction.ts:212; stack selection.ts:129 <- transaction.ts:212). | Not a guard: ranges are assumed to be SelectionRange objects. | yes: every entry of `selection.ranges` is defined (equivalently, for a fromJSON state, the JSON selection has at least one range and 0 <= main < ranges.length). | EditorSelection.map, EditorState.update / Transaction.newSelection (state built by EditorState.fromJSON with zero ranges and main -1) | state.EditorState^fromJSON.B10 | state:F1415, state:F1419 |  |
-| mirrors/cm6/state/src/facet.ts:549 (flatten) | implicit | TypeError("Cannot read properties of null (reading 'extension')") or "(of undefined ...)" (V8 message) | null or undefined inside an extension array (or as compartment / Prec content): none of the instanceof tests match and (ext as any).extension reads a property of null/undefined. A top-level null/undefined `extensions` in EditorState.create is replaced by [] (state.ts:244). | Not a guard (the explicit throw at :550 is the intended rejection). | yes: filter null/undefined out of extension arrays. | EditorState.create, EditorState.fromJSON, Transaction.state (reconfiguring effects) | state.Extension.B5 | facet:F0098, facet:F0099 |  |
-| mirrors/cm6/state/src/state.ts:213 (EditorState.toJSON) | implicit | TypeError("value.spec.toJSON is not a function") (V8 message) | a field passed in `fields` that is present in the state and whose spec has no toJSON (`value.spec.toJSON!` is a TypeScript non-null assertion only). Absent fields are skipped. | Not a guard: the method doc requires serializable fields; the missing function is not checked. | partly: the caller can check that it defined toJSON in the field spec; StateField.spec is marked @internal (facet.ts:306-307), so only the field's own definition tells whether toJSON exists. | EditorState.toJSON(fields) | state.EditorState.toJSON.B4, state.StateField^define config StateFieldSpec.toJSON.B2 | facet:F0184, state:F0121 |  |
-| mirrors/cm6/state/src/state.ts:229 (EditorState.fromJSON, field init) | implicit | TypeError("field.spec.fromJSON is not a function") (V8 message) | a field in `fields` whose property name is an own property of json and whose spec has no fromJSON; thrown when the field's init runs during EditorState.create (stack: state.ts:229 <- facet.ts:319 <- facet.ts:327). Not thrown when an earlier initField entry for the same field wins (a config `field.init` under a higher precedence): the JSON initializer is never run (state:F1411). | Not a guard (non-null assertion only). | partly: StateField.spec is @internal (facet.ts:306-307); only the field's own definition tells whether fromJSON exists. | EditorState.fromJSON(json, config, fields) | state.StateField^define config StateFieldSpec.fromJSON.B2, state.EditorState^fromJSON.B9 | facet:F0186, state:F1408, state:F1409, state:F1412 |  |
+| mirrors/cm6/state/src/facet.ts:549 (flatten) | implicit | TypeError("Cannot read properties of null (reading 'extension')") or "(of undefined ...)" (V8 message) | null or undefined inside an extension array (or as compartment / Prec content): none of the instanceof tests match and (ext as any).extension reads a property of null/undefined. A top-level null/undefined `extensions` in EditorState.create is replaced by [] (state.ts:244). The same TypeError for null or undefined given as a whole configuration by StateEffect.reconfigure.of or StateEffect.appendConfig.of (appendConfig concatenates the value, state.ts:111), thrown by Transaction.state (state.Extension.B9). | Not a guard (the explicit throw at :550 is the intended rejection). | yes: filter null/undefined out of extension arrays. | EditorState.create, EditorState.fromJSON, Transaction.state (reconfiguring effects) | state.Extension.B5, state.Extension.B9 | facet:F0098, facet:F0099, facet:F7172, facet:F7173, facet:F7174, facet:F7175, facet:F7177, facet:F7178 |  |
+| mirrors/cm6/state/src/state.ts:213 (EditorState.toJSON) | implicit | TypeError("value.spec.toJSON is not a function") (V8 message) | a field passed in `fields` that is present in the state and whose spec's toJSON is not a function (absent, or another value such as 5) (`value.spec.toJSON!` is a TypeScript non-null assertion only). Absent fields are skipped. | Not a guard: the method doc requires serializable fields; the missing function is not checked. | partly: the caller can check that it defined toJSON in the field spec; StateField.spec is marked @internal (facet.ts:306-307), so only the field's own definition tells whether toJSON exists. | EditorState.toJSON(fields) | state.EditorState.toJSON.B4, state.StateField^define config StateFieldSpec.toJSON.B2 | facet:F0184, state:F0121, facet:F7168 |  |
+| mirrors/cm6/state/src/state.ts:229 (EditorState.fromJSON, field init) | implicit | TypeError("field.spec.fromJSON is not a function") (V8 message) | a field in `fields` whose property name is an own property of json and whose spec's fromJSON is not a function (absent, or another value such as "x"); thrown when the field's init runs during EditorState.create (stack: state.ts:229 <- facet.ts:319 <- facet.ts:327). Not thrown when an earlier initField entry for the same field wins (a config `field.init` under a higher precedence): the JSON initializer is never run (state:F1411). | Not a guard (non-null assertion only). | partly: StateField.spec is @internal (facet.ts:306-307); only the field's own definition tells whether fromJSON exists. | EditorState.fromJSON(json, config, fields) | state.StateField^define config StateFieldSpec.fromJSON.B2, state.EditorState^fromJSON.B9 | facet:F0186, state:F1408, state:F1409, state:F1412, facet:F7169 |  |
 | mirrors/cm6/state/src/rangeset.ts:525 (RangeSetBuilder.addInner) | implicit | TypeError("Cannot read properties of null (reading 'endSide')") (V8 message) | first range added to a builder with from == -1e9 (C.Far): from - this.lastTo is 0 (lastTo starts at -C.Far), so the \|\| falls through to this.last!.endSide with last still null. | Not a guard: -1e9 is the initial sentinel of lastFrom/lastTo (open question Q20). | yes: from > -1e9 (positions are non-negative in documents; negative positions are otherwise accepted, state.RangeValue.range.B2). | RangeSetBuilder.add, RangeSet.of, RangeSet.update (addInner, non-strict; deduction: same expression) | state.RangeSetBuilder.add.B4, state.RangeValue.range.B2 | rangeset:F0091, rangeset:F0092 |  |
 | mirrors/cm6/state/src/rangeset.ts:529 (RangeSetBuilder.addInner) | implicit | TypeError("Cannot read properties of null (reading 'length')") (V8 message) | add after finish() (with at least one range added before finish), for a range that fits the top layer: finishInner set this.from = null (rangeset.ts:565) and addInner reads this.from.length. A range that overlaps the last one goes to a new nested builder without error. | Code comment (rangeset.ts:565): "Make sure further `add` calls produce errors"; doc (rangeset.ts:555-556): "The builder can't be used anymore after this has been called." | yes: the caller knows whether it called finish; no public flag. | RangeSetBuilder.add after RangeSetBuilder.finish | state.RangeSetBuilder.add.B7 | rangeset:F0236 |  |
 | mirrors/cm6/state/src/rangeset.ts:561 (RangeSetBuilder.finishInner) | implicit | TypeError("Cannot read properties of null (reading 'length')") (V8 message) | finish() called again on a builder whose first finish added ranges (this.from is null), including after an overlapping add that was silently accepted into a new nested builder. A builder finished while empty returns before nulling from and stays usable (probe: finish, add, finish does not throw). | Same intent as rangeset.ts:529 (comment at :565). | yes: the caller knows whether it called finish. | RangeSetBuilder.finish (second call) | state.RangeSetBuilder.add.B7 | rangeset:F0236 |  |
+| mirrors/cm6/state/src/facet.ts:223 (dynamicFacetSlot.get) | implicit | TypeError("value is not iterable") (V8 message) | a computeN provider's stored value is not iterable (number, null, undefined, boolean, array-like without iterator) when the facet's dynamic slot spreads it with `for...of`: at state creation or at a recombination after the provider reported a change (a rerun number or array-like passes compareArray as changed, facet.ts:196-198). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: the getter's author can return an array; cm6 offers no check. | EditorState.create, Transaction.state | state.Facet.computeN.B7 | facet:F7100, facet:F7101, facet:F7102, facet:F7103, facet:F7104, facet:F7107, facet:F7108 |  |
+| mirrors/cm6/state/src/facet.ts:197 (compareArray) | implicit | TypeError("Cannot read properties of null (reading 'length')") or "(of undefined ...)" (V8 message) | a computeN getter rerun by a transaction returns null or undefined: compareArray(newVal, oldVal, compare) reads `a.length` (called from facet.ts:166, or :180 at a reconfiguration whose dependencies changed). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: return an array from the getter. | Transaction.state | state.Facet.computeN.B7 | facet:F7105, facet:F7106 |  |
+| mirrors/cm6/state/src/facet.ts:160 (FacetProvider.dynamicSlot create) | implicit | TypeError("getter is not a function") (V8 message) | a compute/computeN provider whose getter is not a function is present when a state is created (EditorState.create). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function. | EditorState.create, EditorState.fromJSON | state.Facet.compute.B13, state.Facet.computeN.B10 | facet:F7114, facet:F7117, facet:F7118 |  |
+| mirrors/cm6/state/src/facet.ts:185 (FacetProvider.dynamicSlot reconfigure) | implicit | TypeError("getter is not a function") (V8 message) | a compute/computeN provider whose getter is not a function enters a configuration through a reconfiguration (no old address). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function. | Transaction.state | state.Facet.compute.B13, state.Facet.computeN.B10 | facet:F7115, facet:F7119 |  |
+| mirrors/cm6/state/src/facet.ts:152 (FacetProvider.dynamicSlot) | implicit | TypeError("this.dependencies is not iterable") (V8 message) | compute/computeN given a dependency list that is not iterable (null, undefined, a number), when the configuration holding the provider is resolved. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass an array. | EditorState.create, Transaction.state | state.Facet.compute.B14 | facet:F7125 |  |
+| mirrors/cm6/state/src/facet.ts:155 (FacetProvider.dynamicSlot) | implicit | TypeError("Cannot read properties of null (reading 'id')") or "(of undefined ...)" (V8 message) | a dependency list entry that is null or undefined (not "doc" or "selection", so `dep.id` is read), when the configuration is resolved. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: filter null/undefined out of the list. | EditorState.create, Transaction.state | state.Facet.compute.B14 | facet:F7123, facet:F7124, facet:F7126 |  |
+| mirrors/cm6/state/src/facet.ts:61 (Facet constructor) | implicit | TypeError("combine is not a function") (V8 message) | Facet.define with a truthy `combine` that is not a function: the constructor calls `combine([])` for the default. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function or nothing. | Facet.define | state.Facet^define config FacetConfig.combine.B5 | facet:F7133, facet:F7134, facet:F7135 |  |
+| mirrors/cm6/state/src/facet.ts:238 (dynamicFacetSlot.update) | implicit | TypeError("facet.compare is not a function") (V8 message) | a facet defined with a truthy non-function `compare`, whose dynamic slot is recombined by a transaction. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function or nothing. | Transaction.state | state.Facet^define config FacetConfig.compare.B7 | facet:F7138 |  |
+| mirrors/cm6/state/src/facet.ts:250 (dynamicFacetSlot.reconfigure) | implicit | TypeError("facet.compare is not a function") (V8 message) | the same facet with a dynamic slot at a reconfiguration whose provider list or provider inputs changed. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function or nothing. | Transaction.state | state.Facet^define config FacetConfig.compare.B7 | facet:F7140 |  |
+| mirrors/cm6/state/src/facet.ts:498 (Configuration.resolve) | implicit | TypeError("facet.compare is not a function") (V8 message) | the same facet with only static providers, resolved against an old state with a different provider list (not at EditorState.create, which has no old state). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function or nothing. | Transaction.state | state.Facet^define config FacetConfig.compare.B7 | facet:F7139 |  |
+| mirrors/cm6/state/src/facet.ts:166 (FacetProvider.dynamicSlot update) | implicit | TypeError("compare is not a function") (V8 message) | a facet defined with a truthy non-function `compareInput`, a `compute` provider whose getter reruns in a transaction. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function or nothing. | Transaction.state | state.Facet^define config FacetConfig.compareInput.B5 | facet:F7143 |  |
+| mirrors/cm6/state/src/facet.ts:198 (compareArray) | implicit | TypeError("compare is not a function") (V8 message) | the same facet, a `computeN` provider rerun whose new and old arrays have the same non-zero length (different lengths return before the call, F7145). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function or nothing. | Transaction.state | state.Facet^define config FacetConfig.compareInput.B5 | facet:F7144 |  |
+| mirrors/cm6/state/src/facet.ts:180 (FacetProvider.dynamicSlot reconfigure) | implicit | TypeError("compare is not a function") (V8 message) | the same facet, a provider kept across a reconfiguration in which one of its facet or field dependencies changed (unchanged dependencies short-circuit the `\|\|`). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function or nothing. | Transaction.state | state.Facet^define config FacetConfig.compareInput.B5 | facet:F7146 |  |
+| mirrors/cm6/state/src/facet.ts:319 (StateField.create) | implicit | TypeError("((intermediate value) \|\| this.createF) is not a function") (V8 message) | a field is created (state creation, or added by a reconfiguration) and neither the first init entry's create nor the spec's create is a function: no init and a missing/non-function spec create, or an init whose create is a truthy non-function. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: give the spec a create function, and init a function. | EditorState.create, EditorState.fromJSON, Transaction.state | state.StateField^define config StateFieldSpec.create.B4, state.StateField.init.B6 | facet:F7151, facet:F7152, facet:F7167 |  |
+| mirrors/cm6/state/src/facet.ts:340 (StateField slot reconfigure) | implicit | TypeError("reInit.create is not a function") (V8 message) | a reconfiguration brings in a new init entry for the field whose create is not a function, falsy ones included (creation would fall back to the spec's create at facet.ts:319). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function to init. | Transaction.state | state.StateField.init.B6 | facet:F7165, facet:F7166 |  |
+| mirrors/cm6/state/src/facet.ts:332 (StateField slot update) | implicit | TypeError("this.updateF is not a function") (V8 message) | a field whose spec `update` is not a function (absent included) is in a state built by a transaction. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: give the spec an update function. | Transaction.state | state.StateField^define config StateFieldSpec.update.B6 | facet:F7154, facet:F7155 |  |
+| mirrors/cm6/state/src/facet.ts:333 (StateField slot update) | implicit | TypeError("this.compareF is not a function") (V8 message) | a field whose spec `compare` is a truthy non-function, in a state built by a transaction (after update ran). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function or nothing. | Transaction.state | state.StateField^define config StateFieldSpec.compare.B4 | facet:F7157 |  |
+| mirrors/cm6/state/src/facet.ts:313 (StateField.define) | implicit | TypeError("config.provide is not a function") (V8 message) | StateField.define with a truthy `provide` that is not a function. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function or nothing. | StateField.define | state.StateField^define config StateFieldSpec.provide.B4 | facet:F7159 |  |
+| mirrors/cm6/state/src/facet.ts:110 (Facet.from getter) | implicit | TypeError("get is not a function") (V8 message) | Facet.from(field, get) with a truthy `get` that is not a function, when the provider is first computed (falsy `get` is replaced by the identity at facet.ts:109). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function or nothing. | EditorState.create, Transaction.state | state.Facet.from.B7 | facet:F7128 |  |
+| mirrors/cm6/state/src/config.ts:14 (combineConfig) | implicit | TypeError("configs is not iterable") or TypeError("Cannot convert undefined or null to object") (V8 messages) | `configs` is not iterable (`for...of`), or one of its elements is null or undefined (`Object.keys`). Other primitives pass (their own keys, if any, are merged: state.combineConfig.B12). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: the caller holds the configs. | combineConfig, facet combine functions that call it | state.combineConfig.B12 | facet:F7181, facet:F7182, facet:F7183, facet:F7184 |  |
+| mirrors/cm6/state/src/config.ts:18 (combineConfig) | implicit | TypeError("Cannot convert undefined or null to object") or TypeError("combine[key] is not a function") (V8 messages) | a key conflict (a later value differing from the current one) while `combine` is null (`Object.hasOwnProperty.call(null, key)`), or while combine's own entry for that key is not a function. Without a conflict combine is never read. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: the caller holds the combine object. | combineConfig, facet combine functions that call it | state.combineConfig.B12 | facet:F7189, facet:F7191 |  |
+| mirrors/cm6/state/src/state.ts:326 (EditorState.phrase) | implicit | TypeError("Cannot convert undefined or null to object") (V8 message) | a `phrases` input that is null or undefined is reached by the lookup loop (no earlier input has the phrase). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: provide objects only. | EditorState.phrase | state.EditorState.phrase.B8 |  |  |
+| mirrors/cm6/state/src/state.ts:327 (EditorState.phrase) | implicit | TypeError("phrase.replace is not a function") or "Cannot read properties of null (reading 'replace')" (V8 message) | the translation found is not a string and `phrase` is called with extra arguments. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: provide string translations. | EditorState.phrase | state.EditorState.phrase.B9 |  |  |
+| mirrors/cm6/state/src/state.ts:356 (EditorState.languageDataAt) | implicit | TypeError("provider is not a function or its return value is not iterable") (V8 message) | a `languageData` input that is not a function, or a provider returning a non-iterable value (null, undefined, a plain object). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: provide functions returning arrays. | EditorState.languageDataAt, EditorState.charCategorizer, EditorState.wordAt | state.EditorState.languageDataAt.B4 |  |  |
+| mirrors/cm6/state/src/state.ts:357 (EditorState.languageDataAt) | implicit | TypeError("Cannot convert undefined or null to object") (V8 message) | a provider result containing null or undefined. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: return arrays of objects. | EditorState.languageDataAt, EditorState.charCategorizer, EditorState.wordAt | state.EditorState.languageDataAt.B4 |  |  |
+| mirrors/cm6/state/src/charcategory.ts:32 (makeCategorizer) | implicit | TypeError("Cannot read properties of null (reading 'length')") or "(of undefined ...)" (V8 message) | the highest-precedence `wordChars` language data value is null or undefined (an own property holding it) and the categorizer is called on a string that is neither whitespace nor a word character. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: provide a string. | EditorState.charCategorizer (returned function), EditorState.wordAt | state.EditorState.charCategorizer.B5 |  |  |
+| mirrors/cm6/state/src/transaction.ts:362 (filterTransaction) | implicit | TypeError("filter is not a function") (V8 message) | a `changeFilter` input that is not a function, on any update without `filter: false`. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: provide functions. | EditorState.update | state.EditorState^changeFilter.B10 |  |  |
+| mirrors/cm6/state/src/transaction.ts:384 (filterTransaction) | implicit | TypeError("filters[i] is not a function") (V8 message) | a `transactionFilter` input that is not a function, on any update without `filter: false`. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: provide functions. | EditorState.update | state.EditorState^transactionFilter.B10 |  |  |
+| mirrors/cm6/state/src/transaction.ts:331 (resolveTransactionInner) | implicit | TypeError("Cannot read properties of null (reading 'selection')") or "(of undefined ...)" (V8 message) | a spec that is null or undefined is resolved: the first element of a transaction filter's returned array (or of `update`'s own arguments). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: return spec objects. | EditorState.update | state.EditorState^transactionFilter.B10 |  |  |
+| mirrors/cm6/state/src/transaction.ts:347 (resolveTransaction) | implicit | TypeError("Cannot read properties of null (reading 'filter')") or "(of undefined ...)" (V8 message) | a later spec (index >= 1) that is null or undefined: its `filter` property is read before it is resolved. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: return spec objects. | EditorState.update | state.EditorState^transactionFilter.B10 |  |  |
+| mirrors/cm6/state/src/transaction.ts:395 (extendTransaction) | implicit | TypeError("extenders[i] is not a function") (V8 message) | a `transactionExtender` input that is not a function, on any update (`filter: false` included). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: provide functions. | EditorState.update | state.EditorState^transactionExtender.B8 |  |  |
+| mirrors/cm6/state/src/transaction.ts:102 (StateEffect.mapEffects) | implicit | TypeError("Cannot read properties of null (reading 'map')") or "(of undefined ...)" (V8 message) | an effects list being mapped holds null or undefined: an extender's `effects: [null]` (mapped through an empty change set at the merge), or a spec's effects array mapped through a later spec or a change filter. | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: provide StateEffect values only. | EditorState.update | state.EditorState^transactionExtender.B8 |  |  |
+| mirrors/cm6/state/src/transaction.ts:80 (StateEffect.map) | implicit | TypeError("this.type.map is not a function") (V8 message) | an effect whose type was defined with a truthy non-function `map` is mapped (spec merge, change filter, changeByRange, extender merge, direct `map`). | Not a guard: the value is never checked; the engine's TypeError surfaces (V8 message). | yes: pass a function or nothing to StateEffect.define. | EditorState.update, EditorState.changeByRange, StateEffect.map, StateEffect.mapEffects | state.StateEffect^define config StateEffectSpec.map.B3 |  |  |
 
 ## Hazards per item
 
@@ -223,6 +256,8 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - `undefined` as the unset value; "" is stored but treated as unset by every reader (`|| DefaultSplit`, `|| "\n"`) (B1)
 - Lines may contain "\n" once a separator is configured (B3)
 - Order: change specs are resolved against the start configuration (B4)
+- the separator is used through `String.prototype.split`, which accepts a RegExp and converts other values (B5)
+- lineBreak can return a non-string (B5)
 
 ## state.cm6.023 `EditorState.lineBreak`
 
@@ -245,6 +280,9 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - mirrors/cm6/state/src/state.ts:329 `+(i || 1)` JS number coercion of the digit string (B3)
 - Regex replace over UTF-16 strings; astral text around markers is unaffected (B3)
 - JS ToString conversion rules for the `any[]` arguments (B5)
+- engine TypeError text (V8) (B8, B9)
+- primitive boxing: a string's indices and length are own properties (B8)
+- the declared string result can be any value (B9)
 
 ## state.cm6.028 `EditorState^languageData`
 
@@ -256,6 +294,9 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - JS `undefined` entries can appear in the result (B1)
 - No range check on pos; side typed `-1 | 0 | 1` only in TypeScript (B2)
 - A new array per call (no identity to rely on) (B3)
+- duck typing over the iteration protocol (B4)
+- engine TypeError text (V8) (B4)
+- deferred failure: thrown by the first query (B4)
 
 ## state.cm6.030 `EditorState.charCategorizer`
 
@@ -265,6 +306,9 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - The empty string is Space (B2)
 - UTF-16 code-unit iteration over wordChars (B3)
 - Closures as values (B4)
+- duck typing: `.length` and indexing (B5)
+- engine TypeError text (V8) (B5)
+- data-dependent failure (B5)
 
 ## state.cm6.031 `EditorState.wordAt`
 
@@ -282,6 +326,10 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - Boundary rule is observable (B7)
 - Unsorted input silently mis-filters (B8)
 - 1e9 sentinel: positions at or beyond it are mishandled (same pattern as Q20 in rangeset.ts) (B8)
+- engine TypeError text (V8) (B10)
+- deferred failure (B10)
+- non-termination on malformed input (no guard on the array's length parity) (B11)
+- JS coercion of non-number range bounds (B11)
 
 ## state.cm6.033 `EditorState^transactionFilter`
 
@@ -292,6 +340,8 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - `instanceof Transaction`, `Array.isArray` (B3)
 - Extender side effects run twice (B4)
 - A filter can drop everything silently (B5)
+- silent loss of the whole transaction when a filter returns nothing (B10)
+- engine TypeError text (V8) (B10)
 
 ## state.cm6.034 `EditorState^transactionExtender`
 
@@ -300,6 +350,9 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - TypeScript `Pick<TransactionSpec, "effects" | "annotations">` is not enforced at runtime (B4)
 - Effects mapped through changes that are then discarded (B4)
 - Whether an exception is thrown depends on whether another extension contributed (B6)
+- identity of the returned transaction depends on the result's own keys (B8)
+- silent loss of effects returned in the wrong shape (B8)
+- engine TypeError text (V8) (B8)
 
 ## state.cm6.036 `Facet`
 
@@ -324,6 +377,8 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - throw propagated from user combine at definition time (B3)
 - optional field tested by truthiness: any falsy `combine` counts as absent (B4)
 - `!!` coercion of an optional flag (B5)
+- identity: a facet is identified by its object and module-counter id (B6)
+- the default object is shared by every state that lacks the facet (B6)
 
 ## state.cm6.039 `Facet.of`
 
@@ -341,16 +396,34 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - argument order: compare(newValue, oldValue) (B8)
 - provider identity: `oldState.config.address[id]` keyed by the provider's id (B9)
 - correctness depends on the caller declaring every dependency (doc comment at :84-86) (B11)
+- identity: providers are distinct objects deduplicated by identity in flatten (facet.ts:522-531) (B12)
+- engine TypeError text (V8) (B13, B14)
+- deferred failure: the call that receives the bad value succeeds (B13)
+- duck typing: dependencies are matched by `==` against two strings, then by `dep.id` lookup in the address table (B14)
+- silent: an unrecognized dependency never triggers a rerun (B14)
 
 ## state.cm6.041 `Facet.computeN`
 
 - throw: Error("Can't compute a static facet") (B1)
 - argument order: compareInput(new[i], old[i]) (B3)
 - duck typing: any iterable is spread; a string spreads by code point (for...of) while `.length` counts UTF-16 units (B5)
+- duck typing: the result is used through the JS iteration protocol and `.length`; nothing checks it is an array (B7)
+- engine TypeError text (V8) instead of a designed error (B7)
+- the throw happens when the facet is computed, not when the getter returns (B7)
+- duck typing over the iteration protocol and `.length` (B8)
+- comparison of `undefined` lengths counts as equal: changes are lost (B8)
+- a stored iterator object is consumed by the first spread and reused (stale input) (B8)
+- identity: providers are distinct objects deduplicated by identity in flatten (facet.ts:522-531) (B9)
+- engine TypeError text (V8) (B10)
+- deferred failure: the call that receives the bad value succeeds (B10)
 
 ## state.cm6.042 `Facet.from`
 
 - throw: RangeError("Field is not present in this state") (B4)
+- identity: providers are distinct objects deduplicated by identity in flatten (facet.ts:522-531) (B6)
+- truthiness test on an optional callback: falsy values mean absent (B7)
+- engine TypeError text (V8) (B7)
+- duck typing: `EditorState.field` reads only `field.id` and the address table shared by fields and facets (B8)
 
 ## state.cm6.044 `FacetReader`
 
@@ -370,9 +443,15 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - order of user callbacks is observable through side effects (B7)
 - re-entrant access to the partly built state (Q16) (B8)
 
+## state.cm6.047 `StateField^define`
+
+- identity: a field is identified by its object and module-counter id (B3)
+
 ## state.cm6.048 `StateField.init`
 
 - identity of the entry object decides re-initialization (B3)
+- two call sites treat a falsy init create differently: `||` fallback at creation, direct call at reconfiguration (B6)
+- engine TypeError text (V8) (B6)
 
 ## state.cm6.049 `StateField.extension`
 
@@ -396,15 +475,38 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - `instanceof` dispatch fails across package copies (B4)
 - engine-specific TypeError message (B5)
 - `Map<Extension, number>` keyed by object identity (mirrors/cm6/state/src/facet.ts:522); `indexOf` + `splice` to move (mirrors/cm6/state/src/facet.ts:527-528) (B6)
+- asymmetry: falsy is 'no extensions' only at EditorState.create (B9)
+- engine TypeError text (V8) for null/undefined (B9)
 
 ## state.cm6.051 `Prec`
 
 - callback order observable (B7)
 
+## state.cm6.052 `Prec.highest`
+
+- identity: a new wrapper per call; the wrapped value is deduplicated by its own identity (facet.ts:522-531) (B3)
+
+## state.cm6.053 `Prec.high`
+
+- identity: a new wrapper per call; the wrapped value is deduplicated by its own identity (facet.ts:522-531) (B2)
+
+## state.cm6.054 `Prec.default`
+
+- identity: a new wrapper per call; the wrapped value is deduplicated by its own identity (facet.ts:522-531) (B3)
+
+## state.cm6.055 `Prec.low`
+
+- identity: a new wrapper per call; the wrapped value is deduplicated by its own identity (facet.ts:522-531) (B2)
+
+## state.cm6.056 `Prec.lowest`
+
+- identity: a new wrapper per call; the wrapped value is deduplicated by its own identity (facet.ts:522-531) (B3)
+
 ## state.cm6.057 `Compartment`
 
 - Map keyed by compartment identity (mirrors/cm6/state/src/facet.ts:455, :472) (B1)
 - throw: RangeError("Duplicate use of compartment in extensions"); condition: a second distinct instance of a compartment; not checkable in advance by public API (B2)
+- Map keyed by compartment identity (facet.ts:455, :472) (B6)
 
 ## state.cm6.059 `Compartment.reconfigure`
 
@@ -509,7 +611,7 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 
 ## state.cm6.087 `SelectionRange.map`
 
-- Identity-preserving result; EditorSelection.map relies on it only through create's array identity (none compares ranges with === in view/language/commands, grep) (B3)
+- Identity-preserving result; EditorSelection.map relies on it only through create's array identity (grep of view, language and commands src for ==, !=, ===, !== between ranges: two sites, mirrors/cm6/view/src/draw-selection.ts:78 `r == state.selection.main` and :108 `r != main`, which compare each range of a selection with the main range of the same selection; none compares a mapped range with the range it was mapped from) (B3)
 - Produces a range violating from <= to (Q26) (B5)
 
 ## state.cm6.089 `SelectionRange.eq`
@@ -687,6 +789,10 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - `for...in` includes inherited enumerable properties of `defaults` (B5)
 - integer-keyed property order (B6)
 - prototype-inherited keys on `{}` and `Object.hasOwnProperty.call` (Q31) (B8)
+- identity: a new result object per call; values shared by reference (B11)
+- engine TypeError text (V8) (B12)
+- UTF-16 index keys from Object.keys of a string (B12)
+- data-dependent failure: combine is consulted only on a conflict (B12)
 
 ## state.cm6.135 `ChangeSpec`
 
@@ -1030,7 +1136,7 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - Lone surrogates cannot be held in a Rust String; fixtures store them as {"utf16": [...]}. (B11)
 - Negative pos returns 0 rather than an error (Q9). (B12)
 - No range check; NaN and fractional results; JS numbers outside a narrow integer (Q9). (B15)
-- Consumers in view, commands, search and state pass line-relative positions within 0..line.length (consumer grep), so none of these inputs come from cm6 callers found. (B15)
+- Consumers pass a position relative to the string they pass: a line's text (mirrors/cm6/commands/src/commands.ts:62, :581, :585, :611, :704-705; mirrors/cm6/view/src/bidi.ts:449, cursor.ts:22-31), a tile's text (mirrors/cm6/view/src/cursor.ts:360, docview.ts:377), the string search reads around a match (mirrors/cm6/search/src/search.ts:293, :296) and, in @codemirror/state, column.ts:13, :29 and state.ts:387, :392 (grep of findClusterBreak( in mirrors/cm6/*/src); deduction from those call sites: none of them passes a negative, fractional or NaN position. (B15)
 - Negative results (includeExtending false) and results inside a surrogate pair ("\u{1F600}a" from -1) for negative positions. (B15)
 - Optional parameters with defaults. (B16)
 
@@ -1094,6 +1200,10 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - Skip clipping uses forward bounds before the first step (Q24). (B7)
 - Values outside the requested range from a reverse partial cursor with a skip (Q24). (B8)
 - Recursion: next() calls itself once per line break (depth 1). (B9)
+- Arguments outside the domain (Q9). (B11, B12)
+- Fractional skip: the break test `skip == 0` never holds and a negative remainder reaches String.prototype.slice as a negative index, which counts from the end of the line (mirrors/cm6/state/src/text.ts:434, :445). (B11)
+- Reverse: a value "" with done false (mirrors/cm6/state/src/text.ts:444-445). (B11)
+- The partial cursor's pos accumulates the untruncated skip (mirrors/cm6/state/src/text.ts:501), so its limits drift from the values returned. (B12)
 
 ## state.cm6.226 `TextIterator.value`
 
@@ -1158,14 +1268,17 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 
 - UTF-16: ill-formed line strings. (B2)
 - Tree shape is observable through Text.children (Q8). (B3)
-- Arguments outside the domain (Q9). (B4, B5)
+- Arguments outside the domain (Q9). (B4, B5, B6)
 - Produces a Text breaking the lines >= 1 invariant. (B4, B5)
+- Produces a Text whose length is not an integer (B - A). (B6)
+- Fractional from inside a break: slice and sliceString disagree on the break (mirrors/cm6/state/src/text.ts:216 against :387). (B6)
 
 ## state.cm6.237 `Text.sliceString`
 
 - Optional parameters with defaults. (B1)
 - UTF-16: ill-formed strings returned. (B4)
-- Arguments outside the domain (Q9). (B5)
+- Arguments outside the domain (Q9). (B5, B6)
+- Fractional positions: the break test compares the untruncated position while String.prototype.slice truncates it (mirrors/cm6/state/src/text.ts:216, :219). (B6)
 
 ## state.cm6.238 `Text.eq`
 
@@ -1183,7 +1296,8 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 ## state.cm6.240 `Text.iterRange`
 
 - Optional parameter with default. (B1)
-- Arguments outside the domain (Q9). (B2)
+- Arguments outside the domain (Q9). (B2, B3)
+- The partial cursor's pos accumulates the untruncated distance (mirrors/cm6/state/src/text.ts:501). (B3)
 
 ## state.cm6.241 `Text.iterLines`
 
@@ -1223,31 +1337,62 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 - Module-level shared object. (B1)
 - Identity: comparing with === Text.empty does not detect empty documents. (B2)
 
+## state.cm6.248 `Facet^define config FacetConfig.combine`
+
+- truthiness test on an optional callback (B5)
+- engine TypeError text (V8) (B5)
+
 ## state.cm6.249 `Facet^define config FacetConfig.compare`
 
 - argument order compare(new, old) (B2)
 - identity of kept output (B2)
 - compare applied to arrays (Q17) (B4)
+- truthiness of a callback result: a non-boolean is coerced, "false" is truthy (B6)
+- truthiness test on an optional callback (B7)
+- engine TypeError text (V8) (B7)
+- deferred failure: define and create succeed (B7)
 
 ## state.cm6.250 `Facet^define config FacetConfig.compareInput`
 
 - argument order (new, old) (B1)
+- truthiness of a callback result: a non-boolean is coerced (B4)
+- truthiness test on an optional callback (B5)
+- engine TypeError text (V8) (B5)
+- deferred and data-dependent failure (B5)
 
 ## state.cm6.251 `Facet^define config FacetConfig.static`
 
 - `Configuration.staticFacet` reads `staticValues[addr >> 1]` without checking that the address is static (mirrors/cm6/state/src/facet.ts:466); only static facets are passed to it (mirrors/cm6/state/src/state.ts:246, :251) (B2)
 
+## state.cm6.252 `Facet^define config FacetConfig.enables`
+
+- deferred failure: the error appears only where the facet has a provider (B5)
+- truthiness test on the stored value (B5)
+
 ## state.cm6.253 `StateField^define config StateFieldSpec.create`
 
 - re-entrant access to the partly built state (B2)
+- engine TypeError text (V8) (B4)
+- deferred failure (B4)
 
 ## state.cm6.254 `StateField^define config StateFieldSpec.update`
 
 - re-entrancy (Q16) (B4)
+- engine TypeError text (V8) (B6)
+- deferred failure: thrown at the first state built by a transaction (B6)
 
 ## state.cm6.255 `StateField^define config StateFieldSpec.compare`
 
 - argument order (old, new) (B2)
+- truthiness of a callback result: a non-boolean is coerced (B3)
+- truthiness test on an optional callback (B4)
+- engine TypeError text (V8) (B4)
+
+## state.cm6.256 `StateField^define config StateFieldSpec.provide`
+
+- deferred failure for a bad result (B4)
+- truthiness test on the stored result (B4)
+- engine TypeError text (V8) (B4)
 
 ## state.cm6.257 `StateField^define config StateFieldSpec.toJSON`
 
@@ -1256,6 +1401,9 @@ Every throw cm6 reaches in this package (`docs/workflow/specification.md` §7): 
 ## state.cm6.259 `StateEffect^define config StateEffectSpec.map`
 
 - User code runs during update (B1)
+- truthiness test on an optional callback (B3)
+- engine TypeError text (V8) (B3)
+- deferred and path-dependent failure (B3)
 
 ## state.cm6.261 `RangeSet.update config RangeSetUpdate.sort`
 

@@ -1,5 +1,5 @@
 // S4 fix for seed 4104 of ferrum-state, chunk `text` (docs/parity/ferrum-state/verification.md, "Seed 4104",
-// V14-V17, O15, O16, O18). Appends to docs/parity/ferrum-state/fixtures/text.jsonl, ids F7000-F7499 (writer.ts
+// V14-V17, O15, O16, O18). Appends to docs/parity/ferrum-state/fixtures/text.jsonl, ids F7000-F7099 (writer.ts
 // rangeWriter: fixtureWriter with fresh = false; a rerun deletes this range only). Run after the chunk's other
 // probes and generators, probe-gapfill.ts and s4-tags.ts:
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/text/s4-fix5.ts
@@ -23,7 +23,7 @@
 import {Text, EditorState, findClusterBreak, countColumn, findColumn, ChangeDesc, ChangeSet} from "@codemirror/state"
 import {rangeWriter, cap} from "./writer"
 
-const w = rangeWriter(7000, 7499)
+const w = rangeWriter(7000, 7099)
 const ITEM: Record<string, string> = {
   findClusterBreak: "state.cm6.212", countColumn: "state.cm6.216", findColumn: "state.cm6.217",
   "Text.replace": "state.cm6.234", "Text.slice": "state.cm6.236", "Text.iter": "state.cm6.239", "Text.children": "state.cm6.244",

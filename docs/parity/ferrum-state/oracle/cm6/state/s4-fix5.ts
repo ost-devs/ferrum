@@ -7,7 +7,7 @@
 // with equal values are recombined and compare decides). Each fixture reads, side by side, a facet N without
 // `combine` and a control facet C with `combine: v => v.slice()` (a new array on every combine), both with the same
 // providers; the `*Same` keys are `===` between the two states' reads. Logs record each compareInput and combine call.
-// Writes into fixtures/state.jsonl (fresh = false) with ids F7000-F7499; rerunning first drops that range.
+// Writes into fixtures/state.jsonl (fresh = false) with ids F7000-F7099; rerunning first drops that range.
 // Run order for the chunk: s2-run.ts (truncates the file, F0001-F1399), s4-fix.ts (F1400-F1449), s4-tags.ts
 // (F2000-F2999), s4-m7.ts (F3000-F3999), s4-fix4.ts (F4000-F4999), then this file. From the repository root:
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/state/s4-fix5.ts
@@ -17,7 +17,7 @@ import {readFileSync, writeFileSync} from "node:fs"
 import {EditorState, Facet, StateEffect} from "@codemirror/state"
 import {writer, FIX} from "./s2-lib"
 
-const FIRST = 7000, LAST = 7499
+const FIRST = 7000, LAST = 7099
 writeFileSync(FIX, readFileSync(FIX, "utf8").split("\n").filter(l => {
   if (!l) return false
   let n = Number(JSON.parse(l).id.slice(1)); return n < FIRST || n > LAST

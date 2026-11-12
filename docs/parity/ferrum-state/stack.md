@@ -2,10 +2,10 @@
 
 - **What:** the stack notes of `raw/behaviors.jsonl` (`stack` field), grouped by inventory item, identical notes merged; each note ends with the behaviors (`B<n>` of that item) that carry it. Generated from the rows; items whose behaviors all say `none found` are left out. Facts, not proposals (`docs/workflow/specification.md` §5, §7).
 - **cm6:** `@codemirror/state` 6.7.6, mirror commit 651084c; `mirrors/...` line numbers refer to it.
-- **Ferrum commit:** ea24c95; line numbers in `docs/` and `tools/` refer to it.
+- **Ferrum commit:** 5d01b0d; line numbers in `docs/` and `tools/` refer to it.
 - **Ids:** behaviors `state.<item>.B<n>`; inventory rows `state.cm6.<nnn>`
 
-Items with notes: 164 of 261; distinct notes: 431.
+Items with notes: 172 of 261; distinct notes: 479.
 
 ## state.cm6.001 `EditorStateConfig`
 
@@ -119,6 +119,10 @@ Items with notes: 164 of 261; distinct notes: 431.
 
 - The default false exists because the browser's native DOM selection cannot show several ranges (doc comment mirrors/cm6/state/src/state.ts:257-261); the editor need underneath is a configurable single/multi selection mode. (B1)
 
+## state.cm6.022 `EditorState^lineSeparator`
+
+- Mechanism: the input type `string` (mirrors/cm6/state/src/extension.ts:17) is TypeScript only; the value is passed to `split` (mirrors/cm6/state/src/state.ts:185, :246) and returned by `lineBreak` (mirrors/cm6/state/src/state.ts:286) unchecked. Evidence: code structure. Editor need underneath: none. (B5)
+
 ## state.cm6.026 `EditorState^phrases`
 
 - Mechanism: with no `combine`, the facet output is the array of input values stored by reference (mirrors/cm6/state/src/facet.ts:70-73), so each phrase object in the output is the caller's object (`===`). Evidence: code structure (garbage-collected objects shared by reference). Editor need underneath: none beyond avoiding a copy. (B1)
@@ -129,6 +133,8 @@ Items with notes: 164 of 261; distinct notes: 431.
 - Plain JS objects as string maps need the own-property guard against inherited keys (mirrors/cm6/state/src/state.ts:326) (B2)
 - Mechanism: marker numbers come from JS coercions in the `replace` callback: `+(i || 1)` turns "" into 1 and any digit string into a JS number, so leading zeros vanish ("01" is 1) and a long digit string becomes a large or rounded double that exceeds the argument count; `!n || n > insert.length` keeps the marker for 0 (mirrors/cm6/state/src/state.ts:327-330). The regex `/\$(\$|\d*)/g` has no `u` flag, so `\d` matches ASCII digits only. Evidence: code structure; doc comment mirrors/cm6/state/src/state.ts:320-323 ("A single `$` is equivalent to `$1`, and `$$` will produce a literal dollar sign"). Editor need underneath: positional interpolation of phrase arguments. (B3)
 - `insert: any[]` relies on JS's implicit string conversion; the editor need is string interpolation (B5)
+- Mechanism: the input type `{[key: string]: string}` (mirrors/cm6/state/src/state.ts:309) is TypeScript only; `Object.prototype.hasOwnProperty.call` (mirrors/cm6/state/src/state.ts:326) throws on null and boxes primitives. Evidence: code structure. Editor need underneath: none. (B8)
+- Mechanism: the translation type `string` (mirrors/cm6/state/src/state.ts:309) is TypeScript only; the value is assigned and returned unchecked (mirrors/cm6/state/src/state.ts:326, :332) and `.replace` is called on it only when arguments are given (mirrors/cm6/state/src/state.ts:327). Evidence: code structure. Editor need underneath: none. (B9)
 
 ## state.cm6.028 `EditorState^languageData`
 
@@ -139,12 +145,14 @@ Items with notes: 164 of 261; distinct notes: 431.
 - Mechanism: provider results are plain JS objects used as string-keyed maps (`readonly {[name: string]: any}[]`, `mirrors/cm6/state/src/extension.ts:5`), tested with `Object.prototype.hasOwnProperty.call(result, name)` (mirrors/cm6/state/src/state.ts:357), so prototype keys such as "toString" never match and an own property holding `undefined` adds `undefined`. Evidence: code structure (JS prototype chain). Editor need underneath: look up a named language data field. (B1)
 - Mechanism: `side` is the TypeScript literal union `-1 | 0 | 1` with JS default `-1` (mirrors/cm6/state/src/state.ts:353), and `pos` a JS number; neither has a runtime check and both are passed through to providers (mirrors/cm6/state/src/state.ts:356). Evidence: code structure (type-only constraint). Editor need underneath: which side of the position the caller asks about (CHANGELOG 0.19.0, `mirrors/cm6/state/CHANGELOG.md:279`). (B2)
 - Mechanism: a fresh JS array is allocated per call (mirrors/cm6/state/src/state.ts:354) and returned under the TypeScript type `readonly T[]` (mirrors/cm6/state/src/state.ts:353), which forbids mutation only at compile time. Evidence: code structure. Editor need underneath: none. (B3)
+- Mechanism: the provider type (mirrors/cm6/state/src/extension.ts:5) is TypeScript only; the result is consumed with `for...of` and `Object.prototype.hasOwnProperty.call` (mirrors/cm6/state/src/state.ts:356-357). Evidence: code structure. Editor need underneath: none. (B4)
 
 ## state.cm6.030 `EditorState.charCategorizer`
 
 - Fallback regexes for engines without Unicode property escapes (mirrors/cm6/state/src/charcategory.ts:13, :16, :18-26: `try { new RegExp(..., "u") } catch`); evidence: code structure; editor need underneath: word classification by Unicode properties. (B2)
 - Per-code-unit string iteration is a UTF-16 artifact (mirrors/cm6/state/src/charcategory.ts:32); the editor need is per-character word sets (B3)
 - Mechanism: `makeCategorizer` returns a new JS closure on every call (mirrors/cm6/state/src/charcategory.ts:28-29, called from mirrors/cm6/state/src/state.ts:375), so two calls give two function objects that differ under `===`; nothing is cached. Evidence: code structure (functions as garbage-collected first-class values). Editor need underneath: none. (B4)
+- Mechanism: `wordChars` is typed `string` by the `languageDataAt<string>` call (mirrors/cm6/state/src/state.ts:374), a TypeScript cast over `any` language data; makeCategorizer reads it with `.length` and `[i]` (mirrors/cm6/state/src/charcategory.ts:32). Evidence: code structure. Editor need underneath: none. (B5)
 
 ## state.cm6.031 `EditorState.wordAt`
 
@@ -156,16 +164,20 @@ Items with notes: 164 of 261; distinct notes: 431.
 
 - Mechanism: JS `undefined` is the deletion sentinel of effect mapping: `StateEffect.map` returns `undefined` when the type's `map` does (mirrors/cm6/state/src/transaction.ts:80-81) and `StateEffect.mapEffects` keeps only truthy results (`if (mapped) result.push(mapped)`, mirrors/cm6/state/src/transaction.ts:102-103); consequently an effect value cannot itself be `undefined` (doc comment mirrors/cm6/state/src/transaction.ts:88-92: the value type "should be a type that doesn't include `undefined`, since that is used in mapping to indicate that an effect is removed"; mirrors/cm6/state/src/transaction.ts:41-42). Evidence: those doc comments and the code structure. Editor need underneath: a mapping can delete an effect whose range was removed. (B1)
 - Mechanism: the filter's return type is the TypeScript union `boolean | readonly number[]` (`mirrors/cm6/state/src/extension.ts:22`), told apart at runtime with strict `value === false` (mirrors/cm6/state/src/transaction.ts:363) and `Array.isArray(value)` (mirrors/cm6/state/src/transaction.ts:364); every other JS value (`true`, `undefined`, `null`, `0`, a string, an object) falls through as "keep everything", values the type admits only from untyped JS or casts. Evidence: code structure. Editor need underneath: a filter can keep, cancel, or mask changes. (B4)
+- Mechanism: the facet input type (mirrors/cm6/state/src/extension.ts:22) is TypeScript only; each input is called unchecked (mirrors/cm6/state/src/transaction.ts:362). Evidence: code structure. Editor need underneath: none. (B10)
+- Mechanism: the result type `readonly number[]` of pairs (mirrors/cm6/state/src/extension.ts:22, documented at mirrors/cm6/state/src/state.ts:404-410) is TypeScript and comment only; `ChangeSet.filter` reads `ranges[i++]` without a bound check (mirrors/cm6/state/src/change.ts:273, :285), and `i == ranges.length` (mirrors/cm6/state/src/change.ts:273) is the only exit test for the range list. Evidence: code structure. Editor need underneath: none. (B11)
 
 ## state.cm6.033 `EditorState^transactionFilter`
 
 - Mechanism: the filter's return type is the TypeScript union `TransactionSpec | readonly TransactionSpec[]` (`mirrors/cm6/state/src/extension.ts:24`) into which a `Transaction` fits structurally; it is told apart at runtime with `filtered instanceof Transaction` (mirrors/cm6/state/src/transaction.ts:385), and that branch keeps the returned object by reference, so `update` can return the filter's own transaction. Evidence: code structure. Editor need underneath: a filter can let a transaction through unchanged. (B1)
 - Mechanism: duck typing: a `Transaction` placed in a spec array is read by `resolveTransactionInner` through the same property names a spec uses (`changes`, `selection`, `effects`, `annotations`, `scrollIntoView`; mirrors/cm6/state/src/transaction.ts:171-183 versus mirrors/cm6/state/src/transaction.ts:331-339), with `instanceof ChangeSet` and `instanceof EditorSelection` accepting its values (mirrors/cm6/state/src/transaction.ts:334, :336); the return value reaches `asArray` through a cast `filtered as any` (mirrors/cm6/state/src/transaction.ts:387); `[tr]` alone is recognized with `Array.isArray`, `length == 1` and `instanceof Transaction` (mirrors/cm6/state/src/transaction.ts:386). Evidence: code structure (TypeScript structural typing). Editor need underneath: a filter may wrap or extend the transaction it received. (B3)
+- Mechanism: the filter result type `TransactionSpec | readonly TransactionSpec[]` (mirrors/cm6/state/src/extension.ts:24) is TypeScript only; anything that is not a Transaction or a one-Transaction array is passed through `asArray` (mirrors/cm6/state/src/transaction.ts:387, :405-407), which maps null/undefined to an empty list, and specs are read by property (mirrors/cm6/state/src/transaction.ts:331, :345-348). Evidence: code structure. Editor need underneath: none. (B10)
 
 ## state.cm6.034 `EditorState^transactionExtender`
 
 - Mechanism: an extender result counts as empty by JS truthiness and `Object.keys(extension).length` (mirrors/cm6/state/src/transaction.ts:396), so `null`, `undefined` and `{}` are skipped while an own key holding `undefined` counts; whether a new `Transaction` is built is decided by reference, `spec == tr` (mirrors/cm6/state/src/transaction.ts:399). Evidence: code structure. Editor need underneath: no new transaction when no extender contributes. (B3)
 - The narrowed result type exists only in TypeScript (mirrors/cm6/state/src/extension.ts:26-27); the runtime resolves the whole spec (B4)
+- Mechanism: the extender result type (mirrors/cm6/state/src/extension.ts:26-27) is TypeScript only; emptiness is decided by truthiness and `Object.keys` (mirrors/cm6/state/src/transaction.ts:396), which boxes primitives (a string or array has keys), and a new Transaction is built whenever a result was merged (mirrors/cm6/state/src/transaction.ts:399). Evidence: code structure. Editor need underneath: none. (B8)
 
 ## state.cm6.035 `StateCommand`
 
@@ -199,6 +211,7 @@ Items with notes: 164 of 261; distinct notes: 431.
 - Mechanism: with a `combine` and no `compare`, outputs are compared with JS `===` (mirrors/cm6/state/src/facet.ts:73), identity for objects, so a combine that allocates a new object on each call reports a change on every recomputation. Evidence: doc comment mirrors/cm6/state/src/facet.ts:13-16; code structure (reference equality of garbage-collected objects). Editor need underneath: cheap change detection; callers compare facet values with `!=` (mirrors/cm6/view/src/editorview.ts:329 (theme), mirrors/cm6/view/src/domobserver.ts:452 (editable), mirrors/cm6/language/src/language.ts:557 (language)). (B2)
 - Mechanism: options are selected by JS truthiness (`config.combine || ...`, `!config.combine`, mirrors/cm6/state/src/facet.ts:71, :73), so an optional property given explicitly as `undefined` (TypeScript optional field `combine?:`, mirrors/cm6/state/src/facet.ts:12) behaves as absent; the consumer `defineLanguageFacet` relies on it by passing `combine: baseData ? ... : undefined` (mirrors/cm6/language/src/language.ts:20). Evidence: code structure (JS distinguishes an absent property from an undefined one only with `in`/`hasOwnProperty`, which cm6 does not use here). Editor need underneath: none (API convenience). (B4)
 - Mechanism: `!!config.static` coerces any JS value to a boolean (mirrors/cm6/state/src/facet.ts:74); the TypeScript type is `static?: boolean` (mirrors/cm6/state/src/facet.ts:22), so non-boolean values arrive only from untyped JS or casts. Evidence: code structure (JS truthiness). Editor need underneath: none. (B5)
+- Mechanism: `define` allocates a `Facet` whose id comes from the module-level counter `nextID` (mirrors/cm6/state/src/facet.ts:4, :45); configurations key providers and addresses by that id (mirrors/cm6/state/src/facet.ts:476, :493, :510). Evidence: code structure. Editor need underneath: facets are independent keys. (B6)
 
 ## state.cm6.039 `Facet.of`
 
@@ -221,6 +234,9 @@ Items with notes: 164 of 261; distinct notes: 431.
 - CHANGELOG 6.1.3 (mirrors/cm6/state/CHANGELOG.md:149): "Avoid unnecessary calls to computed facet getters when a state is reconfigured but no dependencies of the computed facet change"; editor need: reconfiguration without recomputation (B8)
 - Mechanism: a repeated `compute` call allocates a new provider object with a new counter id (mirrors/cm6/state/src/facet.ts:92, :140), absent from the old configuration's `address` (mirrors/cm6/state/src/facet.ts:174, :184-185), so equal-looking providers are new by JS object identity. Evidence: code structure. Editor need underneath: a provider new to the configuration must compute its input. (B9)
 - Mechanism: a reconfiguring transaction builds a throwaway intermediate EditorState to carry slots over (`slot.reconfigure`), then a second EditorState that applies `slot.update` (mirrors/cm6/state/src/state.ts:116-124); the intermediate object is dropped and reclaimed by garbage collection. Evidence: code structure. Editor need underneath: separate carrying values into a new configuration from applying the transaction. (B10)
+- Mechanism: each call allocates a `FacetProvider` with a fresh id from the module counter (mirrors/cm6/state/src/facet.ts:140) and the configuration deduplicates extensions by JS identity (mirrors/cm6/state/src/facet.ts:522-531). Evidence: code structure. Editor need underneath: telling providers apart so that the same extension value included twice counts once. (B12)
+- Mechanism: the getter parameter's TypeScript function type (mirrors/cm6/state/src/facet.ts:90) is erased; the TypeScript signature is erased at run time and cm6 does not check the value before it is called (mirrors/cm6/state/src/facet.ts:160, :185). Evidence: code structure. Editor need underneath: none. (B13)
+- Mechanism: the dependency type `readonly Slot<any>[]` (mirrors/cm6/state/src/facet.ts:90, :135) is TypeScript only; at run time the list is iterated with `for...of` (a string iterates by code point) and each entry is compared with `==` to "doc"/"selection" or read through `dep.id` (mirrors/cm6/state/src/facet.ts:152-155); `addresses[dep.id] ?? 1` treats an unknown id as a static address (mirrors/cm6/state/src/facet.ts:155). Evidence: code structure. Editor need underneath: none. (B14)
 
 ## state.cm6.041 `Facet.computeN`
 
@@ -231,6 +247,10 @@ Items with notes: 164 of 261; distinct notes: 431.
 - Mechanism: the TypeScript type says the getter returns `readonly Input[]` (mirrors/cm6/state/src/facet.ts:97), but the runtime uses the JS iteration protocol (`for...of`, mirrors/cm6/state/src/facet.ts:223) to spread and `.length`/index to compare (mirrors/cm6/state/src/facet.ts:196-200), so any iterable with a length is accepted; a string spreads by `for...of` (code points) while its `.length` and indexes count UTF-16 code units. Evidence: code structure (duck typing over JS protocols). Editor need underneath: none (only arrays are intended). (B5)
 - Mechanism: dependencies are a TypeScript union `Slot<T> = FacetReader<T> | StateField<T> | "doc" | "selection"` (mirrors/cm6/state/src/facet.ts:135), told apart at runtime with `==` on string literals and `instanceof Facet`/`instanceof StateField` (mirrors/cm6/state/src/facet.ts:152-156, :177-179). Evidence: code structure (JS dynamic typing, union values). Editor need underneath: declare which parts of the state a computed input depends on. (B6)
 - Mechanism: as for `compute`, reuse on reconfiguration is decided by identity: a facet dependency's output `===` and a field dependency's value `==` in the old and new states (mirrors/cm6/state/src/facet.ts:177-179). Evidence: code structure; mirrors/cm6/state/CHANGELOG.md:149 (6.1.3, "Avoid unnecessary calls to computed facet getters when a state is reconfigured but no dependencies of the computed facet change"). Editor need underneath: reconfiguration without recomputation. (B6)
+- Mechanism: the getter's return type `readonly Input[]` (mirrors/cm6/state/src/facet.ts:97) is TypeScript only; the TypeScript signature is erased at run time and cm6 does not check the value before it is spread with `for...of` (mirrors/cm6/state/src/facet.ts:223) and compared with `.length` and indexing (mirrors/cm6/state/src/facet.ts:196-198), so a non-iterable value fails inside the engine's iteration protocol. Evidence: code structure. Editor need underneath: none. (B7)
+- Mechanism: the getter's TypeScript return type `readonly Input[]` (mirrors/cm6/state/src/facet.ts:97) is erased; cm6 spreads with the JS iteration protocol (mirrors/cm6/state/src/facet.ts:223) but compares with `.length` and indexes (mirrors/cm6/state/src/facet.ts:197-198), two JS protocols that agree only for arrays and strings; the old input object is kept by reference (mirrors/cm6/state/src/facet.ts:166). Evidence: code structure. Editor need underneath: none. (B8)
+- Mechanism: each call allocates a `FacetProvider` with a fresh id from the module counter (mirrors/cm6/state/src/facet.ts:140) and the configuration deduplicates extensions by JS identity (`seen` map, mirrors/cm6/state/src/facet.ts:522-531). Evidence: code structure. Editor need underneath: telling providers apart so that the same extension value included twice counts once. (B9)
+- Mechanism: the getter parameter's TypeScript function type (mirrors/cm6/state/src/facet.ts:97) is erased; the TypeScript signature is erased at run time and cm6 does not check the value before it is called (mirrors/cm6/state/src/facet.ts:160, :185). Evidence: code structure. Editor need underneath: none. (B10)
 
 ## state.cm6.042 `Facet.from`
 
@@ -238,6 +258,9 @@ Items with notes: 164 of 261; distinct notes: 431.
 - Mechanism: without `get`, the input is the field value object itself (identity function mirrors/cm6/state/src/facet.ts:109), so the facet input and the field value are the same JS object. Evidence: code structure. Editor need underneath: none beyond avoiding a copy. (B1)
 - Mechanism: `from` is `compute([field], ...)` (mirrors/cm6/state/src/facet.ts:110), so the getter reruns only when the field's slot reported a change, and that report comes from the field's `compare(old, new)`, JS `===` by default (mirrors/cm6/state/src/facet.ts:312, :333). Evidence: code structure (identity-based change detection). Editor need underneath: recompute the facet input only when the field value changed. (B3)
 - Mechanism: the getter calls the one-argument form of `EditorState.field`, which has two TypeScript overloads (mirrors/cm6/state/src/state.ts:66-67: `field(f): T` and `field(f, require: false): T | undefined`) over one implementation with `require = true` (mirrors/cm6/state/src/state.ts:68); the one-argument form throws `RangeError("Field is not present in this state")` (mirrors/cm6/state/src/state.ts:71) instead of returning undefined. Evidence: code structure (overloads exist only in TypeScript). Editor need underneath: a missing field is a configuration error. (B4)
+- Mechanism: `from` builds a new closure and a new `FacetProvider` per call (mirrors/cm6/state/src/facet.ts:110, :92, :140); deduplication is by JS identity (mirrors/cm6/state/src/facet.ts:522-531). Evidence: code structure. Editor need underneath: telling providers apart so that the same extension value included twice counts once. (B6)
+- Mechanism: the optional `get` is tested with JS truthiness (`if (!get)`, mirrors/cm6/state/src/facet.ts:109) and its TypeScript function type is erased; a truthy non-function is called (mirrors/cm6/state/src/facet.ts:110). Evidence: code structure. Editor need underneath: none. (B7)
+- Mechanism: the `StateField<T>` parameter type (mirrors/cm6/state/src/facet.ts:106) is TypeScript only; `EditorState.field` reads `this.config.address[field.id]` (mirrors/cm6/state/src/state.ts:69), an address table keyed by the ids that fields, facets and providers draw from one module counter (mirrors/cm6/state/src/facet.ts:4, :45, :140, :312). Evidence: code structure. Editor need underneath: none. (B8)
 
 ## state.cm6.044 `FacetReader`
 
@@ -261,6 +284,7 @@ Items with notes: 164 of 261; distinct notes: 431.
 
 - Mechanism: the default field comparison is JS `===` (mirrors/cm6/state/src/facet.ts:312, `config.compare || ((a, b) => a === b)`), identity for objects; doc comment mirrors/cm6/state/src/facet.ts:268-271 ("used to avoid recomputing facets that depend on the field when its value did not change. Defaults to using `===`"). Evidence: code comment and code structure (reference equality of garbage-collected objects). Editor need underneath: cheap change detection between field values; callers also compare field values with `!=` (mirrors/cm6/language/src/fold.ts:412 (foldState), mirrors/cm6/view/src/dropcursor.ts:37 (dropCursorPos)). (B1)
 - Mechanism: `provide` is called once inside `define` and its result stored on the field object (`field.provides`, mirrors/cm6/state/src/facet.ts:298, :313), so every inclusion of the field reaches the same provided extension objects, which `flatten` deduplicates by JS identity (mirrors/cm6/state/src/facet.ts:522-531, :544). Evidence: code structure. Editor need underneath: a field and the extensions derived from it are applied once, however often the field is included. (B2)
+- Mechanism: `define` allocates a `StateField` with an id from the module counter `nextID` (mirrors/cm6/state/src/facet.ts:312); configurations key slots by that id (mirrors/cm6/state/src/facet.ts:484). Evidence: code structure. Editor need underneath: fields are independent keys. (B3)
 
 ## state.cm6.048 `StateField.init`
 
@@ -269,6 +293,7 @@ Items with notes: 164 of 261; distinct notes: 431.
 - CHANGELOG 6.5.2 (mirrors/cm6/state/CHANGELOG.md:69) (B3)
 - Mechanism: deduplication of extension values by JS object identity in `flatten`'s `seen` Map<Extension, number> (mirrors/cm6/state/src/facet.ts:522-531; `indexOf`/`splice` on the bucket array to move an entry, mirrors/cm6/state/src/facet.ts:527-528). Evidence: code structure; mirrors/cm6/state/CHANGELOG.md:201 (0.20.0, "if an extension value occurs multiple times, its lowest, rather than highest precedence is used" fixed). Editor need underneath: an extension reached through several paths (a shared dependency of two extensions) is applied once. (B4)
 - Mechanism: on-demand, re-entrant slot evaluation on a partly built state: user code (getter, create, update) receives the EditorState under construction and reading another slot computes it through `ensureAddr` (mirrors/cm6/state/src/facet.ts:566-575) using the mutable `status` array and `computeSlot` callback, cleared after construction (mirrors/cm6/state/src/state.ts:54-60). Evidence: code structure; comment mirrors/cm6/state/src/state.ts:56-57 ("Fill in the computed state immediately, so that further queries for it made during the update return this state"). Relies on one JS thread (no other reader can see the half-built state). Editor need underneath: slots may read each other's new values in any order. (B5)
+- Mechanism: the `create` parameter's TypeScript function type (mirrors/cm6/state/src/facet.ts:356) is erased; creation reads it through `||` with the spec's create (mirrors/cm6/state/src/facet.ts:319) while reconfiguration calls it directly (mirrors/cm6/state/src/facet.ts:340). Evidence: code structure. Editor need underneath: none. (B6)
 
 ## state.cm6.049 `StateField.extension`
 
@@ -288,12 +313,33 @@ Items with notes: 164 of 261; distinct notes: 431.
 - CHANGELOG 0.20.0 (mirrors/cm6/state/CHANGELOG.md:201): the highest, not lowest, precedence of a repeated value is used (B6)
 - CHANGELOG 6.7.1 (mirrors/cm6/state/CHANGELOG.md:35) (B7)
 - Mechanism: `Transaction.state` is a lazily computed, cached getter (`_state`, mirrors/cm6/state/src/transaction.ts:219-222), so building the new state (and any exception it throws) happens at first access. Evidence: doc comment mirrors/cm6/state/src/transaction.ts:215-218 ("Computed on demand (but retained for subsequent access), so it is recommended not to access it in transaction filters when possible"). Editor need underneath: filters and extenders can inspect a transaction without building its state. (B8)
+- Mechanism: `config.extensions || []` (mirrors/cm6/state/src/state.ts:244) uses JS truthiness at one entry point only; reconfiguring effects pass their value to `flatten` as is (mirrors/cm6/state/src/state.ts:108, :111), whose duck typing reads `.extension` (mirrors/cm6/state/src/facet.ts:549). Evidence: code structure. Editor need underneath: none. (B9)
 
 ## state.cm6.051 `Prec`
 
 - CHANGELOG 0.20.0 (mirrors/cm6/state/CHANGELOG.md:201) (B3)
 - Mechanism: `prec(value)` returns a closure that wraps any value in a `PrecExtension` cast `as Extension` (mirrors/cm6/state/src/facet.ts:378-380); the `extension` getter that makes the wrapper satisfy the type was added later (mirrors/cm6/state/src/facet.ts:409; mirrors/cm6/state/CHANGELOG.md:35, 6.7.1, "Make sure facet providers, precedence extensions, and compartment instances have the `extension` field the `Extension` type claims they have"). Nothing validates the wrapped value at runtime; TypeScript's `Extension` type is the only check until `flatten` (mirrors/cm6/state/src/facet.ts:548-551). Evidence: code structure; CHANGELOG. Editor need underneath: none. (B6)
 - Mechanism: each `Prec.<level>` call allocates a new wrapper object (mirrors/cm6/state/src/facet.ts:379), distinct by JS identity, while the wrapped value is deduplicated by its own identity (mirrors/cm6/state/src/facet.ts:522-531); `Prec` is a plain object literal of closures whose key order is JS property insertion order (mirrors/cm6/state/src/facet.ts:390-405). Evidence: code structure. Editor need underneath: none beyond assigning a level. (B8)
+
+## state.cm6.052 `Prec.highest`
+
+- Mechanism: each call allocates a `PrecExtension` (mirrors/cm6/state/src/facet.ts:379) distinct by JS identity, while `flatten` deduplicates the wrapped value by identity (mirrors/cm6/state/src/facet.ts:522-531). Evidence: code structure. Editor need underneath: placing one extension at a precedence level. (B3)
+
+## state.cm6.053 `Prec.high`
+
+- Mechanism: each call allocates a `PrecExtension` (mirrors/cm6/state/src/facet.ts:379) distinct by JS identity, while `flatten` deduplicates the wrapped value by identity (mirrors/cm6/state/src/facet.ts:522-531). Evidence: code structure. Editor need underneath: placing one extension at a precedence level. (B2)
+
+## state.cm6.054 `Prec.default`
+
+- Mechanism: each call allocates a `PrecExtension` (mirrors/cm6/state/src/facet.ts:379) distinct by JS identity, while `flatten` deduplicates the wrapped value by identity (mirrors/cm6/state/src/facet.ts:522-531). Evidence: code structure. Editor need underneath: placing one extension at a precedence level. (B3)
+
+## state.cm6.055 `Prec.low`
+
+- Mechanism: each call allocates a `PrecExtension` (mirrors/cm6/state/src/facet.ts:379) distinct by JS identity, while `flatten` deduplicates the wrapped value by identity (mirrors/cm6/state/src/facet.ts:522-531). Evidence: code structure. Editor need underneath: placing one extension at a precedence level. (B2)
+
+## state.cm6.056 `Prec.lowest`
+
+- Mechanism: each call allocates a `PrecExtension` (mirrors/cm6/state/src/facet.ts:379) distinct by JS identity, while `flatten` deduplicates the wrapped value by identity (mirrors/cm6/state/src/facet.ts:522-531). Evidence: code structure. Editor need underneath: placing one extension at a precedence level. (B3)
 
 ## state.cm6.057 `Compartment`
 
@@ -302,6 +348,7 @@ Items with notes: 164 of 261; distinct notes: 431.
 - Mechanism: each resolution builds a new Map holding only the compartments reached (mirrors/cm6/state/src/facet.ts:472, :538, :516); content of unreached compartments is dropped with the old Configuration and reclaimed by garbage collection. Evidence: code structure. Editor need underneath: a compartment removed from the configuration forgets its content. (B3)
 - Mechanism: deduplication of extension values by JS object identity in `flatten`'s `seen` Map<Extension, number> (mirrors/cm6/state/src/facet.ts:522-531; `indexOf`/`splice` on the bucket array to move an entry, mirrors/cm6/state/src/facet.ts:527-528). Evidence: code structure; mirrors/cm6/state/CHANGELOG.md:201 (0.20.0, "if an extension value occurs multiple times, its lowest, rather than highest precedence is used" fixed). Editor need underneath: an extension reached through several paths (a shared dependency of two extensions) is applied once. (B4)
 - Mechanism: moving an instance to a higher precedence deletes its compartment from `newCompartments` before re-adding it (mirrors/cm6/state/src/facet.ts:529), keyed by JS identity of the compartment. Evidence: code structure. Editor need underneath: the highest-precedence placement wins without a duplicate error. (B4)
+- Mechanism: a compartment has no state of its own; it is a JS object used as a `Map` key (mirrors/cm6/state/src/facet.ts:455, :472, :535-538). Evidence: code structure. Editor need underneath: independent reconfigurable parts of a configuration. (B6)
 
 ## state.cm6.058 `Compartment.of`
 
@@ -426,7 +473,7 @@ Items with notes: 164 of 261; distinct notes: 431.
 
 - Mechanism: `newDoc` is a getter that caches into the mutable `@internal` field `_doc` with `||` (mirrors/cm6/state/src/transaction.ts:165, :204), so the first read computes and later reads return the same object, while the transaction's public fields are TypeScript `readonly`. Evidence: doc comment mirrors/cm6/state/src/transaction.ts:197-202 ("accessing this won't force the entire new state to be computed"). Editor need underneath: filters can read the new document without building the state. (B1)
 - Mechanism: `ChangeSet.apply` returns its `doc` argument unchanged when there is no change (mirrors/cm6/state/src/change.ts:207-211), so `newDoc` is the start state's `Text` by reference. Evidence: code structure (immutable garbage-collected values passed by reference). Editor need underneath: detect an unchanged document without comparing content (consumer: `mirrors/cm6/lint/src/lint.ts:373`). (B2)
-- Mechanism: a top-level `ChangeSet` is taken by `instanceof ChangeSet` without a length check (mirrors/cm6/state/src/transaction.ts:334), and the check runs only in `ChangeSet.apply` (mirrors/cm6/state/src/change.ts:208) when the lazy getter `newDoc` (mirrors/cm6/state/src/transaction.ts:203-205) or `state` is first read, so a JS property read throws. Evidence: code structure. Editor need underneath: none for the deferral (Q11 bears on it). (B3)
+- Mechanism: a top-level `ChangeSet` is taken by `instanceof ChangeSet` without a length check (mirrors/cm6/state/src/transaction.ts:334), and with one spec (or a later spec merged with `sequential: true`, built against the first spec's newLength, transaction.ts:348-349; a later spec merged without it makes mapSet throw inside update, transaction.ts:317, change.ts:439) the check runs only in `ChangeSet.apply` (mirrors/cm6/state/src/change.ts:208) when the lazy getter `newDoc` (mirrors/cm6/state/src/transaction.ts:203-205) or `state` is first read, so a JS property read throws. Evidence: code structure. Editor need underneath: none for the deferral (Q11 bears on it). (B3)
 
 ## state.cm6.100 `Transaction.state`
 
@@ -552,6 +599,8 @@ Items with notes: 164 of 261; distinct notes: 431.
 - Mechanism: `result[key] = value` with `value` undefined creates an own JS property holding `undefined` (mirrors/cm6/state/src/config.ts:16); JS distinguishes an own undefined-valued property from an absent one (`in`, `Object.keys`). Evidence: code structure. Editor need underneath: none. (B7)
 - plain object used as a map; consequence of JS prototype inheritance (code structure) (B8)
 - Mechanism: `combine` is an optional parameter with the JS default `{}` (mirrors/cm6/state/src/config.ts:11), and its type is a TypeScript mapped type (`{[P in keyof Config]?: ...}`, mirrors/cm6/state/src/config.ts:11); `defaults` is typed `Partial<Config>` with the comment mirrors/cm6/state/src/config.ts:10 recording that the intended type ("only the optional properties of Config") could not be expressed. Evidence: code comment and structure. Editor need underneath: none beyond returning the defaults when nothing is configured. (B10)
+- Mechanism: the result is a fresh JS object literal (mirrors/cm6/state/src/config.ts:13) filled by assignment (mirrors/cm6/state/src/config.ts:16, :18, :21), so values keep their JS identity while the container is new. Evidence: code structure. Editor need underneath: a merged configuration object per resolution. (B11)
+- Mechanism: the parameter types (mirrors/cm6/state/src/config.ts:9-11) are TypeScript only; cm6 iterates `configs` with `for...of`, reads keys with `Object.keys` (which boxes primitives and lists a string's UTF-16 indices), walks `defaults` with `for...in` (which skips null) and reads `combine` through `Object.hasOwnProperty.call` (mirrors/cm6/state/src/config.ts:14, :18, :21). Evidence: code structure. Editor need underneath: none. (B12)
 
 ## state.cm6.135 `ChangeSpec`
 
@@ -817,6 +866,8 @@ Items with notes: 164 of 261; distinct notes: 431.
 - Mechanism: skip counts UTF-16 code units and the value is cut with `String.prototype.slice` (mirrors/cm6/state/src/text.ts:443-445), which works on code units, so a skip that ends inside a surrogate pair yields a lone surrogate (F0843). Evidence: code structure. Editor need underneath: reading the document from a position. (B3)
 - Mechanism: the cursor doubles as the JS IteratorResult (mirrors/cm6/state/src/text.ts:16-25), so the state after the end is just its `done` and `value` fields; the line cursor can be left with `value` "b" and `done` true, because LineCursor.next sets `done` but never resets it (mirrors/cm6/state/src/text.ts:531-532, :541-543), a pair the JS protocol tolerates because consumers such as `for...of` ignore `value` once `done` is true. Evidence: code structure. Editor need underneath: an end signal for sequential reading. (B5)
 - Mechanism: the range bounds are UTF-16 code units and values are trimmed with `String.prototype.slice` (mirrors/cm6/state/src/text.ts:502), so a bound inside a surrogate pair yields a lone surrogate (F0864). Evidence: code structure. Editor need underneath: reading part of the document. (B6)
+- Mechanism: positions are JS doubles with no integer check: String.prototype.slice truncates a fractional index while the comparisons around it use the untruncated value (text.ts:434, :444-445). Evidence: code structure; open question Q9. Editor need underneath: none (callers pass integer positions). (B11)
+- Mechanism: positions are JS doubles with no integer check: String.prototype.slice truncates a fractional index while the comparisons around it use the untruncated value (text.ts:501-502, :445). Evidence: code structure; open question Q9. Editor need underneath: none (callers pass integer positions). (B12)
 
 ## state.cm6.229 `Text`
 
@@ -832,11 +883,20 @@ Items with notes: 164 of 261; distinct notes: 431.
 ## state.cm6.236 `Text.slice`
 
 - Mechanism: positions are JS doubles with no integer check: String.prototype.slice truncates a fractional index (text.ts:219, :388-389) while cached lengths keep the fraction (text.ts:187, :206, :333). Evidence: code structure; open question Q9. Editor need underneath: none (callers pass integer positions). (B5)
+- Mechanism: positions are JS doubles with no integer check: String.prototype.slice truncates a fractional index while the comparisons around it use the untruncated value (text.ts:187, :387-389). Evidence: code structure; open question Q9. Editor need underneath: none (callers pass integer positions). (B6)
+
+## state.cm6.237 `Text.sliceString`
+
+- Mechanism: positions are JS doubles with no integer check: String.prototype.slice truncates a fractional index while the comparisons around it use the untruncated value (text.ts:216, :219, :309). Evidence: code structure; open question Q9. Editor need underneath: none (callers pass integer positions). (B6)
 
 ## state.cm6.238 `Text.eq`
 
 - Mechanism: object identity (`other == this` on Text objects) as a fast path for the whole document (mirrors/cm6/state/src/text.ts:87). Evidence: code structure; no comment or CHANGELOG entry found. Relies on immutable documents being shared by reference: a transaction that does not change the document keeps the same Text object, so the identical case is common for callers such as the view, which compares documents before applying a pending DOM change (mirrors/cm6/view/src/editorview.ts:289); the result does not depend on the fast path, since an identical object has identical content. Editor need underneath: cheap comparison of an unchanged document. (B1)
 - Mechanism: comparing children by object identity to skip shared subtrees. Evidence: code structure (mirrors/cm6/state/src/text.ts:328). Relies on the structural sharing of immutable versions; editor need underneath: cheap comparison of a document with an edited version of itself. (B5)
+
+## state.cm6.240 `Text.iterRange`
+
+- Mechanism: positions are JS doubles with no integer check: String.prototype.slice truncates a fractional index while the comparisons around it use the untruncated value (text.ts:445, :501-502). Evidence: code structure; open question Q9. Editor need underneath: none (callers pass integer positions). (B3)
 
 ## state.cm6.242 `Text.toString`
 
@@ -860,6 +920,7 @@ Items with notes: 164 of 261; distinct notes: 431.
 - Mechanism: with the identity combine (`(a: any) => a`, mirrors/cm6/state/src/facet.ts:71) the freshly allocated input array (mirrors/cm6/state/src/facet.ts:220, :497) becomes the output object, so the output's JS identity changes exactly when the facet is recomputed and the comparison (`sameArray`, mirrors/cm6/state/src/facet.ts:73, :131-133) says unequal. Evidence: code structure. Editor need underneath: callers detect change with `!=` on facet values (mirrors/cm6/view/src/editorview.ts:329 (theme), mirrors/cm6/view/src/domobserver.ts:452 (editable), mirrors/cm6/language/src/language.ts:557 (language)). (B2)
 - Mechanism: combine is skipped by identity tests: the provider list compared element-wise with `===` on provider objects (`sameArray`, mirrors/cm6/state/src/facet.ts:494, :245) and no dynamic provider reporting a change (mirrors/cm6/state/src/facet.ts:236, :243-245). Evidence: code structure; mirrors/cm6/state/CHANGELOG.md:229 (0.19.7, "Avoid recomputing facets on state reconfiguration if that facet's inputs stayed precisely the same"); mirrors/cm6/state/CHANGELOG.md:203 (0.20.0, "facets with computed inputs would unneccesarily have their outputs recreated on state reconfiguration" fixed). Editor need underneath: no recombination when inputs are unchanged. (B3)
 - Mechanism: the `theme` facet's combine `strs => strs.join(" ")` (mirrors/cm6/view/src/theme.ts:4) builds a space-separated DOM `class` attribute value; it exists because the browser owns styling through CSS classes. Evidence: code structure. Editor need underneath: apply every theme. For the other consumer combines (`some`, first-or-default, `concat`): none found. (B4)
+- Mechanism: `config.combine ||` (mirrors/cm6/state/src/facet.ts:71) tests JS truthiness and `!config.combine` (mirrors/cm6/state/src/facet.ts:73) picks the compare the same way; the TypeScript function type is erased and a truthy non-function is called at once (mirrors/cm6/state/src/facet.ts:61). Evidence: code structure. Editor need underneath: none. (B5)
 
 ## state.cm6.249 `Facet^define config FacetConfig.compare`
 
@@ -867,12 +928,16 @@ Items with notes: 164 of 261; distinct notes: 431.
 - Mechanism: change is signalled by object identity: when the comparison says equal the old JS object is kept (`dynamicFacetSlot.update`/`reconfigure` keep `oldValue` when `facet.compare(value, oldValue)` holds, mirrors/cm6/state/src/facet.ts:238, :250-252), so that callers can detect change with `!=` on the value (mirrors/cm6/view/src/editorview.ts:329 (theme), mirrors/cm6/view/src/domobserver.ts:452 (editable), mirrors/cm6/language/src/language.ts:557 (language)). Evidence: code structure (reference equality of garbage-collected objects). Editor need underneath: skip downstream work when a value did not change. (B2)
 - Mechanism: change is signalled by object identity: when the comparison says equal the old JS object is kept (static resolution pushes `oldState.facet(facet)` when `facet.compare(value, oldState.facet(facet))` holds, mirrors/cm6/state/src/facet.ts:498), so that callers can detect change with `!=` on the value (mirrors/cm6/view/src/editorview.ts:329 (theme), mirrors/cm6/view/src/domobserver.ts:452 (editable), mirrors/cm6/language/src/language.ts:557 (language)). Evidence: code structure (reference equality of garbage-collected objects). Editor need underneath: skip downstream work when a value did not change. (B3)
 - Mechanism: the `phrases` comparison iterates the output arrays with `Object.keys` (array indexes as strings) and compares entries with JS loose equality `a[k as any] == b[k as any]` (mirrors/cm6/state/src/state.ts:310-312), which for objects is identity; the `as any` casts are TypeScript-only. Evidence: code structure; open question Q17 in docs/parity/ferrum-state/questions.md. Editor need underneath: avoid treating re-provided translation tables as a change. (B4)
+- Mechanism: the result type `boolean` (mirrors/cm6/state/src/facet.ts:17) is TypeScript only; cm6 tests it with `if` and `?:` (mirrors/cm6/state/src/facet.ts:238, :250, :498), JS truthiness. Evidence: code structure. Editor need underneath: none. (B6)
+- Mechanism: `config.compare ||` (mirrors/cm6/state/src/facet.ts:73) tests JS truthiness; the TypeScript function type is erased and a truthy non-function is called on the first recomputation (mirrors/cm6/state/src/facet.ts:238, :250, :498). Evidence: code structure. Editor need underneath: none. (B7)
 
 ## state.cm6.250 `Facet^define config FacetConfig.compareInput`
 
 - Mechanism: the default input comparison is JS `===` (mirrors/cm6/state/src/facet.ts:72), identity for objects. Evidence: doc comment mirrors/cm6/state/src/facet.ts:18-19 ("Defaults to comparing with `===`"). Editor need underneath: avoid recombining a facet when a recomputed input did not change. (B1)
 - Mechanism: static inputs are compared only through the identity of their provider objects (`sameArray(oldProviders, providers)`, element `===`, mirrors/cm6/state/src/facet.ts:494, :131-133). Evidence: code structure; mirrors/cm6/state/CHANGELOG.md:229 (0.19.7). Editor need underneath: a reconfiguration that keeps the same provider objects keeps the output. (B2)
 - Mechanism: change is signalled by object identity: when the comparison says equal the old JS object is kept (the old input object is kept when `compare(newVal, state.values[idx])` holds, mirrors/cm6/state/src/facet.ts:166-170), so that callers can detect change with `!=` on the value (mirrors/cm6/view/src/editorview.ts:329 (theme), mirrors/cm6/view/src/domobserver.ts:452 (editable), mirrors/cm6/language/src/language.ts:557 (language)). Evidence: code structure (reference equality of garbage-collected objects). Editor need underneath: skip downstream work when a value did not change. (B3)
+- Mechanism: the result type `boolean` (mirrors/cm6/state/src/facet.ts:20) is TypeScript only; cm6 tests it with `!` and `||` (mirrors/cm6/state/src/facet.ts:166, :180, :198). Evidence: code structure. Editor need underneath: none. (B4)
+- Mechanism: `config.compareInput ||` (mirrors/cm6/state/src/facet.ts:72) tests JS truthiness; the TypeScript function type is erased and a truthy non-function is called only on the comparison paths (mirrors/cm6/state/src/facet.ts:166, :180, :198). Evidence: code structure. Editor need underneath: none. (B5)
 
 ## state.cm6.251 `Facet^define config FacetConfig.static`
 
@@ -883,11 +948,13 @@ Items with notes: 164 of 261; distinct notes: 431.
 - Mechanism: the enabled extensions are one value stored on the facet object (`this.extensions`, mirrors/cm6/state/src/facet.ts:62) and reached once per provider in `flatten` (mirrors/cm6/state/src/facet.ts:547); repeated occurrences are deduplicated by JS identity in the `seen` Map (mirrors/cm6/state/src/facet.ts:522-531). Evidence: code structure. Editor need underneath: the enabled extensions are added once, however many providers the facet has. (B1)
 - CHANGELOG 6.1.0 (mirrors/cm6/state/CHANGELOG.md:173) (B2)
 - Mechanism: deduplication of extension values by JS object identity in `flatten`'s `seen` Map<Extension, number> (mirrors/cm6/state/src/facet.ts:522-531; `indexOf`/`splice` on the bucket array to move an entry, mirrors/cm6/state/src/facet.ts:527-528). Evidence: code structure; mirrors/cm6/state/CHANGELOG.md:201 (0.20.0, "if an extension value occurs multiple times, its lowest, rather than highest precedence is used" fixed). Editor need underneath: an extension reached through several paths (a shared dependency of two extensions) is applied once. (B3)
+- Mechanism: `enables` is typed `Extension | ((self) => Extension)` (mirrors/cm6/state/src/facet.ts:29), told apart with `typeof` (mirrors/cm6/state/src/facet.ts:62); the stored value is validated only by `flatten`'s duck typing when a provider is met (mirrors/cm6/state/src/facet.ts:547-550). Evidence: code structure. Editor need underneath: none. (B5)
 
 ## state.cm6.253 `StateField^define config StateFieldSpec.create`
 
 - Mechanism: on-demand, re-entrant slot evaluation on a partly built state: user code (getter, create, update) receives the EditorState under construction and reading another slot computes it through `ensureAddr` (mirrors/cm6/state/src/facet.ts:566-575) using the mutable `status` array and `computeSlot` callback, cleared after construction (mirrors/cm6/state/src/state.ts:54-60). Evidence: code structure; comment mirrors/cm6/state/src/state.ts:56-57 ("Fill in the computed state immediately, so that further queries for it made during the update return this state"). Relies on one JS thread (no other reader can see the half-built state). Editor need underneath: slots may read each other's new values in any order. (B2)
 - Mechanism: cycle detection by a `Computing` bit in the state's mutable `status` array (mirrors/cm6/state/src/facet.ts:569-574), and failures propagate as JS exceptions out of `EditorState.create` or `tr.state` with no cleanup. Evidence: code structure (synchronous re-entrant evaluation on one JS thread). Editor need underneath: report a field that depends on itself. (B3)
+- Mechanism: `create` is a required member of the TypeScript spec type (mirrors/cm6/state/src/facet.ts:262), erased at run time; `define` stores it without a check (mirrors/cm6/state/src/facet.ts:312) and it is called through `||` with the init's create (mirrors/cm6/state/src/facet.ts:319). Evidence: code structure. Editor need underneath: none. (B4)
 
 ## state.cm6.254 `StateField^define config StateFieldSpec.update`
 
@@ -896,16 +963,20 @@ Items with notes: 164 of 261; distinct notes: 431.
 - Mechanism: on-demand, re-entrant slot evaluation on a partly built state: user code (getter, create, update) receives the EditorState under construction and reading another slot computes it through `ensureAddr` (mirrors/cm6/state/src/facet.ts:566-575) using the mutable `status` array and `computeSlot` callback, cleared after construction (mirrors/cm6/state/src/state.ts:54-60). Evidence: code structure; comment mirrors/cm6/state/src/state.ts:56-57 ("Fill in the computed state immediately, so that further queries for it made during the update return this state"). Relies on one JS thread (no other reader can see the half-built state). Editor need underneath: slots may read each other's new values in any order. (B4)
 - Mechanism: `Transaction.state` is a lazily computed, cached getter (`_state`, mirrors/cm6/state/src/transaction.ts:219-222), so building the new state (and any exception it throws) happens at first access. Evidence: doc comment mirrors/cm6/state/src/transaction.ts:215-218 ("Computed on demand (but retained for subsequent access), so it is recommended not to access it in transaction filters when possible"). Editor need underneath: filters and extenders can inspect a transaction without building its state. (B4)
 - Mechanism: `tr._state` is assigned before the slots are computed (mirrors/cm6/state/src/state.ts:58, comment mirrors/cm6/state/src/state.ts:56-57), so when an update throws, the partly built state stays cached on the transaction and later reads see slots left in the Computing status (mirrors/cm6/state/src/facet.ts:570). Evidence: code structure and comment (JS exceptions unwinding without cleanup, one JS thread). Editor need underneath: other slots read the new state during the update. (B5)
+- Mechanism: `update` is a required member of the TypeScript spec type (mirrors/cm6/state/src/facet.ts:266), erased at run time; it is stored unchecked (mirrors/cm6/state/src/facet.ts:312) and called when a transaction's state is built (mirrors/cm6/state/src/facet.ts:332). Evidence: code structure. Editor need underneath: none. (B6)
 
 ## state.cm6.255 `StateField^define config StateFieldSpec.compare`
 
 - Mechanism: the default field comparison is JS `===` (mirrors/cm6/state/src/facet.ts:312, `config.compare || ((a, b) => a === b)`), identity for objects; doc comment mirrors/cm6/state/src/facet.ts:268-271 ("used to avoid recomputing facets that depend on the field when its value did not change. Defaults to using `===`"). Evidence: code comment and code structure (reference equality of garbage-collected objects). Editor need underneath: cheap change detection between field values; callers also compare field values with `!=` (mirrors/cm6/language/src/fold.ts:412 (foldState), mirrors/cm6/view/src/dropcursor.ts:37 (dropCursorPos)). (B1)
 - Mechanism: change is signalled by object identity: when the comparison says equal the old JS object is kept (`StateField.slot.update` keeps the old value when `compareF(oldVal, value)` holds, mirrors/cm6/state/src/facet.ts:333), so that callers can detect change with `!=` on the value (mirrors/cm6/language/src/fold.ts:412 (foldState), mirrors/cm6/view/src/dropcursor.ts:37 (dropCursorPos)). Evidence: code structure (reference equality of garbage-collected objects). Editor need underneath: skip downstream work when a value did not change. (B2)
+- Mechanism: the result type `boolean` (mirrors/cm6/state/src/facet.ts:272) is TypeScript only; cm6 tests it with `if` (mirrors/cm6/state/src/facet.ts:333). Evidence: code structure. Editor need underneath: none. (B3)
+- Mechanism: `config.compare ||` (mirrors/cm6/state/src/facet.ts:312) tests JS truthiness; the TypeScript function type is erased and a truthy non-function is called after the first update (mirrors/cm6/state/src/facet.ts:333). Evidence: code structure. Editor need underneath: none. (B4)
 
 ## state.cm6.256 `StateField^define config StateFieldSpec.provide`
 
 - Mechanism: `provide` is called once at `define` and its result stored on the field (`field.provides`, an `@internal` public property assigned after construction, mirrors/cm6/state/src/facet.ts:298, :313); `flatten` follows it when truthy (mirrors/cm6/state/src/facet.ts:544). Evidence: code structure. Editor need underneath: extensions derived from a field (usually `facet.from`, doc comment mirrors/cm6/state/src/facet.ts:274-279) travel with it. (B1)
 - Mechanism: deduplication of extension values by JS object identity in `flatten`'s `seen` Map<Extension, number> (mirrors/cm6/state/src/facet.ts:522-531; `indexOf`/`splice` on the bucket array to move an entry, mirrors/cm6/state/src/facet.ts:527-528). Evidence: code structure; mirrors/cm6/state/CHANGELOG.md:201 (0.20.0, "if an extension value occurs multiple times, its lowest, rather than highest precedence is used" fixed). Editor need underneath: an extension reached through several paths (a shared dependency of two extensions) is applied once. (B3)
+- Mechanism: `config.provide` is tested by truthiness and called at once (mirrors/cm6/state/src/facet.ts:313); its result's `Extension` type is TypeScript only and is validated by `flatten`'s duck typing when the field is met (mirrors/cm6/state/src/facet.ts:544-550). Evidence: code structure. Editor need underneath: none. (B4)
 
 ## state.cm6.257 `StateField^define config StateFieldSpec.toJSON`
 
@@ -920,6 +991,7 @@ Items with notes: 164 of 261; distinct notes: 431.
 ## state.cm6.259 `StateEffect^define config StateEffectSpec.map`
 
 - Mechanism: JS `undefined` is the deletion sentinel of effect mapping: `StateEffect.map` returns `undefined` when the type's `map` does (mirrors/cm6/state/src/transaction.ts:80-81) and `StateEffect.mapEffects` keeps only truthy results (`if (mapped) result.push(mapped)`, mirrors/cm6/state/src/transaction.ts:102-103); consequently an effect value cannot itself be `undefined` (doc comment mirrors/cm6/state/src/transaction.ts:88-92: the value type "should be a type that doesn't include `undefined`, since that is used in mapping to indicate that an effect is removed"; mirrors/cm6/state/src/transaction.ts:41-42). Evidence: those doc comments and the code structure. Editor need underneath: a mapping can delete an effect whose range was removed. (B2)
+- Mechanism: `spec.map ||` (mirrors/cm6/state/src/transaction.ts:94) tests JS truthiness; the TypeScript function type is erased and a truthy non-function is called by `map` (mirrors/cm6/state/src/transaction.ts:80), which mapEffects calls for every effect of a non-empty list (mirrors/cm6/state/src/transaction.ts:98-105). Evidence: code structure. Editor need underneath: none. (B3)
 
 ## state.cm6.261 `RangeSet.update config RangeSetUpdate.sort`
 

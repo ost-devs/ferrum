@@ -2,7 +2,7 @@
 // getters; TransactionSpec fields. Items state.cm6.009-012, 092-117. Fixture ids F0400-F0699.
 // Transactions are serialized by tr() in s2-lib.ts; the automatic Transaction.time value is "<wall-clock>" (Q15).
 import {EditorState, EditorSelection, Text, StateField, Facet, Compartment, StateEffect, Annotation, Transaction, ChangeSet} from "@codemirror/state"
-import {writer, cap, u, range, sel, text, st, tr, eff, name, foldLike, trackAfter, posEffect, plainEffect} from "./s2-lib"
+import {writer, cap, u, range, sel, text, st, tr, eff, name, typeName, foldLike, trackAfter, posEffect, plainEffect} from "./s2-lib"
 
 const fx = writer(400)
 const B = (item: string, n: number) => `state.${item}.B${n}`
@@ -440,7 +440,18 @@ const T0 = Transaction.time.of(1000)
     ["sequential on the first spec is ignored", [{changes: {from: 4, insert: "x"}, sequential: true}], [3]],
     ["three specs mixed", [{changes: {from: 0, insert: "1"}}, {changes: {from: 4, insert: "2"}}, {changes: {from: 0, insert: "3"}, sequential: true}, {changes: {from: 2, insert: "4"}}], [1]],
   ]
+  // Effects in a recorded spec are written {effect: <type name>, value} and the types they use are defined in
+  // `effectTypes` (a StateEffect instance would serialize as {type: {}, value}, losing its type and map; V28).
+  const TYPE_DEFS: Record<string, string> = {"pos(mapPos)": "StateEffect.define<number>({map: (value, mapping) => mapping.mapPos(value)}) (s2-lib.ts posEffect)"}
+  const specIn = (spec: any) => {
+    let effs = spec.effects === undefined ? undefined : (Array.isArray(spec.effects) ? spec.effects : [spec.effects]).map((e: StateEffect<any>) => ({effect: typeName(e.type), value: e.value}))
+    return effs === undefined ? spec : {...spec, effects: Array.isArray(spec.effects) ? effs : effs[0]}
+  }
+  const typesIn = (specs: any[]) => {
+    let used = new Set<string>(); for (let sp of specs) for (let e of [sp.effects ?? []].flat()) used.add(typeName((e as StateEffect<any>).type))
+    return used.size ? Object.fromEntries([...used].map(n => [n, TYPE_DEFS[n]])) : undefined
+  }
   for (let [desc, specs, ns] of cases)
-    fx(I.specSequential, ns.map(n => B("TransactionSpec.sequential", n)), {call: "s.update(...specs)", doc: "abcd", desc, specs},
+    fx(I.specSequential, ns.map(n => B("TransactionSpec.sequential", n)), {call: "s.update(...specs)", doc: "abcd", desc, specs: specs.map(specIn), ...(typesIn(specs) ? {effectTypes: typesIn(specs)} : {})},
        cap(() => { let t = s.update(...specs); return {changes: t.changes.toJSON(), doc: t.newDoc.toString(), selection: sel(t.selection), effects: t.effects.map(eff)} }))
 }

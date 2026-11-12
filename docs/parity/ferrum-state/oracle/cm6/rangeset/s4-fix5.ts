@@ -1,4 +1,4 @@
-// S4 fix step of seed 4104 (V19, V21) for chunk `rangeset`: fixtures F7000...F7499, appended to
+// S4 fix step of seed 4104 (V19, V21) for chunk `rangeset`: fixtures F7000...F7099, appended to
 // docs/parity/ferrum-state/fixtures/rangeset.jsonl (fresh = false). Rerunning first drops that range.
 // Run after fixtures.ts (which truncates the file), random.ts and s4-tags.ts:
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/rangeset/fixtures.ts
@@ -28,7 +28,7 @@ import {readFileSync, writeFileSync} from "node:fs"
 import {Pool, Spec, writer, RangeSet, ChangeSet} from "./lib"
 
 const FILE = "docs/parity/ferrum-state/fixtures/rangeset.jsonl"
-const FIRST = 7000, LAST = 7499
+const FIRST = 7000, LAST = 7099
 writeFileSync(FILE, readFileSync(FILE, "utf8").split("\n").filter(l => {
   if (!l) return false
   let n = Number(JSON.parse(l).id.slice(1)); return n < FIRST || n > LAST
