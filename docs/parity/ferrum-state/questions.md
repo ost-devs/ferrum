@@ -808,3 +808,20 @@ Open questions only (`docs/workflow/README.md` §3): a decided entry is removed 
   - Not verified (deduction left open): whether a shared chunk can change `boundChange` calls, or the merged ranges a view consumer computes, in general.
 - **Blocks.** The `D6` reading of `state.RangeSet^compare.B2` and `state.RangeSet^eq.B7` at S5; the implementation of `RangeSet.compare` and `RangeSet.eq`. Nothing in S4: the rows state the facts.
 - **Raised by.** spec-auditor (S4 seed 4104 fix step, V21), 2026-11-12.
+
+## Q56. A change filter that returns an odd-length range array makes `EditorState.update` never return
+- **Found.** `mirrors/cm6/state/src/change.ts:269-294` (`ChangeSet.filter`) reads `ranges[i++]` without a bound check; its only exit for the range list is `i == ranges.length` (`:273`). After the last odd element, `end` is `undefined`, both while loops are skipped, and `i` passes the length forever. On doc "abcdef", the filter results `[2]`, `[5]`, `[0, 1, 3]` and `[0]` all hit a 4 s time limit, also for `update({})` (probe cases `cfOddLength`, `cfOddLenMinus1`, `cfOddNoChange`, `cfOddZero`). `[6]` on "abcdef", `[5]` on "abc" and `[0]` on an empty doc terminate. Behavior `state.EditorState^changeFilter.B11`.
+- **Open because.** Q34 records that filter ranges are used unchecked (unsorted arrays, the 1e9 sentinel), not non-termination. The `changeFilter` doc (`mirrors/cm6/state/src/state.ts:404-410`) describes pairs only; no decision covers malformed filter results.
+- **Bears on it.**
+  - Only an array returned by a single filter reaches this: `joinRanges` (`mirrors/cm6/state/src/transaction.ts:290-300`) always returns pairs.
+  - Deduction from the probes: it hangs when the last element is below the start document's length in UTF-16 code units. No `CHANGELOG.md` entry mentions it; no consumer in `mirrors/cm6/*/src` registers a change filter.
+  - A port that terminates, rejects or pairs up the array differs from cm6 on this input. The `change` fixtures already record `{"timeout": 5000}` for Q27.
+- **Blocks.** Whether the fixtures of `state.EditorState^changeFilter.B11` record a timeout; the S5 decision on malformed filter results.
+- **Raised by.** spec-auditor (S4 seed 4106 fix step, V26), 2026-11-12.
+
+## Q57. `field.init(create)` with a falsy `create` falls back to the spec's `create` at state creation but throws when a reconfiguration brings the same entry in
+- **Found.** At creation, `StateField.create` uses `(init?.create || this.createF)` (`mirrors/cm6/state/src/facet.ts:319`), so `init(null)` gives the spec value (`fixtures/facet.jsonl` F7164). The slot's reconfigure calls `reInit.create(state)` directly (`facet.ts:340`) and throws `TypeError("reInit.create is not a function")`, both when the field is already present (F7165) and when it is added in the same transaction (F7166). Behavior `state.StateField.init.B6`.
+- **Open because.** The type requires a function (`facet.ts:356`). Q47 covers engine TypeErrors and paths giving different errors, not one input that succeeds on one path and throws on another; no decision covers it.
+- **Bears on it.** The outcome for the same extension value depends on whether it arrives at creation or through `appendConfig`/`reconfigure`. Deduction: a Rust signature taking a function cannot express the falsy value. No consumer in `mirrors/cm6/*/src` passes a non-function to `init`.
+- **Blocks.** Nothing before S5.
+- **Raised by.** spec-auditor (S4 seed 4106 fix step, V26), 2026-11-12.
