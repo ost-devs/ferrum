@@ -4,7 +4,8 @@
 // behavior that gained D2 gets one fixture per case its assertion turns on (CRLF, lone CR, U+2028 without and with
 // lineSeparator). The ASCII fixtures already exist. No behavior here steps grapheme clusters (change.ts never reaches
 // findClusterBreak), so no cluster case applies.
-// Appends to fixtures/change.jsonl (fresh = false) with ids F7000-F7999; rerunning first drops that range.
+// Appends to fixtures/change.jsonl (fresh = false) with ids F7000-F7499; rerunning first drops that range
+// (F7500-F7999 belong to s4-fix5.ts).
 // Run order for the chunk: s2-fixtures.ts, s2-generator.ts, gapfill-mapset.ts, s4-fix.ts, s4-tags.ts, then this file.
 // From the repository root:
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/change/s4-m7.ts
@@ -21,7 +22,7 @@ import {run} from "./interp"
 
 const ROOT = "docs/parity/ferrum-state"
 const FILE = `${ROOT}/fixtures/change.jsonl`
-const FIRST = 7000, LAST = 7999
+const FIRST = 7000, LAST = 7499
 const ids: Record<string, string> = {}
 for (let line of readFileSync(`${ROOT}/raw/inventory.jsonl`, "utf8").split("\n")) if (line.trim()) {
   let r = JSON.parse(line); if (r.chunk == "change") ids[r.item] = r.id

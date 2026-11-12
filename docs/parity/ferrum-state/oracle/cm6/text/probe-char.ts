@@ -14,16 +14,18 @@ function fcb(bs: number[], str: string, pos: number, forward?: boolean, includeE
   if (forward !== undefined) input.forward = forward
   if (includeExtending !== undefined) input.includeExtending = includeExtending
   if (note) input.note = note
+  input.expr = `findClusterBreak(str, pos${forward === undefined ? "" : ", forward"}${includeExtending === undefined ? "" : ", includeExtending"})`
   let out = capture(() => forward === undefined ? findClusterBreak(str, pos)
     : includeExtending === undefined ? findClusterBreak(str, pos, forward) : findClusterBreak(str, pos, forward, includeExtending))
   w(FCB, bs.map(B), input, out)
 }
 // Every break of a string, walking forward from 0 and backward from the end (as cm6's own package test walks).
+const WALK = "forward: i = 0; while i < str.length: n = findClusterBreak(str, i, true, includeExtending), record n, stop if n == i, i = n. backward: i = str.length; while i > 0: n = findClusterBreak(str, i, false, includeExtending), record n, stop if n == i, i = n"
 function walk(bs: number[], str: string, includeExtending = true, note?: string) {
   let fwd: number[] = [], bwd: number[] = []
   for (let i = 0; i < str.length;) { let n = findClusterBreak(str, i, true, includeExtending); fwd.push(n); if (n == i) break; i = n }
   for (let i = str.length; i > 0;) { let n = findClusterBreak(str, i, false, includeExtending); bwd.push(n); if (n == i) break; i = n }
-  w(FCB, bs.map(B), {walk: true, str, includeExtending, note}, {ok: {forward: fwd, backward: bwd}})
+  w(FCB, bs.map(B), {walk: true, str, includeExtending, note, expr: WALK}, {ok: {forward: fwd, backward: bwd}})
 }
 
 // B1: forward at the end of the string returns pos
@@ -154,7 +156,7 @@ fcb([16], "éx", 3, false)
 // codePointAt
 const C = (n: number) => `state.codePointAt.B${n}`
 function cpa(bs: number[], str: string, pos: number, note?: string) {
-  w(CPA, bs.map(C), note ? {str, pos, note} : {str, pos}, capture(() => codePointAt(str, pos)))
+  w(CPA, bs.map(C), note ? {str, pos, note, expr: "codePointAt(str, pos)"} : {str, pos, expr: "codePointAt(str, pos)"}, capture(() => codePointAt(str, pos)))
 }
 cpa([1], "a", 0); cpa([1], "é中", 1); cpa([1], "￿", 0); cpa([1], " ", 0)
 cpa([2], "😀", 0); cpa([2], "a𝐀", 1); cpa([2], "\u{10FFFF}", 0); cpa([2], "\u{10000}", 0)
@@ -167,7 +169,7 @@ cpa([7], "abc", 1.5, "fractional pos"); cpa([7], "😀", 0.5, "fractional pos in
 // codePointSize
 const S = (n: number) => `state.codePointSize.B${n}`
 function cps(bs: number[], code: number, note?: string) {
-  w(CPS, bs.map(S), note ? {code, note} : {code}, capture(() => codePointSize(code)))
+  w(CPS, bs.map(S), note ? {code, note, expr: "codePointSize(code)"} : {code, expr: "codePointSize(code)"}, capture(() => codePointSize(code)))
 }
 cps([1], 0x61); cps([1], 0); cps([1], 0xFFFF); cps([1], 0xD83D, "lone high surrogate value"); cps([1], 0xDE00, "low surrogate value, as codePointAt returns between halves")
 cps([2], 0x10000); cps([2], 0x1F600); cps([2], 0x10FFFF)

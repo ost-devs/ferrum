@@ -31,6 +31,7 @@ function categorizer(wordChars?: string) {
   let st = wordChars === undefined ? EditorState.create() : EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars}])})
   return st.charCategorizer(0)
 }
+const EXPR = "cat = EditorState.create().charCategorizer(0) when wordChars is \"absent\", else EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars}])}).charCategorizer(0); CharCategory[cat(s)] for each s of strings"
 function randomString() {
   if (R.chance(0.2)) return R.pick(POOL).repeat(2)
   let n = R.chance(0.6) ? 1 : 2 + R.int(5), out = ""
@@ -42,11 +43,11 @@ for (let c = 0; c < 120; c++) {
   let strings = [""].concat(Array.from({length: 19}, randomString))
   w("state.cm6.166", ["state.CharCategory.B2", "state.CharCategory.Word.B1", "state.CharCategory.Word.B2", "state.CharCategory.Word.B4", "state.CharCategory.Word.B5",
     "state.CharCategory.Word.B6", "state.CharCategory.Space.B1", "state.CharCategory.Space.B2", "state.CharCategory.Other.B1", "state.CharCategory.Other.B2", "state.CharCategory.Other.B3"],
-    {seed: SEED, case: c, wordChars: wordChars === undefined ? "absent" : wordChars, strings, engine: ENGINE}, {ok: strings.map(s => CharCategory[cat(s)])})
+    {seed: SEED, case: c, wordChars: wordChars === undefined ? "absent" : wordChars, strings, engine: ENGINE, expr: EXPR}, {ok: strings.map(s => CharCategory[cat(s)])})
 }
 {
   let s = Array.from({length: 300}, () => R.pick(POOL)).join("").slice(0, 600)
   let parts = [s, s.replace(/[\p{Alphabetic}\p{Number}_]/gu, ""), " ".repeat(600)]
-  w("state.cm6.166", ["state.CharCategory.B2"], {seed: SEED, case: "large", wordChars: "absent", strings: parts, engine: ENGINE}, {ok: parts.map(p => CharCategory[categorizer()(p)])})
+  w("state.cm6.166", ["state.CharCategory.B2"], {seed: SEED, case: "large", wordChars: "absent", strings: parts, engine: ENGINE, expr: EXPR}, {ok: parts.map(p => CharCategory[categorizer()(p)])})
 }
 console.log("gen-category: 121 cases")

@@ -17,12 +17,37 @@
 // - range spec: {"cursor": [pos, assoc, bidiLevel, goalColumn]}, {"range": [anchor, head, goalColumn,
 //   bidiLevel, assoc]}, {"undir": [from, to]}, {"json": {...}} (SelectionRange.fromJSON), or {"ref": k}:
 //   the k-th range object built so far in this fixture (in decode order), reused by identity.
-// - selection spec: {"create": [range specs], "main"?: n}, {"single": [anchor, head]}, {"json": {...}}.
+// - selection spec: {"create": [range specs], "main"?: n}, {"single": [anchor, head]}, {"json": {...}},
+//   {"jsonRefs": {...}} (EditorSelection.fromJSON, like "json", and its range objects are then appended, in order, to
+//   the ranges built so far, so {"ref": k} can name one of them; S4 seed 4105, s4-fix5.ts).
 // - "text" (line array, s4-tags.ts): the document the input positions refer to, stored so that they can be mapped to
 //   another unit; no op reads it (ops that read a document use "doc").
 //
 // Output conventions: non-finite numbers are written {"num": "..."}; goalColumn undefined is written null;
 // `src` of a range is the index of the input range object it is (by ===), or -1 for a new object.
+// Output of each op (every value is a read of the op's single result r, or a comparison of r with the op's inputs;
+// `desc` = {sections: r.desc.toJSON() or r.toJSON(), isSet: r instanceof ChangeSet, json: r.toJSON() when a set};
+// `identity` = "a" when r === a, "b" when r === b, else "new"):
+//   desc.props {length, newLength, empty} | desc.iterGaps [[posA, posB, length]] | desc.iterChangedRanges
+//   [[fromA, toA, fromB, toB, inserted text or null]] | desc.invertedDesc {...desc, sameTwice: r === d.invertedDesc}
+//   | desc.composeDesc {...desc, identity, length, newLength} | desc.mapDesc {...desc, identity} | desc.mapPos,
+//   desc.touchesRange: the return value | desc.toJSON {json, sameAsInputArray: json === the input array, sameTwice:
+//   json === a second toJSON()} | desc.fromJSON {sections, keepsInputArray: toJSON() === the input array, length,
+//   newLength, empty} | desc.toString: String(d)
+//   set.of, set.fromJSON, set.empty {...desc, length, newLength, empty} (set.fromJSON also roundTrip: r.toJSON())
+//   | set.ofIdentity {same: r === the input set, ...desc} | set.apply {lines, length, same: r === the input doc}
+//   | set.invert {...desc, length, newLength, applied?: r.apply(Text.of(applyTo)) when applyTo is given}
+//   | set.compose {...desc, identity, length, newLength, applied?: r.apply(Text.of(doc)) when doc is given}
+//   | set.map, set.mapDesc {...desc, identity} | set.iterChanges [[fromA, toA, fromB, toB, inserted lines]]
+//   | set.desc {...desc, sameTwice: r === set.desc, sharesSections: r.sections === set.sections}
+//   | set.toJSON, range.toJSON, sel.toJSON {json, stringified: JSON.stringify(input value)}
+//   mapmode.values {Simple, TrackDel, TrackBefore, TrackAfter, names: MapMode[0..3]}
+//   range.make, range.extend, range.fromJSON: the range | range.map {result, same: r === the input range}
+//   | range.eq, sel.eq: the boolean | sel.make {ranges, mainIndex, main, sameArray: r.ranges === the input array,
+//   null for "single"/"json"} | sel.map, sel.replaceRange {ranges, mainIndex, main, same: r === the input selection,
+//   sameArray: r.ranges === the input selection's ranges} | sel.main {main, mainIndex} | sel.asSingle {ranges,
+//   mainIndex, main, same: r === the input selection, mainSame: r.main === the input main} | sel.addRange,
+//   sel.fromJSON {ranges, mainIndex, main}.
 import {ChangeSet, ChangeDesc, EditorSelection, SelectionRange, Text, MapMode} from "@codemirror/state"
 import {capture} from "@harness/lib"
 
@@ -85,6 +110,7 @@ class Ctx {
     }
     if ("single" in s) return {sel: (EditorSelection.single as any)(...args(s.single))}
     if ("json" in s) return {sel: EditorSelection.fromJSON(deepNum(s.json))}
+    if ("jsonRefs" in s) { let sel = EditorSelection.fromJSON(deepNum(s.jsonRefs)); this.ranges.push(...sel.ranges); return {sel} }
     throw new Error("bad selection spec")
   }
   rangeOut(r: SelectionRange | undefined): any {

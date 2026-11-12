@@ -30,6 +30,11 @@ function ch(kind: string, at: {from: number, to?: number}, length: number): C {
   return t.lineSep ? {spec, length, lineSep: t.lineSep} : {spec, length}
 }
 const mk = (c: C) => ChangeSet.of(c.spec, c.length, c.lineSep)
+// Named runs (seed 4105's V22: every output value is named in the input).
+const MAP = "set.map(ChangeSet.of(changes.spec, changes.length, changes.lineSep))"
+const NEWLEN = "newLength: ChangeSet.of(changes.spec, changes.length, changes.lineSep).newLength"
+const NEWLEN_DIFF = "newLength: ChangeSet.of(textDiff.spec, textDiff.length, textDiff.lineSep).newLength"
+const COMPARE = "calls: RangeSet.compare(old, new, ChangeSet.of(textDiff.spec, textDiff.length, textDiff.lineSep), cmpRec comparator)"
 function mark(name: string, extra: Spec = {}): Spec { return {name, startSide: 1, endSide: -1, ...extra} }
 function pt(name: string, extra: Spec = {}): Spec { return {name, startSide: 1, endSide: 1, point: true, ...extra} }
 type R = [number, number, number][]
@@ -43,7 +48,7 @@ const setInput = (P: Pool, ranges: R, sort = false) => ({values: P.json(), range
   for (let k of ["crlf", "u2028", "u2028sep", "cr", "crlfsep"]) {
     let c = ch(k, {from: 5}, 10)
     let bs = k == "cr" || k == "crlfsep" ? B("RangeSet.map", 10) : [...B("RangeValue.startSide", 3), ...B("RangeSet.map", 3, 10)]
-    fx(ID.startSide, bs, {case: k, set: setInput(A, base), changes: c}, () => ({newLength: mk(c).newLength, list: A.list(A.set(base).map(mk(c)))}))
+    fx(ID.startSide, bs, {case: k, set: setInput(A, base), changes: c, ops: [NEWLEN, "list: list(" + MAP + ")"]}, () => ({newLength: mk(c).newLength, list: A.list(A.set(base).map(mk(c)))}))
   }
 }
 
@@ -65,7 +70,7 @@ const setInput = (P: Pool, ranges: R, sort = false) => ({values: P.json(), range
                  [3, 6, 10], [3, 6, 11], [3, 6, 12], [3, 3, 13], [3, 6, 14]]
   for (let k of ["astral", "crlf", "u2028", "u2028sep"]) {
     let c = ch(k, {from: 3}, 10)
-    fx(ID.startSide, [...B("RangeValue.startSide", 5), ...B("RangeSet.map", 3)], {case: k, set: setInput(C, cons, true), changes: c},
+    fx(ID.startSide, [...B("RangeValue.startSide", 5), ...B("RangeSet.map", 3)], {case: k, set: setInput(C, cons, true), changes: c, ops: [NEWLEN, "list: list(" + MAP + ")"]},
        () => ({newLength: mk(c).newLength, list: C.list(C.set(cons, true).map(mk(c)))}))
   }
 }
@@ -76,7 +81,8 @@ const setInput = (P: Pool, ranges: R, sort = false) => ({values: P.json(), range
   for (let at of [2, 5])
     for (let k of ["astral", "crlf", "u2028", "u2028sep"]) {
       let c = ch(k, {from: at}, 10)
-      fx(ID.endSide, [...B("RangeValue.endSide", 2), ...B("RangeSet.map", 5)], {case: k, sets: [setInput(M, [[2, 5, 0]]), setInput(M, [[2, 5, 1]])], changes: c},
+      fx(ID.endSide, [...B("RangeValue.endSide", 2), ...B("RangeSet.map", 5)], {case: k, sets: [setInput(M, [[2, 5, 0]]), setInput(M, [[2, 5, 1]])], changes: c,
+                                                                     ops: [NEWLEN, "lists: [sets[0], sets[1]].map(s => list(s.map(ChangeSet.of(changes.spec, changes.length, changes.lineSep))))"]},
          () => ({newLength: mk(c).newLength, lists: [M.list(M.set([[2, 5, 0]]).map(mk(c))), M.list(M.set([[2, 5, 1]]).map(mk(c)))]}))
     }
 }
@@ -87,7 +93,7 @@ const setInput = (P: Pool, ranges: R, sort = false) => ({values: P.json(), range
                     {name: "guard", startSide: 0, endSide: 0}])
   for (let k of ["crlf", "u2028", "u2028sep"]) {
     let c = ch(k, {from: 5}, 10)
-    fx(ID.endSide, [...B("RangeValue.endSide", 3), ...B("RangeSet.map", 4, 10)], {case: k, set: setInput(E, [[0, 1, 2], [5, 5, 0]]), changes: c},
+    fx(ID.endSide, [...B("RangeValue.endSide", 3), ...B("RangeSet.map", 4, 10)], {case: k, set: setInput(E, [[0, 1, 2], [5, 5, 0]]), changes: c, ops: [NEWLEN, "list: list(" + MAP + ")"]},
        () => ({newLength: mk(c).newLength, list: E.list(E.set([[0, 1, 2], [5, 5, 0]]).map(mk(c)))}))
   }
 }
@@ -100,7 +106,7 @@ const setInput = (P: Pool, ranges: R, sort = false) => ({values: P.json(), range
   let r: R = [[0, 1, 0], [5, 5, 1], [5, 5, 2], [5, 5, 3], [5, 5, 4], [18, 19, 0]]
   for (let k of ["crlf", "u2028", "u2028sep"]) {
     let c = ch(k, {from: 4, to: 6}, 20)
-    fx(ID.mapMode, [...B("RangeValue.mapMode", 1), ...B("RangeSet.map", 3, 10)], {case: k, set: setInput(P, r), changes: c},
+    fx(ID.mapMode, [...B("RangeValue.mapMode", 1), ...B("RangeSet.map", 3, 10)], {case: k, set: setInput(P, r), changes: c, ops: [NEWLEN, "list: list(" + MAP + ")"]},
        () => ({newLength: mk(c).newLength, list: P.list(P.set(r).map(mk(c)))}))
   }
 }
@@ -112,7 +118,8 @@ const setInput = (P: Pool, ranges: R, sort = false) => ({values: P.json(), range
   for (let k of ["astral", "crlf", "u2028", "u2028sep"])
     for (let r of [[[5, 6, 0], [15, 16, 3]], [[5, 6, 1], [15, 16, 3]], [[5, 5, 2], [15, 16, 3]]] as R[]) {
       let c = ch(k, {from: 0, to: 10}, 20)
-      fx(ID.map, [...B("RangeValue.mapMode", 3), ...B("RangeSet.map", 7)], {case: k, set: setInput(Q, r), changes: c, question: "Q19"},
+      fx(ID.map, [...B("RangeValue.mapMode", 3), ...B("RangeSet.map", 7)], {case: k, set: setInput(Q, r), changes: c, question: "Q19",
+                                                                                  ops: [NEWLEN, "touchesRange: ChangeSet.of(changes.spec, changes.length, changes.lineSep).touchesRange(ranges[0][0], ranges[ranges.length - 1][1])", "list: list(" + MAP + ")"]},
          () => ({newLength: mk(c).newLength, touchesRange: mk(c).touchesRange(r[0][0], r[r.length - 1][1]), list: Q.list(Q.set(r).map(mk(c)))}))
     }
 }
@@ -123,7 +130,7 @@ const setInput = (P: Pool, ranges: R, sort = false) => ({values: P.json(), range
   let big: R = []; for (let i = 0; i < 600; i++) big.push([i, i + 1, i % 2])
   for (let k of ["astral", "crlf", "u2028", "u2028sep"]) {
     let c = ch(k, {from: 100}, 600)
-    fx(ID.map, B("RangeSet.map", 2), {case: k, set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 2]"}, changes: c, reads: "mapped = set.map(changes): chunk source indexes, chunkPos, chunk sizes, size; aroundInsertion = first three ranges of mapped.iter(99)"}, () => {
+    fx(ID.map, B("RangeSet.map", 2), {case: k, set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 2]"}, changes: c, reads: "newLength: ChangeSet.of(changes.spec, changes.length, changes.lineSep).newLength; mapped = set.map(that change set): chunkSourceIndex: for each chunk of mapped, its index in set's chunks (-1 if new); chunkPos: mapped's chunkPos (internal); chunkSizes: range count of each chunk of mapped; size: mapped.size; aroundInsertion = first three ranges of mapped.iter(99)"}, () => {
       let s: any = P.set(big), m: any = s.map(mk(c))
       return {newLength: mk(c).newLength, chunkSourceIndex: m.chunk.map((x: any) => s.chunk.indexOf(x)), chunkPos: m.chunkPos,
               chunkSizes: m.chunk.map((x: any) => x.value.length), size: m.size, aroundInsertion: P.list(m, 99).slice(0, 3)}
@@ -137,7 +144,7 @@ const setInput = (P: Pool, ranges: R, sort = false) => ({values: P.json(), range
   for (let k of ["astral", "crlf", "u2028", "u2028sep"]) {
     let c = ch(k, {from: 4, to: 8}, 20)
     fx(ID.compare, [...B("RangeSet^compare", 3, 4), ...B("RangeComparator.compareRange", 1)],
-       {case: k, name: "inside a replaced region", old: [setInput(P, [[2, 12, 0]])], new: [setInput(P, [[2, 4, 1]])], textDiff: c}, () => {
+       {case: k, name: "inside a replaced region", old: [setInput(P, [[2, 12, 0]])], new: [setInput(P, [[2, 4, 1]])], textDiff: c, ops: [NEWLEN_DIFF, COMPARE]}, () => {
       let rec = P.cmpRec(); RangeSet.compare([P.set([[2, 12, 0]])], [P.set([[2, 4, 1]])], mk(c), rec.comp)
       return {newLength: mk(c).newLength, calls: rec.calls}
     })
@@ -148,7 +155,7 @@ const setInput = (P: Pool, ranges: R, sort = false) => ({values: P.json(), range
     let newTo = mk(c).mapPos(10, 1)
     fx(ID.compare, [...B("RangeSet^compare", 3, 5), ...B("RangeComparator.comparePoint", 1)],
        {case: k, name: "point across a change", old: [setInput(P, [[2, 10, 2]])], new: [setInput(P, [[2, newTo, 3]])], textDiff: c,
-        newRule: "new point to = textDiff.mapPos(10, 1)"}, () => {
+        newRule: "new point to = textDiff.mapPos(10, 1)", ops: [NEWLEN_DIFF, COMPARE]}, () => {
       let rec = P.cmpRec(); RangeSet.compare([P.set([[2, 10, 2]])], [P.set([[2, newTo, 3]])], mk(c), rec.comp)
       return {newLength: mk(c).newLength, calls: rec.calls}
     })

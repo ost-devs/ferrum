@@ -2,7 +2,7 @@
 
 - **What:** the stack notes of `raw/behaviors.jsonl` (`stack` field), grouped by inventory item, identical notes merged; each note ends with the behaviors (`B<n>` of that item) that carry it. Generated from the rows; items whose behaviors all say `none found` are left out. Facts, not proposals (`docs/workflow/specification.md` §5, §7).
 - **cm6:** `@codemirror/state` 6.7.6, mirror commit 651084c; `mirrors/...` line numbers refer to it.
-- **Ferrum commit:** 361d147; line numbers in `docs/` and `tools/` refer to it.
+- **Ferrum commit:** ea24c95; line numbers in `docs/` and `tools/` refer to it.
 - **Ids:** behaviors `state.<item>.B<n>`; inventory rows `state.cm6.<nnn>`
 
 Items with notes: 164 of 261; distinct notes: 431.
@@ -349,7 +349,7 @@ Items with notes: 164 of 261; distinct notes: 431.
 
 ## state.cm6.068 `EditorSelection.addRange`
 
-- Mechanism: main tracking by JS object identity: `ranges.indexOf(main)` after the sort (mirrors/cm6/state/src/selection.ts:226) finds the first occurrence of an object present twice (mirrors/cm6/state/src/selection.ts:157 prepends `range` to the existing array), so the main index depends on which slot holds the same object, not on positions. Evidence: code structure; no code comment or CHANGELOG entry found. Editor need underneath: keeping the main range main across sorting (Q13). (B4)
+- Mechanism: main tracking by JS object identity: `ranges.indexOf(main)` after the sort (mirrors/cm6/state/src/selection.ts:226) finds the first occurrence of an object present twice (mirrors/cm6/state/src/selection.ts:157 prepends `range` to the existing array), so the main index depends on which slot holds the same object, not on positions; this changes the result only on an unsorted selection from `EditorSelection.fromJSON` (F7500, F7501), not on one built by `EditorSelection.create` (F7504, F7505). Evidence: code structure; no code comment or CHANGELOG entry found. Editor need underneath: keeping the main range main across sorting (Q13). (B4)
 
 ## state.cm6.069 `EditorSelection.replaceRange`
 

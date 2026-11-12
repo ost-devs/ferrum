@@ -49,15 +49,15 @@ const sel0 = {ranges: [{anchor: 0, head: 0}], main: 0}
     ["Prec.lowest([field, field.init(() => 99)])", Prec.lowest([field, field.init(() => 99)])],
   ]
   for (let [desc, ext] of cases)
-    fx(ITEM, [B8], {call: `EditorState.fromJSON(json, {extensions: ${desc}}, {f: field})`, json, field: FIELD},
+    fx(ITEM, [B8], {call: `EditorState.fromJSON(json, {extensions: ${desc}}, {f: field}).field(field) (field) and the fromJSON log (log)`, json, field: FIELD},
        run(json, {extensions: ext}, {f: field}))
   // Two property names mapping to the same field: the first name in `for...in` order over `fields` wins.
   // String keys come in insertion order, integer-like keys first in ascending order.
   let j2 = {doc: "", selection: sel0, a: 1, b: 2}
-  fx(ITEM, [B8], {call: "EditorState.fromJSON(json, {}, {b: field, a: field})", json: j2, field: FIELD},
+  fx(ITEM, [B8], {call: "EditorState.fromJSON(json, {}, {b: field, a: field}).field(field) (field) and the fromJSON log (log)", json: j2, field: FIELD},
      run(j2, {}, {b: field, a: field}))
   let j3 = {doc: "", selection: sel0, x: 5, "1": 6}
-  fx(ITEM, [B8], {call: "EditorState.fromJSON(json, {}, {x: field, \"1\": field})", json: j3, field: FIELD,
+  fx(ITEM, [B8], {call: "EditorState.fromJSON(json, {}, {x: field, \"1\": field}).field(field) (field) and the fromJSON log (log)", json: j3, field: FIELD,
                   forInOrder: Object.keys({x: field, "1": field})},
      run(j3, {}, {x: field, "1": field}))
 }
@@ -73,21 +73,21 @@ const sel0 = {ranges: [{anchor: 0, head: 0}], main: 0}
     console.log("V4 throw at state.ts:" + (m && m[1]))
     if (!m || m[1] != "229") throw new Error("V4: expected a throw at state.ts:229")
   }
-  fx(ITEM, [B9], {call: "EditorState.fromJSON(json, {}, {f: field})", json, field: FIELD},
+  fx(ITEM, [B9], {call: "EditorState.fromJSON(json, {}, {f: field}).field(field)", json, field: FIELD},
      cap(() => EditorState.fromJSON(json, {}, {f: noFrom}).field(noFrom)))
   // The property is own but holds undefined: still an initializer, still the throw
   let ju = {doc: "", selection: sel0, f: undefined}
-  fx(ITEM, [B9], {call: "EditorState.fromJSON(json, {}, {f: field}) where json.f is an own property holding undefined", json: ju, field: FIELD},
+  fx(ITEM, [B9], {call: "EditorState.fromJSON(json, {}, {f: field}).field(field) where json.f is an own property holding undefined", json: ju, field: FIELD},
      cap(() => EditorState.fromJSON(ju, {}, {f: noFrom}).field(noFrom)))
   // The property is absent from json: no initializer, no throw, the field is not in the state
   let jn = {doc: "", selection: sel0}
-  fx(ITEM, [B9], {call: "EditorState.fromJSON(json, {}, {f: field}) where json has no f", json: jn, field: FIELD},
+  fx(ITEM, [B9], {call: "EditorState.fromJSON(json, {}, {f: field}).field(field, false) where json has no f", json: jn, field: FIELD},
      cap(() => u(EditorState.fromJSON(jn, {}, {f: noFrom}).field(noFrom, false))))
   // A config init at higher precedence comes first, so the JSON initializer is never run: no throw
-  fx(ITEM, [B8, B9], {call: "EditorState.fromJSON(json, {extensions: Prec.highest(field.init(() => 99))}, {f: field})", json, field: FIELD},
+  fx(ITEM, [B8, B9], {call: "EditorState.fromJSON(json, {extensions: Prec.highest(field.init(() => 99))}, {f: field}).field(field)", json, field: FIELD},
      cap(() => EditorState.fromJSON(json, {extensions: Prec.highest(noFrom.init(() => 99))}, {f: noFrom}).field(noFrom)))
   // At the same precedence the JSON initializer comes first and throws
-  fx(ITEM, [B8, B9], {call: "EditorState.fromJSON(json, {extensions: [field.init(() => 99)]}, {f: field})", json, field: FIELD},
+  fx(ITEM, [B8, B9], {call: "EditorState.fromJSON(json, {extensions: [field.init(() => 99)]}, {f: field}).field(field)", json, field: FIELD},
      cap(() => EditorState.fromJSON(json, {extensions: [noFrom.init(() => 99)]}, {f: noFrom}).field(noFrom)))
 }
 
@@ -101,8 +101,8 @@ const sel0 = {ranges: [{anchor: 0, head: 0}], main: 0}
   const multi = EditorState.allowMultipleSelections.of(true)
   for (let [doc, ins, at] of [["ab", "x", 0], ["\u{1F600}", "\u{1F600}", 2]] as [string, string, number][]) {
     let j = {doc, selection: {ranges: [], main: -1}}
-    fx(ITEM, [B10], {call: "EditorState.fromJSON(json)", json: j}, cap(() => selOut(EditorState.fromJSON(j).selection)))
-    fx(ITEM, [B10], {call: "EditorState.fromJSON(json, {extensions: allowMultipleSelections.of(true)})", json: j},
+    fx(ITEM, [B10], {call: "EditorState.fromJSON(json).selection", json: j}, cap(() => selOut(EditorState.fromJSON(j).selection)))
+    fx(ITEM, [B10], {call: "EditorState.fromJSON(json, {extensions: allowMultipleSelections.of(true)}).selection", json: j},
        cap(() => selOut(EditorState.fromJSON(j, {extensions: multi}).selection)))
     fx(ITEM, [B10], {call: `EditorState.fromJSON(json).update({changes: {from: ${at}, insert}}).state.selection`, json: j, insert: ins},
        cap(() => selOut(EditorState.fromJSON(j).update({changes: {from: at, insert: ins}}).state.selection)))

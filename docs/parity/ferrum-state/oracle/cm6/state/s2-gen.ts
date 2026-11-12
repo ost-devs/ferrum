@@ -95,7 +95,7 @@ const T0 = Transaction.time.of(1000)
     }
     let bs = [B("EditorState.toText", sep ? 2 : 1), B("EditorState.toText", 4), B("EditorStateConfig.doc", sep ? 2 : 1), B("EditorState.sliceDoc", sep == "\r\n" ? 2 : 1), B("EditorState.sliceDoc", 3)]
     if (str.includes("\u{1F600}")) bs.push(B("EditorState.sliceDoc", 4))
-    fx("state.cm6.013", bs, {generator: "G3", seed, case: i, call: "create({doc: string, extensions: lineSeparator.of(sep)}); toText(string); sliceDoc(from, to) for sampled pairs", string: str, sep},
+    fx("state.cm6.013", bs, {generator: "G3", seed, case: i, call: "s = create({doc: string, extensions: lineSeparator.of(sep)}); toText: s.toText(string); doc: s.doc; slices: s.sliceDoc(from, to) for each [from, to] of pairs, recorded as {from, to, result}", string: str, sep, pairs: slices.map(x => [x.from, x.to])},
        {toText: text(st.toText(str)), doc: text(st.doc), slices})
   }
 }
@@ -117,7 +117,7 @@ const T0 = Transaction.time.of(1000)
     if (/\n/.test(doc)) bs.push(B("EditorState.wordAt", 3))
     if (/[^\x00-\x7f]/.test(doc)) bs.push(B("EditorState.wordAt", 4))
     if (/\u{1F600}|\u{1D400}/u.test(doc)) bs.push(B("EditorState.wordAt", 7))
-    fx("state.cm6.031", bs, {generator: "G4", seed, case: i, call: "EditorState.create({doc}).wordAt(pos) for pos in 0..length (step 7 in the large case); [pos, from, to] or [pos, null]", doc},
+    fx("state.cm6.031", bs, {generator: "G4", seed, case: i, call: "s = EditorState.create({doc}); docLength: s.doc.length; results: s.wordAt(pos) for pos in 0..length (step 7 in the large case), as [pos, from, to] or [pos, null]", doc},
        {docLength: st.doc.length, results})
   }
 }

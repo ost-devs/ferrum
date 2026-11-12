@@ -107,7 +107,7 @@ const T0 = Transaction.time.of(1000)
   let insertedSame: boolean[] = []
   spec.changes.iterChanges((_a, _b, _c, _d, ins) => insertedSame.push(ins === t))
   let pn = p.update(spec).state
-  fx(I.replaceSelection, [B("EditorState.replaceSelection", 4)], {call: "s.replaceSelection(Text.of([\"x\", \"y\"])) with lineSeparator \"|\"", doc: "ab", selection: {anchor: 1}},
+  fx(I.replaceSelection, [B("EditorState.replaceSelection", 4)], {call: "t = Text.of([\"x\", \"y\"]); spec = s.replaceSelection(t) with lineSeparator \"|\"; insertedSameTextObject: for each change of spec.changes (iterChanges), whether its inserted Text is t; then s.update(spec).state: doc, selection, sliceDoc()", doc: "ab", selection: {anchor: 1}},
      {insertedSameTextObject: insertedSame, ...st(pn), sliceDoc: pn.sliceDoc()})
 }
 
@@ -117,7 +117,7 @@ const T0 = Transaction.time.of(1000)
   let seen: any[] = []
   let r = s.changeByRange(rg => { seen.push({same: rg === s.selection.main, ...range(rg)}); return {changes: {from: rg.from, to: rg.from + 1, insert: "q"}, range: EditorSelection.cursor(rg.from + 1)} })
   let ns = s.update(r).state
-  fx(I.changeByRange, [B("EditorState.changeByRange", 1)], {call: "changeByRange(r => ({changes: {from: r.from, to: r.from + 1, insert: \"q\"}, range: cursor(r.from + 1)})) (test-state#18)", doc: "hi"},
+  fx(I.changeByRange, [B("EditorState.changeByRange", 1)], {call: "r = s.changeByRange(r => ({changes: {from: r.from, to: r.from + 1, insert: \"q\"}, range: cursor(r.from + 1)})) (test-state#18); calls: for each callback call, whether its range is s.selection.main (same) and the range; result: r.changes, r.selection, r.effects; then s.update(r).state: doc, selection", doc: "hi"},
      {calls: seen, result: {changes: r.changes.toJSON(), selection: sel(r.selection), effects: r.effects.map(eff)}, ...st(ns)})
   let m = EditorState.create({doc: "1 2 3 4", extensions: EditorState.allowMultipleSelections.of(true),
     selection: EditorSelection.create([EditorSelection.range(0, 1), EditorSelection.range(2, 3), EditorSelection.range(4, 5), EditorSelection.range(6, 7)])})
@@ -177,7 +177,7 @@ const T0 = Transaction.time.of(1000)
   for (let spec of [{from: 2, to: 1}, {from: 0, to: 5}, [{from: 1}, ChangeSet.of([], 3)]])
     fx(I.changes, [B("EditorState.changes", 4)], {call: "s.changes(spec)", doc: "abcd", spec: JSON.parse(JSON.stringify(spec))}, cap(() => s.changes(spec as any).toJSON()))
   for (let spec of [[{from: 3, insert: "b"}, {from: 1, insert: "a"}], [[{from: 0, to: 1}], [{from: 2, to: 3, insert: "Z"}, [{from: 4, insert: "!"}]]], [{from: 0, to: 2}, {from: 1, to: 3}]])
-    fx(I.changes, [B("EditorState.changes", 5)], {call: "s.changes(spec)", doc: "abcd", spec}, cap(() => { let c = s.changes(spec); return {json: c.toJSON(), doc: c.apply(s.doc).toString()} }))
+    fx(I.changes, [B("EditorState.changes", 5)], {call: "c = s.changes(spec): json: c.toJSON(); doc: c.apply(s.doc).toString()", doc: "abcd", spec}, cap(() => { let c = s.changes(spec); return {json: c.toJSON(), doc: c.apply(s.doc).toString()} }))
 }
 
 // ---- Transaction (092)
@@ -193,7 +193,7 @@ const T0 = Transaction.time.of(1000)
   let f = EditorState.create({doc: "abc", extensions: [EditorState.changeFilter.of(() => false), EditorState.transactionExtender.of(() => ({annotations: ann2.of(9)})),
                                                        EditorState.transactionFilter.of(t => [t, {}])]})
   let t3 = f.update({changes: {from: 0, insert: "x"}})
-  fx(I.tr, [B("Transaction", 4)], {call: "update({changes: {from: 0, insert: \"x\"}}) with changeFilter () => false, transactionFilter returning [tr, {}], transactionExtender returning {annotations: ann2.of(9)}", doc: "abc"},
+  fx(I.tr, [B("Transaction", 4)], {call: "t = update({changes: {from: 0, insert: \"x\"}}) with changeFilter () => false, transactionFilter returning [tr, {}], transactionExtender returning {annotations: ann2.of(9)}; timeAnnotationCount: number of Transaction.time annotations of t; annotations: the type of each annotation of t, in order", doc: "abc"},
      {timeAnnotationCount: (t3 as any).annotations.filter((a: any) => a.type === Transaction.time).length, annotations: (t3 as any).annotations.map((a: any) => a.type === Transaction.time ? "Transaction.time" : a.type === ann2 ? "ann2" : "?")})
   for (let selection of [{anchor: 3}, {anchor: -1}, {anchor: -5, head: 2}])
     fx(I.tr, [B("Transaction", 1), B("Transaction", 5)], {call: "s.update({selection})", doc: "abc", selection}, cap(() => sel(s.update({selection}).selection)))
@@ -281,7 +281,7 @@ const T0 = Transaction.time.of(1000)
   let comp = new Compartment, f = Facet.define<string>()
   let r0 = EditorState.create({extensions: [comp.of(f.of("A")), f.of("base")]})
   let r1 = r0.update({effects: [comp.reconfigure(f.of("B")), StateEffect.appendConfig.of(f.of("app")), comp.reconfigure(f.of("C"))]}).state
-  fx(I.trState, [B("Transaction.state", 3)], {call: "create([comp.of(f.of(\"A\")), f.of(\"base\")]); update({effects: [comp.reconfigure(f.of(\"B\")), appendConfig.of(f.of(\"app\")), comp.reconfigure(f.of(\"C\"))]})"},
+  fx(I.trState, [B("Transaction.state", 3)], {call: "r0 = create([comp.of(f.of(\"A\")), f.of(\"base\")]); r1 = r0.update({effects: [comp.reconfigure(f.of(\"B\")), appendConfig.of(f.of(\"app\")), comp.reconfigure(f.of(\"C\"))]}).state; facet: r1.facet(f); startCompartmentAfter: comp.get(r0) afterwards, written f.of(<value>)"},
      {facet: r1.facet(f), startCompartmentAfter: comp.get(r0) === undefined ? "<undefined>" : (comp.get(r0) as any).facet ? "f.of(" + (comp.get(r0) as any).value + ")" : "?"})
   let q0 = EditorState.create({extensions: [comp.of(f.of("A")), f.of("base")]})
   let q1 = q0.update({effects: [StateEffect.appendConfig.of([]), comp.reconfigure(f.of("B"))]}).state

@@ -28,12 +28,12 @@ const out = (t: Transaction) => ({...tr(t), doc: t.newDoc.toString()})
   fx("state.cm6.006", [B("EditorState.doc", 3), B("EditorState^lineSeparator", 3)], {call: "create({doc: \"a\\nb\"}) then update({effects: reconfigure.of(lineSeparator.of(\"|\"))}).state"},
      {sameDoc: re.doc === a.doc, doc: text(re.doc), sliceDoc: re.sliceDoc(), lineBreak: re.lineBreak})
   let c = EditorState.create({doc: "ab|cd|", extensions: EditorState.lineSeparator.of("|")})
-  fx("state.cm6.014", [B("EditorState.sliceDoc", 2)], {call: "s.sliceDoc(1, 5)", doc: "ab|cd|", sep: "|"}, {lines: c.doc.toJSON(), result: c.sliceDoc(1, 5)})
+  fx("state.cm6.014", [B("EditorState.sliceDoc", 2)], {call: "lines: s.doc.toJSON(); result: s.sliceDoc(1, 5)", doc: "ab|cd|", sep: "|"}, {lines: c.doc.toJSON(), result: c.sliceDoc(1, 5)})
   let d = EditorState.create({doc: "abc"})
   fx("state.cm6.014", [B("EditorState.sliceDoc", 4)], {call: "s.sliceDoc(1, 2) on an ASCII doc (no surrogate to split)", doc: "abc"}, {result: d.sliceDoc(1, 2)})
   let orig = EditorState.create({doc: "ab\ncd", selection: EditorSelection.create([EditorSelection.cursor(4, -1, 1, 3)])})
   let back = EditorState.fromJSON(JSON.parse(JSON.stringify(orig.toJSON())))
-  fx("state.cm6.017", [B("EditorState^fromJSON", 7)], {call: "EditorState.fromJSON(JSON round trip of s.toJSON())", doc: "ab\ncd", selection: "create([cursor(4, -1, 1, 3)])"}, {original: st(orig), restored: st(back)})
+  fx("state.cm6.017", [B("EditorState^fromJSON", 7)], {call: "s = EditorState.create({doc, selection}); restored = EditorState.fromJSON(JSON.parse(JSON.stringify(s.toJSON()))); original: doc and selection of s; restored: doc and selection of restored", doc: "ab\ncd", selection: "create([cursor(4, -1, 1, 3)])"}, {original: st(orig), restored: st(back)})
   let s = EditorState.create({doc: "a|b"})
   let t2 = s.update({changes: {from: 3, insert: "x|y"}, effects: StateEffect.reconfigure.of(EditorState.lineSeparator.of("|"))}).state
   fx("state.cm6.022", [B("EditorState^lineSeparator", 4)], {call: "create({doc: \"a|b\"}).update({changes: insert \"x|y\" at 3, effects: reconfigure.of(lineSeparator.of(\"|\"))}).state", doc: "a|b"},
@@ -59,7 +59,7 @@ const out = (t: Transaction) => ({...tr(t), doc: t.newDoc.toString()})
      (() => { let ns = q.update(q.replaceSelection("x|y\nz")).state; return {...st(ns), sliceDoc: ns.sliceDoc()} })())
   let c = EditorState.create({doc: "\u{1F600}\u{1F600}", extensions: EditorState.allowMultipleSelections.of(true), selection: EditorSelection.create([EditorSelection.cursor(0), EditorSelection.cursor(4)])})
   let r7 = c.changeByRange(rg => ({changes: {from: 2, insert: rg.from == 0 ? "\u{1F601}" : "\u{1F602}"}, range: EditorSelection.cursor(4, rg.from == 0 ? -1 : 1)}))
-  fx("state.cm6.011", [B("EditorState.changeByRange", 6)], {call: "cursors 0 and 4; both insert at 2 (\"\\u{1F601}\" for the first, \"\\u{1F602}\" for the second); ranges cursor(4, -1) and cursor(4, 1)", doc: "\u{1F600}\u{1F600}"},
+  fx("state.cm6.011", [B("EditorState.changeByRange", 6)], {call: "cursors 0 and 4; both insert at 2 (\"\\u{1F601}\" for the first, \"\\u{1F602}\" for the second); ranges cursor(4, -1) and cursor(4, 1); r.changes; s.update(r).state", doc: "\u{1F600}\u{1F600}", allowMultipleSelections: true},
      {changes: r7.changes.toJSON(), ...st(c.update(r7).state)})
   let e = EditorState.create({doc: "abcd"})
   fx("state.cm6.012", [B("EditorState.changes", 2)], {call: "s.changes({from: 1, insert: \"xy\"})", doc: "abcd"}, e.changes({from: 1, insert: "xy"}).toJSON())

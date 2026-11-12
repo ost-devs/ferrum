@@ -34,14 +34,14 @@ const cat = (c: CharCategory) => CharCategory[c]
   }
   let s = EditorState.create({doc: "ab", extensions: ts.compute(["doc"], st => st.doc.length)})
   let s2 = s.update({changes: {from: 0, insert: "xyz"}}).state
-  fx("state.cm6.020", [B("EditorState^tabSize", 2), B("EditorState.tabSize", 1)], {call: "create({doc: \"ab\", extensions: tabSize.compute([\"doc\"], s => s.doc.length)}); insert \"xyz\" at 0", doc: "ab"},
+  fx("state.cm6.020", [B("EditorState^tabSize", 2), B("EditorState.tabSize", 1)], {call: "s = create({doc: \"ab\", extensions: tabSize.compute([\"doc\"], s => s.doc.length)}); s2 = s.update({changes: {from: 0, insert: \"xyz\"}}).state; before: s.tabSize; after: s2.tabSize", doc: "ab"},
      {before: s.tabSize, after: s2.tabSize})
   let d = EditorState.create({})
   let c = d.update({effects: StateEffect.reconfigure.of(ts.of(8))}).state
   let comp = new Compartment
   let e = EditorState.create({extensions: [comp.of(ts.of(3)), ts.of(5)]})
   let e2 = e.update({effects: comp.reconfigure([])}).state
-  fx("state.cm6.020", [B("EditorState^tabSize", 3), B("EditorState.tabSize", 1)], {call: "create({}) then reconfigure.of(tabSize.of(8)); create([comp.of(tabSize.of(3)), tabSize.of(5)]) then comp.reconfigure([])"},
+  fx("state.cm6.020", [B("EditorState^tabSize", 3), B("EditorState.tabSize", 1)], {call: "d = create({}); c = d.update({effects: reconfigure.of(tabSize.of(8))}).state; e = create({extensions: [comp.of(tabSize.of(3)), tabSize.of(5)]}); e2 = e.update({effects: comp.reconfigure([])}).state; defaultThenReconfigured: [d.tabSize, c.tabSize]; compartment: [e.tabSize, e2.tabSize]"},
      {defaultThenReconfigured: [d.tabSize, c.tabSize], compartment: [e.tabSize, e2.tabSize]})
 }
 
@@ -60,7 +60,7 @@ const cat = (c: CharCategory) => CharCategory[c]
   let t2 = t.update({changes: {from: 3, insert: "x\ny\r\nz"}}).state
   let t3 = s.update({changes: {from: 3, insert: "x\ny\r\nz"}, effects: StateEffect.reconfigure.of(ls.of("\r\n"))}).state
   fx("state.cm6.022", [B("EditorState^lineSeparator", 3), B("EditorState^lineSeparator", 4)],
-     {call: "create({doc: \"a\\nb\"}); A = update({effects: reconfigure.of(lineSeparator.of(\"\\r\\n\"))}).state; A.update({changes: {from: 3, insert: \"x\\ny\\r\\nz\"}}); and from the start state the same change and reconfiguration in ONE transaction"},
+     {call: "create({doc: \"a\\nb\"}); A = update({effects: reconfigure.of(lineSeparator.of(\"\\r\\n\"))}).state; A.update({changes: {from: 3, insert: \"x\\ny\\r\\nz\"}}); and from the start state the same change and reconfiguration in ONE transaction; for each resulting state (afterReconfigure: A; insertAfter: A after the change; sameTransaction): doc.toJSON() (lines), sliceDoc()"},
      {afterReconfigure: {lines: t.doc.toJSON(), sliceDoc: t.sliceDoc()}, insertAfter: {lines: t2.doc.toJSON(), sliceDoc: t2.sliceDoc()},
       sameTransaction: {lines: t3.doc.toJSON(), sliceDoc: t3.sliceDoc()}})
 }

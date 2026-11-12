@@ -87,7 +87,7 @@ function counted(chunk: any, label: string, hits: any) {
   //     compared with itself, only the top chunk is skipped.
   let r1: R = [[0, 10, 0], [2, 4, 1]]
   fx(ID.compare, B("RangeSet^compare", 2), {old: [setInput(P, r1)], new: "the same set object", textDiff: {spec: null, length: 20},
-     op: "count index reads of the top-layer chunk's values (top) and of the second layer's chunk's values (nested); RangeSet.compare([s], [s], ChangeSet.empty(20), cmp)"}, () => {
+     op: "layers: [chunk count of s, chunk count of s.nextLayer]; count index reads of the top-layer chunk's values (top) and of the second layer's chunk's values (nested) (hits); calls: RangeSet.compare([s], [s], ChangeSet.empty(20), cmp)"}, () => {
     let s: any = P.set(r1), hits: any = {}
     counted(s.chunk[0], "top", hits); counted(s.nextLayer.chunk[0], "nested", hits)
     let rec = P.cmpRec(); RangeSet.compare([s], [s], ChangeSet.empty(20), rec.comp)
@@ -111,7 +111,7 @@ function counted(chunk: any, label: string, hits: any) {
   for (let [name, r] of [["empty point [3,3]", [[3, 3, 3]]], ["point [3,5]", [[3, 5, 3]]]] as [string, R][]) {
     let c = {spec: {from: 15, insert: "x"}, length: 20}
     fx(ID.compare, B("RangeSet^compare", 2), {name, old: [setInput(P, r)], new: "old.map(textDiff)", textDiff: c,
-       op: "count index reads of old's chunk values (old) and, when the mapped chunk is another object, of the new chunk (new); RangeSet.compare([old], [new], textDiff, cmp)"}, () => {
+       op: "sameChunk: new.chunk[0] === old.chunk[0]; maxPoint: old.chunk[0].maxPoint; count index reads of old's chunk values (old) and, when the mapped chunk is another object, of the new chunk (new) (hits); calls: RangeSet.compare([old], [new], textDiff, cmp)"}, () => {
       let s: any = P.set(r), cs = ChangeSet.of(c.spec, c.length), m: any = s.map(cs), hits: any = {}
       let sameChunk = m.chunk[0] === s.chunk[0]
       counted(s.chunk[0], "old", hits); if (!sameChunk) counted(m.chunk[0], "new", hits)
@@ -124,8 +124,8 @@ function counted(chunk: any, label: string, hits: any) {
   //     and from join (nested: join([X, S]) and join([Y, S]) share S's chunk as their second layer).
   let E: R = [[3, 3, 3]], X: R = [[1, 1, 3]], Y: R = [[1, 1, 3]]
   fx(ID.seq, B("RangeSet^eq", 7), {sets: {E: setInput(P, E), X: setInput(P, X), Y: setInput(P, Y)},
-     ops: ["topShared: eq([E], [E.map(ChangeSet.of({from: 15, insert: \"x\"}, 20))]), counting index reads of E's chunk values (E)",
-           "nestedShared: eq([join([X, S])], [join([Y, S])]) with S a fresh RangeSet.of(E ranges), counting reads of S's chunk values (S)"]}, () => {
+     ops: ["topShared: sameChunk: E.map(ChangeSet.of({from: 15, insert: \"x\"}, 20)).chunk[0] === E.chunk[0]; eq: eq([E], [that mapped set]), counting index reads of E's chunk values (E) (hits)",
+           "nestedShared: eq: eq([join([X, S])], [join([Y, S])]) with S a fresh RangeSet.of(E ranges), counting reads of S's chunk values (S) (hits)"]}, () => {
     let e: any = P.set(E), hitsTop: any = {}
     let em: any = e.map(ChangeSet.of({from: 15, insert: "x"}, 20))
     counted(e.chunk[0], "E", hitsTop)
@@ -142,7 +142,7 @@ function counted(chunk: any, label: string, hits: any) {
   let big: R = []; for (let i = 0; i < 750; i++) big.push([i, i + 1, i == 0 || i == 500 ? 3 : 4])
   for (let from of [0, 300])
     fx(ID.spans, [...B("RangeSet^spans", 7)], {set: {values: P.json(), rangesRule: "750 ranges [i, i+1, i == 0 || i == 500 ? 3 : 4]"}, from, to: 750, minPointSize: 1,
-       op: "count index reads of the second chunk's values (chunk1); RangeSet.spans([set], from, to, iterator, minPointSize)"}, () => {
+       op: "chunks: [range count, maxPoint] of each chunk of set; count index reads of the second chunk's values (chunk1) (hits); RangeSet.spans([set], from, to, iterator, minPointSize): calls, return value (ret)"}, () => {
       let s: any = P.set(big), hits: any = {}
       counted(s.chunk[1], "chunk1", hits)
       let r = P.spansRec(); let ret = RangeSet.spans([s], from, 750, r.it, 1)

@@ -36,12 +36,12 @@ const big = (n: number) => Text.of(new Array(n).fill(L100))
 f("Line", [1], {doc: ASCII, expr: "doc.line(1) === doc.line(1); doc.lineAt(0) === doc.line(1); doc.line(1) instanceof Line; Object.keys(doc.line(1))"}, () => { let d = of(ASCII); return {sameLine: d.line(1) === d.line(1), sameLineAt: d.lineAt(0) === d.line(1), instanceOfLine: d.line(1) instanceof Line, keys: Object.keys(d.line(1))} })
 for (let doc of [ASCII, ASTRAL, SEP, CR]) {
   f("Line.from", [1], {doc, expr: "every line: from"}, () => { let d = of(doc); let r = []; for (let i = 1; i <= d.lines; i++) r.push(d.line(i).from); return r })
-  f("Line.to", [1, 2], {doc, expr: "every line: to"}, () => { let d = of(doc); let r = []; for (let i = 1; i <= d.lines; i++) r.push(d.line(i).to); return {to: r, length: d.length} })
+  f("Line.to", [1, 2], {doc, expr: "every line: to; doc.length"}, () => { let d = of(doc); let r = []; for (let i = 1; i <= d.lines; i++) r.push(d.line(i).to); return {to: r, length: d.length} })
   f("Line.number", [1], {doc, expr: "lineAt(pos).number for every pos 0..length"}, () => { let d = of(doc); let r = []; for (let p = 0; p <= d.length; p++) r.push(d.lineAt(p).number); return r })
   f("Line.text", [1], {doc, expr: "every line: text"}, () => { let d = of(doc); let r = []; for (let i = 1; i <= d.lines; i++) r.push(d.line(i).text); return r })
   f("Line.length", [1], {doc, expr: "every line: length"}, () => { let d = of(doc); let r = []; for (let i = 1; i <= d.lines; i++) r.push(d.line(i).length); return r })
 }
-f("Line.text", [2], {doc: ["a\nb", "c"], expr: "line(1), line(2), lineAt(2), toString()", note: "line break inside a line given to Text.of (Q9)"}, () => { let d = of(["a\nb", "c"]); return {line1: line(d.line(1)), line2: line(d.line(2)), lineAt2: line(d.lineAt(2)), string: d.toString(), lines: d.lines} })
+f("Line.text", [2], {doc: ["a\nb", "c"], expr: "line(1), line(2), lineAt(2), toString(), lines", note: "line break inside a line given to Text.of (Q9)"}, () => { let d = of(["a\nb", "c"]); return {line1: line(d.line(1)), line2: line(d.line(2)), lineAt2: line(d.lineAt(2)), string: d.toString(), lines: d.lines} })
 f("Line.length", [2], {doc: ["abc"], expr: "l = doc.line(1); l.length after assigning l.to = 10 (runtime fields are writable)"}, () => { let l: any = of(["abc"]).line(1); let before = l.length; l.to = 10; return {before, after: l.length} })
 
 // ---------- TextIterator ----------
@@ -54,7 +54,7 @@ for (let [name, mk] of [["iter()", (d: Text) => d.iter()], ["iter(-1)", (d: Text
 // next: raw forward
 for (let doc of [ASCII, ASTRAL, ["a", "", ""], [""], ["", "x"], CR, SEP])
   f("TextIterator.next", [1, "state.TextIterator.done.B1", "state.TextIterator.lineBreak.B1", "state.TextIterator.value.B1"], {doc, expr: "doc.iter(): next() until done"}, () => all(of(doc).iter()))
-f("TextIterator.next", [1], {...BIG(40), expr: "doc.iter(): values joined, count, any value containing \\n other than breaks", note: "node document"}, () => { let r = all(big(40).iter()); return {count: r.length, joinedLength: r.map(x => x.value).join("").length, breaks: r.filter(x => x.lineBreak).length} })
+f("TextIterator.next", [1], {...BIG(40), expr: "doc.iter(): next() until done; count: number of steps (the done step included); joinedLength: length of all values joined; breaks: number of steps with lineBreak true", note: "node document"}, () => { let r = all(big(40).iter()); return {count: r.length, joinedLength: r.map(x => x.value).join("").length, breaks: r.filter(x => x.lineBreak).length} })
 // next: raw reverse
 for (let doc of [ASCII, ASTRAL, ["a", "", ""], [""]])
   f("TextIterator.next", [2], {doc, expr: "doc.iter(-1): next() until done"}, () => all(of(doc).iter(-1)))
@@ -78,7 +78,7 @@ f("TextIterator.next", [5, "state.TextIterator.done.B1"], {doc: ["ab"], expr: "d
 // next: partial (iterRange)
 for (let [doc, from, to] of [[ASCII, 2, 12], [ASCII, 12, 2], [ASCII, 0, 14], [ASCII, 3, 4], [ASCII, 4, 3], [ASCII, 5, 5], [ASCII, 7, 9], [ASTRAL, 1, 3], [ASTRAL, 2, 8], [ASTRAL, 8, 2], [ASCII, 1, 2]] as [string[], number, number][])
   f("TextIterator.next", [6, "state.TextIterator.lineBreak.B1", "state.TextIterator.done.B1"], {doc, from, to, expr: "doc.iterRange(from, to): next() until done"}, () => all(of(doc).iterRange(from, to)))
-f("TextIterator.next", [6], {...BIG(200), from: 500, to: 19700, expr: "iterRange(from, to): joined values equal sliceString(from, to)"}, () => { let d = big(200), s = all(d.iterRange(500, 19700)).map(x => x.value).join(""); return {equal: s == d.sliceString(500, 19700), length: s.length} })
+f("TextIterator.next", [6], {...BIG(200), from: 500, to: 19700, expr: "iterRange(from, to): next() until done; equal: joined values equal sliceString(from, to); length: length of the joined values"}, () => { let d = big(200), s = all(d.iterRange(500, 19700)).map(x => x.value).join(""); return {equal: s == d.sliceString(500, 19700), length: s.length} })
 // next: partial with skips
 f("TextIterator.next", [7], {doc: ["one", "two", "", "three", "four"], from: 2, to: 12, expr: "iterRange(from, to); next(skip)", skips: [3, -2, -5, 4, 100, 0]}, () => steps(of(["one", "two", "", "three", "four"]).iterRange(2, 12), [3, -2, -5, 4, 100, 0]))
 f("TextIterator.next", [7], {doc: ["one", "two", "", "three", "four"], from: 2, to: 12, expr: "iterRange(from, to); next(skip)", skips: [-5, 0, 0]}, () => steps(of(["one", "two", "", "three", "four"]).iterRange(2, 12), [-5, 0, 0]))
@@ -102,18 +102,18 @@ f("Text", [1], {doc: ASCII, expr: "doc.replace(0, 0, Text.empty) === doc; doc.sl
   return {replaceNoop: d.replace(0, 0, Text.empty) === d, slice: d.slice(0) === d, append: d.append(Text.empty) === d, original: d.toString(), result: r.toString(),
     bigReplaceNoop: b.replace(0, 0, Text.empty) === b, bigSlice: b.slice(0) === b}
 })
-f("Text", [2], {doc: ASCII, expr: "instanceof Text, children null for <= 32 lines, constructor name; 33 lines"}, () => {
+f("Text", [2], {doc: ASCII, expr: "leaf: [doc instanceof Text, doc.children, doc.constructor.name]; node: n = Text.of(new Array(33).fill(\"x\")): [n instanceof Text, Array.isArray(n.children), n.constructor.name]"}, () => {
   let s = of(ASCII), n = of(new Array(33).fill("x"))
   return {leaf: [s instanceof Text, s.children, s.constructor.name], node: [n instanceof Text, Array.isArray(n.children), n.constructor.name]}
 })
-f("Text", [3], {lines: ["ab"], expr: "a = [\"ab\"]; t = Text.of(a); a[0] = \"abcdef\"; t.length, t.toString(), t.lineAt(2), t.sliceString(0)"}, () => {
+f("Text", [3], {lines: ["ab"], expr: "a = [\"ab\"]; t = Text.of(a); a[0] = \"abcdef\"; a.push(\"zz\"); t.length, t.lines, t.toString(), t.lineAt(2), t.toJSON()"}, () => {
   let a = ["ab"], t = Text.of(a); a[0] = "abcdef"; a.push("zz")
   return {length: t.length, lines: t.lines, string: t.toString(), lineAt2: line(t.lineAt(2)), json: t.toJSON()}
 })
-f("Text", [3], {lines: "40 x \"ab\"", expr: "a = new Array(40).fill(\"ab\"); t = Text.of(a); a[0] = \"abcdef\"; t.line(1).text", note: "more than 32 lines: split copies the array"}, () => {
+f("Text", [3], {lines: "40 x \"ab\"", expr: "a = new Array(40).fill(\"ab\"); t = Text.of(a); a[0] = \"abcdef\"; t.line(1).text; t.length", note: "more than 32 lines: split copies the array"}, () => {
   let a = new Array(40).fill("ab"), t = Text.of(a); a[0] = "abcdef"; return {line1: t.line(1).text, length: t.length}
 })
-f("Text", [3], {doc: ["a", "b"], expr: "t.toJSON() is a copy; mutating it does not change t"}, () => { let t = of(["a", "b"]), j = t.toJSON(); j[0] = "zzz"; return t.toString() })
+f("Text", [3], {doc: ["a", "b"], expr: "j = t.toJSON(); j[0] = \"zzz\" (the array is a copy); t.toString()"}, () => { let t = of(["a", "b"]), j = t.toJSON(); j[0] = "zzz"; return t.toString() })
 
 // length
 for (let doc of [ASCII, ASTRAL, SEP, CR, [""], ["", ""], ["😀"]])
@@ -152,25 +152,25 @@ for (let [doc, from, to, ins] of [[ASCII, 1, 6, ["X", "Y"]], [ASCII, 0, 14, [""]
   f("Text.replace", [2], {doc, from, to, insert: ins, expr: "doc.replace(from, to, Text.of(insert))"}, () => desc(of(doc).replace(from, to, of(ins))))
 for (let [from, to] of [[-5, 3], [3, 100], [8, 2], [20, 30], [-10, -5], [2.5, 4]] as [number, number][])
   f("Text.replace", [1], {doc: ASCII, from, to, insert: ["X"], expr: "doc.replace(from, to, Text.of(insert))"}, () => desc(of(ASCII).replace(from, to, of(["X"]))))
-f("Text.replace", [3], {doc: "30 lines \"l<i>\"", expr: "replace(0, 0, Text.of([\"a\", \"b\", \"c\"])): 32 lines; then one more line: 33", note: "leaf limit 32 lines"}, () => {
+f("Text.replace", [3], {doc: "30 lines \"l<i>\"", expr: "a = doc.replace(0, 0, Text.of([\"a\", \"b\", \"c\"])) (32 lines); b = a.replace(0, 0, Text.of([\"z\", \"\"])) (33 lines); lines and shape of a and b (shape: leaf -> its line count, node -> array of child shapes)", note: "leaf limit 32 lines"}, () => {
   let d = of(Array.from({length: 30}, (_, i) => "l" + i)), a = d.replace(0, 0, of(["a", "b", "c"])), b = a.replace(0, 0, of(["z", ""]))
   return {a: {lines: a.lines, shape: shape(a)}, b: {lines: b.lines, shape: shape(b)}}
 })
-f("Text.replace", [4], {...BIG(200), expr: "r = doc.replace(5000, 5001, Text.of([\"y\"])); which children of r are === children of doc"}, () => {
+f("Text.replace", [4], {...BIG(200), expr: "r = doc.replace(5000, 5001, Text.of([\"y\"])); shapeBefore: shape(doc); shapeAfter: shape(r) (shape: leaf -> its line count, node -> array of child shapes); shared: for each child of r, whether it is === a child of doc"}, () => {
   let d = big(200), r = d.replace(5000, 5001, of(["y"]))
   return {shapeBefore: shape(d), shapeAfter: shape(r), shared: r.children!.map(c => d.children!.includes(c))}
 })
-f("Text.replace", [4], {...BIG(2000), expr: "r = doc.replace(100000, 100000, Text.of([\"a\", \"b\"])); shared top-level children"}, () => {
+f("Text.replace", [4], {...BIG(2000), expr: "r = doc.replace(100000, 100000, Text.of([\"a\", \"b\"])); topBefore: doc.children.length; topAfter: r.children.length; shared: for each child of r, whether it is === a child of doc; r.lines"}, () => {
   let d = big(2000), r = d.replace(100000, 100000, of(["a", "b"]))
   return {topBefore: d.children!.length, topAfter: r.children!.length, shared: r.children!.map(c => d.children!.includes(c)), lines: r.lines}
 })
 f("Text.replace", [5], {...BIG(200), expr: "replace(10, length - 10, Text.empty): shape and content"}, () => { let d = big(200), r = d.replace(10, d.length - 10, Text.empty); return {shape: shape(r), string: r.toString()} })
-f("Text.replace", [5], {...BIG(200), expr: "ten replace(at, at, Text.of([\"abc\".repeat(200)])) at Math.floor(length / 2): shape"}, () => { let d = big(200), at = Math.floor(d.length / 2); for (let i = 0; i < 10; i++) d = d.replace(at, at, of(["abc".repeat(200)])); return {shape: shape(d), length: d.length} })
-f("Text.replace", [5], {...BIG(200), insertRecipe: "Text.of(new Array(500).fill(\"x\"))", expr: "replace(5000, 5000, insert): shape"}, () => { let d = big(200).replace(5000, 5000, Text.of(new Array(500).fill("x"))); return {shape: shape(d), lines: d.lines} })
-f("Text.replace", [5], {recipe: "d = Text.of([\"\"]); 1999 times d = d.replace(d.length, d.length, Text.of([\"\", \"l\"]))", expr: "shape"}, () => { let d = Text.of([""]); for (let i = 0; i < 1999; i++) d = d.replace(d.length, d.length, of(["", "l"])); return {top: d.children!.length, shape: shape(d), lines: d.lines} })
+f("Text.replace", [5], {...BIG(200), expr: "ten replace(at, at, Text.of([\"abc\".repeat(200)])) at Math.floor(length / 2): shape, length"}, () => { let d = big(200), at = Math.floor(d.length / 2); for (let i = 0; i < 10; i++) d = d.replace(at, at, of(["abc".repeat(200)])); return {shape: shape(d), length: d.length} })
+f("Text.replace", [5], {...BIG(200), insertRecipe: "Text.of(new Array(500).fill(\"x\"))", expr: "replace(5000, 5000, insert): shape, lines"}, () => { let d = big(200).replace(5000, 5000, Text.of(new Array(500).fill("x"))); return {shape: shape(d), lines: d.lines} })
+f("Text.replace", [5], {recipe: "d = Text.of([\"\"]); 1999 times d = d.replace(d.length, d.length, Text.of([\"\", \"l\"]))", expr: "top: d.children.length; shape; lines"}, () => { let d = Text.of([""]); for (let i = 0; i < 1999; i++) d = d.replace(d.length, d.length, of(["", "l"])); return {top: d.children!.length, shape: shape(d), lines: d.lines} })
 for (let [from, to] of [[NaN, 2], [2, NaN], [NaN, NaN]] as [number, number][])
   f("Text.replace", [6], {doc: ["one", "two", "three"], from, to, insert: ["X"], expr: "doc.replace(from, to, Text.of(insert))"}, () => desc(of(["one", "two", "three"]).replace(from, to, of(["X"]))))
-f("Text.replace", [6], {...BIG(200), from: NaN, to: 5, insert: ["X"], expr: "doc.replace(from, to, Text.of(insert)): length, lines"}, () => { let r = big(200).replace(NaN, 5, of(["X"])); return {length: r.length, lines: r.lines, string: r.toString().length} })
+f("Text.replace", [6], {...BIG(200), from: NaN, to: 5, insert: ["X"], expr: "r = doc.replace(from, to, Text.of(insert)): length, lines, string: r.toString().length"}, () => { let r = big(200).replace(NaN, 5, of(["X"])); return {length: r.length, lines: r.lines, string: r.toString().length} })
 // append
 for (let [a, b] of [[["one", "two", "three"], ["!", "ok"]], [[""], ["x"]], [ASTRAL, ASCII], [["a"], [""]]] as [string[], string[]][])
   f("Text.append", [1], {doc: a, other: b, expr: "doc.append(Text.of(other))"}, () => desc(of(a).append(of(b))))
@@ -179,7 +179,7 @@ for (let [from, to] of [[1, 6], [3, 4], [0, 14], [14, 14], [4, 4], [6, 2], [-5, 
   f("Text.slice", [1], {doc: ASCII, from, to, expr: "doc.slice(from, to)"}, () => desc(of(ASCII).slice(from, to)))
 f("Text.slice", [1], {doc: ASCII, from: 5, expr: "doc.slice(from)"}, () => desc(of(ASCII).slice(5)))
 f("Text.slice", [2], {doc: ASTRAL, from: 2, to: 6, expr: "doc.slice(from, to)", note: "from inside U+1F600, to inside U+1D400"}, () => desc(of(ASTRAL).slice(2, 6)))
-f("Text.slice", [3], {...BIG(200), from: 4150, to: 14000, expr: "slice(from, to): shape, children shared with doc"}, () => {
+f("Text.slice", [3], {...BIG(200), from: 4150, to: 14000, expr: "s = slice(from, to): shape, length, shared: for each child of s (null for a leaf), whether it is === a child of doc"}, () => {
   let d = big(200), s = d.slice(4150, 14000); return {shape: shape(s), length: s.length, shared: s.children ? s.children.map(c => d.children!.includes(c)) : null}
 })
 f("Text.slice", [4], {...BIG(200), from: NaN, to: 10, expr: "slice(from, to)"}, () => desc(big(200).slice(NaN, 10)))
@@ -190,7 +190,7 @@ f("Text.sliceString", [1], {doc: ASCII, from: 4, expr: "doc.sliceString(from)"},
 for (let sep of ["\r\n", "", " ", "<BR>"])
   f("Text.sliceString", [3], {doc: ASCII, from: 0, to: 14, lineSep: sep, expr: "doc.sliceString(from, to, lineSep)"}, () => of(ASCII).sliceString(0, 14, sep))
 f("Text.sliceString", [3], {doc: ASCII, from: 3, to: 9, lineSep: "\r\n", expr: "doc.sliceString(from, to, lineSep)"}, () => of(ASCII).sliceString(3, 9, "\r\n"))
-f("Text.sliceString", [3], {...BIG(40), from: 3220, to: 3240, lineSep: "\r\n", expr: "doc.sliceString(from, to, lineSep) across a child boundary"}, () => { let d = big(40); return {b: d.children![0].length, s: d.sliceString(3220, 3240, "\r\n")} })
+f("Text.sliceString", [3], {...BIG(40), from: 3220, to: 3240, lineSep: "\r\n", expr: "b: doc.children[0].length; s: doc.sliceString(from, to, lineSep) across that child boundary"}, () => { let d = big(40); return {b: d.children![0].length, s: d.sliceString(3220, 3240, "\r\n")} })
 f("Text.sliceString", [3], {doc: ASCII, from: 0, to: 14, lineSep: undefined, expr: "doc.sliceString(0, 14, undefined)"}, () => of(ASCII).sliceString(0, 14, undefined))
 for (let [from, to] of [[1, 2], [2, 3], [2, 7], [6, 8]] as [number, number][])
   f("Text.sliceString", [4], {doc: ASTRAL, from, to, expr: "doc.sliceString(from, to)"}, () => of(ASTRAL).sliceString(from, to))
@@ -214,7 +214,7 @@ f("Text.eq", [5], {...BIG(200), expr: "d.eq(d.replace(5000, 5001, d.slice(5000, 
 // iter
 f("Text.iter", [1], {doc: ASCII, expr: "[...doc.iter()], [...doc.iter(1)], [...doc.iter(-1)]"}, () => { let d = of(ASCII); return {def: [...d.iter()], fwd: [...d.iter(1)], rev: [...d.iter(-1)]} })
 f("Text.iter", [2], {doc: ASCII, expr: "doc.iter(2 as any): next() until done", note: "dir outside 1 | -1"}, () => all(of(ASCII).iter(2 as any)))
-f("Text.iter", [2], {doc: ASCII, expr: "doc.iter(0 as any): next() until done", note: "dir outside 1 | -1"}, () => all(of(ASCII).iter(0 as any)).slice(0, 12))
+f("Text.iter", [2], {doc: ASCII, expr: "doc.iter(0 as any): next() until done or 10000 steps; the first 12 steps", note: "dir outside 1 | -1"}, () => all(of(ASCII).iter(0 as any)).slice(0, 12))
 // iterRange
 f("Text.iterRange", [1], {doc: ASCII, from: 5, expr: "[...doc.iterRange(from)]"}, () => [...of(ASCII).iterRange(5)])
 f("Text.iterRange", [1], {doc: ASCII, expr: "[...iterRange(1, 9)], [...iterRange(9, 1)], [...iterRange(4, 4)]"}, () => { let d = of(ASCII); return [[...d.iterRange(1, 9)], [...d.iterRange(9, 1)], [...d.iterRange(4, 4)]] })
@@ -239,7 +239,7 @@ for (let doc of [ASCII, ASTRAL, [""], ["", ""], ["a\nb", "c"]])
 f("Text.toJSON", [1], {...BIG(200), expr: "Text.of(doc.toJSON()).eq(doc); toJSON().length"}, () => { let d = big(200); return {eq: Text.of(d.toJSON()).eq(d), n: d.toJSON().length} })
 // children
 for (let n of [1, 32, 33, 64, 1024, 1025, 2000, 5000])
-  f("Text.children", [1, 2], {...BIG(n), expr: "shape: leaf -> its line count, node -> array of child shapes"}, () => { let d = big(n); return {isLeaf: d.children === null, shape: shape(d)} })
+  f("Text.children", [1, 2], {...BIG(n), expr: "isLeaf: doc.children === null; shape: leaf -> its line count, node -> array of child shapes"}, () => { let d = big(n); return {isLeaf: d.children === null, shape: shape(d)} })
 f("Text.children", [3], {...BIG(200), expr: "doc.children === doc.children; Object.isFrozen(doc.children); doc.lines; then doc.children.push(doc.children[0]); then doc.lines, doc.length, doc.children.length, doc.toString().length"}, () => {
   let d = big(200), c = d.children as any[]; let same = d.children === d.children, frozen = Object.isFrozen(c); let before = d.lines; c.push(c[0])
   return {same, frozen, linesBefore: before, linesAfter: d.lines, lengthAfter: d.length, childCountAfter: d.children!.length, stringLengthAfter: d.toString().length}

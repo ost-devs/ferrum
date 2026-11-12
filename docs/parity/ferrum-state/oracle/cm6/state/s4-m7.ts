@@ -49,7 +49,7 @@ const S = (id: string) => "state." + id
   for (let [desc, doc, sp, pairs] of cases) {
     let s = EditorState.create({doc, extensions: sp == null ? [] : sep(sp)})
     for (let [from, to] of pairs)
-      fx([S("EditorState.sliceDoc.B4")], {call: "s.sliceDoc(from, to)", desc, doc, sep: sp, args: [from, to]},
+      fx([S("EditorState.sliceDoc.B4")], {call: "s = EditorState.create({doc, extensions: sep ? lineSeparator.of(sep) : []}); result: s.sliceDoc(from, to) with [from, to] = args; docLength: s.doc.length; lines: s.doc.toJSON()", desc, doc, sep: sp, args: [from, to]},
          {result: s.sliceDoc(from, to), docLength: s.doc.length, lines: s.doc.toJSON()})
   }
 }
@@ -74,6 +74,6 @@ const S = (id: string) => "state." + id
     let s = EditorState.create({doc, extensions: [wc(chars), ...(sp == null ? [] : [sep(sp)])]})
     let out: any = {docLength: s.doc.length, lines: s.doc.toJSON()}
     for (let p of positions) out["at" + p] = cap(() => { let r = s.wordAt(p); return r ? range(r) : null })
-    fx([S("EditorState.wordAt.B5")], {call: "create({doc, extensions: [languageData wordChars, lineSeparator?]}).wordAt(p)", desc, doc, sep: sp, wordChars: chars, positions}, out)
+    fx([S("EditorState.wordAt.B5")], {call: "s = create({doc, extensions: [languageData wordChars, lineSeparator.of(sep) when sep is given]}); docLength: s.doc.length; lines: s.doc.toJSON(); at<p>: s.wordAt(p) for each p of positions", desc, doc, sep: sp, wordChars: chars, positions}, out)
   }
 }

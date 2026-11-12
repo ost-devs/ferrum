@@ -81,12 +81,12 @@ for (let [doc, p] of [["\u{1F600}", 2], ["\u{1F600}", 3], ["a\r\nb", 3], ["a\r\n
 {
   const round = (s: EditorState) => EditorState.fromJSON(JSON.parse(JSON.stringify(s.toJSON())))
   let a = EditorState.create({doc: "a\r\nb\rc", selection: {anchor: 5, head: 2}})
-  fx([S("EditorState^fromJSON.B7")], {call: "EditorState.fromJSON(JSON round trip of s.toJSON())", doc: "a\r\nb\rc", selection: {anchor: 5, head: 2}},
+  fx([S("EditorState^fromJSON.B7")], {call: "s = EditorState.create({doc, selection, extensions: lineSeparator.of(sep) when sep is given}); original: doc and selection of s; json: s.toJSON(); restored: doc and selection of EditorState.fromJSON(JSON round trip of s.toJSON())", doc: "a\r\nb\rc", selection: {anchor: 5, head: 2}},
      {original: st(a), json: a.toJSON(), restored: st(round(a))})
   // A Text given directly can hold "\r" inside a line; sliceDoc writes it as is and the default split then breaks it.
   let t = Text.of(["a\rb", "c"])
   let b = EditorState.create({doc: t, selection: {anchor: 5}})
-  fx([S("EditorState^fromJSON.B7")], {call: "EditorState.fromJSON(JSON round trip of s.toJSON()), doc a Text holding \"\\r\" inside a line", doc: "Text.of([\"a\\rb\", \"c\"])", selection: {anchor: 5}},
+  fx([S("EditorState^fromJSON.B7")], {call: "s = EditorState.create({doc, selection, extensions: lineSeparator.of(sep) when sep is given}); original: doc and selection of s; json: s.toJSON(); restored: doc and selection of EditorState.fromJSON(JSON round trip of s.toJSON()), doc a Text holding \"\\r\" inside a line", doc: "Text.of([\"a\\rb\", \"c\"])", selection: {anchor: 5}},
      {original: st(b), json: b.toJSON(), restored: cap(() => st(round(b)))})
 }
 
@@ -162,7 +162,7 @@ for (let doc of ["\u{1F600}", "a\r\nb"]) {
   let s = EditorState.create({doc: "ab", selection: {anchor: 1}})
   let seen: any = null
   let r = s.changeByRange(rg => { seen = rg; return {changes: {from: rg.from, insert: "x\r\ny"}, range: EditorSelection.cursor(rg.from + 3)} })
-  fx([S("EditorState.changeByRange.B1")], {call: "s.changeByRange(r => ({changes: {from: r.from, insert: \"x\\r\\ny\"}, range: cursor(r.from + 3)}))", doc: "ab", selection: {anchor: 1}},
+  fx([S("EditorState.changeByRange.B1")], {call: "r = s.changeByRange(r => ({changes: {from: r.from, insert: \"x\\r\\ny\"}, range: cursor(r.from + 3)})); receivedStateRange: the callback's range is s.selection.ranges[0]; r.changes, r.selection, r.effects.length (effects); then s.update(r).state: doc, selection", doc: "ab", selection: {anchor: 1}},
      {receivedStateRange: seen === s.selection.ranges[0], changes: r.changes.toJSON(), selection: sel(r.selection), effects: r.effects.length,
       ...st(s.update(r).state)})
 }
@@ -188,7 +188,7 @@ for (let [doc, c2, ins, w] of [["\u{1F600}\u{1F600}", 2, "\u{1F601}", 2], ["a\r\
 {
   let s = EditorState.create({doc: "xy"})
   let c = s.changes({from: 1, insert: "a\rb\u2028c"})
-  fx([S("EditorState.changes.B2")], {call: "s.changes({from: 1, insert: \"a\\rb\\u2028c\"})", doc: "xy"}, {json: c.toJSON(), newLength: c.newLength, doc: text(c.apply(s.doc))})
+  fx([S("EditorState.changes.B2")], {call: "c = s.changes({from: 1, insert: \"a\\rb\\u2028c\"}): json: c.toJSON(); c.newLength; doc: c.apply(s.doc)", doc: "xy"}, {json: c.toJSON(), newLength: c.newLength, doc: text(c.apply(s.doc))})
 }
 
 // ---- state.EditorState.changes.B4: invalid ranges and mismatched nested set (astral, CRLF)
@@ -203,7 +203,7 @@ for (let doc of ["\u{1F600}", "a\r\nb"]) {
 for (let [doc, spec] of [["\u{1F600}\u{1F600}\u{1F600}", [{from: 4, to: 6}, {from: 0, to: 2, insert: "x"}, {from: 2, to: 5}]],
                          ["a\r\nb\r\nc", [{from: 3, to: 5}, {from: 0, to: 2, insert: "x"}, {from: 1, to: 4}]]] as [string, any][]) {
   let s = EditorState.create({doc})
-  fx([S("EditorState.changes.B5")], {call: "s.changes(spec)", doc, spec}, cap(() => { let c = s.changes(spec); return {json: c.toJSON(), doc: text(c.apply(s.doc))} }))
+  fx([S("EditorState.changes.B5")], {call: "c = s.changes(spec): json: c.toJSON(); doc: c.apply(s.doc)", doc, spec}, cap(() => { let c = s.changes(spec); return {json: c.toJSON(), doc: text(c.apply(s.doc))} }))
 }
 
 // ---- state.Transaction.newDoc.B3 and state.TransactionSpec.changes.B2: a top-level ChangeSet of another length (astral, CRLF)
@@ -346,21 +346,21 @@ for (let ins of ["\u{1F600}", "\r\n"]) {
   const round = (s: EditorState, config?: any) => EditorState.fromJSON(JSON.parse(JSON.stringify(s.toJSON())), config)
   // A Text holding "\n" inside a line, default split on both sides
   let a = EditorState.create({doc: Text.of(["a\nb", "c"])})
-  fx([S("EditorState^fromJSON.B7")], {call: "EditorState.fromJSON(JSON round trip of s.toJSON()), doc a Text holding \"\\n\" inside a line", doc: "Text.of([\"a\\nb\", \"c\"])"},
+  fx([S("EditorState^fromJSON.B7")], {call: "s = EditorState.create({doc, selection, extensions: lineSeparator.of(sep) when sep is given}); original: doc and selection of s; json: s.toJSON(); restored: doc and selection of EditorState.fromJSON(JSON round trip of s.toJSON()), doc a Text holding \"\\n\" inside a line", doc: "Text.of([\"a\\nb\", \"c\"])"},
      {original: st(a), json: a.toJSON(), restored: cap(() => st(round(a)))})
   // lineSeparator "\r\n" on both sides; lines split from a string keep a lone "\n" and round-trip
   let b = EditorState.create({doc: "a\nb\r\nc", extensions: sep("\r\n")})
-  fx([S("EditorState^fromJSON.B7")], {call: "EditorState.fromJSON(JSON round trip of s.toJSON(), {extensions: lineSeparator.of(\"\\r\\n\")}), doc split from a string with the same separator", doc: "a\nb\r\nc", sep: "\r\n"},
+  fx([S("EditorState^fromJSON.B7")], {call: "s = EditorState.create({doc, selection, extensions: lineSeparator.of(sep) when sep is given}); original: doc and selection of s; json: s.toJSON(); restored: doc and selection of EditorState.fromJSON(JSON round trip of s.toJSON(), {extensions: lineSeparator.of(\"\\r\\n\")}), doc split from a string with the same separator", doc: "a\nb\r\nc", sep: "\r\n"},
      {original: st(b), json: b.toJSON(), restored: cap(() => st(round(b, {extensions: sep("\r\n")})))})
   // lineSeparator "\r\n" on both sides; a Text holding "\r\n" inside a line is re-split
   let c = EditorState.create({doc: Text.of(["a\r\nb", "c"]), extensions: sep("\r\n")})
-  fx([S("EditorState^fromJSON.B7")], {call: "EditorState.fromJSON(JSON round trip of s.toJSON(), {extensions: lineSeparator.of(\"\\r\\n\")}), doc a Text holding \"\\r\\n\" inside a line", doc: "Text.of([\"a\\r\\nb\", \"c\"])", sep: "\r\n"},
+  fx([S("EditorState^fromJSON.B7")], {call: "s = EditorState.create({doc, selection, extensions: lineSeparator.of(sep) when sep is given}); original: doc and selection of s; json: s.toJSON(); restored: doc and selection of EditorState.fromJSON(JSON round trip of s.toJSON(), {extensions: lineSeparator.of(\"\\r\\n\")}), doc a Text holding \"\\r\\n\" inside a line", doc: "Text.of([\"a\\r\\nb\", \"c\"])", sep: "\r\n"},
      {original: st(c), json: c.toJSON(), restored: cap(() => st(round(c, {extensions: sep("\r\n")})))})
 }
 // The re-split shortens the document (6 -> 5 above), so a selection at the old end no longer fits
 {
   let c = EditorState.create({doc: Text.of(["a\r\nb", "c"]), selection: {anchor: 6}, extensions: sep("\r\n")})
-  fx([S("EditorState^fromJSON.B7")], {call: "EditorState.fromJSON(JSON round trip of s.toJSON(), {extensions: lineSeparator.of(\"\\r\\n\")}), doc a Text holding \"\\r\\n\" inside a line, cursor at the end", doc: "Text.of([\"a\\r\\nb\", \"c\"])", sep: "\r\n", selection: {anchor: 6}},
+  fx([S("EditorState^fromJSON.B7")], {call: "s = EditorState.create({doc, selection, extensions: lineSeparator.of(sep) when sep is given}); original: doc and selection of s; json: s.toJSON(); restored: doc and selection of EditorState.fromJSON(JSON round trip of s.toJSON(), {extensions: lineSeparator.of(\"\\r\\n\")}), doc a Text holding \"\\r\\n\" inside a line, cursor at the end", doc: "Text.of([\"a\\r\\nb\", \"c\"])", sep: "\r\n", selection: {anchor: 6}},
      {original: st(c), json: c.toJSON(),
       restored: cap(() => st(EditorState.fromJSON(JSON.parse(JSON.stringify(c.toJSON())), {extensions: sep("\r\n")})))})
 }

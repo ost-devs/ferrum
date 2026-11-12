@@ -25,11 +25,19 @@ type R = [number, number, number][]
 function setInput(P: Pool, ranges: R, sort = false) { return {values: P.json(), ranges, sort} }
 const ch = (spec: any, length: number) => ({spec, length})
 const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
+// The map run of a fixture whose input holds `set` and `changes` (named in the input since seed 4105's V22).
+const MAP = "set.map(ChangeSet.of(changes.spec, changes.length))"
+const MAP_LIST = "list(" + MAP + ")"
+// The compare run of a fixture whose input holds `old`, `new` and `textDiff` (lib.ts header: comparator from cmpRec()).
+const COMPARE = "RangeSet.compare(old, new, ChangeSet.of(textDiff.spec, textDiff.length) (ChangeSet.empty(textDiff.length) when spec is null), cmpRec comparator)"
+// The spans run of a fixture whose input holds `sets`, `from` and `to` (lib.ts header: iterator from spansRec()).
+const SPANS = "RangeSet.spans(sets, from, to, spansRec iterator): calls, return value (ret)"
 
 // ---------------------------------------------------------------- RangeValue
 {
   let v = new Id({})
-  fx(ID.RangeValue, [...B("RangeValue", 1, 2)], {construct: "class extends RangeValue {} (no field set)", ranges: [[2, 5, 0]]}, () => {
+  fx(ID.RangeValue, [...B("RangeValue", 1, 2)], {construct: "class extends RangeValue {} (no field set)", ranges: [[2, 5, 0]],
+                                                    ops: ["fields: v.startSide, v.endSide, v.point, v.mapMode, Object.keys(v) without the harness's own name field (ownKeys)", "set = RangeSet.of(v.range(2, 5)): size, iter() read as [from, to] (ranges)"]}, () => {
     let set = RangeSet.of(v.range(2, 5))
     return {fields: {startSide: (v as any).startSide, endSide: (v as any).endSide, point: (v as any).point, mapMode: (v as any).mapMode,
                      ownKeys: Object.keys(v).filter(k => k != "name")}, size: set.size, ranges: [...(function* () { for (let i = set.iter(); i.value; i.next()) yield [i.from, i.to] })()]}
@@ -116,7 +124,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   let base: R = [[0, 1, 3], [5, 5, 0], [5, 5, 1], [5, 5, 2], [9, 10, 3]]
   for (let c of [ch({from: 5, insert: "xy"}, 10), ch({from: 5, insert: "\ud83d\ude00"}, 10), ch({from: 5, insert: "\u00e9"}, 10),
                  ch({from: 5, to: 7, insert: "abc"}, 10), ch({from: 3, to: 5, insert: "abc"}, 10)])
-    fx(ID.startSide, [...B("RangeValue.startSide", 3), ...B("RangeSet.map", 3, 10)], {set: setInput(A, base), changes: c},
+    fx(ID.startSide, [...B("RangeValue.startSide", 3), ...B("RangeSet.map", 3, 10)], {set: setInput(A, base), changes: c, op: MAP_LIST},
        () => A.list(A.set(base).map(mkCh(c))))
   // spans: open count of a point with startSide < 0 vs >= 0
   let O = new Pool([mark("m", {startSide: -2, endSide: 1}), pt("pn", {startSide: -1, endSide: -1}), pt("pp", {startSide: 1, endSide: 1})])
@@ -147,7 +155,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   fx(ID.startSide, [...B("RangeValue.startSide", 5), ...B("RangeSet^of", 4)], {set: setInput(C, cons, true)},
      () => ({list: C.list(C.set(cons, true)), dump: C.dump(C.set(cons, true))}))
   for (let c of [ch({from: 3, insert: "ab"}, 10), ch({from: 6, insert: "ab"}, 10), ch({from: 2, to: 4}, 10)])
-    fx(ID.startSide, [...B("RangeValue.startSide", 5), ...B("RangeSet.map", 3)], {set: setInput(C, cons, true), changes: c},
+    fx(ID.startSide, [...B("RangeValue.startSide", 5), ...B("RangeSet.map", 3)], {set: setInput(C, cons, true), changes: c, op: MAP_LIST},
        () => C.list(C.set(cons, true).map(mkCh(c))))
   fx(ID.startSide, [...B("RangeValue.startSide", 5), ...B("RangeSet^spans", 1)], {set: setInput(C, cons, true), op: "RangeSet.spans([set], 0, 10)"},
      () => { let rec = C.spansRec(); let ret = RangeSet.spans([C.set(cons, true)], 0, 10, rec.it); return {calls: rec.calls, ret} })
@@ -167,27 +175,27 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
     fx(ID.endSide, [...B("RangeValue.endSide", 1), ...B("RangeSet", 1)], {set: setInput(P, r)}, () => P.dump(P.set(r)))
   let M = new Pool([mark("ex", {startSide: 1, endSide: -1}), mark("inc", {startSide: -1, endSide: 1})])
   for (let c of [ch({from: 2, insert: "ab"}, 10), ch({from: 5, insert: "ab"}, 10)])
-    fx(ID.endSide, [...B("RangeValue.endSide", 2), ...B("RangeSet.map", 5)], {sets: [setInput(M, [[2, 5, 0]]), setInput(M, [[2, 5, 1]])], changes: c},
+    fx(ID.endSide, [...B("RangeValue.endSide", 2), ...B("RangeSet.map", 5)], {sets: [setInput(M, [[2, 5, 0]]), setInput(M, [[2, 5, 1]])], changes: c, op: "[sets[0], sets[1]].map(s => list of s.map(ChangeSet.of(changes.spec, changes.length)))"},
        () => [M.list(M.set([[2, 5, 0]]).map(mkCh(c))), M.list(M.set([[2, 5, 1]]).map(mkCh(c)))])
   let E = new Pool([{name: "grow", startSide: -1, endSide: 1, point: true}, {name: "inverted", startSide: 1, endSide: -1, point: true},
                     {name: "guard", startSide: 0, endSide: 0}])
   for (let c of [ch({from: 5, insert: "abc"}, 10), ch({from: 5, insert: "\ud83d\ude00"}, 10)])
     for (let i of [0, 1])
-      fx(ID.endSide, [...B("RangeValue.endSide", 3), ...B("RangeSet.map", 4, 10)], {set: setInput(E, [[0, 1, 2], [5, 5, i]]), changes: c},
+      fx(ID.endSide, [...B("RangeValue.endSide", 3), ...B("RangeSet.map", 4, 10)], {set: setInput(E, [[0, 1, 2], [5, 5, i]]), changes: c, op: "list: " + MAP_LIST},
          () => ({list: E.list(E.set([[0, 1, 2], [5, 5, i]]).map(mkCh(c)))}))
   // collapse rules for non-empty ranges (rangeset.ts:149, :151)
   let K = new Pool([{name: "s-1e-2", startSide: -1, endSide: -2}, {name: "s-1e1", startSide: -1, endSide: 1}, {name: "s1e-1", startSide: 1, endSide: -1},
                     {name: "s0e0", startSide: 0, endSide: 0}, {name: "s-1e-1", startSide: -1, endSide: -1}, {name: "s2e1", startSide: 2, endSide: 1},
                     {name: "s1e1", startSide: 1, endSide: 1}, {name: "guard", startSide: 0, endSide: 0}])
   for (let i = 0; i < 7; i++)
-    fx(ID.endSide, [...B("RangeValue.endSide", 4), ...B("RangeSet.map", 5)], {set: setInput(K, [[0, 1, 7], [3, 6, i]]), changes: ch({from: 3, to: 6}, 10)},
+    fx(ID.endSide, [...B("RangeValue.endSide", 4), ...B("RangeSet.map", 5)], {set: setInput(K, [[0, 1, 7], [3, 6, i]]), changes: ch({from: 3, to: 6}, 10), op: MAP_LIST},
        () => K.list(K.set([[0, 1, 7], [3, 6, i]]).map(mkCh({spec: {from: 3, to: 6}, length: 10}))))
   // empty ranges whose endSide < startSide: Decoration.replace({inclusiveStart: true}) and ({inclusiveEnd: true}) at an empty range
   let R2 = new Pool([{name: "replaceIncStart", startSide: -2, endSide: -6e8 + 1, point: true}, {name: "replaceIncEnd", startSide: 5e8 - 1, endSide: 2, point: true},
                      {name: "mark", startSide: 5e8, endSide: -6e8}])
   for (let i of [0, 1])
     for (let c of [ch({from: 9, insert: "x"}, 20), ch({from: 15, insert: "x"}, 20)])
-      fx(ID.endSide, [...B("RangeValue.endSide", 4), ...B("RangeSet.map", 4, 2)], {set: setInput(R2, [[3, 3, i], [8, 10, 2]]), changes: c},
+      fx(ID.endSide, [...B("RangeValue.endSide", 4), ...B("RangeSet.map", 4, 2)], {set: setInput(R2, [[3, 3, i], [8, 10, 2]]), changes: c, ops: ["list: " + MAP_LIST, "dump: dump(set) (the set before mapping)"]},
          () => ({list: R2.list(R2.set([[3, 3, i], [8, 10, 2]]).map(mkCh(c))), dump: R2.dump(R2.set([[3, 3, i], [8, 10, 2]]))}))
   // activeForPoint: a range ending where the point ends is included only when its endSide >= the point's endSide
   let F = new Pool([mark("m", {startSide: -1, endSide: 1}), pt("p1", {startSide: -1, endSide: 1}), pt("p2", {startSide: -1, endSide: 2}), pt("p0", {startSide: -1, endSide: 0})])
@@ -208,18 +216,19 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   let r: R = [[0, 1, 0], [5, 5, 1], [5, 5, 2], [5, 5, 3], [5, 5, 4], [18, 19, 0]]
   for (let c of [ch({from: 4, to: 6}, 20), ch({from: 5, to: 6}, 20), ch({from: 4, to: 5}, 20), ch({from: 4, to: 6, insert: "xyz"}, 20),
                  ch({from: 5, insert: "q"}, 20), ch({from: 4, to: 6, insert: "\ud83d\ude00"}, 20)])
-    fx(ID.mapMode, [...B("RangeValue.mapMode", 1), ...B("RangeSet.map", 3, 10)], {set: setInput(P, r), changes: c}, () => P.list(P.set(r).map(mkCh(c))))
+    fx(ID.mapMode, [...B("RangeValue.mapMode", 1), ...B("RangeSet.map", 3, 10)], {set: setInput(P, r), changes: c, op: MAP_LIST}, () => P.list(P.set(r).map(mkCh(c))))
   let N = new Pool([{name: "guard", startSide: 0, endSide: 0}, {name: "nonEmptySimple", startSide: 0, endSide: 0, mapMode: MapMode.Simple},
                     {name: "nonEmptyTrackDel", startSide: 0, endSide: 0, mapMode: MapMode.TrackDel}])
   for (let i of [1, 2])
-    fx(ID.mapMode, [...B("RangeValue.mapMode", 2), ...B("RangeSet.map", 5)], {set: setInput(N, [[0, 1, 0], [4, 6, i], [18, 19, 0]]), changes: ch({from: 3, to: 7}, 20)},
+    fx(ID.mapMode, [...B("RangeValue.mapMode", 2), ...B("RangeSet.map", 5)], {set: setInput(N, [[0, 1, 0], [4, 6, i], [18, 19, 0]]), changes: ch({from: 3, to: 7}, 20), op: MAP_LIST},
        () => N.list(N.set([[0, 1, 0], [4, 6, i], [18, 19, 0]]).map(mkCh({spec: {from: 3, to: 7}, length: 20}))))
   // Q19 reproduction: a chunk strictly covered by a deletion is dropped whole (no "cover" branch)
   let Q = new Pool([{name: "inc", startSide: -1, endSide: 1}, {name: "s0", startSide: 0, endSide: 0},
                     pt("simplePoint", {startSide: 0, endSide: 0, mapMode: MapMode.Simple}), {name: "neighbour", startSide: 0, endSide: 0}])
   let c = ch({from: 0, to: 10, insert: "abc"}, 20)
   for (let r of [[[5, 6, 0]], [[5, 6, 0], [15, 16, 3]], [[5, 6, 1]], [[5, 6, 1], [15, 16, 3]], [[5, 5, 2]], [[5, 5, 2], [15, 16, 3]]] as R[])
-    fx(ID.map, [...B("RangeSet.map", 7), ...B("RangeValue.mapMode", 3)], {set: setInput(Q, r), changes: c, question: "Q19"},
+    fx(ID.map, [...B("RangeSet.map", 7), ...B("RangeValue.mapMode", 3)], {set: setInput(Q, r), changes: c, question: "Q19",
+                                                                       ops: ["touchesRange: ChangeSet.of(changes.spec, changes.length).touchesRange(ranges[0][0], ranges[ranges.length - 1][1])", "list: " + MAP_LIST]},
        () => ({touchesRange: mkCh(c).touchesRange(r[0][0], r[r.length - 1][1]), list: Q.list(Q.set(r).map(mkCh(c)))}))
 }
 
@@ -243,7 +252,8 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
 {
   let v = new Id({name: "v"})
   fx(ID.range, [...B("RangeValue.range", 1, 3), ...B("Range", 1), ...B("Range.from", 1), ...B("Range.to", 1), ...B("Range.value", 1)],
-     {value: resolve(v), calls: ["v.range(4)", "v.range(4)", "v.range(1, 7)"]}, () => {
+     {value: resolve(v), calls: ["v.range(4)", "v.range(4)", "v.range(1, 7)"],
+      reads: "a, b, c = the three results; a: [a.from, a.to]; c: [c.from, c.to]; valueIsV: a.value === v && c.value === v; distinctObjects: a !== b; isRange: a instanceof Range"}, () => {
     let a = v.range(4), b = v.range(4), c = v.range(1, 7)
     return {a: [a.from, a.to], c: [c.from, c.to], valueIsV: a.value === v && c.value === v, distinctObjects: a !== b, isRange: a instanceof Range}
   })
@@ -288,7 +298,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   })
   for (let r2 of [[[0, 10, 0], [2, 30, 1]], [[0, 10, 0], [2, 4, 1], [20, 22, 2]], [[5, 3, 0]]] as R[])
     fx(ID.RangeSet, B("RangeSet", 5), {set: setInput(P, r2), op: "length (internal getter)"}, () => (P.set(r2) as any).length)
-  fx(ID.RangeSet, [...B("RangeSet", 6), ...B("RangeSet.update", 6)], {set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 4]"}, op: "update({add: [range(550, 550, d)]})"}, () => {
+  fx(ID.RangeSet, [...B("RangeSet", 6), ...B("RangeSet.update", 6)], {set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 4]"}, op: "u = set.update({add: [range(550, 550, d)]}); sharedChunks: for each chunk of u, its index in set's chunks (-1 if new); newChunkPos: u's chunkPos (internal); oldUnchanged: list(set) after the update equals list(set) before it; newSize: u.size"}, () => {
     let s: any = P.set(big), before = P.list(s), u: any = s.update({add: [P.r(550, 550, 3)]})
     return {sharedChunks: u.chunk.map((c: any) => s.chunk.indexOf(c)), newChunkPos: u.chunkPos, oldUnchanged: JSON.stringify(P.list(s)) == JSON.stringify(before), newSize: u.size}
   })
@@ -307,7 +317,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
             s.update({filterFrom: 3, filterTo: 4}) === s, s.update({filter: null as any}) === s]
   })
   let add: R = [[9, 9, 4], [3, 4, 2], [9, 9, 3], [1, 1, 3]]
-  fx(ID.update, [...B("RangeSet.update", 2), ...B("RangeSetUpdate.sort", 1, 2)], {set: setInput(P, r), add, op: "update({add, sort: true})"}, () => {
+  fx(ID.update, [...B("RangeSet.update", 2), ...B("RangeSetUpdate.sort", 1, 2)], {set: setInput(P, r), add, op: "u = set.update({add, sort: true}), add given as an array of Range objects: list(u), dump(u); inputUntouched: every element of that array is still the same object at the same index after the call"}, () => {
     let s = P.set(r), arr = add.map(([f, t, i]) => P.r(f, t, i)), copy = arr.slice()
     let u = s.update({add: arr, sort: true})
     return {list: P.list(u), dump: P.dump(u), inputUntouched: arr.every((x, i) => x === copy[i])}
@@ -328,7 +338,8 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   for (let spec of [{add: [[550, 550, 3]]}, {add: [[250, 250, 3]]}, {add: [[249, 249, 3]]}, {filter: "from != 265", filterFrom: 260, filterTo: 270},
                     {filter: "from != 265", filterFrom: 250, filterTo: 270}, {filter: "from != 265", filterFrom: 260, filterTo: 500}, {filter: "from != 265"}] as any[])
     fx(ID.update, [...B("RangeSet.update", 6), ...B("RangeSetUpdate.filterFrom", 1), ...B("RangeSetUpdate.filterTo", 1)],
-       {set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 3]"}, update: spec}, () => {
+       {set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 3]"}, update: spec,
+        op: "u = set.update({add: update.add ranges (or []), filter: from != 265 when update.filter is given, filterFrom: update.filterFrom, filterTo: update.filterTo}); chunkSourceIndex: for each chunk of u, its index in set's chunks (-1 if new); chunkPos: u's chunkPos (internal); chunkSizes: range count of each chunk of u; size: u.size"}, () => {
       let s: any = P.set(big)
       let u: any = s.update({add: (spec.add || []).map(([f, t, i]: number[]) => P.r(f, t, i)), filter: spec.filter ? (f: number) => f != 265 : undefined,
                              filterFrom: spec.filterFrom, filterTo: spec.filterTo})
@@ -350,17 +361,17 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   fx(ID.update, [...B("RangeSet.update", 8), ...B("RangeSetUpdate.filter", 3)], {set: setInput(P, [[0, 10, 0]]), add: [[2, 4, 1]], op: "update({add, filter: () => false})"},
      () => P.list(P.set([[0, 10, 0]]).update({add: [P.r(2, 4, 1)], filter: () => false})))
   let L: R = [[0, 10, 0], [2, 4, 1], [3, 8, 2], [12, 14, 0]]
-  fx(ID.update, [...B("RangeSet.update", 9), ...B("RangeSetUpdate.filter", 1)], {set: setInput(P, L), add: [[1, 6, 1]], op: "update({add, filter: record and keep all but [3,8]})"}, () => {
+  fx(ID.update, [...B("RangeSet.update", 9), ...B("RangeSetUpdate.filter", 1)], {set: setInput(P, L), add: [[1, 6, 1]], op: "u = set.update({add, filter: record [from, to] and keep all but [3,8]}): calls; dumpBefore: dump(set) (the set before the update); dump(u); list(u)"}, () => {
     let calls: any[] = []
     let u = P.set(L).update({add: [P.r(1, 6, 1)], filter: (f, t) => { calls.push([f, t]); return !(f == 3 && t == 8) }})
     return {calls, dumpBefore: P.dump(P.set(L)), dump: P.dump(u), list: P.list(u)}
   })
-  fx(ID.update, [...B("RangeSet.update", 10), ...B("RangeSetUpdate.filterTo", 2)], {set: setInput(P, [[0, 4, 0], [2, 30, 1], [30, 30, 3]]), op: "update({filter: record, keep all}) with default filterFrom/filterTo"}, () => {
+  fx(ID.update, [...B("RangeSet.update", 10), ...B("RangeSetUpdate.filterTo", 2)], {set: setInput(P, [[0, 4, 0], [2, 30, 1], [30, 30, 3]]), op: "set.update({filter: record [from, to], keep all}) with default filterFrom/filterTo: calls; length: set's length (internal getter) of the set before the update"}, () => {
     let calls: any[] = [], s = P.set([[0, 4, 0], [2, 30, 1], [30, 30, 3]])
     s.update({filter: (f, t) => { calls.push([f, t]); return true }})
     return {calls, length: (s as any).length}
   })
-  fx(ID.update, [...B("RangeSet.update", 11, 12)], {set: setInput(P, [[0, 10, 0], [2, 4, 1]]), ops: ["update({filter: () => false}) === RangeSet.empty", "update({filter: f => f == 0}).nextLayer === RangeSet.empty"]}, () => {
+  fx(ID.update, [...B("RangeSet.update", 11, 12)], {set: setInput(P, [[0, 10, 0], [2, 4, 1]]), ops: ["update({filter: () => false}) === RangeSet.empty", "update({filter: f => f == 0}).nextLayer === RangeSet.empty", "dump(set) (the set the two updates were called on)"]}, () => {
     let s = P.set([[0, 10, 0], [2, 4, 1]])
     return [s.update({filter: () => false}) === RangeSet.empty, (s.update({filter: (f) => f == 0}) as any).nextLayer === RangeSet.empty, P.dump(s)]
   })
@@ -375,7 +386,8 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   })
   let big: R = []; for (let i = 0; i < 600; i++) big.push([i, i + 1, i % 2])
   for (let c of [ch({from: 550, insert: "xyz"}, 600), ch({from: 100, insert: "xyz"}, 600), ch({from: 250, insert: "x"}, 600), ch({from: 100, to: 120}, 600)])
-    fx(ID.map, B("RangeSet.map", 2, 6), {set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 2]"}, changes: c}, () => {
+    fx(ID.map, B("RangeSet.map", 2, 6), {set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 2]"}, changes: c,
+                                     op: "m = set.map(ChangeSet.of(changes.spec, changes.length)); chunkSourceIndex: for each chunk of m, its index in set's chunks (-1 if new); chunkPos: m's chunkPos (internal); chunkSizes: range count of each chunk of m; size: m.size; first: the first three entries of list(m)"}, () => {
       let s: any = P.set(big), m: any = s.map(mkCh(c))
       return {chunkSourceIndex: m.chunk.map((x: any) => s.chunk.indexOf(x)), chunkPos: m.chunkPos, chunkSizes: m.chunk.map((x: any) => x.value.length), size: m.size, first: P.list(m).slice(0, 3)}
     })
@@ -384,25 +396,27 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
                     {name: "r", startSide: -1, endSide: 1}, {name: "s", startSide: -1, endSide: 1}])
   for (let [r, c] of [[[[1, 1, 0], [2, 2, 1]], ch({from: 1, to: 2}, 10)], [[[0, 3, 3], [5, 5, 1], [6, 6, 2]], ch({from: 3, to: 6}, 10)],
                       [[[0, 1, 3], [2, 3, 4]], ch({from: 1, to: 2}, 10)], [[[0, 4, 3], [5, 5, 1]], ch({from: 3, to: 5}, 10)]] as [R, any][])
-    fx(ID.map, B("RangeSet.map", 6), {set: setInput(O, r), changes: c}, () => { let m = O.set(r).map(mkCh(c)); return {dump: O.dump(m), list: O.list(m)} })
+    fx(ID.map, B("RangeSet.map", 6), {set: setInput(O, r), changes: c, op: "m = " + MAP + ": dump(m), list(m)"}, () => { let m = O.set(r).map(mkCh(c)); return {dump: O.dump(m), list: O.list(m)} })
   // spilled layers sit between the mapped top layer and the mapped lower layers
   let SP = new Pool([{name: "top1", startSide: -1, endSide: 1}, {name: "top2", startSide: -1, endSide: 1}, {name: "low", startSide: 0, endSide: 0}])
-  fx(ID.map, B("RangeSet.map", 8), {set: setInput(SP, [[0, 2, 0], [1, 8, 2], [4, 6, 1]]), changes: ch({from: 2, to: 4}, 10)}, () => {
+  fx(ID.map, B("RangeSet.map", 8), {set: setInput(SP, [[0, 2, 0], [1, 8, 2], [4, 6, 1]]), changes: ch({from: 2, to: 4}, 10),
+                                 op: "dumpBefore: dump(set) (before mapping); dump: dump(" + MAP + ")"}, () => {
     let s = SP.set([[0, 2, 0], [1, 8, 2], [4, 6, 1]]); let m = s.map(changes({from: 2, to: 4}, 10)); return {dumpBefore: SP.dump(s), dump: SP.dump(m)}
   })
   // cross-chunk spill: a touched chunk's first range falls before the previous chunk's last end
   let X = new Pool([{name: "r", startSide: 1, endSide: 1}, pt("pb", {startSide: -1, endSide: -1, mapMode: MapMode.Simple})])
   let xr: R = []; for (let i = 0; i < 250; i++) xr.push([i, i + 1, 0]); xr.push([260, 260, 1], [270, 271, 0])
-  fx(ID.map, B("RangeSet.map", 9), {set: {values: X.json(), rangesRule: "250 ranges [i, i+1, 0] for i in 0..250, then [260, 260, 1], [270, 271, 0]"}, changes: ch({from: 250, to: 260}, 300)}, () => {
+  fx(ID.map, B("RangeSet.map", 9), {set: {values: X.json(), rangesRule: "250 ranges [i, i+1, 0] for i in 0..250, then [260, 260, 1], [270, 271, 0]"}, changes: ch({from: 250, to: 260}, 300),
+                    op: "m = " + MAP + "; layers: dump(m) with each chunk reduced to {pos, n: its range count, last: [from, to, v] of its last range}; tail: the last three entries of list(m)"}, () => {
     let m = X.set(xr).map(changes({from: 250, to: 260}, 300)); let d = X.dump(m)
     return {layers: d.map(l => ({maxPoint: l.maxPoint, chunks: l.chunks.map(c => ({pos: c.pos, n: c.v.length, last: [c.from[c.from.length - 1], c.to[c.to.length - 1], c.v[c.v.length - 1]]}))})), tail: X.list(m).slice(-3)}
   })
   // out-of-range sets: mapPos throws
   for (let [r, c] of [[[[15, 20, 0]], ch({from: 2, insert: "x"}, 10)], [[[5, 30, 0]], ch({from: 8, insert: "x"}, 10)], [[[5, 8, 0]], ch({from: 2, insert: "x"}, 10)]] as [R, any][])
-    fx(ID.map, B("RangeSet.map", 11), {set: setInput(P, r), changes: c}, () => P.list(P.set(r).map(mkCh(c))))
+    fx(ID.map, B("RangeSet.map", 11), {set: setInput(P, r), changes: c, op: MAP_LIST}, () => P.list(P.set(r).map(mkCh(c))))
   // maxPoint after map
   let MP = new Pool([pt("p", {startSide: 0, endSide: 0}), {name: "m", startSide: 0, endSide: 0}])
-  fx(ID.map, B("RangeSet.map", 6), {set: setInput(MP, [[0, 10, 0], [12, 14, 1]]), changes: ch({from: 2, to: 8}, 20)}, () => {
+  fx(ID.map, B("RangeSet.map", 6), {set: setInput(MP, [[0, 10, 0], [12, 14, 1]]), changes: ch({from: 2, to: 8}, 20), op: "dump(" + MAP + ")"}, () => {
     let m = MP.set([[0, 10, 0], [12, 14, 1]]).map(changes({from: 2, to: 8}, 20)); return MP.dump(m)
   })
 }
@@ -413,7 +427,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   let r: R = [[0, 2, 0], [2, 2, 1], [2, 5, 2], [5, 5, 3], [6, 8, 4], [1, 7, 5]].sort((x, y) => x[0] - y[0]) as R
   let q = [[2, 5], [5, 5], [8, 8], [9, 20], [5, 2], [-5, -1], [0, 1e9]]
   for (let [f, t] of q)
-    fx(ID.between, B("RangeSet.between", 2, 3, 6, 7), {set: setInput(P, r), op: `between(${f}, ${t})`}, () => {
+    fx(ID.between, B("RangeSet.between", 2, 3, 6, 7), {set: setInput(P, r), op: `dump: dump(set); calls: set.between(${f}, ${t}) callback arguments`}, () => {
       let found: any[] = []; P.set(r).between(f, t, (a, b, v) => { found.push([a, b, P.idx(v)]) }); return {dump: P.dump(P.set(r)), calls: found}
     })
   for (let stopVal of [false, undefined, 0, null, ""])
@@ -479,14 +493,16 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   let mk0: R = [[0, 10, 0]], withPointBelow: R = [[0, 10, 0], [5, 5, 2]], withPointTop: R = [[5, 5, 2], [5, 10, 0]]
   for (let min of [-1, 0, 1])
     for (let n of [withPointBelow, withPointTop])
-      fx(ID.compare, [...B("RangeSet^compare", 1, 8)], {old: [setInput(P, mk0)], new: [setInput(P, n)], textDiff: ch(null, 20), minPointSize: min, question: "Q21"},
+      fx(ID.compare, [...B("RangeSet^compare", 1, 8)], {old: [setInput(P, mk0)], new: [setInput(P, n)], textDiff: ch(null, 20), minPointSize: min, question: "Q21",
+                                                  ops: ["dumpNew: dump(new[0])", "calls: " + COMPARE + " with minPointSize"]},
          () => ({dumpNew: P.dump(P.set(n)), calls: run([mk0], [n], {length: 20}, {min})}))
-  fx(ID.compare, B("RangeSet^compare", 8), {old: [setInput(P, [[0, 10, 0], [12, 15, 2], [16, 16, 2]])], new: [setInput(P, [[0, 8, 1], [12, 15, 3], [16, 16, 3]])], textDiff: ch(null, 20), minPointSize: [0, 1, 3, 4]},
+  fx(ID.compare, B("RangeSet^compare", 8), {old: [setInput(P, [[0, 10, 0], [12, 15, 2], [16, 16, 2]])], new: [setInput(P, [[0, 8, 1], [12, 15, 3], [16, 16, 3]])], textDiff: ch(null, 20), minPointSize: [0, 1, 3, 4],
+     op: "for each m of minPointSize: calls of " + COMPARE + " with minPointSize m"},
      () => [0, 1, 3, 4].map(min => run([[[0, 10, 0], [12, 15, 2], [16, 16, 2]]], [[[0, 8, 1], [12, 15, 3], [16, 16, 3]]], {length: 20}, {min})))
   // shared chunks
   let big: R = []; for (let i = 0; i < 600; i++) big.push([i, i + 1, i % 2])
   fx(ID.compare, B("RangeSet^compare", 2), {old: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 2] (a, b alternate)"}, new: "old.map(insert 'xyz' at 550)", textDiff: ch({from: 550, insert: "xyz"}, 600),
-     op: "make reading `value` of the new set's chunks 0 and 1 throw (as test-rangeset.ts:266 does), then compare; then compare a fresh old set with a new set rebuilt from equal but distinct values (count eq calls)"}, () => {
+     op: "o = old set, c = ChangeSet.of(textDiff.spec, textDiff.length), n = o.map(c); chunksShared: [n.chunk[0] === o.chunk[0], n.chunk[1] === o.chunk[1]]; make reading `value` of n's chunks 0 and 1 throw (as test-rangeset.ts:266 does); sharedRun: \"ok\" or the message thrown by RangeSet.compare([o], [n], c, cmp); sharedCalls: its calls; rebuiltCalls: calls of RangeSet.compare([fresh old set], [n2], c, cmp), n2 = RangeSet.of over the same 600 ranges with positions >= 550 moved by 3, each from a second pool of equal but distinct values (same names, sides and point); eqCallsRebuilt: count of eq calls during that second compare"}, () => {
     let o: any = P.set(big), c = changes({from: 550, insert: "xyz"}, 600), n: any = o.map(c)
     let shared = [n.chunk[0] === o.chunk[0], n.chunk[1] === o.chunk[1]]
     for (let k of [0, 1]) Object.defineProperty(n.chunk[k], "value", {get() { throw new Error("NO TOUCH") }})
@@ -514,7 +530,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
     ["same sets swapped", [[[2, 4, 0]], [[2, 4, 1]]], [[[2, 4, 1]], [[2, 4, 0]]], {length: 20}, [10]],
   ]
   for (let [name, o, n, c, bs] of cases) {
-    fx(ID.compare, [...B("RangeSet^compare", ...bs), ...(bs.includes(4) ? B("RangeComparator.compareRange", 1) : []), ...(bs.includes(5) ? B("RangeComparator.comparePoint", 1) : [])], {name, old: o.map(x => setInput(P, x)), new: n.map(x => setInput(P, x)), textDiff: c.spec ? c : ch(null, c.length)},
+    fx(ID.compare, [...B("RangeSet^compare", ...bs), ...(bs.includes(4) ? B("RangeComparator.compareRange", 1) : []), ...(bs.includes(5) ? B("RangeComparator.comparePoint", 1) : [])], {name, old: o.map(x => setInput(P, x)), new: n.map(x => setInput(P, x)), textDiff: c.spec ? c : ch(null, c.length), op: "calls of " + COMPARE},
        () => run(o, n, c))
   }
   // boundChange
@@ -527,12 +543,12 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   ]
   for (let [name, o, n] of bcases) {
     let c = name.startsWith("boundary at the end") ? {spec: {from: 5, to: 6, insert: "q"}, length: 20} : {length: 20}
-    fx(ID.compare, [...B("RangeSet^compare", 6), ...B("RangeComparator", 1), ...B("RangeComparator.boundChange", 1)], {name, old: [setInput(P, o)], new: [setInput(P, n)], textDiff: c.spec ? c : ch(null, 20), ops: ["with boundChange", "without boundChange"]},
+    fx(ID.compare, [...B("RangeSet^compare", 6), ...B("RangeComparator", 1), ...B("RangeComparator.boundChange", 1)], {name, old: [setInput(P, o)], new: [setInput(P, n)], textDiff: c.spec ? c : ch(null, 20), ops: ["withBound: calls of " + COMPARE, "withoutBound: calls of " + COMPARE + ", the comparator without boundChange"]},
        () => ({withBound: run([o], [n], c), withoutBound: run([o], [n], c, {bound: false})}))
   }
   // aliasing of the arrays passed to compareRange
   fx(ID.compare, [...B("RangeSet^compare", 11), ...B("RangeComparator.compareRange", 1)], {old: [setInput(P, [[0, 10, 0], [2, 4, 1]])], new: [setInput(P, [[0, 10, 4]])], textDiff: ch(null, 20),
-     op: "keep the arrays passed to compareRange; read them at call time and after compare returns"}, () => {
+     op: "RangeSet.compare(old, new, ChangeSet.empty(textDiff.length), comparator with compareRange (records and keeps its arrays) and an empty comparePoint, no boundChange); atCall: [from, to, a, b] read at each call; afterReturn: the kept [a, b] read after compare returns; sameArrayEveryCall: every kept a is the first call's a"}, () => {
     let seen: any[] = [], kept: any[] = []
     RangeSet.compare([P.set([[0, 10, 0], [2, 4, 1]])], [P.set([[0, 10, 4]])], ChangeSet.empty(20), {
       compareRange(f, t, a, b) { seen.push([f, t, P.idxs(a), P.idxs(b)]); kept.push([a, b]) }, comparePoint() {}})
@@ -561,7 +577,8 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   ]
   for (let [name, o, n, from, to] of cases)
     fx(ID.seq, B("RangeSet^eq", ...(name.startsWith("marks") || name.startsWith("mark only") ? [3] : name.startsWith("set count") || name == "no sets" ? [2] : name.includes("after to") ? [5] : name.includes("from") ? [6] : [4])),
-       {name, old: o.map(x => setInput(P, x)), new: n.map(x => setInput(P, x)), from: from ?? "default", to: to ?? "default", question: name.startsWith("mark") ? "Q22" : undefined},
+       {name, old: o.map(x => setInput(P, x)), new: n.map(x => setInput(P, x)), from: from ?? "default", to: to ?? "default", question: name.startsWith("mark") ? "Q22" : undefined,
+        op: "RangeSet.eq(old, new, from, to), from and to omitted when \"default\""},
        () => E(o, n, from, to))
   fx(ID.seq, B("RangeSet^eq", 2), {op: "s = of(3,3,p); RangeSet.eq([s, of(0,5,m)], [of(0,5,n), s]) and RangeSet.eq([s, RangeSet.empty], [s])"}, () => {
     let s = P.set([[3, 3, 2]])
@@ -596,14 +613,14 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
     ["empty set", [[]], 0, 3, [1]],
   ]
   for (let [name, sets, from, to, bs] of cases)
-    fx(ID.spans, [...B("RangeSet^spans", ...bs), ...(bs.includes(1) ? [...B("SpanIterator", 1), ...B("SpanIterator.span", 1)] : []), ...(bs.includes(4) ? B("SpanIterator.point", 1) : [])], {name, sets: sets.map(x => setInput(P, x)), from, to}, () => S(sets, from, to))
+    fx(ID.spans, [...B("RangeSet^spans", ...bs), ...(bs.includes(1) ? [...B("SpanIterator", 1), ...B("SpanIterator.span", 1)] : []), ...(bs.includes(4) ? B("SpanIterator.point", 1) : [])], {name, sets: sets.map(x => setInput(P, x)), from, to, op: SPANS}, () => S(sets, from, to))
   // span openStart and aliasing of active
-  fx(ID.spans, [...B("SpanIterator.span", 1, 2)], {sets: [setInput(P, [[0, 6, 0], [2, 4, 1]])], from: 0, to: 6, op: "keep the active arrays passed to span; read them at call time and after spans returns"}, () => {
+  fx(ID.spans, [...B("SpanIterator.span", 1, 2)], {sets: [setInput(P, [[0, 6, 0], [2, 4, 1]])], from: 0, to: 6, op: "RangeSet.spans(sets, from, to, iterator with span (records and keeps its active array) and an empty point); atCall: [from, to, active, openStart] read at each call; afterReturn: the kept arrays read after spans returns; sameArray: every kept array is the first one"}, () => {
     let kept: any[] = [], seen: any[] = []
     RangeSet.spans([P.set([[0, 6, 0], [2, 4, 1]])], 0, 6, {span(f, t, a, o) { seen.push([f, t, P.idxs(a), o]); kept.push(a) }, point() {}})
     return {atCall: seen, afterReturn: kept.map(a => P.idxs(a)), sameArray: kept.every(a => a === kept[0])}
   })
-  fx(ID.spans, B("SpanIterator.point", 2), {sets: [setInput(P, [[2, 4, 3]])], from: 0, to: 6, op: "point with no active ranges: is `active` the same array across calls and spans"}, () => {
+  fx(ID.spans, B("SpanIterator.point", 2), {sets: [setInput(P, [[2, 4, 3]])], from: 0, to: 6, op: "point with no active ranges: RangeSet.spans(sets, from, to, iterator whose span and point keep their active array); n: number of calls; pointArrayIsSpanArray: the second call's array is the first call's; lengths: length of each kept array after spans returns"}, () => {
     let arrs: any[] = []
     RangeSet.spans([P.set([[2, 4, 3]])], 0, 6, {span(f, t, a) { arrs.push(a) }, point(f, t, v, a) { arrs.push(a) }})
     return {n: arrs.length, pointArrayIsSpanArray: arrs[1] === arrs[0], lengths: arrs.map(a => a.length)}
@@ -611,7 +628,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   // consumer minPointSize values: -1 (default), 0 (view heightmap.ts:715), 20 (view viewstate.ts:563, :634)
   let cr: R = [[0, 50, 0], [5, 5, 4], [10, 25, 3], [30, 40, 5]]
   for (let min of [-1, 0, 20])
-    fx(ID.spans, B("RangeSet^spans", 7), {sets: [setInput(P, cr)], from: 0, to: 50, minPointSize: min}, () => S([cr], 0, 50, min))
+    fx(ID.spans, B("RangeSet^spans", 7), {sets: [setInput(P, cr)], from: 0, to: 50, minPointSize: min, op: SPANS + " with minPointSize"}, () => S([cr], 0, 50, min))
 }
 
 // ---------------------------------------------------------------- RangeSet^of, RangeSetBuilder
@@ -636,14 +653,15 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   fx(ID.add, B("RangeSetBuilder.add", 6), {values: P.json(), op: "add(5,3,a) (reversed); add(4,6,b) (from < previous from); finish"}, () => {
     let b = new RangeSetBuilder<any>(); b.add(5, 3, P.values[0]); b.add(4, 6, P.values[1]); let s = b.finish(); return {dump: P.dump(s), list: P.list(s)}
   })
-  fx(ID.add, B("RangeSetBuilder.add", 7), {values: P.json(), ops: ["b.add(0,5,a); finish; b.add(10,11,b)", "b.add(0,5,a); finish; b.add(2,3,b); b.finish()", "b.add(0,5,a); finish; finish"]}, () => {
+  fx(ID.add, B("RangeSetBuilder.add", 7), {values: P.json(), ops: ["addFits: b1.add(0,5,a); b1.finish(); b1.add(10,11,b)", "addOverlaps: b2.add(0,5,a); b2.finish(); b2.add(2,3,b)", "finishAfterOverlap: then dump(b2.finish())", "finishTwice: b3.add(0,5,a); b3.finish(); dump(b3.finish())",
+                                                       "each read as {ok: the value, or \"returned undefined\"} or {error, message}"]}, () => {
     let t = (f: () => any) => { try { let r = f(); return {ok: r === undefined ? "returned undefined" : r} } catch (e: any) { return {error: e.constructor.name, message: e.message} } }
     let b1 = new RangeSetBuilder<any>(); b1.add(0, 5, P.values[0]); b1.finish()
     let b2 = new RangeSetBuilder<any>(); b2.add(0, 5, P.values[0]); b2.finish()
     let b3 = new RangeSetBuilder<any>(); b3.add(0, 5, P.values[0]); b3.finish()
     return {addFits: t(() => b1.add(10, 11, P.values[1])), addOverlaps: t(() => b2.add(2, 3, P.values[1])), finishAfterOverlap: t(() => P.dump(b2.finish())), finishTwice: t(() => P.dump(b3.finish()))}
   })
-  fx(ID.finish, [...B("RangeSetBuilder.finish", 1, 2), ...B("RangeSetBuilder.constructor", 1)], {values: P.json(), ops: ["new builder; finish() twice; add(1,2,a); finish()"]}, () => {
+  fx(ID.finish, [...B("RangeSetBuilder.finish", 1, 2), ...B("RangeSetBuilder.constructor", 1)], {values: P.json(), ops: ["new builder; firstEmpty: finish() === RangeSet.empty; secondEmpty: finish() === RangeSet.empty again; add(1,2,a); thenUsable: list(finish())"]}, () => {
     let b = new RangeSetBuilder<any>()
     let e1 = b.finish() === RangeSet.empty, e2 = b.finish() === RangeSet.empty
     b.add(1, 2, P.values[0]); let s = b.finish()
@@ -669,7 +687,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
             P.dump(RangeSet.join([s, RangeSet.empty]))]
   })
   let s0: R = [[0, 10, 0], [2, 4, 1]], s1: R = [[1, 9, 2]], s2: R = [[3, 5, 1]]
-  fx(ID.join, B("RangeSet^join", 3, 5, 6), {sets: [setInput(P, s0), setInput(P, s1), setInput(P, s2)], op: "join(sets): dump, list, chunk sharing, RangeSet.iter([joined]) ranks"}, () => {
+  fx(ID.join, B("RangeSet^join", 3, 5, 6), {sets: [setInput(P, s0), setInput(P, s1), setInput(P, s2)], op: "j = RangeSet.join(sets): dump(j); list: RangeSet.iter([j]) list with ranks; layerChunkSources: for each layer of j, the index in [sets[0], sets[0].nextLayer, sets[1], sets[2]] of the layer whose first chunk is its first chunk; perLayerMaxPointOfSources: maxPoint of sets[0], sets[0].nextLayer, sets[1], sets[2]"}, () => {
     let a: any = P.set(s0), b: any = P.set(s1), c: any = P.set(s2), j: any = RangeSet.join([a, b, c])
     let layers = []; for (let l = j; !l.isEmpty; l = l.nextLayer) layers.push(l)
     return {dump: P.dump(j), list: P.listMany([j]), layerChunkSources: layers.map(l => [a, a.nextLayer, b, c].findIndex(x => x.chunk[0] === l.chunk[0])),

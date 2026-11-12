@@ -85,7 +85,7 @@ for (let v of SMALL) {
     () => ({forward: all(doc.iter()), reverse: all(doc.iter(-1)), spread: [...doc], dir2: all(doc.iter(2 as any))}))
   // G4 raw cursor with skips, and every cursor after done (negative skip)
   f("TextIterator.next", "TextIterator.next:3,4,5 TextIterator.value:1 TextIterator.done:1 TextIterator.lineBreak:1",
-    vin(v, {expr: "iter(): next(skip) for skips; iter(-1): next(skip) for rskips; after done on iter(), iterRange(0, length), iterLines(): next(), next(-1)",
+    vin(v, {expr: "iter(): next(skip) for skips; iter(-1): next(skip) for rskips; after done on iter(), iterRange(0, length), iterLines(): next(), next(-1), next()",
             skips: [1, 0, 2, 0, 3, -2, 0, 5, -1, 0], rskips: [1, 0, 2, 0, -2, 3, 0]}),
     () => {
       let after = (it: any) => { all(it); return steps(it, [0, -1, 0]) }
@@ -94,14 +94,14 @@ for (let v of SMALL) {
     })
   // G5 partial cursors
   f("Text.iterRange", "Text.iterRange:1,2 TextIterator.next:6,7,8 TextIterator.value:1 TextIterator.done:1 TextIterator.lineBreak:1",
-    vin(v, {expr: "iterRange(from, to) until done for each range; forward iterRange(1, length - 1).next(skip) for skips (first call next(0)); iterRange(2, length - 1).next(-1) first; reverse iterRange(length - 1, 1).next(skip) for rskips",
+    vin(v, {expr: "iterRange(from, to) until done for each range; forward iterRange(1, length - 1).next(skip) for skips (first call next(0)); iterRange(2, length - 1).next(-1) first, then next(); reverse iterRange(length - 1, 1).next(skip) for rskips",
             ranges: [[1, len - 1], [len - 1, 1], [3, 5], [4, 4], [-5, len + 5], [len + 5, -5], [1.5, 6]], skips: [0, 2, -1, 3, 0], rskips: [2, 0, 1, 0]}),
     () => ({ranges: [[1, len - 1], [len - 1, 1], [3, 5], [4, 4], [-5, len + 5], [len + 5, -5], [1.5, 6]].map(([a, b]) => all(doc.iterRange(a, b))),
             skips: steps(doc.iterRange(1, len - 1), [0, 2, -1, 3, 0]), firstNegative: steps(doc.iterRange(2, len - 1), [-1, 0]),
             reverseSkips: steps(doc.iterRange(len - 1, 1), [2, 0, 1, 0])}))
   // G6 line cursors
   f("Text.iterLines", "Text.iterLines:1,2,3,4,5,6,7 TextIterator.next:9,10 TextIterator.done:1 TextIterator.value:1",
-    vin(v, {expr: "iterLines(...args) until done for each args (errors captured); iterLines().next(skip) for skips",
+    vin(v, {expr: "lines: doc.lines; iterLines(...args) until done for each args (errors captured); iterLines().next(skip) for skips",
             args: [[], [2], [2, 4], [1, "lines + 1"], ["lines", "lines + 1"], [2, 1], [2, 2], [0], ["lines + 1"], [2, "lines + 2"], [1.5, 3], [1, 2.5]],
             skips: [1, 0, 2, -1, 0]}),
     () => {
@@ -137,7 +137,7 @@ for (let v of SMALL) {
             appendEmpty: (() => { let r = doc.append(Text.empty); return {...desc(r), isDoc: r === doc} })()}))
   // G10 eq against the LF document with the same lines, and against Text.of(lines) built from the LF control
   f("Text.eq", "Text.eq:2,3",
-    vin(v, {expr: "doc.eq(other) both ways for each other: lfControl = build(lf variant), sameLines = Text.of(doc.toJSON()), sourceAsOneLine = Text.of([source])"}),
+    vin(v, {expr: "doc.eq(other) both ways ([doc.eq(other), other.eq(doc)]) for each other: lfControl = build(lf variant) (with its toJSON()), sameLines = Text.of(doc.toJSON()), sourceAsOneLine = Text.of([source]) (with its length and lines)"}),
     () => {
       let lf = build(SMALL[0]), same = Text.of(doc.toJSON()), one = Text.of([v.source])
       let both = (o: Text) => [doc.eq(o), o.eq(doc)]
@@ -159,13 +159,13 @@ for (let vname of VARIANTS) {
     {...big, expr: "b = children[0].length (or length for a leaf); lineAt(b), lineAt(b + 1); shape"},
     () => { let b = doc.children ? doc.children[0].length : doc.length; return {b, shape: shape(doc), atB: line(doc.lineAt(b)), atB1: cap(() => line(doc.lineAt(b + 1)))} })
   f("Text.replace", "Text.replace:4",
-    {...big, expr: "p = line(min(50, lines)).from + 1; r = doc.replace(p, p + 2, Text.of([\"y\"])): shapes, children of r shared (===) with doc"},
+    {...big, expr: "p = line(min(50, lines)).from + 1; r = doc.replace(p, p + 2, Text.of([\"y\"])): p; shapeBefore: shape(doc); shapeAfter: shape(r); shared: for each child of r (null for a leaf), whether it is === a child of doc; r.length, r.lines"},
     () => {
       let p = doc.line(Math.min(50, doc.lines)).from + 1, r = doc.replace(p, p + 2, Text.of(["y"]))
       return {p, shapeBefore: shape(doc), shapeAfter: shape(r), shared: r.children ? r.children.map(c => doc.children ? doc.children.includes(c) : false) : null, length: r.length, lines: r.lines}
     })
   f("Text.replace", "Text.replace:5",
-    {...big, expr: "a = line(min(10, lines)).from + 2, b = line(lines - 10 or lines).to - 1; r = doc.replace(a, b, Text.empty); r2 = doc.replace(a, a, doc): shapes, shared children"},
+    {...big, expr: "a = line(min(10, lines)).from + 2, b = line(lines - 10 or lines).to - 1; r = doc.replace(a, b, Text.empty); r2 = doc.replace(a, a, doc): a, b; for r and r2: length, lines, shape, shared (for each child (null for a leaf), whether it is === a child of doc)"},
     () => {
       let a = doc.line(Math.min(10, doc.lines)).from + 2, b = doc.line(doc.lines > 20 ? doc.lines - 10 : doc.lines).to - 1
       let r = doc.replace(a, b, Text.empty), r2 = doc.replace(a, a, doc)
@@ -173,7 +173,7 @@ for (let vname of VARIANTS) {
       return {a, b, r: {length: r.length, lines: r.lines, shape: shape(r), shared: sharedIn(r)}, r2: {length: r2.length, lines: r2.lines, shape: shape(r2), shared: sharedIn(r2)}}
     })
   f("Text.slice", "Text.slice:3",
-    {...big, expr: "a = line(min(40, lines)).from + 2, b = line(lines > 160 ? 160 : lines).to - 1; s = doc.slice(a, b): shape, children of s shared (===) with doc"},
+    {...big, expr: "a = line(min(40, lines)).from + 2, b = line(lines > 160 ? 160 : lines).to - 1; s = doc.slice(a, b): a, b, s.length, s.lines, shape, shared: for each child of s (null for a leaf), whether it is === a child of doc"},
     () => {
       let a = doc.line(Math.min(40, doc.lines)).from + 2, b = doc.line(doc.lines > 160 ? 160 : doc.lines).to - 1, s = doc.slice(a, b)
       return {a, b, length: s.length, lines: s.lines, shape: shape(s), shared: s.children ? s.children.map(c => doc.children ? doc.children.includes(c) : false) : null}
@@ -183,7 +183,7 @@ for (let vname of VARIANTS) {
   let v3 = joined(vname, ["x", "y", "z"]), t3 = build(v3), v2 = joined(vname, ["", ""]), t2 = build(v2)
   f("Text.replace", "Text.replace:3",
     {...vin(v30), insertSource: v3.source, insertDoc: t3.toJSON(), moreSource: v2.source, moreDoc: t2.toJSON(),
-     expr: "a = doc.replace(2, 2, insert); b = a.replace(1, 1, more): lines, shape, first lines"},
+     expr: "a = doc.replace(2, 2, insert); b = a.replace(1, 1, more): lines, shape, first: line(1).text of each; second: b.line(2).text"},
     () => { let a = d30.replace(2, 2, t3), b = a.replace(1, 1, t2); return {a: {lines: a.lines, shape: shape(a), first: a.line(1).text}, b: {lines: b.lines, shape: shape(b), first: b.line(1).text, second: cap(() => b.line(2).text)}} })
 }
 
@@ -199,13 +199,13 @@ for (let [name, el, sep] of [["lf", "a\nb", undefined], ["crlf", "a\r\nb", undef
 f("Line.text", "Line.text:2", {doc: ["a\u{1F600}\nb", "c"], expr: "line(1), lineAt(2), lineAt(4), line(2), toString()"},
   () => { let t = Text.of(["a\u{1F600}\nb", "c"]); return {line1: line(t.line(1)), at2: line(t.lineAt(2)), at4: line(t.lineAt(4)), line2: line(t.line(2)), str: t.toString()} })
 // TextIterator.next B5 on an astral document (D1): after done, next() and next(-1) on every cursor
-f("TextIterator.next", "TextIterator.next:5", {doc: ["a\u{1F600}", "b\u{1D400}"], expr: "after done on iter(), iterRange(0, length), iterLines(): next(), next(-1), next(); also next(-2)"},
+f("TextIterator.next", "TextIterator.next:5", {doc: ["a\u{1F600}", "b\u{1D400}"], expr: "after done (next() until done) on a fresh cursor: next(), next(k), next(); raw1: iter(), k = -1; raw2: iter(), k = -2; partial1: iterRange(0, length), k = -1; lines1: iterLines(), k = -1; lines2: iterLines(), k = -2"},
   () => { let t = Text.of(["a\u{1F600}", "b\u{1D400}"]); let after = (it: any, k: number) => { all(it); return steps(it, [0, k, 0]) }
     return {raw1: after(t.iter(), -1), raw2: after(t.iter(), -2), partial1: after(t.iterRange(0, t.length), -1), lines1: after(t.iterLines(), -1), lines2: after(t.iterLines(), -2)} })
 
 // findClusterBreak: grapheme-cluster cases for B1, B12, B15 (D2)
 const FCB = (bs: string, str: string, pos: number, forward = true, note?: string) =>
-  f("findClusterBreak", bs, {str, pos, forward, note}, () => findClusterBreak(str, pos, forward))
+  f("findClusterBreak", bs, {str, pos, forward, note, expr: "findClusterBreak(str, pos, forward)"}, () => findClusterBreak(str, pos, forward))
 FCB("findClusterBreak:1", "e\u0301", 2, true, "forward at str.length after a base and a combining mark")
 FCB("findClusterBreak:1", "\u{1F468}\u200D\u{1F469}", 5, true, "forward at str.length after a ZWJ sequence")
 FCB("findClusterBreak:12", "e\u0301x", 1, false, "backward from pos 1, between a base and its mark")
@@ -218,20 +218,21 @@ for (let [str, pos] of [["\u{1F600}", 1], ["a\u{1D400}b", 2]] as [string, number
   f("codePointSize", "codePointSize:1", {str, pos, expr: "c = codePointAt(str, pos); codePointSize(c)"}, () => { let c = codePointAt(str, pos); return {code: c, size: codePointSize(c)} })
 // countColumn B7, B8 and findColumn B8, B9 with an astral character before the tab (D1)
 for (let [s, to] of [["\u{1F600}\t\u0301x", undefined], ["\u{1F600}\t\u0301x", 3], ["\u{1F600}\t\u0301x", 4]] as [string, number | undefined][])
-  f("countColumn", "countColumn:7", {string: s, tabSize: 4, to}, () => countColumn(s, 4, to))
+  f("countColumn", "countColumn:7", {string: s, tabSize: 4, to, expr: to === undefined ? "countColumn(string, tabSize)" : "countColumn(string, tabSize, to)"}, () => countColumn(s, 4, to))
 for (let [s, to] of [["\u{1F600}a\u200D\tb", undefined], ["\u{1F600}a\u200D\tb", 5], ["\u{1F600}a\u200D\tb", 4]] as [string, number | undefined][])
-  f("countColumn", "countColumn:8", {string: s, tabSize: 4, to}, () => countColumn(s, 4, to))
+  f("countColumn", "countColumn:8", {string: s, tabSize: 4, to, expr: to === undefined ? "countColumn(string, tabSize)" : "countColumn(string, tabSize, to)"}, () => countColumn(s, 4, to))
 for (let col of [1, 4, 5, 6, 7])
-  f("findColumn", "findColumn:8", {string: "\u{1F600}\t\u0301x", col, tabSize: 4}, () => findColumn("\u{1F600}\t\u0301x", col, 4))
+  f("findColumn", "findColumn:8", {string: "\u{1F600}\t\u0301x", col, tabSize: 4, expr: "findColumn(string, col, tabSize)"}, () => findColumn("\u{1F600}\t\u0301x", col, 4))
 for (let col of [1, 2, 3, 4])
-  f("findColumn", "findColumn:9", {string: "\u{1F600}a\u200D\tb", col, tabSize: 4}, () => findColumn("\u{1F600}a\u200D\tb", col, 4))
+  f("findColumn", "findColumn:9", {string: "\u{1F600}a\u200D\tb", col, tabSize: 4, expr: "findColumn(string, col, tabSize)"}, () => findColumn("\u{1F600}a\u200D\tb", col, 4))
 // findColumn B7 (out-of-domain arguments) on astral and cluster strings (D1, D2)
 for (let [s, col, tab, strict] of [["\u{1F600}e\u0301x", 1.5, 4, undefined], ["\u{1F600}e\u0301x", 2.5, 4, undefined], ["\u{1F600}e\u0301x", NaN, 4, true],
   ["\u{1F600}e\u0301x", Infinity, 4, undefined], ["\u{1F600}\te\u0301x", 3, 0, true], ["\u{1F600}\te\u0301x", 2, -4, undefined]] as [string, number, number, boolean | undefined][])
-  f("findColumn", "findColumn:7", {string: s, col, tabSize: tab, strict}, () => findColumn(s, col, tab, strict))
+  f("findColumn", "findColumn:7", {string: s, col, tabSize: tab, strict, expr: strict === undefined ? "findColumn(string, col, tabSize)" : "findColumn(string, col, tabSize, strict)"}, () => findColumn(s, col, tab, strict))
 // CharCategory.Word B6 ASCII counterpart (D1): wordChars matched per code unit, where a unit is a character
 for (let [ch, wc] of [["-", "$-"], ["a-b%", "$-"], ["%", "$-"], ["$$", "$-"]]) {
   let st = EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars: wc}])})
-  f("CharCategory.Word", "CharCategory.Word:6", {char: ch, wordChars: wc, engine: {node: process.versions.node, unicode: (process.versions as any).unicode}},
+  f("CharCategory.Word", "CharCategory.Word:6", {char: ch, wordChars: wc, engine: {node: process.versions.node, unicode: (process.versions as any).unicode},
+    expr: "CharCategory[EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars}])}).charCategorizer(0)(char)]"},
     () => CharCategory[st.charCategorizer(0)(ch)])
 }

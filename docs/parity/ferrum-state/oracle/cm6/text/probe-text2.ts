@@ -27,21 +27,21 @@ f("TextIterator.next", [8], {doc: AST, from: 10, to: 2, expr: "reverse iterRange
 f("TextIterator.next", [8], {doc: AST, from: 10, to: 2, expr: "reverse iterRange(from, to); next(); next(skip)", skips: [0, 1, 0]}, () => steps(of(AST).iterRange(10, 2), [0, 1, 0]))
 f("TextIterator.next", [10], {doc: AST, expr: "doc.iterLines(); next(skip)", skips: [2, 1, 0, 3, -2]}, () => steps(of(AST).iterLines(), [2, 1, 0, 3, -2]))
 // Text B2: leaf and node classes on astral content
-f("Text", [2], {...BIGA(33), expr: "children null?, constructor name, instanceof Text; same for 32 lines"}, () => { let a = bigA(32), b = bigA(33); return {leaf: [a.children, a.constructor.name, a instanceof Text], node: [Array.isArray(b.children), b.constructor.name, b instanceof Text]} })
+f("Text", [2], {...BIGA(33), expr: "leaf: a = Text.of(new Array(32).fill(\"😀\".repeat(50))): [a.children, a.constructor.name, a instanceof Text]; node: b = doc (33 lines): [Array.isArray(b.children), b.constructor.name, b instanceof Text]"}, () => { let a = bigA(32), b = bigA(33); return {leaf: [a.children, a.constructor.name, a instanceof Text], node: [Array.isArray(b.children), b.constructor.name, b instanceof Text]} })
 // Text.lineAt B5: fractional and NaN positions on astral content
 for (let pos of [1.5, 4.5, NaN])
   f("Text.lineAt", [5], {doc: AST, pos, expr: "doc.lineAt(pos)"}, () => line(of(AST).lineAt(pos)))
 // Text.replace B3 (leaf path at the 32-line limit), B4 (node fast path sharing), B6 (NaN)
-f("Text.replace", [3], {doc: "31 lines \"😀\"", expr: "replace(2, 2, Text.of([\"x\", \"\"])): lines, shape; then one more line"}, () => {
+f("Text.replace", [3], {doc: "31 lines \"😀\"", expr: "a = doc.replace(2, 2, Text.of([\"x\", \"\"])): lines, shape, first: a.line(1).text; b = a.replace(1, 1, Text.of([\"\", \"\"])) (one more line): lines, shape, first: b.line(1).text, second: b.line(2).text"}, () => {
   let d = of(new Array(31).fill("😀")), a = d.replace(2, 2, of(["x", ""])), b = a.replace(1, 1, of(["", ""]))
   return {a: {lines: a.lines, shape: shape(a), first: a.line(1).text}, b: {lines: b.lines, shape: shape(b), first: b.line(1).text, second: b.line(2).text}}
 })
-f("Text.replace", [4], {...BIGA(200), expr: "r = doc.replace(5001, 5003, Text.of([\"y\"])) (inside line 50, splitting no pair): shapes, shared children"}, () => {
+f("Text.replace", [4], {...BIGA(200), expr: "r = doc.replace(5001, 5003, Text.of([\"y\"])) (inside line 50, splitting no pair): shapeBefore: shape(doc); shapeAfter: shape(r); shared: for each child of r, whether it is === a child of doc; r.length"}, () => {
   let d = bigA(200), r = d.replace(5001, 5003, of(["y"])); return {shapeBefore: shape(d), shapeAfter: shape(r), shared: r.children!.map(c => d.children!.includes(c)), length: r.length}
 })
 f("Text.replace", [6], {doc: AST, from: NaN, to: 3, insert: ["Z"], expr: "doc.replace(from, to, Text.of(insert))"}, () => desc(of(AST).replace(NaN, 3, of(["Z"]))))
 // Text.slice B3 (node sharing), B4 (NaN)
-f("Text.slice", [3], {...BIGA(200), from: 4141, to: 14000, expr: "slice(from, to): shape, children shared with doc, first line length"}, () => {
+f("Text.slice", [3], {...BIGA(200), from: 4141, to: 14000, expr: "s = slice(from, to): shape, length, shared: for each child of s (null for a leaf), whether it is === a child of doc; firstLine: s.line(1).text.length"}, () => {
   let d = bigA(200), s = d.slice(4141, 14000); return {shape: shape(s), length: s.length, shared: s.children ? s.children.map(c => d.children!.includes(c)) : null, firstLine: s.line(1).text.length}
 })
 f("Text.slice", [4], {doc: AST, from: 2, to: NaN, expr: "slice(from, to)"}, () => desc(of(AST).slice(2, NaN)))

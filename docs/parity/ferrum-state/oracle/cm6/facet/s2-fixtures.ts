@@ -78,7 +78,7 @@ api("Facet.reader", ["Facet.reader.B1", "FacetReader.B1"], {api: "readerIdentity
 S("Facet.reader", ["Facet.reader.B2", "FacetReader.B2"], {defs: [["facet", "s", {}], ["facet", "n", {}], ["compartment", "c"]],
   ext: [{compute: ["n", [{reader: "s"}], {facetJoin: "s"}], tag: "g"}, {comp: ["c", {compute: ["s", ["doc"], "docString"]}]}],
   steps: [tr(ins(0, "x")), tr({selection: {anchor: 0}}), tr({effects: [{comp: ["c", {of: ["s", "z"]}]}]}), tr({effects: [{append: []}]})], reads: [{facet: "n"}]})
-api("FacetReader", ["FacetReader.B3"], {api: "duckTypedReader", code: "EditorState.create({extensions: f.of(1)}).facet({id: f.id, default: 'D'}) and .facet({id: -1, default: 'D'})"},
+api("FacetReader", ["FacetReader.B3"], {api: "duckTypedReader", code: "f = Facet.define(); s = EditorState.create({extensions: f.of(1)}); [s.facet({id: f.id, default: 'D'}), s.facet({id: -1, default: 'D'})]"},
   () => { const f: any = Facet.define<number>(); const s = EditorState.create({extensions: f.of(1)}); return [s.facet({id: f.id, default: "D"} as any), s.facet({id: -1, default: "D"} as any)] })
 
 // ---------------------------------------------------------------- state.cm6.038 Facet^define
@@ -96,9 +96,9 @@ S("Facet^define", ["Facet^define.B2", "Facet^define config FacetConfig.compare.B
 S("Facet.of", ["Facet.of.B1"], {defs: [["facet", "a", {}]], ext: [{of: ["a", 1]}, {of: ["a", 1]}], reads: [{facet: "a"}]})
 S("Facet.of", ["Facet.of.B2", "Extension.B6"], {defs: [["facet", "a", {}], ["shared", "o", {of: ["a", 1]}]], ext: [{of: ["a", 0]}, {ref: "o"}, {of: ["a", 2]}, {ref: "o"}], reads: [{facet: "a"}]})
 S("Facet.of", ["Facet.of.B3"], {defs: [["facet", "s", {}]], ext: [{of: ["s", "<undefined>"]}, {of: ["s", null]}, {of: ["s", {num: "NaN"}]}, {of: ["s", [1, 2]]}], reads: [{facet: "s"}]})
-api("Facet.of", ["Facet.of.B3"], {api: "ofValueIdentity", code: "v = {}; EditorState.create({extensions: f.of(v)}).facet(f)[0] === v"},
+api("Facet.of", ["Facet.of.B3"], {api: "ofValueIdentity", code: "f = Facet.define(); v = {}; EditorState.create({extensions: f.of(v)}).facet(f)[0] === v"},
   () => { const f = Facet.define<object>(), v = {}; return EditorState.create({extensions: f.of(v)}).facet(f)[0] === v })
-api("Facet.of", ["Facet.of.B1"], {api: "ofDistinct", code: "f.of(1) !== f.of(1)"}, () => { const f = Facet.define<number>(); return f.of(1) !== f.of(1) })
+api("Facet.of", ["Facet.of.B1"], {api: "ofDistinct", code: "f = Facet.define(); f.of(1) !== f.of(1)"}, () => { const f = Facet.define<number>(); return f.of(1) !== f.of(1) })
 S("Facet.of", ["Facet.of.B4"], {defs: [["facet", "f", {combine: "copy", log: true}]], ext: [{of: ["f", "s1"]}, {compute: ["f", ["doc"], "docLength"]}, {of: ["f", "s2"]}], steps: [tr(ins(0, "abc"))], reads: [{facet: "f"}]})
 S("Facet.of", ["Facet.of.B4", "Prec.B1"], {defs: [["facet", "f", {}]], ext: [{prec: ["low", {of: ["f", "low"]}]}, {compute: ["f", [], {const: "dyn"}]}, {prec: ["highest", {of: ["f", "top"]}]}], reads: [{facet: "f"}]})
 
@@ -216,7 +216,7 @@ S("Extension", ["Extension.B6"], {defs: [["facet", "s", {}], ["shared", "arr", [
 S("Extension", ["Extension.B6"], {defs: [["facet", "s", {}], ["shared", "x", {of: ["s", "x"]}]], ext: [{ref: "x"}, {of: ["s", "a"]}, {ref: "x"}, {prec: ["default", {ref: "x"}]}, {prec: ["low", {ref: "x"}]}], reads: [{facet: "s"}]})
 S("Extension", ["Extension.B6", "StateField^define config StateFieldSpec.provide.B3"], {defs: [["facet", "s", {}], ["field", "f", {create: {const: "F"}, update: "keep", provide: {from: ["s", "f"]}}]],
   ext: [{of: ["s", "a"]}, {prec: ["low", {field: "f"}]}, {of: ["s", "b"]}, {prec: ["highest", {field: "f"}]}], reads: [{facet: "s"}]})
-api("Extension", ["Extension.B7", "StateField.extension.B1"], {api: "extensionGetters", code: "[f.of(1).extension === p, Prec.high(p).extension === it, c.of(p).extension === it, field.extension === field]"},
+api("Extension", ["Extension.B7", "StateField.extension.B1"], {api: "extensionGetters", code: "f = Facet.define(); p = f.of(1); pr = Prec.high(p); ci = new Compartment().of(p); field = StateField.define({create: () => 0, update: v => v}); [p.extension === p, pr.extension === pr, ci.extension === ci, field.extension === field]"},
   () => { const f = Facet.define<number>(); const p: any = f.of(1); const pr: any = Prec.high(p); const ci: any = new Compartment().of(p); const fld: any = StateField.define({create: () => 0, update: v => v}); return [p.extension === p, pr.extension === pr, ci.extension === ci, fld.extension === fld] })
 S("Extension", ["Extension.B8"], {defs: [["facet", "s", {}]], ext: {of: ["s", "a"]}, steps: [tr({effects: [{append: {raw: "plainObject"}}]})], reads: [{facet: "s"}]})
 

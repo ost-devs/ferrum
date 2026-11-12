@@ -50,7 +50,7 @@ f("findClusterBreak", "findClusterBreak:5,6,7",
   () => ({includeExtending: ranges(joins(true)), noExtending: ranges(joins(false))}))
 
 const fcb = (bs: string, str: string, pos: number, note: string, forward = true, includeExtending = true) =>
-  f("findClusterBreak", bs, {str, pos, forward, includeExtending, note}, () => findClusterBreak(str, pos, forward, includeExtending))
+  f("findClusterBreak", bs, {str, pos, forward, includeExtending, note, expr: "findClusterBreak(str, pos, forward, includeExtending)"}, () => findClusterBreak(str, pos, forward, includeExtending))
 fcb("findClusterBreak:5", "किx", 0, "U+093F DEVANAGARI VOWEL SIGN I (Grapheme_Cluster_Break=SpacingMark) joins its base")
 fcb("findClusterBreak:5", "कःx", 0, "U+0903 DEVANAGARI SIGN VISARGA (SpacingMark) joins its base")
 fcb("findClusterBreak:5", "กำx", 0, "U+0E33 THAI CHARACTER SARA AM (SpacingMark, general category Lo) joins its base")
@@ -69,9 +69,9 @@ fcb("findClusterBreak:9", "a\ŕ", 0, "a then CR: CR is not joined to a (Control
 fcb("findClusterBreak:9", "क्षx", 0, "consonant, virama, consonant: the cluster ends after the virama (no GB9c)")
 fcb("findClusterBreak:9", "क्षx", 2, "the second consonant starts a cluster")
 fcb("findClusterBreak:9", "\u{1F600}\u{1F600}", 0, "two pictographs without ZWJ: two clusters, as in UAX #29 (GB999)")
-f("countColumn", "countColumn:7", {string: "\tिx", tabSize: 4, note: "tab then a spacing mark: the mark is a column of its own"}, () => countColumn("\tिx", 4))
-f("findColumn", "findColumn:8", {string: "\tिx", col: 5, tabSize: 4, note: "tab and spacing mark stepped as one cluster"}, () => findColumn("\tिx", 5, 4))
-f("findColumn", "findColumn:8", {string: "\tिx", col: 4, tabSize: 4, note: "col at the tab stop: offset after tab + spacing mark"}, () => findColumn("\tिx", 4, 4))
+f("countColumn", "countColumn:7", {string: "\tिx", tabSize: 4, note: "tab then a spacing mark: the mark is a column of its own", expr: "countColumn(string, tabSize)"}, () => countColumn("\tिx", 4))
+f("findColumn", "findColumn:8", {string: "\tिx", col: 5, tabSize: 4, note: "tab and spacing mark stepped as one cluster", expr: "findColumn(string, col, tabSize)"}, () => findColumn("\tिx", 5, 4))
+f("findColumn", "findColumn:8", {string: "\tिx", col: 4, tabSize: 4, note: "col at the tab stop: offset after tab + spacing mark", expr: "findColumn(string, col, tabSize)"}, () => findColumn("\tिx", 4, 4))
 
 { // reference facts (not cm6): Intl.Segmenter of the running Node
   let seg = new Intl.Segmenter("en", {granularity: "grapheme"})
@@ -165,7 +165,7 @@ for (let v of variants(40, i => "L" + i)) {
     () => cases.map(([a, b]) => cap(() => desc(doc.replace(a, b, Text.of(["Q"]))))))
   let sl: [number, number][] = [[k0 + 0.5, k0 + 0.5], [k0 + 0.5, k0 + 0.7], [k0 - 0.5, k0 + 0.5], [0.5, doc.length - 0.5], [0.5, doc.length]]
   f("Text.slice", "Text.slice:5", vin(v, doc, {k0, pairs: sl,
-      expr: "k0 = children[0].length; for each [from, to] in pairs: doc.slice(from, to) as json, length, lines; sliceString(from, to)"}),
+      expr: "k0 = children[0].length; for each [from, to] in pairs: doc.slice(from, to) as json, length, lines, shape; sliceString(from, to)"}),
     () => sl.map(([a, b]) => cap(() => ({...desc(doc.slice(a, b)), sliceString: doc.sliceString(a, b)}))))
 }
 { // leaf counterparts: the same operations on a leaf document (32 lines), positions at a line end + 0.5
@@ -173,10 +173,10 @@ for (let v of variants(40, i => "L" + i)) {
   let doc = Text.of(lines), e = doc.line(31).to
   let cases: [number, number][] = [[0, 0.5], [e + 0.5, e + 0.5], [e - 0.5, e + 0.5]]
   f("Text.replace", "Text.replace:1,7", {doc: lines, e, insert: ["Q"], pairs: cases,
-      expr: "leaf document (32 lines); e = line(31).to; for each [from, to] in pairs: doc.replace(from, to, Text.of(insert))"},
+      expr: "leaf document (32 lines); e = line(31).to; for each [from, to] in pairs: doc.replace(from, to, Text.of(insert)) as json, length, lines, shape"},
     () => cases.map(([a, b]) => cap(() => desc(doc.replace(a, b, Text.of(["Q"]))))))
   f("Text.slice", "Text.slice:1,5", {doc: lines, e, pairs: [[e + 0.5, e + 0.5], [e + 0.5, e + 0.7]],
-      expr: "leaf document (32 lines); e = line(31).to; doc.slice(from, to) for each pair"},
+      expr: "leaf document (32 lines); e = line(31).to; doc.slice(from, to) for each pair, as json, length, lines, shape"},
     () => [[e + 0.5, e + 0.5], [e + 0.5, e + 0.7]].map(([a, b]) => cap(() => desc(doc.slice(a, b)))))
 }
 

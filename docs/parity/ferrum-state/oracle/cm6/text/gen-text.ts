@@ -188,7 +188,7 @@ for (let c = 0; c < 300; c++) {
   let raw = steps(d.iter(), rawSkips)
   check(JSON.stringify(raw) == JSON.stringify(rawModel(str, 1, rawSkips)), "large iter", {})
   w("state.cm6.229", ["state.Text.replace.B5", "state.Text.lineAt.B6", "state.TextIterator.next.B3", "state.TextIterator.next.B4"],
-    {seed: SEED, case: count, doc: lines, op: "50 replace operations, then lineAt at positions and iter() with skips; eqRebuilt = d.eq(Text.of(str.split(\"\\n\"))), d being the edited document and str its content", edits, positions: qs, skips: rawSkips},
+    {seed: SEED, case: count, doc: lines, op: "50 replace operations, then lineAt at positions and iter() with skips; eqRebuilt = d.eq(Text.of(str.split(\"\\n\"))), d being the edited document and str its content; d.length, d.lines; depth(d) (1 for a leaf, else 1 + the largest depth of its children)", edits, positions: qs, skips: rawSkips},
     {ok: {length: d.length, lines: d.lines, depth: depth(d), lineAt: lineAts, iter: raw, eqRebuilt: d.eq(Text.of(str.split("\n")))}})
 }
 function depth(t: Text): number { return t.children ? 1 + Math.max(...t.children.map(depth)) : 1 }

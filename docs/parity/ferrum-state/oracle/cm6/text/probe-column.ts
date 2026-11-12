@@ -11,12 +11,14 @@ function cc(bs: number[], string: string, tabSize: number, to?: number, note?: s
   let input: any = {string, tabSize}
   if (to !== undefined) input.to = to
   if (note) input.note = note
+  input.expr = to === undefined ? "countColumn(string, tabSize)" : "countColumn(string, tabSize, to)"
   w(CC, bs.map(n => `state.countColumn.B${n}`), input, cap(() => to === undefined ? countColumn(string, tabSize) : countColumn(string, tabSize, to)))
 }
 function fc(bs: number[], string: string, col: number, tabSize: number, strict?: any, note?: string) {
   let input: any = {string, col, tabSize}
   if (strict !== undefined) input.strict = strict
   if (note) input.note = note
+  input.expr = strict === undefined ? "findColumn(string, col, tabSize)" : "findColumn(string, col, tabSize, strict)"
   w(FC, bs.map(n => `state.findColumn.B${n}`), input, cap(() => strict === undefined ? findColumn(string, col, tabSize) : findColumn(string, col, tabSize, strict)))
 }
 

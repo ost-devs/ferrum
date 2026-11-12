@@ -2,7 +2,7 @@
 
 - **What:** the hazards the cm6 implementation relies on (`docs/workflow/specification.md` §5 point 7), from the `hazards` field of `raw/behaviors.jsonl` grouped by inventory item, identical notes merged, each ending with the behaviors (`B<n>`) that carry it; then every throw with its condition, what it protects and whether a caller can check it in advance (§7). Generated from the rows and the throw facts.
 - **cm6:** `@codemirror/state` 6.7.6, mirror commit 651084c; `mirrors/...` line numbers refer to it.
-- **Ferrum commit:** 361d147; line numbers in `docs/` and `tools/` refer to it.
+- **Ferrum commit:** ea24c95; line numbers in `docs/` and `tools/` refer to it.
 - **Ids:** behaviors `state.<item>.B<n>`; inventory rows `state.cm6.<nnn>`; fixtures `<chunk>:F<nnnn>` in `fixtures/<chunk>.jsonl`; cm6 tests `<file>#<nn>`
 
 Throws: 41. Items with hazards: 207; distinct notes: 587.

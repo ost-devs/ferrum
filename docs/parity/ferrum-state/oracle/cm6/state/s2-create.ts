@@ -96,7 +96,7 @@ for (let selection of [{anchor: -1}, {anchor: 1.5, head: 0}, {anchor: -3, head: 
      {selection: sel(many.selection)})
 }
 for (let [doc, selection] of [["\u{1F600}", {anchor: 1}], ["\u{1F600}x", {anchor: 3, head: 0}], ["a\r\nb", {anchor: 3}], ["a\r\nb", {anchor: 4}]] as const) {
-  fx(I.csel, [B("EditorStateConfig.selection", 8)], {call: "EditorState.create({doc, selection})", doc, selection},
+  fx(I.csel, [B("EditorStateConfig.selection", 8)], {call: "docLength: EditorState.create({doc}).doc.length; selection: EditorState.create({doc, selection}).selection", doc, selection},
      cap(() => ({docLength: EditorState.create({doc}).doc.length, selection: sel(EditorState.create({doc, selection}).selection)})))
 }
 
@@ -161,7 +161,7 @@ for (let extensions of [undefined, null, []]) {
   let before = {doc: s.doc, selection: s.selection, field: s.field(f)}
   let t = s.update({changes: {from: 0, to: 3, insert: "xyz!"}, selection: {anchor: 4}})
   let ns = t.state
-  fx(I.state, [B("EditorState", 4)], {call: "s.update({changes: {from: 0, to: 3, insert: \"xyz!\"}, selection: {anchor: 4}}).state", doc: "abc", selection: {anchor: 1}, field: "create 0, update v + 1"},
+  fx(I.state, [B("EditorState", 4)], {call: "s = EditorState.create({doc, selection, extensions: field}); read s.doc, s.selection; ns = s.update({changes: {from: 0, to: 3, insert: \"xyz!\"}, selection: {anchor: 4}}).state; startAfter: s's doc, selection and field read after the update; startDocSame, startSelectionSame: s.doc and s.selection are the objects read before the update; newState: ns's doc, selection and field", doc: "abc", selection: {anchor: 1}, field: "create 0, update v + 1"},
      {startAfter: {...st(s), field: s.field(f)}, startDocSame: s.doc === before.doc, startSelectionSame: s.selection === before.selection,
       newState: {...st(ns), field: ns.field(f)}})
 }
@@ -172,7 +172,7 @@ for (let extensions of [undefined, null, []]) {
   let s = EditorState.create({extensions: [b, a]})
   let t = s.update({})
   let ns = t.state
-  fx(I.state, [B("EditorState", 5), B("Transaction.state", 8)], {call: "s.update({}).state with fields [B, A]", A: "create 0, update v + 1", B: "create 0, update (v, tr) => tr.state.field(A) * 10"},
+  fx(I.state, [B("EditorState", 5), B("Transaction.state", 8)], {call: "s = EditorState.create({extensions: [B, A]}); ns = s.update({}).state; ns.field(B) (B), ns.field(A) (A); seenInsideUpdate: what B's update logged", A: "create 0, update v + 1", B: "create 0, update (v, tr) => { log \"state\" (\"?\" if tr.state is undefined); x = tr.state.field(A) * 10; log x; return x }"},
      {B: ns.field(b), A: ns.field(a), seenInsideUpdate: seen})
   let captured: any = null
   let c = StateField.define<number>({create: () => 0, update: (v, t) => { captured = t.state; return v }})
@@ -355,7 +355,7 @@ for (let [str, sep] of [["a\nb", "\r\n"], ["a\r\nb\r\n", "\r\n"], ["a\rb\nc", "\
   fx(I.fromJSON, [B("EditorState^fromJSON", 6)], {call: "EditorState.fromJSON(json)", json: j4}, cap(() => st(EditorState.fromJSON(j4))))
   let orig = EditorState.create({doc: "x\u{1F600}y\nz", selection: EditorSelection.create([EditorSelection.cursor(3, 1, 0, 2)])})
   let back = EditorState.fromJSON(JSON.parse(JSON.stringify(orig.toJSON())))
-  fx(I.fromJSON, [B("EditorState^fromJSON", 7)], {call: "EditorState.fromJSON(JSON round trip of s.toJSON())", doc: "x\u{1F600}y\nz", selection: "create([cursor(3, 1, 0, 2)])"},
+  fx(I.fromJSON, [B("EditorState^fromJSON", 7)], {call: "s = EditorState.create({doc, selection}); restored = EditorState.fromJSON(JSON.parse(JSON.stringify(s.toJSON()))); original: doc and selection of s; restored: doc and selection of restored", doc: "x\u{1F600}y\nz", selection: "create([cursor(3, 1, 0, 2)])"},
      {original: st(orig), restored: st(back)})
 }
 
@@ -376,6 +376,6 @@ for (let [str, sep] of [["a\nb", "\r\n"], ["a\r\nb\r\n", "\r\n"], ["a\rb\nc", "\
   let cursors = EditorSelection.create([EditorSelection.cursor(0), EditorSelection.cursor(1)])
   let s = EditorState.create({selection: cursors, doc: "123"})
   fx(I.csel, [B("EditorStateConfig.selection", 7), B("EditorState.selection", 3)],
-     {call: "cursors = EditorSelection.create([cursor(0), cursor(1)]); create({selection: cursors, doc: \"123\"}); s.update({selection: cursors}).state (test-state#17)", doc: "123"},
+     {call: "cursors = EditorSelection.create([cursor(0), cursor(1)]); s = create({selection: cursors, doc: \"123\"}); s.update({selection: cursors}).state (test-state#17); cursors: the cursors selection itself; created: s.selection; updated: the updated state's selection", doc: "123"},
      {cursors: sel(cursors), created: sel(s.selection), updated: sel(s.update({selection: cursors}).state.selection)})
 }

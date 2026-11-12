@@ -19,6 +19,8 @@ function cat(item: string, b: string, char: string, wordChars?: string, note?: s
   if (wordChars !== undefined) input.wordChars = wordChars
   if (note) input.note = note
   input.engine = ENGINE
+  input.expr = wordChars === undefined ? "CharCategory[EditorState.create().charCategorizer(0)(char)]"
+    : "CharCategory[EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars}])}).charCategorizer(0)(char)]"
   w(item, [b], input, cap(() => CharCategory[categorizer(wordChars)(char)]))
 }
 
@@ -62,7 +64,8 @@ cat("state.cm6.167", "state.CharCategory.Word.B6", "😀", "\uD83D", "wordChars 
 cat("state.cm6.167", "state.CharCategory.Word.B6", "é", "́", "")
 cat("state.cm6.167", "state.CharCategory.Word.B6", "́", "́", "combining mark alone, listed")
 // wordChars only from the highest-precedence language data value: belongs to EditorState.charCategorizer (chunk state); one fixture for context
-w("state.cm6.167", ["state.CharCategory.Word.B5"], {char: "-", languageData: [{wordChars: "$"}, {wordChars: "-"}], note: "two language data values: only the first (highest precedence) is used", engine: ENGINE},
+w("state.cm6.167", ["state.CharCategory.Word.B5"], {char: "-", languageData: [{wordChars: "$"}, {wordChars: "-"}], note: "two language data values: only the first (highest precedence) is used", engine: ENGINE,
+   expr: "CharCategory[EditorState.create({extensions: EditorState.languageData.of(() => languageData)}).charCategorizer(0)(char)]"},
   cap(() => CharCategory[EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars: "$"}, {wordChars: "-"}])}).charCategorizer(0)("-")]))
 
 // Space B1: empty string
