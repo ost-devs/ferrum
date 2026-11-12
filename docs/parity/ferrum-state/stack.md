@@ -2,10 +2,10 @@
 
 - **What:** the stack notes of `raw/behaviors.jsonl` (`stack` field), grouped by inventory item, identical notes merged; each note ends with the behaviors (`B<n>` of that item) that carry it. Generated from the rows; items whose behaviors all say `none found` are left out. Facts, not proposals (`docs/workflow/specification.md` §5, §7).
 - **cm6:** `@codemirror/state` 6.7.6, mirror commit 651084c; `mirrors/...` line numbers refer to it.
-- **Ferrum commit:** 5d01b0d; line numbers in `docs/` and `tools/` refer to it.
+- **Ferrum commit:** 768ff50; line numbers in `docs/` and `tools/` refer to it.
 - **Ids:** behaviors `state.<item>.B<n>`; inventory rows `state.cm6.<nnn>`
 
-Items with notes: 172 of 261; distinct notes: 479.
+Items with notes: 172 of 261; distinct notes: 480.
 
 ## state.cm6.001 `EditorStateConfig`
 
@@ -55,6 +55,7 @@ Items with notes: 172 of 261; distinct notes: 479.
 - Mechanism: JS default parameter `require: boolean = true` (mirrors/cm6/state/src/state.ts:68) behind two TypeScript overloads (mirrors/cm6/state/src/state.ts:66-67): an omitted argument and an explicit `undefined` both select the default, so both throw for an absent field; absence itself is a missing key in the plain-object `config.address` read as `undefined` and caught by loose `addr == null` (mirrors/cm6/state/src/state.ts:69-71). Evidence: code structure. Editor need underneath: a lookup that fails loudly unless the caller opts out. (B2)
 - Two TypeScript overloads (mirrors/cm6/state/src/state.ts:66-67) express "value or undefined"; no editor need beyond an optional lookup (B3)
 - Mechanism: a field's `create` receives the state object under construction; `field` on it calls `ensureAddr` (mirrors/cm6/state/src/state.ts:74; mirrors/cm6/state/src/facet.ts:566-575), which computes the other field on that same partly built object through its `computeSlot` closure (mirrors/cm6/state/src/state.ts:55, :59). Evidence: code structure; comment mirrors/cm6/state/src/state.ts:56-57. Relies on one JS thread and shared references (as noted on `state.EditorState.B5`). Editor need underneath: fields that depend on each other regardless of registration order (Q16). (B5)
+- Mechanism: the `StateField<T>` parameter type (mirrors/cm6/state/src/state.ts:66-68) is TypeScript only; `field` reads `this.config.address[field.id]` (mirrors/cm6/state/src/state.ts:69) and `getAddr` (mirrors/cm6/state/src/facet.ts:577-579), the same lookup `facet` makes (mirrors/cm6/state/src/state.ts:195-198) without its default fallback. Evidence: code structure. Editor need underneath: none. (B6)
 
 ## state.cm6.010 `EditorState.replaceSelection`
 
