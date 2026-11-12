@@ -19,6 +19,8 @@
 //   text is stored so the D1 unit can be recomputed.
 // - spans calls: ["span", from, to, [activeIdx], openStart] / ["point", from, to, idx, [activeIdx], openStart, index];
 //   compare calls: ["range", from, to, [aIdx], [bIdx]] / ["point", from, to, aIdx|null, bIdx|null] / ["bound", pos].
+//   Unless its input says "without boundChange", every compare fixture uses `cmpRec()`: a comparator with compareRange,
+//   comparePoint and boundChange (RangeComparator.B1: the presence of boundChange changes the calls).
 // - `eqlog`: calls of eq made during the operation, as [thisName, otherName].
 import {RangeValue, RangeSet, Range, ChangeSet, MapMode} from "@codemirror/state"
 import {capture, fixtureWriter} from "@harness/lib"

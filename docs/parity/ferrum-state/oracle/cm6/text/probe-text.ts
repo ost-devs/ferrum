@@ -33,7 +33,7 @@ const BIG = (n: number) => ({recipe: `Text.of(new Array(${n}).fill("1234567890".
 const big = (n: number) => Text.of(new Array(n).fill(L100))
 
 // ---------- Line ----------
-f("Line", [1], {doc: ASCII, expr: "doc.line(1) === doc.line(1); doc.lineAt(0) === doc.line(1)"}, () => { let d = of(ASCII); return {sameLine: d.line(1) === d.line(1), sameLineAt: d.lineAt(0) === d.line(1), instanceOfLine: d.line(1) instanceof Line, keys: Object.keys(d.line(1))} })
+f("Line", [1], {doc: ASCII, expr: "doc.line(1) === doc.line(1); doc.lineAt(0) === doc.line(1); doc.line(1) instanceof Line; Object.keys(doc.line(1))"}, () => { let d = of(ASCII); return {sameLine: d.line(1) === d.line(1), sameLineAt: d.lineAt(0) === d.line(1), instanceOfLine: d.line(1) instanceof Line, keys: Object.keys(d.line(1))} })
 for (let doc of [ASCII, ASTRAL, SEP, CR]) {
   f("Line.from", [1], {doc, expr: "every line: from"}, () => { let d = of(doc); let r = []; for (let i = 1; i <= d.lines; i++) r.push(d.line(i).from); return r })
   f("Line.to", [1, 2], {doc, expr: "every line: to"}, () => { let d = of(doc); let r = []; for (let i = 1; i <= d.lines; i++) r.push(d.line(i).to); return {to: r, length: d.length} })
@@ -97,7 +97,7 @@ f("TextIterator.lineBreak", [2], {doc: ["a\nb", "c"], expr: "doc.iter(): next() 
 f("TextIterator.lineBreak", [1], {doc: ASCII, from: 3, to: 3, expr: "iterRange(3, 3): first next(); lineBreak (cursor not moved)"}, () => steps(of(ASCII).iterRange(3, 3), [0]))
 
 // ---------- Text ----------
-f("Text", [1], {doc: ASCII, expr: "doc.replace(0, 0, Text.empty) === doc; doc.slice(0) === doc; original unchanged after replace"}, () => {
+f("Text", [1], {doc: ASCII, expr: "doc.replace(0, 0, Text.empty) === doc; doc.slice(0) === doc; doc.append(Text.empty) === doc; r = doc.replace(0, 3, Text.of([\"X\"])), then doc.toString() (original unchanged) and r.toString(); b = Text.of(new Array(100).fill(\"1234567890\".repeat(10))): b.replace(0, 0, Text.empty) === b; b.slice(0) === b"}, () => {
   let d = of(ASCII), r = d.replace(0, 3, of(["X"])), b = big(100)
   return {replaceNoop: d.replace(0, 0, Text.empty) === d, slice: d.slice(0) === d, append: d.append(Text.empty) === d, original: d.toString(), result: r.toString(),
     bigReplaceNoop: b.replace(0, 0, Text.empty) === b, bigSlice: b.slice(0) === b}
@@ -204,7 +204,7 @@ f("Text.eq", [3], {doc: ["foo", "bar"], other: ["foo", "baz"], expr: "doc.eq(Tex
 f("Text.eq", [3], {doc: ["a😀"], other: ["a😃"], expr: "doc.eq(Text.of(other))", note: "differs in the low surrogate only"}, () => of(["a😀"]).eq(of(["a😃"])))
 f("Text.eq", [3], {doc: ["a\nb"], other: ["a", "b"], expr: "doc.eq(Text.of(other))", note: "stored \\n vs a break (Q9): length 3 both, lines 1 vs 2"}, () => of(["a\nb"]).eq(of(["a", "b"])))
 f("Text.eq", [4], {...BIG(200), expr: "doc0.replace(100, 201, Text.of([\"abc\"])).eq(Text.of([line + \"abc\"].concat(lines.slice(2)))) (test-text#15)"}, () => { let d = big(200); return d.replace(100, 201, of(["abc"])).eq(Text.of([L100 + "abc"].concat(new Array(198).fill(L100)))) })
-f("Text.eq", [4], {...BIG(200), expr: "built by appends vs Text.of: eq both ways; shapes differ"}, () => {
+f("Text.eq", [4], {...BIG(200), expr: "a = Text.of(new Array(200).fill(L100)); b = Text.of([L100]), then 199 times b = b.append(Text.of([\"\", L100])), with L100 = \"1234567890\".repeat(10); a.eq(b); b.eq(a); shapes of a and b (leaf: its line count, node: array of child shapes)"}, () => {
   let a = big(200), b = Text.of([L100]); for (let i = 1; i < 200; i++) b = b.append(of(["", L100]))
   return {ab: a.eq(b), ba: b.eq(a), shapeA: shape(a), shapeB: shape(b)}
 })
@@ -235,12 +235,12 @@ for (let doc of [ASCII, ASTRAL, SEP, CR, [""], ["", ""]])
   f("Text.toString", [1], {doc, expr: "doc.toString(); String(doc); `${doc}`"}, () => { let d = of(doc); return [d.toString(), String(d), `${d}`] })
 // toJSON
 for (let doc of [ASCII, ASTRAL, [""], ["", ""], ["a\nb", "c"]])
-  f("Text.toJSON", [1], {doc, expr: "doc.toJSON(); JSON.stringify(doc)"}, () => { let d = of(doc); return {json: d.toJSON(), stringify: JSON.stringify(d), fresh: d.toJSON() !== d.toJSON()} })
+  f("Text.toJSON", [1], {doc, expr: "doc.toJSON(); JSON.stringify(doc); doc.toJSON() !== doc.toJSON() (fresh)"}, () => { let d = of(doc); return {json: d.toJSON(), stringify: JSON.stringify(d), fresh: d.toJSON() !== d.toJSON()} })
 f("Text.toJSON", [1], {...BIG(200), expr: "Text.of(doc.toJSON()).eq(doc); toJSON().length"}, () => { let d = big(200); return {eq: Text.of(d.toJSON()).eq(d), n: d.toJSON().length} })
 // children
 for (let n of [1, 32, 33, 64, 1024, 1025, 2000, 5000])
   f("Text.children", [1, 2], {...BIG(n), expr: "shape: leaf -> its line count, node -> array of child shapes"}, () => { let d = big(n); return {isLeaf: d.children === null, shape: shape(d)} })
-f("Text.children", [3], {...BIG(200), expr: "doc.children === doc.children; Object.isFrozen(doc.children); push onto it changes doc.lines?"}, () => {
+f("Text.children", [3], {...BIG(200), expr: "doc.children === doc.children; Object.isFrozen(doc.children); doc.lines; then doc.children.push(doc.children[0]); then doc.lines, doc.length, doc.children.length, doc.toString().length"}, () => {
   let d = big(200), c = d.children as any[]; let same = d.children === d.children, frozen = Object.isFrozen(c); let before = d.lines; c.push(c[0])
   return {same, frozen, linesBefore: before, linesAfter: d.lines, lengthAfter: d.length, childCountAfter: d.children!.length, stringLengthAfter: d.toString().length}
 })
@@ -259,6 +259,6 @@ f("Text^of", [5], {lines: ["a\nb", "c"], expr: "Text.of(lines): lines, length, t
 f("Text^of", [5], {lines: ["a\r\nb"], expr: "Text.of(lines): lines, length"}, () => { let t = Text.of(["a\r\nb"]); return {lines: t.lines, length: t.length} })
 // Text.empty
 f("Text^empty", [1], {expr: "Text.empty: length, lines, children, toString, toJSON"}, () => ({length: Text.empty.length, lines: Text.empty.lines, children: Text.empty.children, string: Text.empty.toString(), json: Text.empty.toJSON()}))
-f("Text^empty", [2], {doc: ASCII, expr: "results that are empty documents compared with === Text.empty"}, () => {
+f("Text^empty", [2], {doc: ASCII, expr: "doc.replace(0, 14, Text.empty) === Text.empty; doc.slice(3, 3) === Text.empty; Text.empty.replace(0, 0, Text.empty) === Text.empty; Text.empty.slice(0) === Text.empty; doc.replace(0, 14, Text.empty).eq(Text.empty)"}, () => {
   let d = of(ASCII); return {replaceAll: d.replace(0, 14, Text.empty) === Text.empty, slice: d.slice(3, 3) === Text.empty, emptyReplace: Text.empty.replace(0, 0, Text.empty) === Text.empty, emptySlice: Text.empty.slice(0) === Text.empty, eq: d.replace(0, 14, Text.empty).eq(Text.empty)}
 })

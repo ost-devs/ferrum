@@ -123,7 +123,7 @@ const setInput = (P: Pool, ranges: R, sort = false) => ({values: P.json(), range
   let big: R = []; for (let i = 0; i < 600; i++) big.push([i, i + 1, i % 2])
   for (let k of ["astral", "crlf", "u2028", "u2028sep"]) {
     let c = ch(k, {from: 100}, 600)
-    fx(ID.map, B("RangeSet.map", 2), {case: k, set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 2]"}, changes: c}, () => {
+    fx(ID.map, B("RangeSet.map", 2), {case: k, set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 2]"}, changes: c, reads: "mapped = set.map(changes): chunk source indexes, chunkPos, chunk sizes, size; aroundInsertion = first three ranges of mapped.iter(99)"}, () => {
       let s: any = P.set(big), m: any = s.map(mk(c))
       return {newLength: mk(c).newLength, chunkSourceIndex: m.chunk.map((x: any) => s.chunk.indexOf(x)), chunkPos: m.chunkPos,
               chunkSizes: m.chunk.map((x: any) => x.value.length), size: m.size, aroundInsertion: P.list(m, 99).slice(0, 3)}

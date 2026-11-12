@@ -87,12 +87,14 @@ const BS = ["state.findClusterBreak.B2", "state.findClusterBreak.B3", "state.fin
   "state.findClusterBreak.B7", "state.findClusterBreak.B8", "state.findClusterBreak.B9", "state.findClusterBreak.B10", "state.findClusterBreak.B11",
   "state.findClusterBreak.B13", "state.findClusterBreak.B14", "state.codePointAt.B1", "state.codePointAt.B2", "state.codePointAt.B5", "state.codePointAt.B6", "state.codePointSize.B4"]
 
+const WALK_EXPR = "for ie true (key includeExtending) and false (key noExtending): walk.forward = i = 0, then i = findClusterBreak(str, i, true, ie) until it returns i or reaches str.length; walk.backward = i = str.length, then i = findClusterBreak(str, i, false, ie) until it returns i or reaches 0; walksAgree = whether the two walks give the same breaks"
+const FULL_EXPR = WALK_EXPR + "; forwardAt[pos] = findClusterBreak(str, pos, true, ie) and backwardAt[pos] = findClusterBreak(str, pos, false, ie) for every pos 0..str.length; outside = findClusterBreak at -1 and str.length + 1, forward and backward; codePointAt[pos] = codePointAt(str, pos) for every pos 0..str.length; codePointSize[pos] = codePointSize(codePointAt[pos])"
 let disagree = 0
 for (let c = 0; c < 160; c++) {
   let str = c == 0 ? "" : randomString()
   let out = record(str, true)
   if (!out.includeExtending.walksAgree || !out.noExtending.walksAgree) disagree++
-  w("state.cm6.212", BS, {seed: SEED, case: c, str}, {ok: out})
+  w("state.cm6.212", BS, {seed: SEED, case: c, str, expr: FULL_EXPR}, {ok: out})
 }
 // Large cases (100 times the typical size): walks only.
 const big = [
@@ -103,6 +105,6 @@ const big = [
 for (let [str, note] of big) {
   let out = record(str, false)
   if (!out.includeExtending.walksAgree || !out.noExtending.walksAgree) disagree++
-  w("state.cm6.212", ["state.findClusterBreak.B8", "state.findClusterBreak.B13", "state.findClusterBreak.B5"], {seed: SEED, case: "large", str, note}, {ok: out})
+  w("state.cm6.212", ["state.findClusterBreak.B8", "state.findClusterBreak.B13", "state.findClusterBreak.B5"], {seed: SEED, case: "large", str, note, expr: WALK_EXPR}, {ok: out})
 }
 console.log("gen-char: 163 cases;", disagree, "with forward and backward walks disagreeing")

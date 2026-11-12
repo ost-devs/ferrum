@@ -147,7 +147,7 @@ for (let c = 0; c < 300; c++) {
       let it2 = doc.iterRange(from, to), skips = [0, ...Array.from({length: 4}, () => R.int(7) - 3)]
       skipOut = {skips, steps: steps(it2, skips)}
     }
-    emit("state.cm6.240", ["state.Text.iterRange.B1", "state.TextIterator.next.B6", "state.TextIterator.next.B7"], {doc: lines, op: "iterRange", from, to}, {values: vals, withSkips: skipOut})
+    emit("state.cm6.240", ["state.Text.iterRange.B1", "state.TextIterator.next.B6", "state.TextIterator.next.B7"], {doc: lines, op: "iterRange", from, to, expr: "values: iterRange(from, to), next() until done; withSkips (null unless from < to): a second iterRange(from, to) stepped with next(skip) for each skip in withSkips.skips"}, {values: vals, withSkips: skipOut})
   } else if (fam == "iterLines") {
     let a = 1 + R.int(doc.lines), b = a + R.int(doc.lines - a + 2)
     let it = doc.iterLines(a, b), vals: string[] = []
@@ -188,7 +188,7 @@ for (let c = 0; c < 300; c++) {
   let raw = steps(d.iter(), rawSkips)
   check(JSON.stringify(raw) == JSON.stringify(rawModel(str, 1, rawSkips)), "large iter", {})
   w("state.cm6.229", ["state.Text.replace.B5", "state.Text.lineAt.B6", "state.TextIterator.next.B3", "state.TextIterator.next.B4"],
-    {seed: SEED, case: count, doc: lines, op: "50 replace operations, then lineAt at positions and iter() with skips", edits, positions: qs, skips: rawSkips},
+    {seed: SEED, case: count, doc: lines, op: "50 replace operations, then lineAt at positions and iter() with skips; eqRebuilt = d.eq(Text.of(str.split(\"\\n\"))), d being the edited document and str its content", edits, positions: qs, skips: rawSkips},
     {ok: {length: d.length, lines: d.lines, depth: depth(d), lineAt: lineAts, iter: raw, eqRebuilt: d.eq(Text.of(str.split("\n")))}})
 }
 function depth(t: Text): number { return t.children ? 1 + Math.max(...t.children.map(depth)) : 1 }

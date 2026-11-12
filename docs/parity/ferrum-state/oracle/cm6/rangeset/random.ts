@@ -99,7 +99,14 @@ function runCase(k: number, nRanges: number, len: number, nVals: number, maxLen:
   let minPointSize = R.pick([-1, 0, 20])
   let input = {case: k, seed: SEED, values: specs, ranges, ranges2, changes: ch, add, filterMod, filterRem,
                filterFrom: filterFrom ?? "default", filterTo: filterTo ?? "default", between: [qf, qt], iterFrom: itFrom,
-               spans: [sf, st], minPointSize, build: "RangeSet.of(ranges, true); set2 = RangeSet.of(ranges2, true); same value pool"}
+               spans: [sf, st], minPointSize, build: "RangeSet.of(ranges, true); set2 = RangeSet.of(ranges2, true); same value pool",
+               ops: ["dump, list, size, length of set", "between: set.between(between[0], between[1])", "iter: list of set.iter(iterFrom)",
+                     "iterMany: RangeSet.iter([set, set2]) with ranks", "cs = ChangeSet.of(changes.spec, changes.length); mapped = set.map(cs): dump, list",
+                     "updated = mapped.update({add, sort: true, filter: keep unless (from + 2 * to) % filterMod == filterRem, filterFrom, filterTo}): dump, list, filter calls",
+                     "spans: RangeSet.spans([set, set2], spans[0], spans[1], iterator, minPointSize): calls, return value",
+                     "compare: RangeSet.compare([set, set2], [updated, set2.map(cs)], cs, comparator with compareRange, comparePoint, boundChange)",
+                     "eqSelfMapped: RangeSet.eq([set], [set.map(ChangeSet.empty(changes.length))])", "eqOldNew: RangeSet.eq([set, set2], [RangeSet.of(ranges, true), set2])",
+                     "join: RangeSet.iter([RangeSet.join([set, set2])]) list with ranks"]}
   let item = "state.cm6.181"
   let behaviors = ["state.RangeSet.B1", "state.RangeSet.B2", "state.RangeSet^of.B4", "state.RangeSet.map.B3", "state.RangeSet.update.B7",
                    "state.RangeSet.between.B2", "state.RangeSet.iter.B1", "state.RangeSet^iter.B1", "state.RangeSet^spans.B1",

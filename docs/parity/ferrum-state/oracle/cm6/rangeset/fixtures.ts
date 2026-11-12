@@ -35,7 +35,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
                      ownKeys: Object.keys(v).filter(k => k != "name")}, size: set.size, ranges: [...(function* () { for (let i = set.iter(); i.value; i.next()) yield [i.from, i.to] })()]}
   })
   let P = new Pool([{name: "v", startSide: 0, endSide: 0}, {name: "m", startSide: -1, endSide: 1}])
-  fx(ID.RangeValue, B("RangeValue", 3), {set: setInput(P, [[0, 10, 1], [2, 4, 0]]), then: "values[0].point = true after the set is built; dump and spans(0, 10)"}, () => {
+  fx(ID.RangeValue, B("RangeValue", 3), {set: setInput(P, [[0, 10, 1], [2, 4, 0]]), then: "dump (dumpBefore); values[0].point = true; dump (dumpAfter); RangeSet.spans([set], 0, 10) (spans); RangeSet.spans([set], 0, 10, minPointSize 0) (spansMinPoint0); values[0].point = false"}, () => {
     let set = P.set([[0, 10, 1], [2, 4, 0]])
     let before = P.dump(set)
     ;(P.values[0] as any).point = true
@@ -280,7 +280,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
     P.set([[0, 5, 0]]).update({filter: () => false}) === RangeSet.empty, P.set([[0, 5, 0]]).map(changes({from: 0, to: 10}, 10)) === RangeSet.empty,
     RangeSet.empty.update({add: []}) === RangeSet.empty, RangeSet.empty.map(changes({from: 0, insert: "x"}, 0)) === RangeSet.empty,
     RangeSet.empty.update({filter: () => true}) === RangeSet.empty])
-  fx(ID.empty, B("RangeSet^empty", 1), {op: "properties of RangeSet.empty"}, () => {
+  fx(ID.empty, B("RangeSet^empty", 1), {op: "properties of RangeSet.empty: size, length (internal), maxPoint, chunk count, nextLayer === itself; iter() read as [value, from, to, rank]; between(0, 1e9) callback count (betweenCalls); RangeSet.spans([RangeSet.empty], 0, 5) calls and return value (spans, spansRet)"}, () => {
     let e: any = RangeSet.empty, it = e.iter(), calls = 0; e.between(0, 1e9, () => { calls++ })
     let rec = new Pool([]).spansRec(); let ret = RangeSet.spans([e], 0, 5, rec.it)
     return {size: e.size, length: e.length, maxPoint: e.maxPoint, chunks: e.chunk.length, nextLayerIsSelf: e.nextLayer === e,
@@ -439,7 +439,7 @@ const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
   fx(ID.siter, [...B("RangeSet^iter", 1, 2), ...B("RangeCursor.rank", 1)], {sets: [setInput(Q, s0), "RangeSet.empty", setInput(Q, s1), setInput(Q, s2)], op: "RangeSet.iter(sets)"},
      () => Q.listMany([Q.set(s0), RangeSet.empty, Q.set(s1), Q.set(s2)]))
   fx(ID.siter, B("RangeSet^iter", 5), {sets: [setInput(Q, s1), "the same set object again"], op: "RangeSet.iter([s, s])"}, () => { let s = Q.set(s1); return Q.listMany([s, s]) })
-  fx(ID.siter, [...B("RangeSet^iter", 4), ...B("RangeCursor.rank", 2)], {op: "RangeSet.iter([]) and RangeSet.iter([RangeSet.empty, of(1,2)]), each advanced to its end"}, () => {
+  fx(ID.siter, [...B("RangeSet^iter", 4), ...B("RangeCursor.rank", 2)], {op: "none: RangeSet.iter([]); oneAtIndex1: RangeSet.iter([RangeSet.empty, of([1,2,x])]) then next() once; twoSets: RangeSet.iter([of([1,2,x]), of([1,3,y])]) then next() twice; each read as [value, from, to, rank] (all three end at the end)", values: Q.json()}, () => {
     let a = RangeSet.iter([]), b = RangeSet.iter([RangeSet.empty, Q.set([[1, 2, 0]])]); b.next()
     let c = RangeSet.iter([Q.set([[1, 2, 0]]), Q.set([[1, 3, 1]])]); c.next(); c.next()
     return {none: [a.value, a.from, a.to, a.rank], oneAtIndex1: [b.value, b.from, b.to, b.rank], twoSets: [c.value, c.from, c.to, c.rank]}

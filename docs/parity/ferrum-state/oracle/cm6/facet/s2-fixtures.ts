@@ -38,7 +38,7 @@ api("Facet", ["Facet.B2"], {api: "defaultSharedAcrossStates", code: "f = Facet.d
   () => { const f = Facet.define(); return EditorState.create({}).facet(f) === EditorState.create({}).facet(f) })
 S("Facet", ["Facet.B3", "Facet^define config FacetConfig.combine.B1", "Facet^define config FacetConfig.combine.B3"], {defs: [["facet", "f", {combine: "sum", log: true}]],
   ext: [{of: ["f", 1]}, {prec: ["high", {of: ["f", 2]}]}, {of: ["f", 3]}], steps: [tr(ins(0, "ab")), tr({selection: {anchor: 1}}), tr({})], reads: [{facet: "f"}]})
-S("Facet", ["Facet.B4", "Facet.B5", "Facet^define config FacetConfig.combine.B1", "Facet^define config FacetConfig.combine.B2"], {defs: [["facet", "f", {combine: "copy", log: true}]],
+S("Facet", ["Facet.B4", "Facet.B5", "Facet^define config FacetConfig.combine.B1"], {defs: [["facet", "f", {combine: "copy", log: true}]],
   ext: [{of: ["f", 1]}, {compute: ["f", ["doc"], "docLength"], tag: "len"}, {of: ["f", 3]}], steps: [tr(ins(0, "ab")), tr({selection: {anchor: 1}}), tr({})], reads: [{facet: "f"}]})
 S("Facet", ["Facet.B4", "Facet^define config FacetConfig.compare.B2"], {defs: [["facet", "f", {combine: "length", log: true}]],
   ext: [{compute: ["f", ["doc"], "docLength"]}, {computeN: ["f", ["doc"], {docParity: [[1], [1, 2]]}]}], steps: [tr(ins(0, "a")), tr(ins(0, "a"))], reads: [{facet: "f"}]})
@@ -78,7 +78,7 @@ api("Facet.reader", ["Facet.reader.B1", "FacetReader.B1"], {api: "readerIdentity
 S("Facet.reader", ["Facet.reader.B2", "FacetReader.B2"], {defs: [["facet", "s", {}], ["facet", "n", {}], ["compartment", "c"]],
   ext: [{compute: ["n", [{reader: "s"}], {facetJoin: "s"}], tag: "g"}, {comp: ["c", {compute: ["s", ["doc"], "docString"]}]}],
   steps: [tr(ins(0, "x")), tr({selection: {anchor: 0}}), tr({effects: [{comp: ["c", {of: ["s", "z"]}]}]}), tr({effects: [{append: []}]})], reads: [{facet: "n"}]})
-api("FacetReader", ["FacetReader.B3"], {api: "duckTypedReader", code: "EditorState.create({extensions: f.of(1)}).facet({id: f.id, default: 'D', tag: null}) and .facet({id: -1, default: 'D'})"},
+api("FacetReader", ["FacetReader.B3"], {api: "duckTypedReader", code: "EditorState.create({extensions: f.of(1)}).facet({id: f.id, default: 'D'}) and .facet({id: -1, default: 'D'})"},
   () => { const f: any = Facet.define<number>(); const s = EditorState.create({extensions: f.of(1)}); return [s.facet({id: f.id, default: "D"} as any), s.facet({id: -1, default: "D"} as any)] })
 
 // ---------------------------------------------------------------- state.cm6.038 Facet^define
@@ -258,7 +258,7 @@ S("Compartment", ["Compartment.B4"], {defs: [...CD, ["shared", "ci", {comp: ["c"
 S("Compartment", ["Compartment.B5"], {defs: CD, ext: [{of: ["s", "a"]}, {prec: ["lowest", {comp: ["c", {of: ["s", "C"]}]}]}, {of: ["s", "b"]}], steps: [tr({effects: [{comp: ["c", [{of: ["s", "C1"]}, {prec: ["highest", {of: ["s", "C2"]}]}]]}]})], reads: [{facet: "s"}]})
 api("Compartment.of", ["Compartment.of.B1"], {api: "compartmentOfDistinct", code: "c.of(x) !== c.of(x)"}, () => { const c = new Compartment, x: any[] = []; return c.of(x) !== c.of(x) })
 S("Compartment.reconfigure", ["Compartment.reconfigure.B2"], {defs: CD, ext: [{of: ["s", "a"]}, {comp: ["c", {of: ["s", "one"]}]}, {of: ["s", "b"]}], steps: [tr({effects: [{comp: ["c", {of: ["s", "two"]}]}]})], reads: [{facet: "s"}]})
-api("Compartment.reconfigure", ["Compartment.reconfigure.B1"], {api: "reconfigureEffect", code: "e = c.reconfigure(x); [e.value.compartment === c, e.value.extension === x, e.is(Compartment.reconfigure), c.reconfigure(x) !== e, e.map(changes) === e]"},
+api("Compartment.reconfigure", ["Compartment.reconfigure.B1"], {api: "reconfigureEffect", code: "x = []; e = c.reconfigure(x); changes = EditorState.create({doc: \"ab\"}).changes({from: 0, insert: \"z\"}); [e.value.compartment === c, e.value.extension === x, e.is(Compartment.reconfigure), c.reconfigure(x) !== e, e.map(changes) === e]"},
   () => { const c = new Compartment, x: any[] = []; const e = c.reconfigure(x); const st = EditorState.create({doc: "ab"}); const ch = st.changes({from: 0, insert: "z"}); return [(e.value as any).compartment === c, (e.value as any).extension === x, e.is((Compartment as any).reconfigure), c.reconfigure(x) !== e, e.map(ch) === e] })
 S("Compartment.reconfigure", ["Compartment.reconfigure.B3"], {defs: CD, ext: {comp: ["c", {of: ["s", "A"]}]}, steps: [tr({effects: [{comp: ["c", {of: ["s", "B"]}]}, {comp: ["c", {of: ["s", "C"]}]}]})], reads: [{facet: "s"}]})
 S("Compartment.reconfigure", ["Compartment.reconfigure.B3"], {defs: CD, ext: [{comp: ["c", {of: ["s", "A"]}]}, {comp: ["d", {of: ["s", "D"]}]}], steps: [tr({effects: [{comp: ["d", {of: ["s", "E"]}]}, {comp: ["c", {of: ["s", "B"]}]}]})], reads: [{facet: "s"}]})
