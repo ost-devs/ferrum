@@ -1,64 +1,72 @@
-# spec-auditor card: ferrum-state, specification step A (`@codemirror/state` 6.7.6, mirror commit 651084c)
+# spec-auditor card: ferrum-state, specification step B (`@codemirror/state` 6.7.6, mirror commit 651084c)
 
-Your assignment names one unit (A2 to A5 of `docs/parity/ferrum-state/plan.md` "Specification: what remains") and its chunk. This card is the whole task.
+Your assignment is step B of `docs/parity/ferrum-state/plan.md` "Specification: what remains": the sites of cm6's source that no recorded run reaches. This card is the whole task.
 
 ## The task, and why
 
-The fixtures of a chunk (`docs/parity/ferrum-state/fixtures/<chunk>.jsonl`) hold outputs produced by running cm6, and those outputs are known good. Ferrum's fixture replayer will read each fixture's `input`, run it op by op against the Rust crate, and compare with `output`; the differential oracle will later feed fresh inputs to cm6 and to Ferrum through the same ops. An input that records its call as JavaScript text for a reader (`"call": "s.update({})"`) cannot be run: it would be translated by hand, with nothing to show a wrong translation.
+Parity is shown by running the same inputs on cm6 and on Ferrum. A case of cm6 that no fixture runs is a case where Ferrum could differ and nothing would show it. The check tool runs every generator under V8 coverage and writes each line and branch of `mirrors/cm6/state/src/` that no run reached to `docs/parity/ferrum-state/raw/coverage.jsonl` (`file`, `kind` `line` or `branch`, `line`): 33 sites now, in `change.ts`, `char.ts`, `charcategory.ts`, `column.ts`, `config.ts`, `extension.ts`, `facet.ts`, `index.ts`, `rangeset.ts`, `selection.ts`, `state.ts`, `text.ts`, `transaction.ts`.
 
-So **every fixture's `input` becomes a program in one language, which the chunk's interpreter runs**, and nothing else about a fixture changes: the same `id`, `item_id`, `behaviors` and `output` as before.
+For **each site**, read the whole function that holds it and every helper and caller needed to know how the site is entered, then settle it as exactly one of:
 
-- The language is `tools/cm6/program.ts` (imported as `@harness/program`). Read its header: programs `{steps, out, …}` and bare expressions `{"op": …}`, steps with `as` and `if`, `{"$": name}`, the `out` template, the ops that touch no cm6 value, `map`, `try`. The replayer implements that file once for every chunk, so a chunk writes no evaluator of its own.
-- The chunk's interpreter is `docs/parity/ferrum-state/oracle/cm6/<chunk>/interp.ts`. It creates a `Language` with the chunk's descriptive keys and its setup, registers the chunk's ops on it, and exports `lang` and `run = lang.run`. The model is `docs/parity/ferrum-state/oracle/cm6/rangeset/interp.ts`: its header, its setup (`values`), and how its ops are registered.
-- The chunk's generators (the files `docs/parity/ferrum-state/oracle/cm6/order.json` lists for it, in that order) build each input as data and record `run(input)` as its output, on the input exactly as the file stores it (`writer` of `docs/parity/ferrum-state/oracle/cm6/rangeset/lib.ts` shows how). Keep `order.json` in step if you rename or merge a generator file (edit only your chunk's entry).
+1. **Reached by an input.** Some call through what the package exports reaches the site. Add a fixture that does (see "Adding a fixture"), and run the check to see the site leave `raw/coverage.jsonl`. If the only inputs that reach it are of a class JavaScript's lack of types allows (D12, below), add the fixture all the same and say so in the entry: the consultant decides what the replayer does with it, not you.
+2. **No input reaches it.** State why, from the code: the guard or invariant that excludes it, with `file:line` and symbol for each step of the argument. "Unlikely" is not a reason; if you cannot show it unreachable and cannot reach it, say exactly that, with what you tried.
+3. **It belongs to an item that is not ported.** The item's row in `docs/parity/ferrum-state/raw/inventory.jsonl` has `disposition` `DROP` (`fromCodePoint`, `mirrors/cm6/state/src/char.ts:31`, is one).
+4. **An artifact of mapping compiled code to source.** The site is on a declaration, an export or a closing line with no branch or statement of its own in the source. Say what the line holds.
 
-## The interpreter's header: the only thing the replayer's author reads
+Nobody checks this reading after you: whether an input reaches a branch is shown only by a run that reaches it, so try (a probe under `.scratch/coverage/`, run with `npx tsx --tsconfig .harness/state/tsconfig.json <probe>.ts`) before you write outcome 2.
 
-The author of the Rust replayer implements each op once from the header of `interp.ts`, without reading the generators or the code. For each op the header gives its arguments, what it calls in cm6, and the shape of its result; and it names the setup keys and the descriptive keys.
-- Prefer few ops with clear arguments over one op per fixture; state anything an op does besides the call.
-- A call that cannot be written as data (a callback whose body matters, a second copy of the package, a subclass) gets a named op, or a named variant of an argument (`{"fn": "<name>", …}`), whose behavior the header states exactly. An op that builds a callback from a spec calls `markRead(spec)` when it builds it: cm6 may never call the callback, and the spec is still part of what ran.
-- **Positions.** Mark `(pos)` every argument and every result field that is a position, an offset or a length in UTF-16 code units of a document the input holds. Ferrum's position unit is not decided; the replayer converts the marked values and nothing else, so an unmarked position is compared in the wrong unit and a marked non-position is converted by mistake.
-- **Kinds.** Each op is registered with one or more kinds, which say what it observes: `api` (calls or reads a member cm6 exports and documents), `internal` (reads, replaces or depends on a member cm6 marks `@internal` or does not export, or on its internal layout), `identity` (its result depends on JavaScript object identity), `callbacks` (it observes how often or in which order cm6 calls a function the input supplies, beyond what the call returns), `harness` (no cm6 value touched). At the design step the consultant decides, for each op that is not only `api`, what Ferrum's replayer does with it; a wrong kind hides from that decision an op that Ferrum cannot reproduce as written, or sends there one it can. Give kinds from what the op's code does, and check `@internal` and the exports in `mirrors/cm6/state/src/`.
-- **Nothing written in the input reaches an output, except a label.** Every value of an output comes from cm6. A word an old probe wrote to mark that a call returned (`"built"`, `"created"`) is kept with the language's op `label {text}`; the check lists the labels of the chunk and fails on an `out` that takes the value of a `data` step (an op that hands the program a value written in the input, for cm6 to receive). An output is always `{"ok": …}` or `{"error": …}`: an output that was bare at the baseline and is now exactly `{"ok": <it>}` is accepted and counted ("now wrapped in ok").
-- An op tests an optional argument with `in` and then reads it: `in` alone does not count as a read. An op that hands input data to cm6 whole, or that may return before reading an argument (an empty list, a cursor already done), calls `markRead` on it.
-- A construct that no op of the chunk can express and the language lacks is reported, not added to `tools/`. The earlier chunks met these gaps and added harness ops of their own for them, which you may reuse by the same name and meaning: several steps in a `map` body (`block` in `oracle/cm6/text/interp.ts`), a list or object built from expressions (`list`, `record` there; `list`, `set` in `oracle/cm6/facet/interp.ts`), a step that stores a literal or a `map` result (`let`), a throw recorded inside a value (`capture`). A fixture you cannot convert is not forced: report its id and the reason as a question (`CLAUDE.md` "Raising a question").
+## Where the result is recorded
 
-## The encoding
+`docs/parity/ferrum-state/verification.md`, in a new last section `## Coverage`, one table row per site, in the order of `raw/coverage.jsonl` as it is when you start:
 
-Values JSON cannot hold are written in one encoding, by `tools/cm6/oracle-lib.ts` (`@harness/lib`) and by nothing else; its header has the table (`{"utf16": […]}`, `{"js_number": …}`, `{"js_undefined": true}`, `{"js_function": true}`, `{"js_unstable": …}`).
-- `fixtureWriter` applies `encode` to the input and the output it is given, and `lang.run` reads its input with `decode`. Pass JavaScript values; write no marker of your own (`"<undefined>"`, `{"num": …}`, `"<function>"`, `null` for an omitted argument), and remove the chunk's own encoding helpers once nothing uses them.
-- A value that differs between runs is written with `unstable("<what>")`.
-- The old forms of an output may therefore change to the one encoding, and a value the old JSON could not hold may become exact. The check reads outputs as values and counts these ("now exact"); any other difference fails.
+`| site | kind | outcome | evidence |`
 
-## Check (run it yourself until it passes; the orchestrator runs it again before merging)
+- `site`: the path and line exactly as `` `mirrors/cm6/state/src/<file>:<line>` `` with the symbol in parentheses after it. The tool finds a site's entry by this text.
+- `outcome`: `fixture`, `unreachable`, `not ported` or `artifact`.
+- `evidence`: for `fixture`, the chunk, the fixture ids and the behavior id, and whether the input is of a D12 class; for the others, the reason as described above.
 
-From the repository root, regenerate by running the chunk's generators in the order of `order.json` (`npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/<chunk>/<file>.ts`), then:
+The consultant reads this table when it approves the specification; a wrong `unreachable` leaves a case of cm6 untested for good.
 
-`python3 tools/spec_check.py ferrum-state --chunk <chunk> --same-outputs-as c2d1fca`
+## Adding a fixture
 
-It must end with `checks passed`. Its lines for your chunk:
-- `outputs of <chunk> against c2d1fca: N fixtures, 0 differ, K values now exact, W now wrapped in ok`: ids, items, behaviors and outputs are those of the baseline.
-- `values of <chunk> written in the input: 0 fixtures give out a data value; labels: {…}`: see the label rule; the labels listed are read by the consultant.
-- `replay of <chunk>: N fixtures; 0 outputs differ; 0 have keys nothing read; 0 hold call text under a descriptive key; 0 have a literal in out; 0 run no op of kind api or internal; ops without kinds 0, not named in the header 0; files with eval or Function 0`. The tool decodes each recorded input, runs it through `lang` while recording every key that the interpreter or cm6 reads, and compares the output. What each count catches:
-  - *outputs differ*: the recorded input is not what produced the recorded output;
-  - *keys nothing read*: a key of the input, outside the descriptive keys your `Language` names, that nothing read. It says something about the run that the run does not do (prose, a leftover argument). Make the op read it, or remove it; a key is descriptive only if no op could need it (a seed, a case name, a note);
-  - *call text under a descriptive key*: a descriptive key named `expr`, `call`, `code`, `op`, `ops` or `calls` holding text;
-  - *a literal in out*: every leaf of `out` is `{"$": name}`; an expected value is never written in the input;
-  - *no op of kind api or internal*: the fixture shows nothing of cm6;
-  - *ops without kinds, not named in the header*: every registered op has kinds and appears by name in the header of `interp.ts`.
-- `regenerated <chunk>: identical`: the fixture file is what the generators write.
-- `inputs of <chunk>: 0 fixtures record their call as JavaScript text; older encodings: none`. This line and `docs/parity/ferrum-state/raw/fixture-calls.jsonl` are your list of what remains, not the check: prose under any other key is caught by the replay.
+A fixture belongs to the chunk of its source file: `text` (`text.ts`, `char.ts`, `column.ts`, `charcategory.ts`), `change` (`change.ts`, `selection.ts`), `facet` (`facet.ts`, `extension.ts`, `config.ts`), `state` (`state.ts`, `transaction.ts`), `rangeset` (`rangeset.ts`).
 
-The tool rewrites `raw/fixture-calls.jsonl`, `raw/fixture-ops.jsonl` and `raw/coverage.jsonl`; leave them as it writes them. `tsc -p .harness/state 2>&1 | grep oracle/cm6/<chunk>/` type-checks your files (`tsx` runs them unchecked); use it, it is not part of the check.
+- Write one new generator per chunk that needs one, `docs/parity/ferrum-state/oracle/cm6/<chunk>/b-coverage.ts`, and append its name to that chunk's list in `docs/parity/ferrum-state/oracle/cm6/order.json`. Model: the chunk's last generator in `order.json`. It builds each input as data, records `run(input)` of the chunk's `interp.ts` as the output through the chunk's `writer`, and appends to `docs/parity/ferrum-state/fixtures/<chunk>.jsonl` with the next free `F<nnnn>` ids of that file. Existing fixture lines do not change.
+- The input is a program in the one language, `tools/cm6/program.ts` (read its header), using the ops the chunk's `interp.ts` registers (read its header). Ferrum's replayer implements each op once from that header and runs the same input against the Rust crate, so prefer existing ops. If none can express the call, add an op to that `interp.ts`: registered with its kinds (`api`: calls or reads a member cm6 exports and documents; `internal`: reads or depends on an `@internal` or unexported member or on internal layout; `identity`: its result depends on JavaScript object identity; `callbacks`: it observes how cm6 calls a function the input supplies; `harness`: no cm6 value touched), named and described in the header, with `(pos)` on every argument and result field that is a position, offset or length in UTF-16 code units of a document the input holds (the replayer converts exactly the marked values to UTF-8 bytes, D1). A fixture that can only reach its site through an op of kind `internal` is still worth recording; say so in the entry.
+- Every leaf of `out` is a variable; no expected value is written in the input. An output is `{"ok": …}` or `{"error": {name, message}}` and never holds a place in cm6's source.
+- Values JSON cannot hold go through the one encoding of `tools/cm6/oracle-lib.ts` (`@harness/lib`), which the writer applies; write no marker of your own.
+- Never retype a string that holds an invisible or escaped character (U+2028, a combining mark, a lone surrogate): the Write tool has turned `\uXXXX` escapes into literal characters. Build such strings in code (`String.fromCharCode`) or move them with a script.
+
+**The behavior row.** A fixture names the behavior it shows (`behaviors[]`) and its item (`item_id`, the inventory id).
+- If a row of `docs/parity/ferrum-state/raw/behaviors.jsonl` already states the result your fixture shows, name that behavior and append the fixture id to its `fixtures`.
+- Otherwise the site is a behavior the specification lacks: append a row with the item's next `B<n>` and every field the item's other rows have (`id, item_id, text, cm6, deps, hazards, stack, consumer_values, cost, cm6_tests, fixtures, golden_note`). `text`: the input class and the observable result, as the code and your run show them. `cm6`: `file:line (symbol)`. The implementer builds from these rows and the test-writer checks against them; a missing row is a behavior Ferrum will lack.
+- If the fixture ends in a throw, the row of `docs/parity/ferrum-state/raw/throws.jsonl` at that line lists it: append the fixture id to its `fixtures` and the behavior to its `behaviors`. A throw at a line with no row is reported as a question, not given a row by you.
+- You write nothing else in `raw/`: not `disposition`, `reason`, `raw/decisions.jsonl` or `raw/improvements.jsonl` (the consultant's).
+
+## Decisions in force that bear on this
+
+- D1 (`.claude/rules/decisions.md`): Ferrum's positions are UTF-8 byte offsets; hence the `(pos)` marks.
+- D12: input that exists only because JavaScript is untyped (a negative, fractional, `NaN` or infinite position or count; a value of the wrong type; a key beyond a typed struct; a lone surrogate in a string) is excluded from Ferrum by type. You still record what cm6 does with it when that is the only way to a site, and mark the entry.
+- You decide nothing. A site whose handling the code and these rules do not settle, or a way Ferrum could do better than cm6 there, is a question in your report, in the shape of `CLAUDE.md` "Raising a question" (no options, no recommendation).
+
+## Check (run it until it passes; the orchestrator runs it again before merging)
+
+`python3 tools/spec_check.py ferrum-state` from the repository root, about two minutes. It must end with `checks passed`. What its lines mean for your work:
+- `regenerated <chunk>: identical`: the fixture file is exactly what the generators of `order.json` write, in order.
+- `replay of <chunk>: N fixtures; 0 …`: every count after the first is zero (an output that differs from its recorded input's run, an input key nothing read, call text, a literal in `out`, a fixture running no op of kind `api` or `internal`, an op without kinds or not named in the header).
+- `uncaught throws of <chunk>: … 0 thrown at no row of raw/throws.jsonl`.
+- the counts of ids: no duplicate id, every cited id exists, every behavior has fixtures.
+- `coverage <file>: lines unreached …` and `wrote raw/coverage.jsonl: N unreached sites`: N falls by the sites your fixtures reach.
+- `coverage sites without an entry in verification.md: 0`: every site still in `raw/coverage.jsonl` has its row in the `## Coverage` table.
+
+The tool rewrites `raw/coverage.jsonl` and `raw/fixture-ops.jsonl`; leave them as it writes them. `tsc -p .harness/state 2>&1 | grep b-coverage` type-checks your generators; it is a help, not part of the check.
 
 ## Limits
 
-- Write only `docs/parity/ferrum-state/oracle/cm6/<chunk>/`, `docs/parity/ferrum-state/fixtures/<chunk>.jsonl` and `.scratch/<chunk>/` (your assignment says so if your unit has more than one chunk or may add to another chunk's interpreter). Do not edit `tools/`, `raw/` rows, another chunk, or fixture lines by hand. Do not commit.
-- You do not re-derive behaviors or add fixtures: this step changes how inputs are recorded, not what is recorded.
-- Never retype a string that holds an invisible or escaped character (U+2028, a combining mark, a lone surrogate): the Write tool has turned `\\uXXXX` escapes into literal characters and a U+2028 into a space. Move such lines with a script, and compare the input strings with the baseline before the check.
-- Keep `.scratch/<chunk>/progress` (generators done, remaining) so that you can be resumed.
+- Write only: `docs/parity/ferrum-state/oracle/cm6/<chunk>/b-coverage.ts`, additions of ops to a chunk's `interp.ts`, `docs/parity/ferrum-state/oracle/cm6/order.json`, appended lines of `docs/parity/ferrum-state/fixtures/<chunk>.jsonl` (through the generator, never by hand), `docs/parity/ferrum-state/raw/behaviors.jsonl` and `raw/throws.jsonl` as described, the `## Coverage` section of `docs/parity/ferrum-state/verification.md`, and `.scratch/coverage/`. Do not edit `tools/`, existing generators, existing fixture lines or another section of `verification.md`. Do not commit.
+- Keep `.scratch/coverage/progress` (sites settled, remaining) so that you can be resumed.
 - Stop and report what fails when the check fails a third time on the same fixtures, or when you have used half as much again as the budget in your assignment.
 
 ## Final report
 
-Fixtures converted and not (ids, reasons); the chunk's ops with their kinds; the check's lines for your chunk; how many times you ran the check before it passed; anything the language lacked; tokens if known; then the two lines of `CLAUDE.md` "Reporting from a card".
+Per outcome, the count and the sites; the fixtures and behavior rows added (ids), the ops added (chunk, name, kinds); the sites reached only by a D12 input; the check's coverage lines and its last line; how many times you ran the check; questions; tokens if known; then the two lines of `CLAUDE.md` "Reporting from a card".
