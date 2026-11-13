@@ -52,10 +52,7 @@ what Ferrum is compared with):
 A chunk with no interpreter in the language fails with "not run". It writes raw/fixture-ops.jsonl: per chunk and op
 that ran, its kinds, the number of fixtures that ran it and their behavior ids.
 
-It also writes raw/fixture-calls.jsonl: the fixture inputs that still record their call as JavaScript text for a
-reader instead of data for the chunk's interpreter (§5 item 3), grouped by text with digits replaced by N. Such an
-input has a string under `expr`, `call` or `code`, or a string with a parenthesis, a space or `=` under `op`, `ops`
-or `calls`. And it prints how many values of each chunk are still written in a form older than the one encoding.
+It also prints how many values of each chunk are still written in a form older than the one encoding.
 
 Needs the harness (python3 tools/cm6/setup_harness.py <package>) and npx (tsx, c8). Exit status 1 when a check
 fails; an unreached branch is a fact to judge, not a failure.
@@ -114,11 +111,6 @@ def dicts(v):
         for x in v.values(): yield from dicts(x)
     elif isinstance(v, list):
         for x in v: yield from dicts(x)
-
-
-def js_text(key, v):
-    if isinstance(v, list): return any(js_text(key, x) for x in v)
-    return isinstance(v, str) and (key in ("expr", "call", "code") or bool(re.search(r"[(\s=]", v)))
 
 
 def rows(path):
@@ -232,22 +224,10 @@ def main():
               f"labels: {dict(labels) or 'none'}")
         if data_out: bad.append(f"fixtures/{c}.jsonl: {len(data_out)} fixtures give `out` a value of a `data` step: {data_out[:10]}")
 
-    calls = []
     for c, v in fx.items():
-        groups, n = collections.OrderedDict(), collections.Counter()
-        for r in v:
-            old_forms([r["input"], r["output"]], n)
-            i = r["input"] if isinstance(r["input"], dict) else {}
-            for k in ("expr", "call", "code", "op", "ops", "calls"):
-                if k in i and js_text(k, i[k]):
-                    text = re.sub(r"\d+", "N", json.dumps(i[k], ensure_ascii=False))
-                    groups.setdefault((k, text, tuple(sorted(x for x in i if x != k))), []).append(r["id"])
-        calls += [{"chunk": c, "key": k, "text": t, "other_input_keys": list(o), "fixtures": len(ids), "first": ids[0]}
-                  for (k, t, o), ids in groups.items()]
-        left = len({i for ids in groups.values() for i in ids})
-        print(f"inputs of {c}: {left} fixtures record their call as JavaScript text; older encodings: {dict(n) or 'none'}")
-    with open(os.path.join(base, "raw", "fixture-calls.jsonl"), "w", encoding="utf-8") as f:
-        for r in calls: f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        n = collections.Counter()
+        for r in v: old_forms([r["input"], r["output"]], n)
+        print(f"older encodings of {c}: {dict(n) or 'none'}")
 
     if run:
         todo = [c for c in chunks if not only or c in only]
