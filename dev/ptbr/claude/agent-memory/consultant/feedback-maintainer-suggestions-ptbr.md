@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agent-memory/consultant/feedback-maintainer-suggestions.md` (commit `30d5121`). O original em inglês é o que vale. Frontmatter original: `name: maintainer-suggestions`, `type: feedback`.
+> Tradução para leitura de `.claude/agent-memory/consultant/feedback-maintainer-suggestions.md` (commit `ae094f2`). O original em inglês é o que vale. Frontmatter original: `name: maintainer-suggestions`, `type: feedback`.
 
 # Sugestões do mantenedor
 
@@ -11,3 +11,7 @@ As sugestões do mantenedor não são ordens nem coisas a rejeitar para parecer 
 **Por quê:** ele revisa o método para evitar erros que um bom resultado esconderia; quer alguém que decida, não alguém que escolha entre opções dos outros.
 
 **Como aplicar:** quando ele questiona um projeto, confira primeiro a premissa (os padrões de opções-como-cardápio e de orquestrador-propõe-disposições eram falhas reais, commit 5b074d1). Espere que ele valorize: a independência de quem decide, nada silencioso, e instruções que não nomeiam o que um agente nunca encontraria. Quando um ponto dele pode ser lido de duas maneiras, reafirme a leitura antes de agir: "nomes" significava as menções vagas, não o arquivo de nomes, e eu fundi o arquivo com base na leitura errada (desfeito em 45f4110).
+
+2026-11-13: eles querem o resultado, não o processo: um critério definido por um documento anterior não é um motivo, e eles temem que o método de uma etapa seja copiado para a seguinte. Pediram que o aprendizado sirva aos próximos crates, não a refazer o que já foi terminado, e que a eficiência nunca afine a evidência. A ideia deles de esforço por passo estava certa na direção; o que faltava era o critério (algo mostra os erros do passo?).
+
+Mais tarde no mesmo dia eles ampliaram o mandato: nada é intocável, a intenção e a fundação incluídas, e as instruções deles de como fazer (forma do progresso, decisões por commit, mover arquivos em vez de apagá-los) explicitamente não devem ser obedecidas. O que eles mantêm fixo é o resultado: domínio, precisão, eficácia, nenhuma dívida técnica, um processo autônomo que se aperfeiçoa. Eles querem apagar em vez de realocar.

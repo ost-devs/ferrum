@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/ferrum/SKILL.md` (commit `30d5121`). O original em inglês é o que vale. O Claude a carrega sozinho quando precisa (ou via `/ferrum`).
+> Tradução para leitura de `.claude/skills/ferrum/SKILL.md` (commit `ae094f2`). O original em inglês é o que vale. O Claude a carrega sozinho quando precisa (ou via `/ferrum`).
 
 # Skill `/ferrum`
 
@@ -33,10 +33,11 @@ Um motor de editor em Rust, headless e embutível, cujo núcleo tem a arquitetur
 | A paridade é declarada contra uma versão publicada do cm6, não contra a `main` | As aplicações rodam versões publicadas; a `main` pode carregar API ainda não publicada | [`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md#1-forma) §1 "The cm6 reference" |
 | Dependências dos mirrors fixadas na versão mais nova que o npm resolve, não no mínimo da faixa | O oráculo roda o que o npm instala; outra versão produz divergências falsas | [`.claude/rules/mirrors.md`](../../rules/mirrors-ptbr.md) "Dependency pins" |
 | Não se fazem perguntas técnicas ao mantenedor; o agente `consultant` as decide | A intenção dele: não julgar escolhas além do seu conhecimento, não parar o trabalho esperando por ele, e encontrar toda decisão registrada como do consultor. Os agentes que produzem o trabalho trazem fatos e perguntas; o consultor deriva as decisões | [`docs/foundation/maintainer-intent.md`](../../../docs/foundation/maintainer-intent-ptbr.md); [`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md#3-decisões) §3 |
-| A especificação é auditada antes de D1–D10 serem tomadas | A auditoria registra o que o cm6 faz, neutra quanto a decisões; as decisões são tomadas com a evidência dela antes da implementação que precisa delas (`ferrum-foundation.md` §6 pede que venham antes da implementação, não antes da auditoria) | [`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md#1-forma) §1 |
+| A paridade é mostrada por execuções, não por descrições | Os valores vêm de rodar o cm6 e são reproduzidos no Ferrum; na primeira especificação nenhum valor registrado estava errado e todo defeito estava em texto escrito ao lado das execuções | [`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md#1-forma) §1 |
+| Cada crate tem seu próprio plano para cada etapa; os roteiros são curtos | Um procedimento fixado antes de existirem os fatos de um crate errou duas vezes no primeiro crate; o consultor deriva o plano a partir do crate e do ledger | [`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md#1-forma) §1, [§7](../../../docs/workflow/README-ptbr.md#7-refinando-o-método); `docs/parity/<crate>/plan.md` |
 
 ## Lacunas abertas conhecidas
-- As decisões fundamentais D1–D8 (unidade de posição, quebras de linha e bibliotecas de `Text`, backend de sintaxe, contrato de layout, tipo de comando, threads, modelo de estilo, entrada/IME/acessibilidade) estão em aberto; D9 (licenças: MIT por crate, Apache-2.0 só para ports de código Apache) e D10 (nada adiado: cada crate cobre todo o seu pacote do cm6, itens deixados de fora só pela disposição de cada um) estão decididas. O consultor as toma com a evidência da especificação de cada crate; onde serão registradas: [`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md#3-decisões) §3. `ferrum-foundation.md` §6.
+- As decisões fundamentais D1–D8 (unidade de posição, quebras de linha e bibliotecas de `Text`, backend de sintaxe, contrato de layout, tipo de comando, threads, modelo de estilo, entrada/IME/acessibilidade) estão em aberto; D9 (licenças) e D10 (nada adiado) estão decididas. O consultor toma cada uma quando sua evidência existe e antes do trabalho que precisa dela. `ferrum-foundation.md` §6.
 - Ainda não há código do Ferrum; o trabalho corre crate por crate pelo `/ferrum-run`; onde ele está: [`docs/progress/`](../../../../../docs/progress/).
 
 ## Onde cada tema mora
