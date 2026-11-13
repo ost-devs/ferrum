@@ -1,4 +1,4 @@
-> Tradução para leitura de `tools/README.md` (commit `29b0f81`). O original em inglês é o que vale.
+> Tradução para leitura de `tools/README.md` (commit `30d5121`). O original em inglês é o que vale.
 
 # Ferramentas
 
@@ -14,5 +14,6 @@ Ferramentas compartilhadas do workflow ([`docs/workflow/`](../docs/workflow/)). 
 | [`tools/render.py`](../../../tools/render.py) | qualquer | `python3 tools/render.py <linhas.jsonl> --cols id,item,… [--title …] [--header …] > <arquivo>.md` | tabela Markdown a partir de JSON Lines |
 | [`tools/check_refs.py`](../../../tools/check_refs.py) | fim de todo passo que escreve documentos | `python3 tools/check_refs.py docs .claude tools --quiet` | contagem de referências que não resolvem (caminhos de rascunho, arquivos faltando, linhas além do fim, seções faltando) |
 | [`tools/ferrum_pub.py`](../../../tools/ferrum_pub.py) | conformidade G1 | `RUSTC_BOOTSTRAP=1 cargo rustdoc -p <crate> -- -Z unstable-options --output-format json`, depois `python3 tools/ferrum_pub.py target/doc/<crate_name>.json crates/<crate> > pub.jsonl` | itens públicos de um crate do Ferrum. Escrito para o formato 61 do JSON do rustdoc: confira `format_version` antes e adapte se tiver mudado |
+| [`tools/transcript_digest.py`](../../../tools/transcript_digest.py) | retrospectivas, aprendizados, uma sessão que retoma o trabalho de outra | `python3 tools/transcript_digest.py <diretório das transcrições do projeto no Claude Code> .scratch/transcripts [--since YYYY-MM-DD]` | um `<id da sessão>.md` por sessão, só com as mensagens do mantenedor e as respostas do Claude (sem chamadas de ferramentas, resultados, raciocínio nem lembretes); 40 MB de transcrições do ferrum deram 413 KB em 2026-11-12 |
 
 Rode uma sonda com `npx tsx --tsconfig .harness/<pacote>/tsconfig.json <sonda>.ts`. As sondas importam o cm6 pelo nome do pacote (`@codemirror/state`) e os helpers como `@harness/lib`; elas ficam em `docs/parity/<crate>/oracle/cm6/<chunk>/`. Os mirrors em si são buscados pela skill `mirrors` (`/mirrors`).

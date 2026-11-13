@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/mirrors/SKILL.md` (commit `22cabd7`). O original em inglês é o que vale. O Claude a carrega sozinho quando precisa (ou via `/mirrors`). Frontmatter original: `allowed-tools: Bash(python3 *fetch_mirrors.py*)`.
+> Tradução para leitura de `.claude/skills/mirrors/SKILL.md` (commit `30d5121`). O original em inglês é o que vale. O Claude a carrega sozinho quando precisa (ou via `/mirrors`). Frontmatter original: `allowed-tools: Bash(python3 *fetch_mirrors.py*)`.
 
 # Skill `/mirrors`
 

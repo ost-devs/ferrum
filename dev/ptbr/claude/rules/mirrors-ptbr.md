@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/rules/mirrors.md` (commit `22cabd7`). O original em inglês é o que vale. Carrega automaticamente quando o Claude toca em `mirrors/**`.
+> Tradução para leitura de `.claude/rules/mirrors.md` (commit `30d5121`). O original em inglês é o que vale. Carrega automaticamente quando o Claude toca em `mirrors/**`.
 
 # Lendo os mirrors
 

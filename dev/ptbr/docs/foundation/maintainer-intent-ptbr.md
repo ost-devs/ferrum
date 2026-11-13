@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/foundation/maintainer-intent.md` (commit `e92273d`). O original em inglês é o que vale.
+> Tradução para leitura de `docs/foundation/maintainer-intent.md` (commit `30d5121`). O original em inglês é o que vale.
 
 # A intenção do mantenedor
 

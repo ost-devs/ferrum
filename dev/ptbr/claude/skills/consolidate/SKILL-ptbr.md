@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/consolidate/SKILL.md` (commit `22cabd7`). O original em inglês é o que vale. Só roda quando o usuário digita `/consolidate` (`disable-model-invocation: true`).
+> Tradução para leitura de `.claude/skills/consolidate/SKILL.md` (commit `30d5121`). O original em inglês é o que vale. Só roda quando o usuário digita `/consolidate` (`disable-model-invocation: true`).
 
 # Skill `/consolidate`
 

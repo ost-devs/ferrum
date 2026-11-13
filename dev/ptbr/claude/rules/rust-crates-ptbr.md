@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/rules/rust-crates.md` (commit `e92273d`). O original em inglês é o que vale. Carrega automaticamente quando o Claude toca em `crates/**` ou `Cargo.toml`.
+> Tradução para leitura de `.claude/rules/rust-crates.md` (commit `30d5121`). O original em inglês é o que vale. Carrega automaticamente quando o Claude toca em `crates/**` ou `Cargo.toml`.
 
 # Alterando os crates do Ferrum
 

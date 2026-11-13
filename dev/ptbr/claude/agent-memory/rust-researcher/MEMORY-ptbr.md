@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agent-memory/rust-researcher/MEMORY.md` (commit `e92273d`). O original em inglês é o que vale.
+> Tradução para leitura de `.claude/agent-memory/rust-researcher/MEMORY.md` (commit `30d5121`). O original em inglês é o que vale.
 
 # Fatos verificados de Rust
 

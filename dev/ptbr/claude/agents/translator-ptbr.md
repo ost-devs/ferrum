@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agents/translator.md` (commit `e92273d`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Write, Edit, Bash`, `model: sonnet`, `effort: medium`; sem hooks.
+> Tradução para leitura de `.claude/agents/translator.md` (commit `30d5121`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Write, Edit, Bash`, `model: sonnet`, `effort: medium`; sem hooks.
 
 # Agente `translator`
 

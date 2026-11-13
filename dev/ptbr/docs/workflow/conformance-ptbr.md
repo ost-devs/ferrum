@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/conformance.md` (commit `e92273d`). O original em inglês é o que vale; as seções citadas (§2, G5…) seguem a numeração do original. O modelo de cartão (apêndice) também está traduzido; o orquestrador usa o do original, em inglês.
+> Tradução para leitura de `docs/workflow/conformance.md` (commit `30d5121`). O original em inglês é o que vale; as seções citadas (§2, G5…) seguem a numeração do original. O modelo de cartão (apêndice) também está traduzido; o orquestrador usa o do original, em inglês.
 
 # Etapa de conformidade
 

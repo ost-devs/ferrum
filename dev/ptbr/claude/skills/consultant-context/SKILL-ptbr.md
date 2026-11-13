@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/consultant-context/SKILL.md` (commit `22cabd7`). O original em inglês é o que vale. Frontmatter original: `allowed-tools: Bash(cat *), Bash(head *), Bash(ls *), Bash(git log *)`. As linhas `` !`comando` `` rodam quando a skill carrega, e a saída delas entra no lugar da linha.
+> Tradução para leitura de `.claude/skills/consultant-context/SKILL.md` (commit `30d5121`). O original em inglês é o que vale. Frontmatter original: `allowed-tools: Bash(cat *), Bash(head *), Bash(ls *), Bash(git log *)`. As linhas `` !`comando` `` rodam quando a skill carrega, e a saída delas entra no lugar da linha.
 
 # Skill `consultant-context`
 
