@@ -9,7 +9,7 @@ Where the work is, and nothing else (`docs/workflow/README.md` §5). What it cos
   2. When A ends: remove `raw/fixture-calls.jsonl` and its count from `tools/spec_check.py`; gather with a tool the three facts the consultant asked for (below); call the consultant (what the replayer does with each op not only `api`, the fixture lists of the rows of `raw/decisions.jsonl` with `fixtures_to_list` true, E7).
   3. Step B: the 33 sites of `raw/coverage.jsonl`. Then the consultant again: the "Implementation" section of `plan.md` and the approval of the specification.
   4. S6: review, report for the maintainer, a new session for the implementation stage.
-- **Facts the consultant asked for at the end of step A** (by a tool, not a reading):
+- **Facts the consultant asked for at the end of step A** (by a tool, not a reading; 1 and 2: `python3 tools/spec_facts.py ferrum-state` once `state` is merged, output under `.scratch/s5/ferrum-state/`; 3: a `rust-researcher` classifies the rows into `.scratch/s5/implicit-throws.jsonl`, which is not committed, so its report is copied into this file when it returns):
   1. per chunk and op whose kinds are not only `api`: which output fields hold an identity or layout value (`src`, `same`, chunk indexes);
   2. for each row of `raw/decisions.jsonl` with `fixtures_to_list` true: the fixture ids whose input matches the row's condition;
   3. the 47 implicit `TypeError` rows of `raw/throws.jsonl` classified: excluded by D12, does not compile, or Ferrum's own panic.

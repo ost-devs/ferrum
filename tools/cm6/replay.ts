@@ -1,5 +1,6 @@
 // Replay of recorded fixture inputs (docs/workflow/specification.md §8 item 1), run by tools/spec_check.py:
-//   npx tsx --tsconfig .harness/<package>/tsconfig.json tools/cm6/replay.ts <crate> <chunk> [<chunk> ...]
+//   npx tsx --tsconfig .harness/<package>/tsconfig.json tools/cm6/replay.ts <crate> [--ran] <chunk> [<chunk> ...]
+// (--ran: only which ops each fixture ran, for tools/spec_facts.py)
 // from the repository root. For every fixture of docs/parity/<crate>/fixtures/<chunk>.jsonl it decodes the recorded
 // input, wraps it so that every key read by the interpreter or by cm6 is recorded, runs it through the `lang` that
 // docs/parity/<crate>/oracle/cm6/<chunk>/interp.ts exports (tools/cm6/program.ts), and compares the encoded output
@@ -120,6 +121,19 @@ async function chunkReport(crate: string, chunk: string) {
   return rep
 }
 
+/** With --ran: {chunk, kinds: {op: kinds}, ran: {fixture id: [ops]}}, for tools/spec_facts.py. */
+async function ranReport(crate: string, chunk: string) {
+  const file = interpPath(crate, chunk)
+  const lang: Language | undefined = existsSync(file) ? (await import(pathToFileURL(file).href)).lang : undefined
+  if (!(lang instanceof Language)) return {chunk, error: "no interpreter in the language"}
+  const ran: Record<string, string[]> = {}
+  for (const fx of fixtures(crate, chunk)) {
+    const timeout = fx.output && typeof fx.output == "object" && Object.keys(fx.output).length == 1 && typeof fx.output.timeout == "number"
+    ran[fx.id] = timeout ? [] : replayOne(lang, fx.input).ran
+  }
+  return {chunk, kinds: Object.fromEntries([...lang.ops].map(([n, d]) => [n, d.kinds])), ran}
+}
+
 const arg = process.argv[2] ?? ""
 if (arg.startsWith("{")) {
   // The child of runIsolated: one fixture that may not terminate. The interpreter is loaded before the watchdog runs.
@@ -128,9 +142,10 @@ if (arg.startsWith("{")) {
     isolatedMain(() => replayOne(m.lang, fixtures(crate, chunk).find(f => f.id == id).input)))
 } else {
   (async () => {
-    for (const chunk of process.argv.slice(3)) {
+    const perFixture = process.argv[3] == "--ran"
+    for (const chunk of process.argv.slice(perFixture ? 4 : 3)) {
       let rep: any
-      try { rep = await chunkReport(arg, chunk) } catch (e: any) { rep = {chunk, error: String(e?.stack ?? e).slice(0, 600)} }
+      try { rep = perFixture ? await ranReport(arg, chunk) : await chunkReport(arg, chunk) } catch (e: any) { rep = {chunk, error: String(e?.stack ?? e).slice(0, 600)} }
       process.stdout.write(JSON.stringify(rep) + "\n")
     }
   })()
