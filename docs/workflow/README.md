@@ -63,7 +63,7 @@ Each worker gets its role from its definition (`.claude/agents/`) and its task f
 
 | Decision | Binding text |
 |---|---|
-| About one cm6 item (disposition, an error contract, reproducing a quirk, porting a test) | the item's row in the crate's specification (`docs/parity/<crate>/raw/`); annotations cite its inventory id |
+| About one cm6 item (disposition, an error contract, reproducing a quirk, porting a test) | the item's disposition in its inventory row, and every other decision about it as a row of `docs/parity/<crate>/raw/decisions.jsonl`, keyed by its inventory id, which annotations cite |
 | The Rust design of one crate (modules, types, contract traits, error contracts, ownership) | `docs/parity/<crate>/design.md`. A design choice that changes observable behavior or public API is a deviation, recorded in the item's row or in `.claude/rules/decisions.md` |
 | How one crate goes through a stage | `docs/parity/<crate>/plan.md` |
 | Cross-cutting for code (D1–D8, a policy for several crates) | `.claude/rules/decisions.md`, with a stable id (`D1`–`D10` foundational, `D11` onward later), a one-line reason and what it applies to. A decision only some crates act on goes in a rule scoped to their paths |

@@ -290,3 +290,25 @@ which would make the rows' only consumer outside state an application.
 **Confidence.** High on 1. Medium-high on 2: the remaining path (a `data` value passed through a harness op into `out`) is not checked; the labels are few and listed.
 
 **Reopens.** A chunk needing a value in `out` that neither cm6 produces nor a label can be; a fixture found whose output holds an input value through a harness op.
+
+## 2026-11-13 · S5, first part: 45 questions decided, the design, the drafts of D1, D2, D5 and D6
+
+*Decided by the consultant (Q3, Q5–Q7, Q9–Q39, Q45–Q52, Q55–Q57). Binding text: `docs/parity/ferrum-state/raw/decisions.jsonl` (one row per decision about an item, 38 rows), `docs/parity/ferrum-state/design.md`, `.claude/rules/decisions.md` D11–D15 and `.claude/rules/rust-naming-decisions.md` N6–N10 (their record: `docs/decisions/foundation.md`, same date). Q28 was about `@codemirror/view` and moved to `docs/parity/ferrum-view/questions.md`.*
+
+**How the questions were decided.** Each falls under one of the general decisions, and its row says which:
+- *Reproduced* (D11): Q10, Q11, Q18, Q19, Q21–Q26, Q33 (the mapping), Q34–Q37, Q39, Q45, Q46, Q48, Q50–Q52, Q55. The consequence that matters: `RangeSet` keeps cm6's layers and chunks and `Text` its tree, because several of these results depend on that layout, and keeping it is what lets fixtures and the oracle compare everything.
+- *Excluded by type* (D12): the untyped parts of Q9, Q12, Q29, Q33, Q38, Q56, Q57.
+- *Ferrum differs*, each with its class: Q27 (cm6 hangs; Ferrum reports the length mismatch); Q13, Q14, Q17, Q30, Q49 (identity or mutation after hand-over); the `NaN` results of Q9, Q12 and Q31. Q14 and Q30 are the two a user of cm6 could notice: an old state never changes, and a transaction whose state failed to build builds it again.
+- *Form*: Q3 and Q6 (names), Q5 (D15), Q7 (Unicode data from the Rust toolchain: I counted 149,107 word code points in both Rust 1.97 and the harness's Node, both Unicode 17.0), Q15 (the clock), Q16 and Q32 (construction order and re-entry, kept), Q20 (the 1e9 bound, kept as a listed limit), Q31 (`combine_config` per field), Q47 (D13).
+
+**The design.** Modules follow cm6's files; no dependency but `serde_json`; cm6's data structures kept; signatures follow D14 and are written in the skeleton, which I approve. The sections that rest on D1, D2, D5 and D6 say so and bind nothing yet.
+
+**Drafts.** D1: UTF-8 bytes. D2: cm6's `Text` and cluster rules ported, no `ropey`, no UAX #29. D5: `StateCommand` as cm6's contract. D6: immutable, `Send + Sync`. Each draft carries its reasons and what it gives up.
+
+**Alternatives that lost, beyond those in the foundation record.** A `RangeSet` with another layout (the behaviors that depend on chunks could not be reproduced, and the 177 fixtures that read the layout would need projections). `combine_config` over dynamic maps (replays fixtures directly, useless to a typed config). Raising the 1e9 bound now (changes the visible end value of cursors for no consumer that asks). A clock facet for `Transaction.time` (API cm6 does not have).
+
+**Confidence.** High on the reproduced rows and the excluded ones. Medium on `combine_config`'s form and on `try_field`'s name: both meet their real callers only in `ferrum-view` and `ferrum-commands`.
+
+**Still owed, and when.** At the end of step A: what the replayer does with each op that is not only `api`, and the fixture lists of the 10 rows marked `fixtures_to_list`. After step B: the "Implementation" section of `plan.md` and the approval, with the residual risk the samples measured.
+
+**Reopens.** A draft changed by the maintainer (the rows that depend on it are named in each draft); `ferrum-view`'s specification finding a consumer value that an excluded class or a deviation removes.

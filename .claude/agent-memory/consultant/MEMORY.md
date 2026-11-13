@@ -24,6 +24,11 @@
 - Before designing a check, write the tool and run it: 84 seconds of tool replaced the mechanical half of six verifier runs and gave a fact (coverage) no agent had produced. Same entry
 - Keeping agents out of files: a permission deny (it also filters searches), plus one line of text only for what it cannot see. `4483420`
 - Completeness of a recorded input: replay it with read tracking (every key consumed), never a list of keys that may hold text; and every consumer of fixtures gets one language, not one dialect per chunk. Before relying on a check design, prototype it on the pilot's output. `docs/decisions/ferrum-state.md`, "Step A after the pilot"
+- cm6 result that looks like a bug: reproduce it, unless cm6 hangs, the result needs object identity or mutation after hand-over, or it is NaN arithmetic; nobody's "this looks unintended" is evidence, and the oracle pays for every exception. `docs/decisions/foundation.md` D11
+- Panic or `Result`: ask who can check the condition first and what the callers above return; prefer the choice that can be extended later without breaking (panic now, fallible variants later). D13
+- Many questions of one crate are a few questions asked many times: find the classes first, decide each once as a rule, then write only the per-item consequence. Same entry
+- A check that fails on form while the values are equal (Q58): fix the check to compare what it is for, count the accepted form, and close the hole the worker's workaround opened; try a broader check on the committed chunks before adopting it (the general one had false positives). `docs/decisions/ferrum-state.md` Q58
+- Design before the foundational drafts are confirmed: write it whole, mark the sections that rest on a draft as not in force, never copy a draft's answer into a rule.
 
 ## Calibration
 - [Maintainer's suggestions](feedback-maintainer-suggestions.md) — weigh, don't obey or reject for show; they prize decider independence and nothing silent

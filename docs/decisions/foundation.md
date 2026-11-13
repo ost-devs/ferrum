@@ -283,3 +283,37 @@ Alternatives and why they lost:
 
 Confidence: high. Reopen if names.md proves too coarse (many rows that the
 mechanical conversion settles anyway) or misses cases implementers hit.
+
+## 2026-11-13 · D11–D15: quirks are reproduced, untyped input is excluded by type, the error contract, Rust forms of JavaScript shapes, `@internal` members for tests
+
+*Decided by the consultant at S5 of `ferrum-state` (D11, D12, D13, D14, D15; with Q5, Q47 and the general part of Q9, Q12, Q29, Q38, Q57 of `docs/parity/ferrum-state/questions.md`). Binding text: `.claude/rules/decisions.md`.*
+
+**Question.** The 52 questions of `ferrum-state` are mostly four questions asked many times: does Ferrum reproduce a cm6 result that looks like a mistake; what happens to input only an untyped language can pass; what does a Rust caller see where cm6 throws; and how does a ported test reach what cm6 marks internal. `ferrum-view` will ask each of them several times more, so they are decided once.
+
+**What I verified.** The cm6 code behind a sample of the questions (`state.ts:96-125`, `rangeset.ts:300-330`, `change.ts:125-155`, `selection.ts`, `charcategory.ts`, `find-cluster-break/src/index.js`); the 74 rows of `raw/throws.jsonl` (27 explicit throws, each marked checkable in advance except five that concern how extensions are defined; 47 engine `TypeError`s); with rustc and clippy 1.97, the names and forms the entries rely on. The facts recorded by fixtures I took as runs of cm6.
+
+**D11, quirks.** Reproduce, with three classes of exception. Reasons: the goal is parity of what cm6 does; a differential oracle on fresh inputs meets every quirk that typed input reaches (chunk-dependent mapping, tie order), and each exception costs a filter in it; nobody found a stated intent for any of these results, so "bug" would be my invention; upstream fixes arrive through release deltas. The exceptions are what cannot be reproduced or asserted: a call that never returns, results that need object identity or mutation after hand-over, and arithmetic on `NaN`. *Lost:* fixing what looks wrong (each fix is an unrecorded divergence a cm6 developer would trip on, and no goal asks for it); reproducing everything (a hang cannot be a test; aliasing would need shared mutable state in immutable values).
+
+**D12, untyped input.** Excluded by type, never accepted through a wider API. *Lost:* signed or floating positions to replay those fixtures (every caller pays, for inputs no mirrored consumer passes); a checked-conversion layer (API beyond the specification).
+
+**D13, errors.** Panic where cm6 throws, `Result` only for readers of serialized data. The deciding facts: every explicit throw guards a condition its caller can test; the code above this crate computes positions from the state it holds and its commands return `bool`, so a `Result` there is unwrapped at every one of hundreds of calls; and the choice is one-directional: fallible variants can be added later without breaking anyone, panicking functions cannot become fallible. *Lost:* `Result` everywhere (noise where failure is a bug, and still a panic at each unwrap); `Result` on `update` alone (an arbitrary line: the same stale position reaches `line_at` and `map_pos`). What it gives up: an application that passes unchecked positions from outside (a late LSP answer) crashes instead of catching an error, unless it checks first. That is the case to watch.
+
+**D14, forms.** Required parameters, structs with `Default`, `PartialEq` for `===`. *Lost:* a second short form of each function with defaults (twice the API, a name to decide for each); builders (not recognizable to a cm6 developer).
+
+**D15, internals.** `Debug` for debug formats, a `__test` feature for the rest. *Lost:* making them `pub` (they become API); moving the ported tests inside `src/` (the implementer could then edit them).
+
+**Confidence.** High on D11, D12, D15. Medium-high on D13 and D14: both are right for the code I can see (`@codemirror/state` and its callers) and both are cheap to extend; the evidence that would test them is the first crate above and the first consumer.
+
+**Reopens.** D13: a consumer that must survive invalid positions from outside and cannot check them first. D14: the port of `@codemirror/commands` showing a call pattern so frequent that the required parameters hide the code's meaning. D11: a reproduced quirk that harms the person editing in a case that occurs in practice.
+
+## 2026-11-13 · N6–N10: static members, cursors, JSON, an overridable `eq`
+
+*Decided by the consultant (N6, N7, N8, N9, N10; Q3 and Q6 of `ferrum-state`). Binding text: `.claude/rules/rust-naming-decisions.md`. Every row of `docs/parity/ferrum-state/raw/names.jsonl` is now settled by an entry or by the mechanical conversion.*
+
+**Decisions and reasons.** N6: a facet, effect type or annotation type held in a static property is an associated constant pointing at a lazily built `static`. It must be one object for the process and is built at run time, and cm6 has an instance getter of the same name beside two of them (`tabSize`, `readOnly`), which an associated function would collide with. I compiled and ran the form. N7: every other static member is an associated function with cm6's name. N8: cursors keep `next` and do not implement `Iterator`: what they return after the end, and `next(skip)`, are specified behavior. N9: `to_json` and `from_json` on `serde_json::Value`, no serde traits. N10: `RangeValue: PartialEq`. The 77 rows: the `from`, `to`, `size`, `iter`, `add`, `default` members keep the mechanical name; I ran clippy on each shape and it is silent.
+
+**Alternatives.** N6 as an associated function (`tab_size_facet()`): an invented suffix on every facet of `ferrum-view`. N6 as module-level statics: loses `EditorState.` and shows `LazyLock` just the same. N8 as `Iterator`: cannot take `skip`, and hides the end state. N9 as `Serialize`/`Deserialize`: a second serialized form cm6 does not have. N10 as a method `eq`: ambiguous beside `PartialEq`.
+
+**Confidence.** High on N7, N8, N10; medium-high on N6 (the type `&'static LazyLock<T>` shows in signatures) and N9.
+
+**Reopens.** N6 if `ferrum-view`'s facets need a form it cannot give; N9 if the first consumer persists state with serde throughout.

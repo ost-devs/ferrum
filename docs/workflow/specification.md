@@ -63,6 +63,7 @@ raw/behaviors.jsonl        §5
 raw/tests.jsonl            §6: the package's own test cases
 raw/throws.jsonl           §7: every throw cm6 reaches
 raw/names.jsonl            §7: names the mechanical conversion may not settle
+raw/decisions.jsonl        the consultant's decisions about single items (README.md §3); nobody else writes it
 raw/xc.jsonl               capabilities needed from lower crates, and offered to higher ones
 raw/coverage.jsonl         §8 item 1: lines and branches of cm6 no recorded run reaches (written by the tool)
 raw/fixture-ops.jsonl      §8 item 1: per chunk and op, its kinds and the fixtures and behaviors that run it (written by the tool)
@@ -82,6 +83,7 @@ Schemas (one JSON object per line; `[]` marks arrays):
 - `raw/tests.jsonl`: `id, file, line, describe, name, generated, scenario, expected, behaviors[], class, class_reason, port_notes`
 - `fixtures/<chunk>.jsonl`: `id, item_id, behaviors[], input, output, encoding`. Values JSON cannot hold are written in one encoding, applied to inputs and outputs by `tools/cm6/oracle-lib.ts` and by nothing else: a string with a lone surrogate as `{"utf16": [every code unit]}`; `NaN`, `Infinity`, `-Infinity` and `-0` as `{"js_number": "NaN"}` and so on; `undefined` as `{"js_undefined": true}`; a function value as `{"js_function": true}`; a value that differs between runs (the wall clock) as `{"js_unstable": "<what>"}`. `null` then always means `null`, and a string is always that string
 - `raw/xc.jsonl`: `capability, cm6, direction (needs|offers), crate, searched, exists`
+- `raw/decisions.jsonl` (the consultant writes it): `id` (`<inventory id>.d<n>`, what an annotation cites through its inventory id), `item_id`, `question`, `class` (`reproduce`: cm6's result is kept although it looks unintended; `deviation-a`, `-b`, `-c`: Ferrum differs, in the class of D11 named; `form`: the item's Rust form), `decision` (the binding text), `behaviors[]`, `fixtures_not_replayed[]` (`<chunk>:<id>`; the replayer runs every other fixture and may skip none of its own accord), `fixtures_to_list` (true while the consultant still owes the list)
 - `raw/fixture-ops.jsonl` (the tool writes it): `chunk, op, kinds[], fixtures, behaviors[]`
 
 Ids:
