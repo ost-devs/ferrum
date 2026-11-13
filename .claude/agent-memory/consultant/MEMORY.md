@@ -14,6 +14,11 @@
 - Worker effort: pin it in each definition (session default and the spawn parameter change it silently); lower a producer only on a paired run vs verified rows; gates stay high. Cost: estimate from inventory rows, not source lines. M1/M6 commit
 - Row tags/criteria: define by what the consumer of the field needs (deps -> which assertion an answer changes, since it drives fixture coverage), add a mechanical check; a sample-found rule-wide error is fixed on all rows. `0cab8fb`
 - Decision tags beyond D1: a tag follows where the decision's code runs (text the behavior reads), not every number that text once produced; D1 alone reaches derived numbers because its unit re-expresses every position. Keep the excluded answer visible as a counted fact in the decision's question. M7 commit
+- Worker effort, revised: the level follows what shows a step's errors (a deterministic check before merge -> medium allowed; omissions nobody sees -> high), not the role; a paired run only to move a silent-error step. `docs/workflow/README.md` §5, method commit of 2026-11-13
+- Verification by sampling: never "until clean" (a small clean sample proves little, and the loop cost 4x the audit). Order: tool for what is deterministic, independent reading of every item for what only reading shows, one sample as a measurement with rates by severity. Classify findings myself before accepting a summary of them (13 of 29 "prose" defects were about behavior). Same commit
+- Stage briefs written before the stage's inputs exist: keep only what parity cannot be shown without; derive the procedure per crate from what the earlier stage produced, first unit as a measured pilot. Same commit
+- A stated tool limit (docs, an earlier note, the maintainer's own decision's premises): read the mirrored page and try it before relying on it; three of four such limits were wrong or narrower on 2026-11-13 (`docs/workflow/README.md` §8)
+- What workers lack is the purpose of each field (who reads it, what a wrong value causes), not the decider's whole context; checkers get purpose and sources, never the author's reasoning. Same commit
 - Keeping agents out of files: a permission deny (it also filters searches), plus one line of text only for what it cannot see. `4483420`
 
 ## Calibration

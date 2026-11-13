@@ -55,10 +55,9 @@ Mechanical gates run first, for the whole crate, by the orchestrator. Reading ch
 - A not-ported item has no stand-in carrying its cm6 name.
 
 **G2. Behaviors.**
-- Every behavior id has a passing test in `crates/<crate>/tests/` that names it (`// covers:`).
-- Reading check: the test really asserts the behavior, on the right input class and on the whole observable result the behavior states; otherwise the test is `WEAKER`.
-- Every derived test exists with its fixture's expected value.
-- Test files are unchanged since their step-2 commit, except listed changes (`git log`).
+- Every behavior id is named by a check that passes (`docs/workflow/implementation.md` §2 item 5): a replayed fixture whose `behaviors` lists it, a ported cm6 test, or a test in `crates/<crate>/tests/` with `// covers:`.
+- Reading check, for written tests: the test really asserts the behavior, on the right input class and on the whole observable result the behavior states; otherwise the test is `WEAKER`. For the replayer, once: it runs the recorded input and compares the whole recorded output, with no field skipped.
+- Test files and the replayer are unchanged since the commit that preceded their unit's code, except listed changes (`git log`).
 - Recommended: a mutation tool (`cargo-mutants`) on a sample of core functions. A surviving mutant that a behavior forbids is a missing or weak test.
 
 **G3. Ported cm6 tests.**
@@ -108,8 +107,8 @@ Mechanical gates run first, for the whole crate, by the orchestrator. Reading ch
   - every item with a hazard;
   - every `CONTRACT` item;
   - every item a deviation touches.
-- A `verifier` that ran no gate then re-checks at least 10% of the verdicts (minimum 20). It re-runs their reproductions and the gate scripts, and appends to `verification.md`.
-- Mismatches are corrected, and new samples are drawn until one comes back clean.
+- A `verifier` that ran no gate then re-checks at least 10% of the verdicts (minimum 20). It re-runs their reproductions, and appends to `verification.md` the mismatches and their rate. The gate scripts are tools the orchestrator runs; no worker rewrites them.
+- A wrong verdict is corrected as a class: the condition a correct verdict meets is tested on every verdict of that kind, not on the sampled ones. The sample is a measurement and is not repeated until clean; a second one is drawn only when the first found a verdict that passed a failing item, after the gate that let it pass is fixed for every item (`docs/workflow/specification.md` §8 items 5–6 give the reason).
 
 ## 4. Report and acceptance
 
