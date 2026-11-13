@@ -11,6 +11,7 @@ import {readFileSync, writeFileSync} from "node:fs"
 import {ChangeSet, ChangeDesc} from "@codemirror/state"
 import {fixtureWriter} from "@harness/lib"
 import {run} from "./interp"
+import {stored} from "./lib"
 
 const FILE = "docs/parity/ferrum-state/fixtures/change.jsonl"
 const FIRST = 5452, LAST = 5499
@@ -36,6 +37,7 @@ function f(item_id: string, behavior: string, inp: any) {
   let line = throwLine(inp)
   console.log(`F${next}`, behavior, JSON.stringify(inp), "throws at change.ts:" + line)
   if (line != 487) throw new Error("expected a throw at change.ts:487")
+  inp = stored(inp)
   write(item_id, [behavior], inp, run(inp), `F${String(next++).padStart(4, "0")}`)
 }
 const MD = "state.cm6.156", MP = "state.cm6.141"

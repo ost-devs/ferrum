@@ -6,6 +6,7 @@
 import {readFileSync} from "node:fs"
 import {fixtureWriter, runIsolated} from "@harness/lib"
 import {run} from "./interp"
+import {stored} from "./lib"
 
 const ROOT = "docs/parity/ferrum-state"
 const ids: Record<string, string> = {}
@@ -17,12 +18,14 @@ let count = 0
 function f(item: string, bs: number[], input: any, extra: string[] = []) {
   if (!ids[item]) throw new Error("unknown item " + item)
   count++
+  input = stored(input)
   write(ids[item], bs.map(b => `state.${item}.B${b}`).concat(extra), input, run(input))
 }
 // Inputs on which cm6 may not terminate run in a child process with a time limit; output {"timeout": ms} when cut off.
 function fh(item: string, bs: number[], input: any, extra: string[] = []) {
   count++
   let ms = 5000
+  input = stored(input)
   let output = runIsolated(`${ROOT}/oracle/cm6/change/interp-cli.ts`, JSON.stringify(input), ms)
   write(ids[item], bs.map(b => `state.${item}.B${b}`).concat(extra), input, output)
 }
@@ -33,7 +36,7 @@ const mk = (s: string) => {
   return {sections: out}
 }
 const of = (spec: any, length: number, lineSep?: string) => lineSep === undefined ? {of: spec, length} : {of: spec, length, lineSep}
-const NaNn = {num: "NaN"}
+const NaNn = NaN
 const D10 = ["0123456789"]
 
 // ---------------------------------------------------------------- ChangeDesc (class, toString, subclassing)
@@ -152,7 +155,7 @@ fh("ChangeDesc.mapDesc", [9], over("3", "1 3:0"))
 function mp(spec: string, bs: number[], cases: [number, any?, any?][], extra: string[] = []) {
   for (let [pos, assoc, mode] of cases) {
     let a: any[] = [pos]
-    if (assoc !== undefined || mode !== undefined) a.push(assoc === undefined ? null : assoc)
+    if (assoc !== undefined || mode !== undefined) a.push(assoc)
     if (mode !== undefined) a.push(mode)
     f("ChangeDesc.mapPos", bs, {op: "desc.mapPos", desc: mk(spec), args: a}, extra)
   }
@@ -227,7 +230,7 @@ f("ChangeDesc^fromJSON", [2], {op: "desc.fromJSON", json: null})
 f("ChangeDesc^fromJSON", [2], {op: "desc.fromJSON", json: [1, null]})
 f("ChangeDesc^fromJSON", [3], {op: "desc.fromJSON", json: [NaNn, -5, -3, 2, 1.5, -1]})
 f("ChangeDesc^fromJSON", [3], {op: "desc.fromJSON", json: [0, 0, 2, -1, 3, -1]})
-f("ChangeDesc^fromJSON", [3], {op: "desc.fromJSON", json: [{num: "Infinity"}, -1]})
+f("ChangeDesc^fromJSON", [3], {op: "desc.fromJSON", json: [Infinity, -1]})
 
 // ---------------------------------------------------------------- MapMode
 f("MapMode", [1], {op: "mapmode.values"})

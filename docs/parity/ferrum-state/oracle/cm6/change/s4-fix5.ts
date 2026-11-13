@@ -14,6 +14,7 @@
 import {readFileSync, writeFileSync} from "node:fs"
 import {fixtureWriter} from "@harness/lib"
 import {run} from "./interp"
+import {stored} from "./lib"
 
 const ROOT = "docs/parity/ferrum-state"
 const FILE = `${ROOT}/fixtures/change.jsonl`
@@ -33,6 +34,7 @@ function f(bs: string[], input: any) {
   let item = bs[0].replace(/\.B\d+$/, "")
   if (!ids[item]) throw new Error("unknown item " + item)
   if (next > LAST) throw new Error("id range exhausted")
+  input = stored(input)
   let id = `F${String(next++).padStart(4, "0")}`, output = run(input)
   console.log(id, bs.join(","), JSON.stringify(input), "->", JSON.stringify(output))
   write(ids[item], bs.map(b => "state." + b), input, output, id)

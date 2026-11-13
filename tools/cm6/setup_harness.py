@@ -41,8 +41,10 @@ for p in sorted(seen):
     paths[f'@codemirror/{p}'] = [f'{dst}/index.ts']
     paths[pkgjson(p)['name']] = [f'{dst}/index.ts']
 paths['@harness/lib'] = [f'{REPO}/tools/cm6/oracle-lib.ts']
+paths['@harness/program'] = [f'{REPO}/tools/cm6/program.ts']
 json.dump({'name': f'harness-{a.package}', 'private': True}, open(f'{d}/package.json', 'w'))
-json.dump({'compilerOptions': {'target': 'es2022', 'module': 'esnext', 'moduleResolution': 'bundler', 'baseUrl': d, 'paths': paths, 'skipLibCheck': True}}, open(f'{d}/tsconfig.json', 'w'), indent=1)
+json.dump({'compilerOptions': {'target': 'es2022', 'module': 'esnext', 'moduleResolution': 'bundler', 'paths': paths, 'skipLibCheck': True, 'noEmit': True, 'types': ['node'], 'typeRoots': [f'{d}/node_modules/@types']},
+           'include': [f'{REPO}/docs/parity/*/oracle/cm6/**/*.ts', f'{REPO}/tools/cm6/*.ts']}, open(f'{d}/tsconfig.json', 'w'), indent=1)
 pkgs = [f'{k}@{v}' for k, v in sorted(third.items())] + ['typescript@5.6.3', '@types/node@22'] + a.npm
 subprocess.run(['npm', 'install', '--silent', '--no-audit', '--no-fund', *pkgs], cwd=d, check=True)
 versions = {p: pkgjson(p)['version'] for p in sorted(seen)}

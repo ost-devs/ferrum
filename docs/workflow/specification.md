@@ -63,8 +63,11 @@ raw/behaviors.jsonl        §5
 raw/tests.jsonl            §6: the package's own test cases
 raw/throws.jsonl           §7: every throw cm6 reaches
 raw/names.jsonl            §7: names the mechanical conversion may not settle
+raw/decisions.jsonl        the consultant's decisions about single items (README.md §3); nobody else writes it
+raw/improvements.jsonl     the consultant's register of ways to be better than cm6 (README.md §1); nobody else writes it
 raw/xc.jsonl               capabilities needed from lower crates, and offered to higher ones
 raw/coverage.jsonl         §8 item 1: lines and branches of cm6 no recorded run reaches (written by the tool)
+raw/fixture-ops.jsonl      §8 item 1: per chunk and op, its kinds and the fixtures and behaviors that run it (written by the tool)
 fixtures/<chunk>.jsonl     golden values produced by cm6
 oracle/cm6/<chunk>/        the chunk's interpreter and its generators (no generated data)
 oracle/cm6/order.json      the cm6 package and, per chunk, its generators in run order
@@ -81,6 +84,9 @@ Schemas (one JSON object per line; `[]` marks arrays):
 - `raw/tests.jsonl`: `id, file, line, describe, name, generated, scenario, expected, behaviors[], class, class_reason, port_notes`
 - `fixtures/<chunk>.jsonl`: `id, item_id, behaviors[], input, output, encoding`. Values JSON cannot hold are written in one encoding, applied to inputs and outputs by `tools/cm6/oracle-lib.ts` and by nothing else: a string with a lone surrogate as `{"utf16": [every code unit]}`; `NaN`, `Infinity`, `-Infinity` and `-0` as `{"js_number": "NaN"}` and so on; `undefined` as `{"js_undefined": true}`; a function value as `{"js_function": true}`; a value that differs between runs (the wall clock) as `{"js_unstable": "<what>"}`. `null` then always means `null`, and a string is always that string
 - `raw/xc.jsonl`: `capability, cm6, direction (needs|offers), crate, searched, exists`
+- `raw/decisions.jsonl` (the consultant writes it): `id` (`<inventory id>.d<n>`, what an annotation cites through its inventory id), `item_id`, `question`, `class` (`reproduce`: cm6's result is kept although it looks unintended; `deviation-a`, `-b`, `-c`: Ferrum differs, in the class of D11 named; `form`: the item's Rust form), `decision` (the binding text), `behaviors[]`, `fixtures_not_replayed[]` (`<chunk>:<id>`; the replayer runs every other fixture and may skip none of its own accord), `fixtures_to_list` (true while the consultant still owes the list)
+- `raw/improvements.jsonl` (the consultant writes it): `id` (`<crate prefix>.imp.<nnn>`, what an annotation cites), `title`, `items[]` (inventory ids), `decisions[]` (the rows of `raw/decisions.jsonl` that keep cm6's result meanwhile), `behaviors[]` (the behaviors an adoption may change; the tool fails on a change outside them), `cm6` (what cm6 does, with `file:line` or fixture ids), `better` (what Ferrum would do, and for whom it is better), `basis` (the evidence that it is better: a named standard, cm6's own documentation or comment, what native platforms do; that a result looks unintended is not evidence), `kind` (`replaces` a behavior of cm6, or `adds` beside it), `status` (`candidate`, `scheduled`, `adopted`, `declined`), `when` (the point at which a candidate is evaluated or a scheduled one is made), `reference` (how the expected values are produced: the patch, the standard's data), `note` (cost, risk, what is not yet known; for `declined`, the reason, which is never fidelity to cm6)
+- `raw/fixture-ops.jsonl` (the tool writes it): `chunk, op, kinds[], fixtures, behaviors[]`
 
 Ids:
 - inventory: `<crate-short>.cm6.<nnn>`, for example `state.cm6.042`;
@@ -112,7 +118,8 @@ For every item in scope (`CORE`, `CONTRACT`, the core-owned part of `SURFACE`, a
    - identity: does any caller compare results with `===`?
    - interaction with other packages.
 3. **Golden fixtures** for every behavior that runs headless. A fixture is one cm6 run, written by `fixtureWriter`:
-   - never written by hand. The recorded `input` is a program: the generator builds it as data and produces the output by running that same value through the chunk's interpreter (`oracle/cm6/<chunk>/interp.ts`: one named op per kind of call, its arguments as data, the encoding of inputs and outputs documented at its top), so the recorded input is the input used by construction, and the crate's fixture replayer runs the same ops. No call is recorded as prose or as a JavaScript expression for a reader (`docs/workflow/learnings.md` W39);
+   - never written by hand. The recorded `input` is a program in the one language of `tools/cm6/program.ts` (ops, variables, an `out` template; a bare op is a program of one step): the generator builds it as data and produces the output by running that same value through the chunk's interpreter (`oracle/cm6/<chunk>/interp.ts`: the chunk's ops, their arguments as data, each registered with its kinds and documented at its top, positions marked), so the recorded input is the input used by construction, and the crate's fixture replayer implements one evaluator and each op once. No call is recorded as prose or as a JavaScript expression for a reader (`docs/workflow/learnings.md` W39). Every output is `{"ok": value}` or `{"error": …}`. No expected value is written in the input: every leaf of `out` is a variable, and a value the input holds as data reaches an output only as a `label`, a word that says which step was reached and shows nothing about cm6;
+   - an op's kinds say what it observes: `api`, `internal` (an `@internal` or unexported member, or cm6's internal layout), `identity` (JavaScript object identity), `callbacks` (how cm6 calls a function the input supplies), `harness` (no cm6 value). The design decides, per op that is not only `api`, what the replayer does with it;
    - positions in UTF-16 code units, as cm6 produces them, with the text stored so they can be mapped to the unit of D1;
    - **text classes:** a behavior whose result is a position, a length, an offset or a count measured on text, or depends on where lines or grapheme clusters break, gets besides its ASCII fixture one whose text has an astral character before or inside the positions involved and one for each case its result turns on: CRLF, lone CR, U+2028 (with and without `lineSeparator`), a grapheme cluster of several code points. These are the cases where another position unit or text model would give another answer, whatever was decided about them;
    - exceptions are outputs (`capture`);
@@ -180,7 +187,8 @@ The orchestrator writes, from the merged rows:
 - `questions.md` (`README.md` §3). It gathers:
   - every question the workers raised;
   - every decision the specification depends on (D1–D10 with the items and fixtures that show its consequences);
-  - every quirk or apparent bug of cm6 whose reproduction is a choice.
+  - every quirk or apparent bug of cm6 whose reproduction is a choice;
+  - every place where a standard, cm6's own documentation, a comment in its code or its `CHANGELOG.md` shows a result of cm6 to be a limitation, stated as a fact with that source. The consultant answers each of these two kinds with a decision row, a row of `raw/improvements.jsonl`, or both: cm6's result is the floor, and whether and when Ferrum goes above it is decided per case (`README.md` §1).
 
   Each question has the shape of `CLAUDE.md` "Raising a question": no options, no recommendation.
 - `raw/names.jsonl`: every inventory row whose name the mechanical conversion of `.claude/rules/rust-crates.md` Architecture 4 may not settle, with what the member does and its signature: a static member; a name that is a std trait method or convention (the names in clippy's `should_implement_trait` table, such as `next`, `from_str`, `default`, `add`, `hash`; and `len`, `is_empty`, `to_string`, `iter`, `into_iter`, `from`, `as_ref`); serialization (`toJSON`, `fromJSON`); a name an entry of `.claude/rules/rust-naming-decisions.md` covers, to check that the entry's category fits it. Facts only: the consultant decides the entries at S5.
@@ -210,7 +218,7 @@ The consultant writes at S5 (§9), from those facts, `design.md`: the crate's Ru
 - **Ownership and threading** (D6) and **dependencies** with license.
 - **The checks a fixture cannot give**: which behaviors need a written test (identity, hazards, cost) and why, the fakes, the oracle drivers.
 - **Obvious decisions**: one line each, `OBVIOUS-<n>: <decision>: <reason>`, for choices with a single reasonable answer.
-- **Native opportunities**: where a mechanism the stack notes record exists only because of cm6's stack and another serves a Ferrum goal better: what cm6 does (`file:line`), the mechanism chosen, the goal, the measurement that confirms the benefit, and the behavior impact. With no observable impact, the implementer adopts it with a proof test; an observable impact makes it a deviation, recorded as above.
+- **Native opportunities**: where a mechanism the stack notes record exists only because of cm6's stack and another serves a Ferrum goal better: what cm6 does (`file:line`), the mechanism chosen, the goal, the measurement that confirms the benefit, and the behavior impact. With no observable impact, the implementer adopts it with a proof test; an observable impact makes it a deviation or an improvement, recorded as above or in `raw/improvements.jsonl`.
 
 ## 8. Verification
 
@@ -221,6 +229,7 @@ Each kind of error is checked by the cheapest means that shows it, and the check
    - every in-scope item has behaviors;
    - every behavior has fixtures or a `golden_note`;
    - every generator, re-run in the order `oracle/cm6/order.json` records, reproduces its fixtures byte for byte;
+   - every fixture replays: its recorded input, run through its chunk's interpreter while every key read is recorded, gives its recorded output; no key is left unread but the descriptive ones the interpreter names; every op has its kinds (`raw/fixture-ops.jsonl`); no `out` references a variable that a `data` step bound, and the labels are listed;
    - **cm6 coverage:** the generators run under V8 coverage; every line and branch of the package's source that no run reached is written to `raw/coverage.jsonl`. Each gets a fixture, or a reason in `verification.md` why no input reaches it or why it is out of scope;
    - every test case is classified;
    - `tools/check_refs.py` is clean.

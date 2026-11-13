@@ -25,22 +25,21 @@
 // consumer passes a fractional position (they pass integers; Q9), so none apply; extreme values: fractions .1 to .9
 // and negative fractions; ASCII, BMP non-ASCII (U+2028 as content), astral, CRLF, lone CR, U+2028 as separator: the
 // six variants; one case 100 times the typical size: the 5000-line document of the seeded checks.
-import {Text, EditorState, ChangeSet} from "@codemirror/state"
+// Each fixture is a program or a bare expression of interp.ts. Grid positions and the seeded cases are drawn by the
+// generator from documents it builds the same way, and written as data; the model checks run in the check.* ops.
+import {Text, EditorState} from "@codemirror/state"
 import {rng} from "@harness/lib"
-import {rangeWriter, cap} from "./writer"
+import {rangeWriter, op, prog, bare, step, $, lit, textOf, fromSource} from "./writer"
 
 const w = rangeWriter(7100, 7199)
 const ITEM: Record<string, string> = {
   "Text.slice": "state.cm6.236", "Text.sliceString": "state.cm6.237", "Text.iterRange": "state.cm6.240", "TextIterator.next": "state.cm6.225",
 }
 const B = (spec: string) => spec.split(/\s+/).filter(Boolean).map(s => { let [item, ns] = s.split(":"); return ns.split(",").map(n => `state.${item}.B${n}`) }).flat()
-const clean = (o: any) => Object.fromEntries(Object.entries(o).filter(([, x]) => x !== undefined))
-const f = (item: string, bs: string, input: any, run: () => any) => w(ITEM[item], B(bs), clean(input), cap(run))
+const f = (item: string, bs: string, input: any) => w(ITEM[item], B(bs), input)
 
 type Variant = {variant: string, source: string, lineSeparator?: string}
-const BUILD = "EditorState.create({doc: source, extensions: lineSeparator ? [EditorState.lineSeparator.of(lineSeparator)] : []}).doc"
 const build = (v: Variant): Text => EditorState.create({doc: v.source, extensions: v.lineSeparator ? [EditorState.lineSeparator.of(v.lineSeparator)] : []}).doc
-const shape = (t: Text): any => t.children ? t.children.map(shape) : t.lines
 function variants(lines: string[]): Variant[] {
   let astral = lines.map(l => l ? "\u{1F600}" + l.slice(1) : l)
   return [
@@ -52,7 +51,6 @@ function variants(lines: string[]): Variant[] {
     {variant: "astral", source: astral.join("\n")},
   ]
 }
-const vin = (v: Variant, doc: Text, extra: any) => clean({variant: v.variant, source: v.source, lineSeparator: v.lineSeparator, build: BUILD, doc: doc.toJSON(), shape: shape(doc), ...extra})
 /** Line-break positions of a document (the end of every line but the last). */
 const breaks = (d: Text) => { let r: number[] = []; for (let i = 1; i < d.lines; i++) r.push(d.line(i).to); return r }
 /** Fractional positions: every x.5 from -0.5 to length + 0.5, and p + 0.2, p + 0.7 for each break p. */
@@ -67,80 +65,92 @@ const fracs = (d: Text) => {
 const grid = (d: Text) => { let k0 = d.children ? d.children[0].length : -100; return fracs(d).filter(x => !d.children || Math.abs(x - k0) < 2.5 || x < 1 || x > d.length - 1) }
 /** iterRange pairs kept on a node document: both ends within 2.5 of k0, or the first and last grid positions. */
 const pairOk = (d: Text, ps: number[], a: number, b: number) => { if (!d.children) return true; let k0 = d.children[0].length; return (Math.abs(a - k0) < 2.5 && Math.abs(b - k0) < 2.5) || (a == ps[0] && b == ps[ps.length - 1]) }
-const steps = (it: any, skips: number[]) => skips.map(k => { it.next(k); return [it.value, it.done, it.lineBreak] })
-const allValues = (it: any) => { let r: any[] = []; for (let i = 0; i < 1000; i++) { it.next(); if (it.done) break; r.push([it.value, it.lineBreak]) } return r }
-
 const SMALL = ["one", "two", "", "three"]
 const NODE = Array.from({length: 40}, (_, i) => i % 7 == 3 ? "" : "L" + i)
+
+const d = $("d")
+const fl = (x: any) => op("floor", {of: isE(x) ? x : lit(x)})
+const isE = (x: any) => !!x && typeof x == "object" && ("$" in x || "op" in x)
+const it0 = (pr: string) => op("item", {of: $(pr), index: 0}), it1 = (pr: string) => op("item", {of: $(pr), index: 1})
+const ss = (doc: any, a: any, b: any, lineSep?: string) => op("text.sliceString", {doc, from: a, to: b, lineSep})
+const slice = (doc: any, a: any, b: any) => op("text.slice", {doc, from: a, to: b})
+const toJSON = (doc: any) => op("text.toJSON", {doc})
+const F3 = ["value", "done", "lineBreak"]
+/** next(k) for each k, [value, done, lineBreak] after each call. */
+const steps = (it: any, skips: any) => op("iter.steps", {it, skips, fields: F3, array: true})
+/** next() until done (the done step left out), at most 1000 steps: [value, lineBreak] per step. */
+const allValues = (it: any) => op("iter.drain", {it, max: 1000, fields: ["value", "lineBreak"], array: true})
+const iter = (doc: any, dir?: number) => op("text.iter", {doc, dir})
+const iterRange = (doc: any, a: any, b: any) => op("text.iterRange", {doc, from: a, to: b})
+const each = (over: any, as: string, body: any) => lit(op("map", {over: isE(over) ? over : lit(over), as, do: body}))
+const one = (pre: any[], x: any, extra: any = {}) => prog([...pre, step("r", x)], $("r"), extra)
+const D = (v: Variant) => step("d", fromSource(v.source, v.lineSeparator))
+const X = (v: Variant) => ({variant: v.variant})
+const n = op("text.length", {doc: d})
+const L = (of: any[]) => op("list", {of})
 
 // ---------------------------------------------------------------- 1. targeted grids
 // Text.sliceString (B6): the verifier's cases, then every pair of fractional positions with the integer call on
 // Math.floor of both, per variant.
 {
-  let d = Text.of(SMALL), cases = [[2.5, 5], [3.5, 5], [0, 3.5], [0, 2.5], [3.2, 3.7], [3.5, 3.5], [7.5, 8.5], [8, 8.5], [0, 13.5], [12.5, 13], [-0.5, 2], [5.5, 5.2]]
-  f("Text.sliceString", "Text.sliceString:6", {doc: SMALL, pairs: cases, lineSep: "|",
-      expr: "Text.of(doc); for each [from, to] in pairs: [sliceString(from, to), sliceString(from, to, lineSep), sliceString(Math.floor(from), Math.floor(to))]"},
-    () => cases.map(([a, b]) => [d.sliceString(a, b), d.sliceString(a, b, "|"), d.sliceString(Math.floor(a), Math.floor(b))]))
+  let cases = [[2.5, 5], [3.5, 5], [0, 3.5], [0, 2.5], [3.2, 3.7], [3.5, 3.5], [7.5, 8.5], [8, 8.5], [0, 13.5], [12.5, 13], [-0.5, 2], [5.5, 5.2]]
+  f("Text.sliceString", "Text.sliceString:6", one([step("d", textOf(SMALL))], L(cases.map(([a, b]) => L([ss(d, a, b), ss(d, a, b, "|"), ss(d, fl(a), fl(b))])))))
 }
 for (let lines of [SMALL, NODE]) for (let v of variants(lines)) {
-  let d = build(v), ps = grid(d)
-  f("Text.sliceString", "Text.sliceString:6", vin(v, d, {positions: ps, positionRule: "fracs: every x.5 from -0.5 to length + 0.5 and p + 0.2, p + 0.7 for each break p; on a node document only those within 2.5 of k0 = children[0].length or within 1 of either end", lineSep: "|",
-      expr: "for each from in positions, each to in positions with to >= from: [from, to, sliceString(from, to, lineSep), sliceString(Math.floor(from), Math.floor(to), lineSep)]"}),
-    () => { let r: any[] = []; for (let a of ps) for (let b of ps) if (b >= a) r.push([a, b, d.sliceString(a, b, "|"), d.sliceString(Math.floor(a), Math.floor(b), "|")]); return r })
+  let ps = grid(build(v))
+  f("Text.sliceString", "Text.sliceString:6", one([D(v)], each(op("pairs", {of: lit(ps)}), "pr",
+    L([it0("pr"), it1("pr"), ss(d, it0("pr"), it1("pr"), "|"), ss(d, fl(it0("pr")), fl(it1("pr")), "|")])),
+    {...X(v), note: "positions: every x.5 from -0.5 to length + 0.5 and p + 0.2, p + 0.7 for each break p; on a node document only those within 2.5 of k0 = children[0].length or within 1 of either end"}))
 }
 // Text.slice (B6): from inside a break drops the break; ranges inside one break.
 {
-  let d = Text.of(SMALL), cases = [[3.5, 5], [3, 5], [0.5, 4.5], [7.5, 8.5], [7, 8], [7.5, 9.5], [8.5, 14], [3.5, 3.7], [12.5, 14]]
-  f("Text.slice", "Text.slice:6", {doc: SMALL, pairs: cases,
-      expr: "Text.of(doc); for each [from, to] in pairs: {json: slice(from, to).toJSON(), length: slice(from, to).length, sliceString: sliceString(from, to)}"},
-    () => cases.map(([a, b]) => { let s = d.slice(a, b); return {json: s.toJSON(), length: s.length, sliceString: d.sliceString(a, b)} }))
+  let cases = [[3.5, 5], [3, 5], [0.5, 4.5], [7.5, 8.5], [7, 8], [7.5, 9.5], [8.5, 14], [3.5, 3.7], [12.5, 14]]
+  f("Text.slice", "Text.slice:6", one([step("d", textOf(SMALL))], L(cases.map(([a, b]) => op("block", {steps: [step("s", slice(d, a, b)),
+    step("x", op("record", {of: {json: toJSON($("s")), length: op("text.length", {doc: $("s")}), sliceString: ss(d, a, b)}}))], result: "x"})))))
 }
 for (let lines of [SMALL, NODE]) for (let v of variants(lines)) {
-  let d = build(v), ps = grid(d)
-  f("Text.slice", "Text.slice:6", vin(v, d, {positions: ps, positionRule: "fracs: every x.5 from -0.5 to length + 0.5 and p + 0.2, p + 0.7 for each break p; on a node document only those within 2.5 of k0 = children[0].length or within 1 of either end",
-      expr: "for each from in positions, each to in positions with to >= from: [from, to, slice(from, to).toJSON(), slice(from, to).length, slice(Math.floor(from), Math.floor(to)).toJSON()]"}),
-    () => { let r: any[] = []; for (let a of ps) for (let b of ps) if (b >= a) { let s = d.slice(a, b); r.push([a, b, s.toJSON(), s.length, d.slice(Math.floor(a), Math.floor(b)).toJSON()]) } return r })
+  let ps = grid(build(v))
+  f("Text.slice", "Text.slice:6", one([D(v)], each(op("pairs", {of: lit(ps)}), "pr", op("block", {steps: [step("s", slice(d, it0("pr"), it1("pr"))),
+    step("x", L([it0("pr"), it1("pr"), toJSON($("s")), op("text.length", {doc: $("s")}), toJSON(slice(d, fl(it0("pr")), fl(it1("pr"))))]))], result: "x"})),
+    {...X(v), note: "positions as for sliceString"}))
 }
 // TextIterator.next (B11): the raw cursor with a fractional skip.
 {
-  let d = Text.of(SMALL)
   let progs = [[0.5, 0, 0.5, 0.5, 1.5, 0], [2.5, 0, 0], [3.5, 0, 0], [7.5, 0], [-0.5, 0, 0], [0, -0.5, 0], [0, 0, 0, -0.5, -1.5], [0, 0, 0, 0.5]]
-  f("TextIterator.next", "TextIterator.next:11", {doc: SMALL, programs: progs,
-      expr: "Text.of(doc); for each program: a fresh iter() (forward) and a fresh iter(-1) (reverse); next(skip) for each skip; [value, done, lineBreak] after each call"},
-    () => progs.map(p => ({forward: steps(d.iter(), p), reverse: steps(d.iter(-1), p)})))
+  f("TextIterator.next", "TextIterator.next:11", one([step("d", textOf(SMALL))], each(progs, "p",
+    op("record", {of: {forward: steps(iter(d), $("p")), reverse: steps(iter(d, -1), $("p"))}}))))
 }
+const valueAfter = (it: any, k: any) => op("item", {of: op("iter.read", {it: op("iter.next", {it, skip: k}), fields: ["value"], array: true}), index: 0})
 for (let lines of [SMALL, NODE]) for (let v of variants(lines)) {
-  let d = build(v), ps = grid(d).filter(x => x > 0)
-  f("TextIterator.next", "TextIterator.next:11", vin(v, d, {skips: ps, skipRule: "the positive values of fracs: every x.5 from 0.5 to length + 0.5 and p + 0.2, p + 0.7 for each break p; on a node document only those within 2.5 of k0 = children[0].length or within 1 of either end",
-      expr: "for each skip: a fresh iter() and a fresh iter(-1), next(skip) then next(); [skip, forward [[value, done, lineBreak] x2], reverse [...], integer: iter().next(Math.floor(skip)).value, iter(-1).next(Math.ceil(skip)).value]"}),
-    () => ps.map(k => [k, steps(d.iter(), [k, 0]), steps(d.iter(-1), [k, 0]), d.iter().next(Math.floor(k)).value, d.iter(-1).next(Math.ceil(k)).value]))
+  let ps = grid(build(v)).filter(x => x > 0), k = $("k"), k0 = L([k, 0])
+  f("TextIterator.next", "TextIterator.next:11", one([D(v)], each(ps, "k",
+    L([k, steps(iter(d), k0), steps(iter(d, -1), k0), valueAfter(iter(d), op("floor", {of: k})), valueAfter(iter(d, -1), op("ceil", {of: k}))])),
+    {...X(v), note: "skips: the positive positions of the grid; per skip: fresh cursors, next(skip) then next(); then iter().next(floor(skip)).value and iter(-1).next(ceil(skip)).value"}))
 }
 // Text.iterRange (B3): fractional bounds, next() without skip, forward and reverse.
 {
-  let d = Text.of(SMALL), cases = [[2.5, 7], [7, 2.5], [3.5, 8.5], [8.5, 3.5], [3.2, 9], [9, 3.2], [0.5, 4.5], [4.5, 0.5], [2, 7], [7, 2]]
-  f("Text.iterRange", "Text.iterRange:3", {doc: SMALL, pairs: cases,
-      expr: "Text.of(doc); for each [from, to]: iterRange(from, to), next() until done, [value, lineBreak] per step"},
-    () => cases.map(([a, b]) => allValues(d.iterRange(a, b))))
+  let cases = [[2.5, 7], [7, 2.5], [3.5, 8.5], [8.5, 3.5], [3.2, 9], [9, 3.2], [0.5, 4.5], [4.5, 0.5], [2, 7], [7, 2]]
+  f("Text.iterRange", "Text.iterRange:3", one([step("d", textOf(SMALL))], L(cases.map(([a, b]) => allValues(iterRange(d, a, b))))))
 }
 for (let lines of [SMALL, NODE]) for (let v of variants(lines)) {
-  let d = build(v), ps = grid(d)
-  f("Text.iterRange", "Text.iterRange:3", vin(v, d, {positions: ps, positionRule: "fracs: every x.5 from -0.5 to length + 0.5 and p + 0.2, p + 0.7 for each break p; on a node document only those within 2.5 of k0 = children[0].length or within 1 of either end",
-      expr: "for each a in positions, each b in positions with b > a (on a node document only the pairs with both ends within 2.5 of k0, and the pair of the first and last positions): [a, b, values of iterRange(a, b), values of iterRange(b, a), values of iterRange(Math.floor(a), Math.floor(b))]; values = [value, lineBreak] per next() until done"}),
-    () => { let r: any[] = []; for (let a of ps) for (let b of ps) if (b > a && pairOk(d, ps, a, b)) r.push([a, b, allValues(d.iterRange(a, b)), allValues(d.iterRange(b, a)), allValues(d.iterRange(Math.floor(a), Math.floor(b)))]); return r })
+  let doc = build(v), ps = grid(doc), pairs: number[][] = []
+  for (let a of ps) for (let b of ps) if (b > a && pairOk(doc, ps, a, b)) pairs.push([a, b])
+  f("Text.iterRange", "Text.iterRange:3", one([D(v)], each(pairs, "pr",
+    L([it0("pr"), it1("pr"), allValues(iterRange(d, it0("pr"), it1("pr"))), allValues(iterRange(d, it1("pr"), it0("pr"))), allValues(iterRange(d, fl(it0("pr")), fl(it1("pr"))))])),
+    {...X(v), note: "pairs a < b of grid positions; on a node document only those with both ends within 2.5 of k0, and the first and last positions"}))
 }
 // TextIterator.next (B12): fractional skips on the partial and line cursors.
 {
-  let d = Text.of(SMALL)
   let progs = [[0.5, 0, 0.5, 0, 0], [2.5, 0, 0], [3.5, 0], [0, 0, 0.5, 0], [0, 0, -0.5, 0]]
-  f("TextIterator.next", "TextIterator.next:12", {doc: SMALL, programs: progs,
-      expr: "Text.of(doc); for each program: fresh cursors partial = iterRange(0, length), partialFrom1 = iterRange(1, 12), reverse = iterRange(length, 0), lines = iterLines(); next(skip) for each skip; [value, done, lineBreak] after each call"},
-    () => progs.map(p => ({partial: steps(d.iterRange(0, d.length), p), partialFrom1: steps(d.iterRange(1, 12), p), reverse: steps(d.iterRange(d.length, 0), p), lines: steps(d.iterLines(), p)})))
+  f("TextIterator.next", "TextIterator.next:12", one([step("d", textOf(SMALL))], each(progs, "p", op("record", {of: {
+    partial: steps(iterRange(d, 0, n), $("p")), partialFrom1: steps(iterRange(d, 1, 12), $("p")), reverse: steps(iterRange(d, n, 0), $("p")),
+    lines: steps(op("text.iterLines", {doc: d}), $("p"))}}))))
 }
 for (let lines of [SMALL, NODE]) for (let v of variants(lines)) {
-  let d = build(v), ps = grid(d).filter(x => x > 0)
-  f("TextIterator.next", "TextIterator.next:12", vin(v, d, {skips: ps, skipRule: "the positive values of fracs: every x.5 from 0.5 to length + 0.5 and p + 0.2, p + 0.7 for each break p; on a node document only those within 2.5 of k0 = children[0].length or within 1 of either end",
-      expr: "for each skip: fresh cursors iterRange(0, length), iterRange(length, 0), iterLines(); next(skip) then next() twice; [skip, partial [[value, done, lineBreak] x3], reverse [...], lines [...]]"}),
-    () => ps.map(k => [k, steps(d.iterRange(0, d.length), [k, 0, 0]), steps(d.iterRange(d.length, 0), [k, 0, 0]), steps(d.iterLines(), [k, 0, 0])]))
+  let ps = grid(build(v)).filter(x => x > 0), k = $("k"), k00 = L([k, 0, 0])
+  f("TextIterator.next", "TextIterator.next:12", one([D(v)], each(ps, "k",
+    L([k, steps(iterRange(d, 0, n), k00), steps(iterRange(d, n, 0), k00), steps(op("text.iterLines", {doc: d}), k00)])),
+    {...X(v), note: "skips: the positive positions of the grid; per skip: fresh cursors, next(skip) then next() twice"}))
 }
 
 // ---------------------------------------------------------------- 2. seeded model checks (rng 4106)
@@ -151,113 +161,43 @@ const DOCS: [string, string[]][] = [
   ["40 lines", NODE], ["300 lines", Array.from({length: 300}, (_, i) => i % 3 == 0 ? "" : "x".repeat(i % 7))],
   ["5000 lines", Array.from({length: 5000}, (_, i) => i % 4 == 1 ? "" : "w" + i)],
 ]
-const docOf = (lines: string[]) => Text.of(lines)
-/** Tree summary: "leaf", or the root's child count and the depth (1 = children are leaves). */
-const tree = (d: Text): any => { if (!d.children) return "leaf"; let depth = 0; for (let t: Text = d; t.children; t = t.children[0]) depth++; return {children: d.children.length, depth} }
 const pos = (d: Text) => R.int(d.length + 4) - 2 + (R.chance(0.8) ? (1 + R.int(9)) / 10 : 0)
 const skip = () => R.chance(0.15) ? 0 : (R.chance(0.2) ? -1 : 1) * (R.int(12) + (R.chance(0.8) ? (1 + R.int(9)) / 10 : 0))
-/** Top-level and nested child boundaries of a node document (positions of the breaks between two children). */
-const bounds = (d: Text, off = 0, set = new Set<number>()): Set<number> => {
-  if (d.children) { let p = off; d.children.forEach((c, i) => { bounds(c, p, set); p += c.length; if (i < d.children!.length - 1) set.add(p); p++ }) }
-  return set
+/** One check op over every document of DOCS, n cases each, drawn by `draw` (the drawing order of the earlier
+ * generator: the documents in order, the cases of each in order, one rng stream for the file). */
+function check(item: string, bs: string, opName: string, rule: string, n: number, draw: (d: Text) => any) {
+  const cases = DOCS.map(([, lines]) => { const dd = Text.of(lines); return Array.from({length: n}, () => draw(dd)) })
+  f(item, bs, bare(op(opName, {docs: DOCS.map(([name, lines]) => ({name, lines})), cases}),
+    {seed: 4106, rng: "@harness/lib rng (mulberry32), one stream for every check in this file, in file order; positions R.int(length + 4) - 2, plus (1 + R.int(9)) / 10 with probability 0.8; skips 0 with probability 0.15, else sign (- with probability 0.2) * (R.int(12) + (1 + R.int(9)) / 10 with probability 0.8)",
+     note: rule}))
 }
-const isBreak = (d: Text, p: number) => p >= 0 && p < d.length && d.lineAt(p).to == p
-function check(item: string, bs: string, rule: string, n: number, one: (d: Text, name: string) => [any, any, any]) {
-  let cases = 0, agree = 0, mismatches: any[] = [], perDoc: Record<string, number> = {}
-  for (let [name, lines] of DOCS) {
-    let d = docOf(lines); perDoc[name] = 0
-    for (let k = 0; k < n; k++) {
-      let [input, got, want] = one(d, name)
-      cases++; perDoc[name]++
-      if (JSON.stringify(got) === JSON.stringify(want)) agree++
-      else if (mismatches.length < 10) mismatches.push({doc: name, input, got, want})
-    }
-  }
-  f(item, bs, {seed: 4106, rng: "@harness/lib rng (mulberry32), one stream for every check in this file, in file order", docs: DOCS.map(([name, lines]) => ({name, lines: lines.length <= 40 ? lines : undefined, rule: lines.length > 40 ? (name == "300 lines" ? "i % 3 == 0 ? \"\" : \"x\".repeat(i % 7)" : "i % 4 == 1 ? \"\" : \"w\" + i") : undefined, count: lines.length, tree: tree(docOf(lines))})),
-      casesPerDoc: n, positions: "R.int(length + 4) - 2, plus (1 + R.int(9)) / 10 with probability 0.8", skips: "0 with probability 0.15, else sign (- with probability 0.2) * (R.int(12) + (1 + R.int(9)) / 10 with probability 0.8)", rule},
-    () => ({cases, agree, perDoc, mismatches}))
-}
-check("Text.sliceString", "Text.sliceString:6", "sliceString(from, to, \"|\") equals sliceString(Math.floor(from), Math.floor(to), \"|\")", 400, d => {
-  let a = pos(d), b = pos(d); return [[a, b], d.sliceString(a, b, "|"), d.sliceString(Math.floor(a), Math.floor(b), "|")]
+check("Text.sliceString", "Text.sliceString:6", "check.sliceString", "sliceString(from, to, \"|\") equals sliceString(Math.floor(from), Math.floor(to), \"|\")", 400, d => [pos(d), pos(d)])
+check("Text.slice", "Text.slice:6", "check.slice", "slice(from, to) against the rule of the check.slice op (interp.ts header)", 400, d => [pos(d), pos(d)])
+check("TextIterator.next", "TextIterator.next:11", "check.rawCursor", "a fresh iter(dir) (dir 1 or -1 at random) and the flat restatement FlatRaw give the same [value, done, lineBreak] after each next(skip) of a program of 1 to 6 skips", 400, () => {
+  let dir: 1 | -1 = R.chance(0.5) ? 1 : -1, ks = Array.from({length: 1 + R.int(6)}, skip)
+  return {dir, skips: ks}
 })
-check("Text.slice", "Text.slice:6", "with A, B the clipped from and to (text.ts:580-583) and a = Math.floor(A), b = Math.floor(B): slice(from, to).toJSON() equals slice(a, b).toJSON(), except when A is fractional and a is a line-break position: then slice(a + 1, b).toJSON() when b >= a + 1, otherwise [] when a is the break between two children of a node (any level) and [\"\"] when it is a break inside a leaf; slice(from, to).length equals B - A", 400, d => {
-  let a0 = pos(d), b0 = pos(d), A = Math.max(0, Math.min(d.length, a0)), Bv = Math.max(A, Math.min(d.length, b0)), a = Math.floor(A), b = Math.floor(Bv)
-  let want: any = d.slice(a, b).toJSON()
-  if (A != a && isBreak(d, a)) want = b >= a + 1 ? d.slice(a + 1, b).toJSON() : bounds(d).has(a) ? [] : [""]
-  let s = d.slice(a0, b0)
-  return [[a0, b0], [s.toJSON(), s.length], [want, Bv - A]]
-})
-
-// Flat restatement of RawTextCursor (text.ts:417-469) over the line array: tokens line0, break, line1, ..., the
-// cursor sits between tokens (k = 0 .. 2 * lines - 1).
-class FlatRaw {
-  k: number; value = ""; done = false; lineBreak = false; toks: (string | null)[]
-  constructor(lines: string[], readonly dir: 1 | -1 = 1) {
-    this.toks = []; lines.forEach((l, i) => { if (i) this.toks.push(null); this.toks.push(l) })
-    this.k = dir > 0 ? 0 : this.toks.length
-  }
-  inner(skip: number, dir: 1 | -1) {
-    this.done = this.lineBreak = false
-    for (;;) {
-      if (this.k == (dir > 0 ? this.toks.length : 0)) { this.done = true; this.value = ""; return this }
-      let t = this.toks[dir > 0 ? this.k : this.k - 1]; this.k += dir
-      if (t === null) { if (skip == 0) { this.lineBreak = true; this.value = "\n"; return this } skip-- }
-      else if (t.length > Math.max(0, skip)) { this.value = skip == 0 ? t : dir > 0 ? t.slice(skip) : t.slice(0, t.length - skip); return this }
-      else skip -= t.length
-    }
-  }
-  next(skip = 0) { if (skip < 0) { this.inner(-skip, -this.dir as 1 | -1); skip = this.value.length } return this.inner(skip, this.dir) }
-}
-// Flat restatement of PartialTextCursor (text.ts:483-511) over FlatRaw.
-class FlatPartial {
-  cursor: FlatRaw; value = ""; pos: number; from: number; to: number; done = false
-  constructor(lines: string[], length: number, start: number, end: number) {
-    this.cursor = new FlatRaw(lines, start > end ? -1 : 1); this.pos = start > end ? length : 0
-    this.from = Math.min(start, end); this.to = Math.max(start, end)
-  }
-  inner(skip: number, dir: 1 | -1) {
-    if (dir < 0 ? this.pos <= this.from : this.pos >= this.to) { this.value = ""; this.done = true; return this }
-    skip += Math.max(0, dir < 0 ? this.pos - this.to : this.from - this.pos)
-    let limit = dir < 0 ? this.pos - this.from : this.to - this.pos
-    if (skip > limit) skip = limit
-    limit -= skip
-    let {value} = this.cursor.next(skip)
-    this.pos += (value.length + skip) * dir
-    this.value = value.length <= limit ? value : dir < 0 ? value.slice(value.length - limit) : value.slice(0, limit)
-    this.done = !this.value
-    return this
-  }
-  next(skip = 0) {
-    if (skip < 0) skip = Math.max(skip, this.from - this.pos)
-    else if (skip > 0) skip = Math.min(skip, this.to - this.pos)
-    return this.inner(skip, this.cursor.dir)
-  }
-  get lineBreak() { return this.cursor.lineBreak && this.value != "" }
-}
-const run = (it: any, ks: number[]) => ks.map(k => { it.next(k); return [it.value, it.done, it.lineBreak] })
-check("TextIterator.next", "TextIterator.next:11", "a fresh iter(dir) (dir 1 or -1 at random) and a flat restatement of RawTextCursor over the document's line array (class FlatRaw in this file) give the same [value, done, lineBreak] after each next(skip) of a program of 1 to 6 skips", 400, d => {
-  let dir: 1 | -1 = R.chance(0.5) ? 1 : -1, ks = Array.from({length: 1 + R.int(6)}, skip), lines = d.toJSON()
-  return [{dir, skips: ks}, run(d.iter(dir), ks), run(new FlatRaw(lines, dir), ks)]
-})
-check("TextIterator.next", "TextIterator.next:12", "a fresh iterRange(from, to) and a flat restatement of PartialTextCursor over the line array (class FlatPartial over FlatRaw in this file) give the same [value, done, lineBreak] after each next(skip) of a program of 1 to 6 skips (from and to fractional or integer, in either order)", 400, d => {
-  let a = pos(d), b = pos(d), ks = Array.from({length: 1 + R.int(6)}, skip), lines = d.toJSON()
-  return [{from: a, to: b, skips: ks}, run(d.iterRange(a, b), ks), run(new FlatPartial(lines, d.length, a, b), ks)]
+check("TextIterator.next", "TextIterator.next:12", "check.partialCursor", "a fresh iterRange(from, to) and the flat restatement FlatPartial give the same [value, done, lineBreak] after each next(skip) of a program of 1 to 6 skips (from and to fractional or integer, in either order)", 400, d => {
+  let a = pos(d), b = pos(d), ks = Array.from({length: 1 + R.int(6)}, skip)
+  return {from: a, to: b, skips: ks}
 })
 
 // ---------------------------------------------------------------- 3. Text.empty reaching callers (Text^empty.B2, V25 sweep)
 {
-  const E = Text.empty
-  w("state.cm6.247", ["state.Text^empty.B2"], {
-      expr: "identity (===) with Text.empty of: EditorState.create().doc; EditorState.create().toText(\"\"); the text argument of ChangeSet.of(spec, 3).iterChanges for spec {from: 1, to: 2} (a deletion) and {from: 1, to: 2, insert: \"x\"} (a replacement); the fifth argument of ChangeSet.of({from: 1, to: 2}, 3).desc.iterChangedRanges and of ChangeSet.of({from: 1, to: 2, insert: \"x\"}, 3).desc.iterChangedRanges; (ChangeSet.of({from: 1, insert: \"x\"}, 3).invert(Text.of([\"abc\"])) as any).inserted[0] (@internal field); Text.of([\"abc\"]).slice(1, 1) and Text.of([\"abc\"]).replace(0, 3, Text.of([\"\"]))"},
-    cap(() => {
-      let texts = (spec: any) => { let r: boolean[] = []; ChangeSet.of(spec, 3).iterChanges((_a, _b, _c, _d, t) => r.push(t === E)); return r }
-      let fifth = (spec: any) => { let r: boolean[] = []; (ChangeSet.of(spec, 3).desc.iterChangedRanges as any)((...a: any[]) => r.push(a[4] === E)); return r }
-      return {
-        createDoc: EditorState.create().doc === E, toTextEmpty: EditorState.create().toText("") === E,
-        iterChangesDeletion: texts({from: 1, to: 2}), iterChangesReplacement: texts({from: 1, to: 2, insert: "x"}),
-        iterChangedRangesDescDeletion: fifth({from: 1, to: 2}), iterChangedRangesDescReplacement: fifth({from: 1, to: 2, insert: "x"}),
-        invertInserted: (ChangeSet.of({from: 1, insert: "x"}, 3).invert(Text.of(["abc"])) as any).inserted[0] === E,
-        sliceEmpty: Text.of(["abc"]).slice(1, 1) === E, replaceToEmpty: Text.of(["abc"]).replace(0, 3, Text.of([""])) === E,
-      }
-    }))
+  const E = $("E"), isE2 = (x: any) => op("same", {a: x, b: E})
+  const ch = (spec: any) => op("changes.of", {spec, length: 3})
+  const allE = (list: any) => each(list, "t", isE2($("t")))
+  w("state.cm6.247", ["state.Text^empty.B2"], prog([step("E", op("text.empty")),
+    step("createDoc", isE2(op("state.doc", {state: op("state.create")}))),
+    step("toTextEmpty", isE2(op("state.toText", {state: op("state.create"), string: ""}))),
+    step("iterChangesDeletion", allE(op("changes.iterChangesTexts", {changes: ch({from: 1, to: 2})}))),
+    step("iterChangesReplacement", allE(op("changes.iterChangesTexts", {changes: ch({from: 1, to: 2, insert: "x"})}))),
+    step("iterChangedRangesDescDeletion", allE(op("desc.iterChangedRangesArg", {desc: op("changes.desc", {changes: ch({from: 1, to: 2})}), index: 4}))),
+    step("iterChangedRangesDescReplacement", allE(op("desc.iterChangedRangesArg", {desc: op("changes.desc", {changes: ch({from: 1, to: 2, insert: "x"})}), index: 4}))),
+    step("invertInserted", isE2(op("changes.inserted", {changes: op("changes.invert", {changes: ch({from: 1, insert: "x"}), doc: textOf(["abc"])}), index: 0}))),
+    step("sliceEmpty", isE2(slice(textOf(["abc"]), 1, 1))),
+    step("replaceToEmpty", isE2(op("text.replace", {doc: textOf(["abc"]), from: 0, to: 3, insert: textOf([""])})))],
+    Object.fromEntries(["createDoc", "toTextEmpty", "iterChangesDeletion", "iterChangesReplacement", "iterChangedRangesDescDeletion", "iterChangedRangesDescReplacement",
+      "invertInserted", "sliceEmpty", "replaceToEmpty"].map(k => [k, $(k)])),
+    {note: "identity (===) with Text.empty; the text argument of iterChanges, the fifth argument of iterChangedRanges, the @internal inserted[0] of an inverted ChangeSet"}))
 }

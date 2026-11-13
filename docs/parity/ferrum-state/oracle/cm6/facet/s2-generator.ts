@@ -4,10 +4,11 @@
 // Seed: 20261110 (mulberry32 from @harness/lib `rng`), one stream for all families in the order below.
 // Families and case counts (183 fixtures):
 //   flatten   60 cases + 1 large: random extension trees over facet "s" (labels "e<n>"), replayed by interp.ts;
-//             one reconfiguration step per case (compartment reconfigure, appendConfig or StateEffect.reconfigure).
+//             one reconfiguration update per case (compartment reconfigure, appendConfig or StateEffect.reconfigure);
+//             the inputs are {"op": "scenario"} expressions; the 100x case has the descriptive key "large".
 //   dynamic   60 cases + 1 large: random computed providers and transactions, replayed by interp.ts; the log
 //             records every getter call, combine call and field update.
-//   combine   60 cases + 1 large: combineConfig, replayed by `cc` in s2-fixtures.ts.
+//   combine   60 cases + 1 large: combineConfig, as {"op": "combineConfig.entries"} inputs of interp.ts.
 // Behavior tags: flatten -> Extension.B1, Extension.B6, Prec.B1, Prec.B2, Prec.B3 (+ Compartment.B1/B2 when a
 // compartment occurs, Facet^define config FacetConfig.enables.B1 when the enabling facet occurs, StateField^define
 // config StateFieldSpec.provide.B1 when the field occurs); dynamic -> Facet.B4, Facet.B5, Facet.compute.B3..B6,
@@ -31,16 +32,14 @@
 //   doc.length in UTF-16 code units and the main head).
 // - one case 100 times the typical size: the "large" case of each family (a tree of about 1000 leaves; 40 providers and
 //   100 transactions; 300 configs).
-import {fixtureWriter, rng} from "@harness/lib"
+import {encode, rng} from "@harness/lib"
 import {run} from "./interp"
-import {cc, ids} from "./s2-fixtures-lib"
+import {scenario, writer} from "./s2-fixtures-lib"
 
-const ROOT = "docs/parity/ferrum-state"
-const write = fixtureWriter(`${ROOT}/fixtures/facet.jsonl`, false)
+const write = writer(false)
 let next = 5001
 const R = rng(20261110)
 const LEVELS = ["highest", "high", "default", "low", "lowest"]
-const pfx = (bs: string[]) => bs.map(b => "state." + b)
 
 // ---------------------------------------------------------------- flatten
 function flattenCase(large: boolean) {
@@ -84,7 +83,7 @@ function flattenCase(large: boolean) {
   if (used.comp) bs.push("Compartment.B1", "Compartment.B2")
   if (used.en) bs.push("Facet^define config FacetConfig.enables.B1")
   if (used.fld) bs.push("StateField^define config StateFieldSpec.provide.B1")
-  write(ids["Extension"], pfx(bs), large ? {...input, large: true} : input, run(input), `F${next++}`)
+  write("Extension", bs, `F${next++}`, scenario(large ? {...input, large: true} : input))
 }
 
 // ---------------------------------------------------------------- dynamic
@@ -128,13 +127,13 @@ function dynamicCase(large: boolean) {
   const input = {defs, doc, ext, steps, reads: [{facet: "a"}, {facet: "b"}, {field: "x"}]}
   const bs = ["Facet.B4", "Facet.B5", "Facet.compute.B3", "Facet.compute.B4", "Facet.compute.B5", "Facet.compute.B6", "Facet.compute.B8"]
   if (multi) bs.push("Facet.computeN.B3")
-  write(ids["Facet.compute"], pfx(bs), large ? {...input, large: true} : input, run(input), `F${next++}`)
+  write("Facet.compute", bs, `F${next++}`, scenario(large ? {...input, large: true} : input))
 }
 
 // ---------------------------------------------------------------- combineConfig
 function combineCase(large: boolean) {
   const keys = ["a", "b", "minDepth", "newGroupDelay", "1", "10"]
-  const vals = [0, 1, 2, false, "", null, "<undefined>", {num: "NaN"}, {obj: 0}, {obj: 1}, 1, 1]
+  const vals = [0, 1, 2, false, "", null, undefined, NaN, {obj: 0}, {obj: 1}, 1, 1]
   const n = large ? 300 : R.int(7)
   const configs: any[] = []
   for (let i = 0; i < n; i++) {
@@ -148,10 +147,10 @@ function combineCase(large: boolean) {
   if (R.chance(0.5)) { combine = {}; for (const k of keys) if (R.chance(0.4)) combine[k] = R.pick(["max", "min", "sum", "second"]) }
   const input: any = {configs, defaults}
   if (combine) input.combine = combine
-  const output = cc(input)
-  const bs = "error" in output ? ["combineConfig.B3"] : ["combineConfig.B1", "combineConfig.B5"]
+  const stored = {op: "combineConfig.entries", ...input, ...(large ? {large: true} : {})}
+  const bs = "error" in run(JSON.parse(JSON.stringify(encode(stored)))) ? ["combineConfig.B3"] : ["combineConfig.B1", "combineConfig.B5"]
   if (combine && Object.keys(combine).length) bs.push("combineConfig.B2")
-  write(ids["combineConfig"], pfx(bs), {combineConfig: large ? {...input, large: true} : input}, output, `F${next++}`)
+  write("combineConfig", bs, `F${next++}`, stored)
 }
 
 for (let i = 0; i < 60; i++) flattenCase(false)

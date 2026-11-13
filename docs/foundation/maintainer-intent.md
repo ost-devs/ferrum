@@ -1,12 +1,24 @@
 # The maintainer's intent
 
-What the maintainer wants from Ferrum and from the work on it. It binds every agent and every document: whatever conflicts with it is revised, not this file. Only the maintainer changes it; the consultant rewrote it on 2026-11-13 on the maintainer's instruction to reformulate it. What Ferrum is: `docs/foundation/ferrum-foundation.md`. How the work runs: `docs/workflow/README.md`.
+What the maintainer wants from Ferrum and from the work on it. It binds every agent and every document: whatever conflicts with it is revised, not this file. Only the maintainer changes it. The consultant rewrote it on 2026-11-13 on the maintainer's instruction to reformulate it, and on the same day integrated the maintainer's directives on what parity means, on improvements and on who does what (their words: `dev/maintainer/instructions/2026-11-13-piso-e-teto.md`). What Ferrum is: `docs/foundation/ferrum-foundation.md`. How the work runs: `docs/workflow/README.md`.
 
 ## The result
 
 - **The goal is Ferrum.** The person editing text and the application that embeds Ferrum get, natively, what cm6 already solved for an editor. Parity is judged from where they stand: what they can observe.
-- Each crate ends with real 1:1 behavioral parity with cm6, and the work shows it with evidence that runs, not with a description.
+- **cm6 is the floor, never the ceiling.** Parity means that they get the same quality of experience, the same capability and the same stability as with cm6, or better. It does not mean imitating cm6 to the letter: a limitation or an inferior behavior of cm6 is never reproduced only so that the automated tests pass without friction.
+- Each crate ends with real 1:1 behavioral parity with cm6 as that floor: nothing cm6 gives is missing or worse. The work shows it with evidence that runs, not with a description, and shows in the same way every point where Ferrum is better on purpose.
 - The result is what matters: reached with mastery, precision and effectiveness, and without debt. Something known to be wrong, duplicated, stale or half done is fixed or removed when it is found, not carried.
+
+## Improvements over cm6
+
+- **No silent omission.** Whenever Ferrum can be superior to cm6 (in the experience of the person editing, in correctness, in ergonomics for the developer), the consultant never prunes, hides or discards that option in the name of literal imitation. Every such opportunity is recorded where the maintainer can find it, with what was decided about it and why.
+- **Cost, risk and timing are weighed, by the consultant alone.** A drastic improvement made in a hurry, which degrades stability or leaves the whole worse, is not wanted. The consultant weighs cost against risk for each improvement and decides autonomously the right moment to make it.
+
+## Who does what
+
+- **The maintainer** defines the intent, the philosophy of the product and the criterion of value for the user. They do not manage technical decisions or the engineering schedule. The project moves by itself and calls them only for a real doubt about the intent or a decision of extreme impact.
+- **The consultant** infers the maintainer's principles and applies them from the project's evidence; decides the engineering, including the adaptations natural to idiomatic Rust (UTF-8 text, for one); decides when each improvement is made; keeps the documents coherent, and is the only one who integrates a directive of the maintainer into them; and defines the architecture that absorbs these decisions.
+- **The orchestrator and the workers** carry out the implementation as decided.
 
 ## How it is reached
 
@@ -23,5 +35,5 @@ What the maintainer wants from Ferrum and from the work on it. It binds every ag
 - The consultant decides assertively, because the maintainer cannot judge most technical choices. It brings to the maintainer only what needs the maintainer's wishes for the project, a path that stays unclear after the evidence, or a decision of extreme impact. The first iteration of each foundational decision (D1–D10, `ferrum-foundation.md` §6) is drafted for the maintainer to confirm: the maintainer does not accept the consultant's most important answers without understanding them.
 - One source of truth per decision: it is written in one place, and other documents point to it.
 - The maintainer is asked only what needs their intent or approval, and the work does not stop waiting on them.
-- Skipping a cm6 item is never silent.
+- Skipping a cm6 item is never silent, and neither is passing over a way for Ferrum to be better than cm6.
 - The maintainer's ideas show a way of thinking. They are weighed like any other evidence: neither followed because they are the maintainer's, nor rejected to appear independent. This holds for instructions about how to reach the result; what result is wanted is the maintainer's alone.

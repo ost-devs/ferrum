@@ -20,8 +20,9 @@
 // 4. O15: mutating Text.children (iteration and toString after a push).
 // 5. Console checks behind raw/throws.jsonl (V17): the throw site (first cm6 stack frame) of the recorded throws
 //    that share a message with another site (text.ts lineInner, decompose, nextInner; change.ts mapSet).
+// Each fixture is a program or a bare expression of interp.ts; the console parts call cm6 directly.
 import {Text, EditorState, findClusterBreak, countColumn, findColumn, ChangeDesc, ChangeSet} from "@codemirror/state"
-import {rangeWriter, cap} from "./writer"
+import {rangeWriter, op, prog, bare, step, $, lit, textOf, big, fromSource} from "./writer"
 
 const w = rangeWriter(7000, 7099)
 const ITEM: Record<string, string> = {
@@ -29,8 +30,7 @@ const ITEM: Record<string, string> = {
   "Text.replace": "state.cm6.234", "Text.slice": "state.cm6.236", "Text.iter": "state.cm6.239", "Text.children": "state.cm6.244",
 }
 const B = (spec: string) => spec.split(/\s+/).filter(Boolean).map(s => { let [item, ns] = s.split(":"); return ns.split(",").map(n => `state.${item}.B${n}`) }).flat()
-const clean = (o: any) => Object.fromEntries(Object.entries(o).filter(([, x]) => x !== undefined))
-const f = (item: string, bs: string, input: any, run: () => any) => w(ITEM[item], B(bs), clean(input), cap(run))
+const f = (item: string, bs: string, input: any) => w(ITEM[item], B(bs), input)
 const hex = (c: number) => "U+" + c.toString(16).toUpperCase().padStart(4, "0")
 
 // ---------------------------------------------------------------- part 1: the joining table (V14, O18)
@@ -44,13 +44,11 @@ function ranges(pred: (c: number) => boolean): number[][] {
   return out
 }
 const joins = (ie: boolean) => (c: number) => findClusterBreak("a" + String.fromCodePoint(c), 0, true, ie) > 1
-f("findClusterBreak", "findClusterBreak:5,6,7",
-  {expr: "for every code point c in 0..0x10FFFF outside U+D800-U+DFFF: findClusterBreak(\"a\" + String.fromCodePoint(c), 0, true, includeExtending) > 1, as inclusive ranges [first, last] of code points",
-   includeExtending: [true, false]},
-  () => ({includeExtending: ranges(joins(true)), noExtending: ranges(joins(false))}))
+f("findClusterBreak", "findClusterBreak:5,6,7", prog([step("includeExtending", op("findClusterBreak.joinsAfterA", {includeExtending: true})),
+  step("noExtending", op("findClusterBreak.joinsAfterA", {includeExtending: false}))], {includeExtending: $("includeExtending"), noExtending: $("noExtending")}))
 
 const fcb = (bs: string, str: string, pos: number, note: string, forward = true, includeExtending = true) =>
-  f("findClusterBreak", bs, {str, pos, forward, includeExtending, note, expr: "findClusterBreak(str, pos, forward, includeExtending)"}, () => findClusterBreak(str, pos, forward, includeExtending))
+  f("findClusterBreak", bs, bare(op("findClusterBreak", {str, pos, forward, includeExtending}), {note}))
 fcb("findClusterBreak:5", "किx", 0, "U+093F DEVANAGARI VOWEL SIGN I (Grapheme_Cluster_Break=SpacingMark) joins its base")
 fcb("findClusterBreak:5", "कःx", 0, "U+0903 DEVANAGARI SIGN VISARGA (SpacingMark) joins its base")
 fcb("findClusterBreak:5", "กำx", 0, "U+0E33 THAI CHARACTER SARA AM (SpacingMark, general category Lo) joins its base")
@@ -69,9 +67,9 @@ fcb("findClusterBreak:9", "a\ŕ", 0, "a then CR: CR is not joined to a (Control
 fcb("findClusterBreak:9", "क्षx", 0, "consonant, virama, consonant: the cluster ends after the virama (no GB9c)")
 fcb("findClusterBreak:9", "क्षx", 2, "the second consonant starts a cluster")
 fcb("findClusterBreak:9", "\u{1F600}\u{1F600}", 0, "two pictographs without ZWJ: two clusters, as in UAX #29 (GB999)")
-f("countColumn", "countColumn:7", {string: "\tिx", tabSize: 4, note: "tab then a spacing mark: the mark is a column of its own", expr: "countColumn(string, tabSize)"}, () => countColumn("\tिx", 4))
-f("findColumn", "findColumn:8", {string: "\tिx", col: 5, tabSize: 4, note: "tab and spacing mark stepped as one cluster", expr: "findColumn(string, col, tabSize)"}, () => findColumn("\tिx", 5, 4))
-f("findColumn", "findColumn:8", {string: "\tिx", col: 4, tabSize: 4, note: "col at the tab stop: offset after tab + spacing mark", expr: "findColumn(string, col, tabSize)"}, () => findColumn("\tिx", 4, 4))
+f("countColumn", "countColumn:7", bare(op("countColumn", {string: "\tिx", tabSize: 4}), {note: "tab then a spacing mark: the mark is a column of its own"}))
+f("findColumn", "findColumn:8", bare(op("findColumn", {string: "\tिx", col: 5, tabSize: 4}), {note: "tab and spacing mark stepped as one cluster"}))
+f("findColumn", "findColumn:8", bare(op("findColumn", {string: "\tिx", col: 4, tabSize: 4}), {note: "col at the tab stop: offset after tab + spacing mark"}))
 
 { // reference facts (not cm6): Intl.Segmenter of the running Node
   let seg = new Intl.Segmenter("en", {granularity: "grapheme"})
@@ -107,19 +105,17 @@ fcb("findClusterBreak:15", "ab", -2, "includeExtending false, even negative pos"
 fcb("findClusterBreak:15", "", -1, "empty string, pos -1")
 fcb("findClusterBreak:15", "", -2, "empty string, pos -2")
 fcb("findClusterBreak:15", "", -3, "empty string, pos -3: NaN absorbed once")
-f("findClusterBreak", "findClusterBreak:15",
-  {strs: ["ab", "́ab", "\u{1F600}a", ""], positions: [-1, -2, -3, -4, -5, -6, -7, -8],
-   expr: "findClusterBreak(str, pos, true, includeExtending) for every str and pos, includeExtending true then false"},
-  () => ["ab", "́ab", "\u{1F600}a", ""].map(s => ({str: s,
-    includeExtending: [-1, -2, -3, -4, -5, -6, -7, -8].map(p => findClusterBreak(s, p, true, true)),
-    noExtending: [-1, -2, -3, -4, -5, -6, -7, -8].map(p => findClusterBreak(s, p, true, false))})))
-f("findClusterBreak", "findClusterBreak:12,15",
-  {strs: ["", "a", "ab", "abc", "\u{1F600}"], expr: "backward: findClusterBreak(str, pos, false) for pos -3, -1, length + 1, length + 3"},
-  () => ["", "a", "ab", "abc", "\u{1F600}"].map(s => [-3, -1, s.length + 1, s.length + 3].map(p => findClusterBreak(s, p, false))))
+{
+  const P = [-1, -2, -3, -4, -5, -6, -7, -8], at = (ie: boolean) => lit(op("map", {over: lit(P), as: "p", do: op("findClusterBreak", {str: $("s"), pos: $("p"), forward: true, includeExtending: ie})}))
+  f("findClusterBreak", "findClusterBreak:15", prog([step("r", lit(op("map", {over: lit(["ab", "́ab", "\u{1F600}a", ""]), as: "s",
+    do: op("record", {of: {str: $("s"), includeExtending: at(true), noExtending: at(false)}})})))], $("r")))
+  const n = op("count", {of: $("s")}), back = (pos: any) => op("findClusterBreak", {str: $("s"), pos, forward: false})
+  f("findClusterBreak", "findClusterBreak:12,15", prog([step("r", lit(op("map", {over: lit(["", "a", "ab", "abc", "\u{1F600}"]), as: "s",
+    do: op("list", {of: [back(-3), back(-1), back(op("sum", {of: [n, 1]})), back(op("sum", {of: [n, 3]}))]})})))], $("r"), {note: "backward from -3, -1, length + 1, length + 3"}))
+}
 
 // ---------------------------------------------------------------- part 3: node-document paths (V16)
 type Variant = {variant: string, source: string, lineSeparator?: string}
-const BUILD = "EditorState.create({doc: source, extensions: lineSeparator ? [EditorState.lineSeparator.of(lineSeparator)] : []}).doc"
 const build = (v: Variant): Text => EditorState.create({doc: v.source, extensions: v.lineSeparator ? [EditorState.lineSeparator.of(v.lineSeparator)] : []}).doc
 const shape = (t: Text): any => t.children ? t.children.map(shape) : t.lines
 function variants(n: number, line: (i: number) => string): Variant[] {
@@ -134,66 +130,57 @@ function variants(n: number, line: (i: number) => string): Variant[] {
     {variant: "astral", source: astral.join("\n")},
   ]
 }
-function vin(v: Variant, doc: Text, extra: any) {
-  if (!doc.children) throw new Error("not a node document: " + v.variant)
-  let r: any = {variant: v.variant, source: v.source}
-  if (v.lineSeparator) r.lineSeparator = v.lineSeparator
-  return {...r, build: BUILD, doc: doc.toJSON(), shape: shape(doc), ...extra}
-}
-function all(it: any) { let r: any[] = []; for (let i = 0; i < 1000; i++) { it.next(); if (it.done) break; r.push({value: it.value, lineBreak: it.lineBreak}) } return r }
-const desc = (t: Text) => ({json: t.toJSON(), length: t.length, lines: t.lines, shape: shape(t)})
+const vnode = (v: Variant, doc: Text) => { if (!doc.children) throw new Error("not a node document: " + v.variant); return {variant: v.variant} }
+const d = $("d")
+const capX = (x: any) => op("capture", {do: x})
+const named = (pre: any[], fields: Record<string, any>, extra: any = {}) =>
+  prog([...pre, ...Object.entries(fields).map(([k, x]) => step(k, x))], Object.fromEntries(Object.keys(fields).map(k => [k, $(k)])), extra)
+/** next() until done (the done step left out), at most 1000 steps: [{value, lineBreak}]. */
+const drain = (it: any) => op("iter.drain", {it, max: 1000, fields: ["value", "lineBreak"]})
+const iterDir = (dir: number) => drain(op("text.iter", {doc: d, dir}))
+const descS = (x: any) => op("text.desc", {doc: x, shape: true})
+const replaceQ = ([a, b]: number[]) => capX(descS(op("text.replace", {doc: d, from: a, to: b, insert: textOf(["Q"])})))
+const sliceS = ([a, b]: number[]) => capX(op("block", {steps: [step("s", op("text.slice", {doc: d, from: a, to: b})),
+  step("x", op("merge", {of: [descS($("s")), op("record", {of: {sliceString: op("text.sliceString", {doc: d, from: a, to: b})}})]}))], result: "x"}))
 
 // iter(dir) with dir outside 1 | -1 on node documents (Text.iter B4)
 for (let v of variants(70, i => i % 7 == 3 ? "" : "L" + i)) {
   let doc = build(v)
-  f("Text.iter", "Text.iter:4", vin(v, doc, {expr: "iter(dir as any): next() until done (at most 1000 steps), for dir 2, -2, 3"}),
-    () => ({iter2: cap(() => all(doc.iter(2 as any))), iterMinus2: cap(() => all(doc.iter(-2 as any))), iter3: cap(() => all(doc.iter(3 as any)))}))
+  f("Text.iter", "Text.iter:4", named([step("d", fromSource(v.source, v.lineSeparator))],
+    {iter2: capX(iterDir(2)), iterMinus2: capX(iterDir(-2)), iter3: capX(iterDir(3))}, vnode(v, doc)))
 }
 { // leaf documents: dir 3 and -3 (Text.iter B2): the step overruns the leaf's array or not depending on the line count
-  for (let lines of [["one", "two", "", "three"], Array.from({length: 32}, (_, i) => "L" + i)]) {
-    let doc = Text.of(lines)
-    f("Text.iter", "Text.iter:2", {doc: lines, expr: "leaf document; iter(dir as any): next() until done (at most 1000 steps), for dir 3 and -3"},
-      () => ({iter3: cap(() => all(doc.iter(3 as any))), iterMinus3: cap(() => all(doc.iter(-3 as any)))}))
-  }
+  for (let lines of [["one", "two", "", "three"], Array.from({length: 32}, (_, i) => "L" + i)])
+    f("Text.iter", "Text.iter:2", named([step("d", textOf(lines))], {iter3: capX(iterDir(3)), iterMinus3: capX(iterDir(-3))}, {note: "leaf document"}))
 }
-// fractional positions on node documents (Text.replace B7, Text.slice B5)
+// fractional positions on node documents (Text.replace B7, Text.slice B5); k0 = children[0].length
 for (let v of variants(40, i => "L" + i)) {
-  let doc = build(v), k0 = doc.children![0].length
+  let doc = build(v), k0 = doc.children![0].length, X = vnode(v, doc)
   let cases: [number, number][] = [[0, 0.5], [k0 - 0.5, k0 - 0.5], [k0 + 0.5, k0 + 0.5], [k0 - 0.5, k0 + 0.5], [k0 + 0.5, k0 + 1]]
-  f("Text.replace", "Text.replace:7", vin(v, doc, {k0, insert: ["Q"], pairs: cases,
-      expr: "k0 = children[0].length; for each [from, to] in pairs: doc.replace(from, to, Text.of(insert)) as json, length, lines, shape"}),
-    () => cases.map(([a, b]) => cap(() => desc(doc.replace(a, b, Text.of(["Q"]))))))
+  f("Text.replace", "Text.replace:7", prog([step("d", fromSource(v.source, v.lineSeparator)), step("r", op("list", {of: cases.map(replaceQ)}))], $("r"), X))
   let sl: [number, number][] = [[k0 + 0.5, k0 + 0.5], [k0 + 0.5, k0 + 0.7], [k0 - 0.5, k0 + 0.5], [0.5, doc.length - 0.5], [0.5, doc.length]]
-  f("Text.slice", "Text.slice:5", vin(v, doc, {k0, pairs: sl,
-      expr: "k0 = children[0].length; for each [from, to] in pairs: doc.slice(from, to) as json, length, lines, shape; sliceString(from, to)"}),
-    () => sl.map(([a, b]) => cap(() => ({...desc(doc.slice(a, b)), sliceString: doc.sliceString(a, b)}))))
+  f("Text.slice", "Text.slice:5", prog([step("d", fromSource(v.source, v.lineSeparator)), step("r", op("list", {of: sl.map(sliceS)}))], $("r"), X))
 }
 { // leaf counterparts: the same operations on a leaf document (32 lines), positions at a line end + 0.5
   let lines = Array.from({length: 32}, (_, i) => "L" + i)
   let doc = Text.of(lines), e = doc.line(31).to
   let cases: [number, number][] = [[0, 0.5], [e + 0.5, e + 0.5], [e - 0.5, e + 0.5]]
-  f("Text.replace", "Text.replace:1,7", {doc: lines, e, insert: ["Q"], pairs: cases,
-      expr: "leaf document (32 lines); e = line(31).to; for each [from, to] in pairs: doc.replace(from, to, Text.of(insert)) as json, length, lines, shape"},
-    () => cases.map(([a, b]) => cap(() => desc(doc.replace(a, b, Text.of(["Q"]))))))
-  f("Text.slice", "Text.slice:1,5", {doc: lines, e, pairs: [[e + 0.5, e + 0.5], [e + 0.5, e + 0.7]],
-      expr: "leaf document (32 lines); e = line(31).to; doc.slice(from, to) for each pair, as json, length, lines, shape"},
-    () => [[e + 0.5, e + 0.5], [e + 0.5, e + 0.7]].map(([a, b]) => cap(() => desc(doc.slice(a, b)))))
+  f("Text.replace", "Text.replace:1,7", prog([step("d", textOf(lines)), step("r", op("list", {of: cases.map(replaceQ)}))], $("r"), {note: "leaf document (32 lines); e = line(31).to"}))
+  f("Text.slice", "Text.slice:1,5", prog([step("d", textOf(lines)), step("r", op("list", {of: [[e + 0.5, e + 0.5], [e + 0.5, e + 0.7]].map(([a, b]) =>
+    capX(descS(op("text.slice", {doc: d, from: a, to: b}))))}))], $("r"), {note: "leaf document (32 lines); e = line(31).to"}))
 }
 
 // ---------------------------------------------------------------- part 4: mutating Text.children (O15)
 {
-  let recipe = "Text.of(new Array(200).fill(\"1234567890\".repeat(10)))"
-  let doc = Text.of(new Array(200).fill("1234567890".repeat(10)))
-  f("Text.children", "Text.children:3", {recipe,
-      expr: "before and after (doc.children as Text[]).push(Text.of([\"abc\"])): lines, length, children.length, toString().length, [...doc].join(\"\").length, count of iter() values, toJSON().length"},
-    () => {
-      let snap = () => ({lines: doc.lines, length: doc.length, children: doc.children!.length, toStringLength: doc.toString().length,
-        iterJoinedLength: [...doc].join("").length, iterValues: [...doc].length, toJSONLines: doc.toJSON().length})
-      let before = snap()
-      ;(doc.children as Text[]).push(Text.of(["abc"]))
-      return {before, after: snap()}
-    })
+  const count = (of: any) => op("count", {of})
+  const snap = op("record", {of: {lines: op("text.lines", {doc: d}), length: op("text.length", {doc: d}), children: count(op("text.children", {doc: d})),
+    toStringLength: count(op("text.toString", {doc: d})), iterJoinedLength: count(op("join", {of: op("spread", {of: d}), sep: ""})),
+    iterValues: count(op("spread", {of: d})), toJSONLines: count(op("text.toJSON", {doc: d}))}})
+  f("Text.children", "Text.children:3", prog([step("d", big(200)), step("before", snap), op("text.childrenPush", {doc: d, child: textOf(["abc"])}), step("after", snap)],
+    {before: $("before"), after: $("after")}, {note: "before and after (doc.children as Text[]).push(Text.of([\"abc\"]))"}))
 }
+
+const desc = (t: Text) => ({json: t.toJSON(), length: t.length, lines: t.lines, shape: shape(t)})
 
 // ---------------------------------------------------------------- part 5: throw sites (console, V17)
 function site(run: () => any, file: RegExp) {

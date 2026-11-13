@@ -15,6 +15,7 @@
 import {readFileSync, writeFileSync} from "node:fs"
 import {fixtureWriter, runIsolated} from "@harness/lib"
 import {run} from "./interp"
+import {stored} from "./lib"
 
 const ROOT = "docs/parity/ferrum-state"
 const FILE = `${ROOT}/fixtures/change.jsonl`
@@ -31,7 +32,9 @@ const write = fixtureWriter(FILE, false)
 let next = FIRST
 
 // item: inventory item of the first behavior; bs: behavior ids without the "state." prefix
-function f(bs: string[], input: any, output = run(input)) {
+function f(bs: string[], input: any, output?: any) {
+  input = stored(input)
+  if (output === undefined) output = run(input)
   let item = bs[0].replace(/\.B\d+$/, "")
   if (!ids[item]) throw new Error("unknown item " + item)
   if (next > LAST) throw new Error("id range exhausted")
@@ -41,7 +44,7 @@ function f(bs: string[], input: any, output = run(input)) {
 }
 function fh(bs: string[], input: any) {
   let ms = 5000
-  f(bs, input, runIsolated(`${ROOT}/oracle/cm6/change/interp-cli.ts`, JSON.stringify(input), ms))
+  f(bs, input, runIsolated(`${ROOT}/oracle/cm6/change/interp-cli.ts`, JSON.stringify(stored(input)), ms))
 }
 const E = "\u{1F600}"   // astral character, two UTF-16 code units
 const LS = "\u2028"

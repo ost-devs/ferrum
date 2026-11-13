@@ -13,15 +13,13 @@
 // astral F0044 already exist) and state.Facet.computeN.B5 (comparison of a string result by UTF-16 `.length` and
 // indexing; ASCII F0065 and astral spread F0192 already exist).
 //
-// Scenario inputs (`defs`/`ext`) are replayed by interp.ts (its header documents the JSON; S4 added the def
-// ["builtin", name, "lineSeparator"] and the node {"extOf": Node}, which reads the built value's `extension`
-// property). Inputs {"api": name, ...} record direct calls; the probe body for each name is the function passed to
-// `api` below. "<undefined>" encodes undefined, as in s2-fixtures.ts.
+// Every input is an expression or a program of tools/cm6/program.ts run by interp.ts (its header documents the ops):
+// `S` writes a {"op": "scenario"} input (S4 added the def ["builtin", name, "lineSeparator"] and the node
+// {"extOf": Node}), `P` a program of steps.
 //
-// The "secondCopy" probes load a second copy of @codemirror/state: the harness sources
-// (.harness/state/cm6/state/src, identical to mirrors/cm6/state/src) are copied to .scratch/retag-facet/state-copy/src
-// with node_modules linked to .harness/state/node_modules, and required from there, so its classes are distinct
-// from the ones imported as "@codemirror/state" (the situation of mirrors/cm6/state/src/facet.ts:551).
+// The "secondCopy" ops of interp.ts load a second copy of @codemirror/state (the harness sources copied to
+// .scratch/facet/state-copy/src and required from there), so its classes are distinct from the ones imported as
+// "@codemirror/state" (the situation of mirrors/cm6/state/src/facet.ts:551).
 //
 // Checklist (docs/workflow/specification.md §5.5) for the getter: it takes no argument, so the numeric, position
 // and text entries do not apply to Part A; empty / single / many: a field alone, a field twice, two fields;
@@ -30,36 +28,13 @@
 // wrapper, in a compartment, in an appended configuration; consumer values: the five Prec levels around
 // field.extension, the LSPClient constructor test (mirrors/cm6/lsp-client/src/client.ts:264-265); 100x size: not
 // applicable (the getter is O(1) and deduplication is covered by s2-generator.ts's 1000-leaf flatten case).
-import {cpSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync} from "node:fs"
-import {createRequire} from "node:module"
-import {fixtureWriter} from "@harness/lib"
-import {EditorState, Facet, StateField} from "@codemirror/state"
-import {run, out} from "./interp"
-import {ids} from "./s2-fixtures-lib"
+import {$, op, scenario, prog, def, create, facet, field, same, differ, item, data, label, extension, writer} from "./s2-fixtures-lib"
 
-const FILE = "docs/parity/ferrum-state/fixtures/facet.jsonl"
-const FIRST = 6000, LAST = 6999
-writeFileSync(FILE, readFileSync(FILE, "utf8").split("\n").filter(l => {
-  if (!l) return false
-  let n = Number(JSON.parse(l).id.slice(1)); return n < FIRST || n > LAST
-}).map(l => l + "\n").join(""))
-const write = fixtureWriter(FILE, false)
+const write = writer(false, [6000, 6999])
 let next = 6001
 const fid = () => "F" + String(next++).padStart(4, "0")
-const B = (bs: string[]) => bs.map(b => "state." + b)
-function S(item: string, bs: string[], scenario: any) {
-  if (!ids[item]) throw new Error("no item " + item)
-  const id = fid(), output = run(scenario)
-  console.log(id, bs.join(","), JSON.stringify(output))
-  write(ids[item], B(bs), scenario, output, id)
-}
-function api(item: string, bs: string[], input: any, f: () => any) {
-  let output: any
-  try { output = {ok: out(f())} } catch (e: any) { output = {error: {name: e?.name ?? "Error", message: String(e?.message ?? e)}} }
-  const id = fid()
-  console.log(id, bs.join(","), JSON.stringify(output))
-  write(ids[item], B(bs), input, output, id)
-}
+function S(item: string, bs: string[], sc: any) { const id = fid(); console.log(id, bs.join(","), JSON.stringify(write(item, bs, id, scenario(sc)))) }
+function P(item: string, bs: string[], steps: any[], out: any) { const id = fid(); console.log(id, bs.join(","), JSON.stringify(write(item, bs, id, prog(steps, out)))) }
 const tr = (t: any) => ({tr: t})
 const ins = (from: number, insert: string) => ({changes: {from, insert}})
 const SFE = "StateField.extension"
@@ -69,13 +44,11 @@ const extF = {extOf: {field: "f"}}
 
 // ---------------------------------------------------------------- Part A: state.cm6.049 StateField.extension
 // B1: the getter returns the field itself.
-api(SFE, ["StateField.extension.B1"], {api: "fieldExtensionIdentity",
-  code: "[f.extension === f, f.extension === f.extension, f.extension.extension === f, g.extension === g, f.extension !== g.extension, \"extension\" in f, Object.keys(f).includes(\"extension\"), typeof Object.getOwnPropertyDescriptor(StateField.prototype, \"extension\").get]"},
-  () => {
-    const f: any = StateField.define({create: () => 1, update: v => v}), g: any = StateField.define({create: () => 1, update: v => v})
-    return [f.extension === f, f.extension === f.extension, f.extension.extension === f, g.extension === g, f.extension !== g.extension,
-      "extension" in f, Object.keys(f).includes("extension"), typeof Object.getOwnPropertyDescriptor(StateField.prototype, "extension")!.get]
-  })
+P(SFE, ["StateField.extension.B1"], [def(["field", "f", {create: {const: 1}, update: "keep"}], "f"), def(["field", "g", {create: {const: 1}, update: "keep"}], "g"),
+  extension("f", "fe"), same("fe", "f", "a"), extension("f", "fe2"), same("fe", "fe2", "b"), extension("fe", "fee"), same("fee", "f", "c"),
+  extension("g", "ge"), same("ge", "g", "d"), differ("fe", "ge", "e"), op("extension.shape", {of: $("f")}, "sh"),
+  item("sh", "in", "in"), item("sh", "ownKey", "own"), item("sh", "protoGetter", "pg")],
+  [$("a"), $("b"), $("c"), $("d"), $("e"), $("in"), $("own"), $("pg")])
 // B2: the field and its extension together are one extension value: one slot, create once, update once.
 S(SFE, ["StateField.extension.B2"], {defs: [fieldF], ext: [{field: "f"}, extF], steps: [tr({})], reads: [{field: "f"}]})
 S(SFE, ["StateField.extension.B2"], {defs: [fieldF], ext: [extF, {field: "f"}], steps: [tr({})], reads: [{field: "f"}]})
@@ -98,49 +71,23 @@ S(SFE, ["StateField.extension.B4"], {defs: [["facet", "n", {}], provF, ["compart
 // B5: the LSPClient constructor's test (mirrors/cm6/lsp-client/src/client.ts:263-266, copied: the package is not in
 // the harness) keeps a field as a CodeMirror extension because `field.extension` is truthy; the kept list, nested as
 // LSPClient.plugin does (client.ts:325-330, [lspPlugin.of(...), lspTheme, this.extensions]), enables the field.
-api(SFE, ["StateField.extension.B5"], {api: "lspClientExtensions",
-  code: "kinds of [f, f.extension, {editorExtension: g}, p.of(1), {}] under client.ts:264-265; then EditorState.create({extensions: [p.of(0), [], kept]}) and read f, g, p"},
-  () => {
-    const f = StateField.define<number>({create: () => 1, update: v => v}), g = StateField.define<number>({create: () => 2, update: v => v})
-    const p = Facet.define<number>()
-    const entries: any[] = [f, (f as any).extension, {editorExtension: g}, p.of(1), {}]
-    const kept: any[] = [], kinds: string[] = []
-    for (const ext of entries) {
-      if (Array.isArray(ext) || ext.extension) { kept.push(ext); kinds.push("kept") }
-      else if (ext.editorExtension) { kept.push(ext.editorExtension); kinds.push("editorExtension") }
-      else kinds.push("dropped")
-    }
-    const s = EditorState.create({extensions: [p.of(0), [], kept]})
-    return {kinds, f: s.field(f), g: s.field(g), p: s.facet(p)}
-  })
+P(SFE, ["StateField.extension.B5"], [def(["field", "f", {create: {const: 1}, update: "keep"}]), def(["field", "g", {create: {const: 2}, update: "keep"}]), def(["facet", "p", {}]),
+  op("lspKeep", {entries: [{field: "f"}, {extOf: {field: "f"}}, {editorExtension: {field: "g"}}, {of: ["p", 1]}, {raw: "plainObject"}]}, "lk"),
+  item("lk", "kinds", "kinds"), item("lk", "kept", "kept"), create({ext: [{of: ["p", 0]}, [], {var: "kept"}]}, "s"),
+  field("s", "f", "fv"), field("s", "g", "gv"), facet("s", "p", "pv")], {kinds: $("kinds"), f: $("fv"), g: $("gv"), p: $("pv")})
 // B6: flatten dispatches a field of this package by `instanceof StateField` (facet.ts:542) before its untyped read
 // of `.extension` (facet.ts:549): a field whose own `extension` property is shadowed with null is still enabled.
-api(SFE, ["StateField.extension.B6"], {api: "shadowedExtension",
-  code: "Object.defineProperty(f, \"extension\", {value: null}); s = EditorState.create({extensions: f}); [f.extension, s.field(f)]"},
-  () => {
-    const f: any = StateField.define<number>({create: () => 1, update: v => v})
-    Object.defineProperty(f, "extension", {value: null})
-    const s = EditorState.create({extensions: f})
-    return [f.extension, s.field(f)]
-  })
+P(SFE, ["StateField.extension.B6"], [def(["field", "f", {create: {const: 1}, update: "keep"}], "f"), op("field.shadowExtension", {field: "f"}),
+  create({ext: {field: "f"}}, "s"), extension("f", "fe"), field("s", "f", "v")], [$("fe"), $("v")])
 // B7: a field defined by a second copy of @codemirror/state fails `instanceof StateField` in this copy's flatten,
 // reaches the untyped read at facet.ts:549, gets itself back from the getter and throws at facet.ts:551.
-const COPY = ".scratch/retag-facet/state-copy"
-rmSync(COPY, {recursive: true, force: true}); mkdirSync(COPY, {recursive: true})
-cpSync(".harness/state/cm6/state/src", COPY + "/src", {recursive: true})
-symlinkSync(process.cwd() + "/.harness/state/node_modules", COPY + "/node_modules")
-const Copy: any = createRequire(process.cwd() + "/")(process.cwd() + "/" + COPY + "/src/index.ts")
-const copyField = () => Copy.StateField.define({create: () => 1, update: (v: any) => v})
-api(SFE, ["StateField.extension.B7"], {api: "secondCopyField", code: "cf = <copy>.StateField.define(...); [cf instanceof StateField, cf.extension === cf, <copy>.StateField === StateField]"},
-  () => { const cf = copyField(); return [cf instanceof StateField, cf.extension === cf, Copy.StateField === StateField] })
-api(SFE, ["StateField.extension.B7"], {api: "secondCopyField", code: "EditorState.create({extensions: cf})"},
-  () => EditorState.create({extensions: copyField()}) && "created")
-api(SFE, ["StateField.extension.B7"], {api: "secondCopyField", code: "EditorState.create({extensions: [cf.extension]})"},
-  () => EditorState.create({extensions: [copyField().extension]}) && "created")
-api(SFE, ["StateField.extension.B7"], {api: "secondCopyField", code: "EditorState.create({extensions: {extension: cf}})"},
-  () => EditorState.create({extensions: {extension: copyField()} as any}) && "created")
-api(SFE, ["StateField.extension.B7"], {api: "secondCopyField", code: "<copy>.EditorState.create({extensions: cf}).field(cf)"},
-  () => { const cf = copyField(); return Copy.EditorState.create({extensions: cf}).field(cf) })
+P(SFE, ["StateField.extension.B7"], [op("secondCopy.field", {}, "cf"), op("isFieldInstance", {of: $("cf")}, "a"), extension("cf", "ce"), same("ce", "cf", "b"),
+  op("secondCopy.sameClass", {}, "c")], [$("a"), $("b"), $("c")])
+P(SFE, ["StateField.extension.B7"], [op("secondCopy.field", {}, "cf"), create({ext: {var: "cf"}}, "s"), label("created", "r")], $("r"))
+P(SFE, ["StateField.extension.B7"], [op("secondCopy.field", {}, "cf"), create({ext: [{extOf: {var: "cf"}}]}, "s"), label("created", "r")], $("r"))
+P(SFE, ["StateField.extension.B7"], [op("secondCopy.field", {}, "cf"), create({ext: {wrap: {var: "cf"}}}, "s"), label("created", "r")], $("r"))
+P(SFE, ["StateField.extension.B7"], [op("secondCopy.field", {}, "cf"), op("secondCopy.create", {ext: {var: "cf"}}, "s"),
+  op("state.field", {state: $("s"), fieldOf: $("cf")}, "r")], $("r"))
 
 // ---------------------------------------------------------------- Part B: D1/D2 fixtures (M3 re-tag pass)
 // state.Facet.compute.B3 (D1, D2): the getter reads doc.length (UTF-16 code units of the text as split into lines);

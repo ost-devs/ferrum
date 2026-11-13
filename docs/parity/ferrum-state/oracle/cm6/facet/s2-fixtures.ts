@@ -1,31 +1,16 @@
 // S2 golden fixtures for chunk `facet` (@codemirror/state 6.7.6): writes fixtures/facet.jsonl afresh, ids F0001...
 // in a fixed order. Run from the repository root, before s2-generator.ts (which appends F5001...):
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/facet/s2-fixtures.ts
-// Scenario inputs (`defs`/`ext`) are replayed by interp.ts (its header documents the JSON). Inputs of the form
-// {"api": name, ...} record direct calls whose outputs are identities or thrown errors; the probe body for each name
-// is the function passed to `api` below. combineConfig inputs {"combineConfig": {configs, defaults, combine}} are
-// replayed by `cc` in s2-fixtures-lib.ts. Encoding: "<undefined>" for undefined, {"num": "NaN" | "Infinity" | "-Infinity"} for
-// non-finite numbers, "<function>" for functions, in inputs and outputs alike.
-import {fixtureWriter} from "@harness/lib"
-import {EditorState, Facet, StateField, Prec, Compartment, combineConfig} from "@codemirror/state"
-import {run, out} from "./interp"
-import {cc, ids} from "./s2-fixtures-lib"
+// Every input is an expression or a program of tools/cm6/program.ts run by interp.ts (its header documents the ops):
+// `S` writes a {"op": "scenario"} input, `C` a {"op": "combineConfig.entries"} input, `P` a program of steps.
+import {$, op, scenario, prog, def, ext, create, facet, field, update, trState, same, differ, item, data, label, extension, writer} from "./s2-fixtures-lib"
 
-const ROOT = "docs/parity/ferrum-state"
-const write = fixtureWriter(`${ROOT}/fixtures/facet.jsonl`, true)
+const write = writer(true)
 let next = 1
 const fid = () => "F" + String(next++).padStart(4, "0")
-const B = (bs: string[]) => bs.map(b => "state." + b)
-function S(item: string, bs: string[], scenario: any) {
-  if (!ids[item]) throw new Error("no item " + item)
-  write(ids[item], B(bs), scenario, run(scenario), fid())
-}
-function api(item: string, bs: string[], input: any, f: () => any) {
-  let output: any
-  try { output = {ok: out(f())} } catch (e: any) { output = {error: {name: e?.name ?? "Error", message: String(e?.message ?? e)}} }
-  write(ids[item], B(bs), input, output, fid())
-}
-function C(bs: string[], input: any) { write(ids["combineConfig"], B(bs), {combineConfig: input}, cc(input), fid()) }
+const S = (item: string, bs: string[], sc: any) => write(item, bs, fid(), scenario(sc))
+const P = (item: string, bs: string[], steps: any[], out: any) => write(item, bs, fid(), prog(steps, out))
+const C = (bs: string[], input: any) => write("combineConfig", bs, fid(), {op: "combineConfig.entries", ...input})
 
 const tr = (t: any) => ({tr: t})
 const ins = (from: number, insert: string) => ({changes: {from, insert}})
@@ -34,8 +19,7 @@ const ins = (from: number, insert: string) => ({changes: {from, insert}})
 S("Facet", ["Facet.B1"], {defs: [["facet", "f1", {}], ["facet", "f2", {}]], ext: [{of: ["f1", 1]}, {of: ["f2", 2]}], reads: [{facet: "f1"}, {facet: "f2"}]})
 S("Facet", ["Facet.B2", "Facet^define.B1"], {defs: [["facet", "n", {}], ["facet", "s", {combine: "sum"}], ["facet", "o", {combine: "countObj"}], ["facet", "x", {}]],
   ext: {of: ["x", 1]}, steps: [tr(ins(0, "a")), tr({effects: [{append: {of: ["x", 2]}}]})], reads: [{facet: "n"}, {facet: "s"}, {facet: "o"}]})
-api("Facet", ["Facet.B2"], {api: "defaultSharedAcrossStates", code: "f = Facet.define(); EditorState.create({}).facet(f) === EditorState.create({}).facet(f)"},
-  () => { const f = Facet.define(); return EditorState.create({}).facet(f) === EditorState.create({}).facet(f) })
+P("Facet", ["Facet.B2"], [def(["facet", "f", {}]), create({}, "s1"), create({}, "s2"), facet("s1", "f", "a"), facet("s2", "f", "b"), same("a", "b", "r")], $("r"))
 S("Facet", ["Facet.B3", "Facet^define config FacetConfig.combine.B1", "Facet^define config FacetConfig.combine.B3"], {defs: [["facet", "f", {combine: "sum", log: true}]],
   ext: [{of: ["f", 1]}, {prec: ["high", {of: ["f", 2]}]}, {of: ["f", 3]}], steps: [tr(ins(0, "ab")), tr({selection: {anchor: 1}}), tr({})], reads: [{facet: "f"}]})
 S("Facet", ["Facet.B4", "Facet.B5", "Facet^define config FacetConfig.combine.B1"], {defs: [["facet", "f", {combine: "copy", log: true}]],
@@ -74,18 +58,18 @@ S("Facet", ["Facet.B10"], {defs: [["facet", "n", {}]], ext: {compute: ["n", ["do
 
 // ---------------------------------------------------------------- state.cm6.037 Facet.reader / state.cm6.044 FacetReader
 S("Facet.reader", ["Facet.reader.B1", "FacetReader.B1"], {defs: [["facet", "s", {}]], ext: [{of: ["s", "a"]}, {compute: ["s", [], {const: "b"}]}], steps: [tr({})], reads: [{facet: "s"}, {reader: "s"}]})
-api("Facet.reader", ["Facet.reader.B1", "FacetReader.B1"], {api: "readerIdentity", code: "f = Facet.define(); f.reader === f"}, () => { const f = Facet.define(); return f.reader === f })
+P("Facet.reader", ["Facet.reader.B1", "FacetReader.B1"], [def(["facet", "f", {}], "f"), op("facet.reader", {facet: "f"}, "r"), same("r", "f", "x")], $("x"))
 S("Facet.reader", ["Facet.reader.B2", "FacetReader.B2"], {defs: [["facet", "s", {}], ["facet", "n", {}], ["compartment", "c"]],
   ext: [{compute: ["n", [{reader: "s"}], {facetJoin: "s"}], tag: "g"}, {comp: ["c", {compute: ["s", ["doc"], "docString"]}]}],
   steps: [tr(ins(0, "x")), tr({selection: {anchor: 0}}), tr({effects: [{comp: ["c", {of: ["s", "z"]}]}]}), tr({effects: [{append: []}]})], reads: [{facet: "n"}]})
-api("FacetReader", ["FacetReader.B3"], {api: "duckTypedReader", code: "f = Facet.define(); s = EditorState.create({extensions: f.of(1)}); [s.facet({id: f.id, default: 'D'}), s.facet({id: -1, default: 'D'})]"},
-  () => { const f: any = Facet.define<number>(); const s = EditorState.create({extensions: f.of(1)}); return [s.facet({id: f.id, default: "D"} as any), s.facet({id: -1, default: "D"} as any)] })
+P("FacetReader", ["FacetReader.B3"], [def(["facet", "f", {}]), create({ext: {of: ["f", 1]}}, "s"),
+  op("state.facetDuck", {state: $("s"), idOf: "f", default: "D"}, "a"), op("state.facetDuck", {state: $("s"), id: -1, default: "D"}, "b")], [$("a"), $("b")])
 
 // ---------------------------------------------------------------- state.cm6.038 Facet^define
-api("Facet^define", ["Facet^define.B1"], {api: "defineDefaults", code: "f = Facet.define(); EditorState.create({}).facet(f)"}, () => { const f = Facet.define(); return EditorState.create({}).facet(f) })
+P("Facet^define", ["Facet^define.B1"], [def(["facet", "f", {}]), create({}, "s"), facet("s", "f", "r")], $("r"))
 S("Facet^define", ["Facet^define.B3", "Facet^define config FacetConfig.combine.B1"], {defs: [["facet", "f", {combine: "sum", log: true}], ["facet", "g", {combine: "length", log: true}]], ext: [], reads: [{facet: "f"}, {facet: "g"}]})
 S("Facet^define", ["Facet^define.B3"], {defs: [["facet", "f", {combine: "throwEmpty"}]], ext: [], reads: []})
-S("Facet^define", ["Facet^define.B4"], {defs: [["facet", "s", {combine: "<undefined>"}]], ext: [{of: ["s", 1]}, {of: ["s", 2]}],
+S("Facet^define", ["Facet^define.B4"], {defs: [["facet", "s", {combine: undefined}]], ext: [{of: ["s", 1]}, {of: ["s", 2]}],
   steps: [tr({effects: [{reconfigure: [{of: ["s", 1]}, {of: ["s", 2]}]}]})], reads: [{facet: "s"}]})
 S("Facet^define", ["Facet^define.B5", "Facet^define config FacetConfig.static.B3"], {defs: [["facet", "s", {static: 1}]], ext: {compute: ["s", [], {const: 1}]}, reads: []})
 S("Facet^define", ["Facet^define.B5", "Facet^define config FacetConfig.static.B3"], {defs: [["facet", "s", {static: 0}]], ext: {compute: ["s", [], {const: 1}]}, reads: [{facet: "s"}]})
@@ -95,16 +79,15 @@ S("Facet^define", ["Facet^define.B2", "Facet^define config FacetConfig.compare.B
 // ---------------------------------------------------------------- state.cm6.039 Facet.of
 S("Facet.of", ["Facet.of.B1"], {defs: [["facet", "a", {}]], ext: [{of: ["a", 1]}, {of: ["a", 1]}], reads: [{facet: "a"}]})
 S("Facet.of", ["Facet.of.B2", "Extension.B6"], {defs: [["facet", "a", {}], ["shared", "o", {of: ["a", 1]}]], ext: [{of: ["a", 0]}, {ref: "o"}, {of: ["a", 2]}, {ref: "o"}], reads: [{facet: "a"}]})
-S("Facet.of", ["Facet.of.B3"], {defs: [["facet", "s", {}]], ext: [{of: ["s", "<undefined>"]}, {of: ["s", null]}, {of: ["s", {num: "NaN"}]}, {of: ["s", [1, 2]]}], reads: [{facet: "s"}]})
-api("Facet.of", ["Facet.of.B3"], {api: "ofValueIdentity", code: "f = Facet.define(); v = {}; EditorState.create({extensions: f.of(v)}).facet(f)[0] === v"},
-  () => { const f = Facet.define<object>(), v = {}; return EditorState.create({extensions: f.of(v)}).facet(f)[0] === v })
-api("Facet.of", ["Facet.of.B1"], {api: "ofDistinct", code: "f = Facet.define(); f.of(1) !== f.of(1)"}, () => { const f = Facet.define<number>(); return f.of(1) !== f.of(1) })
+S("Facet.of", ["Facet.of.B3"], {defs: [["facet", "s", {}]], ext: [{of: ["s", undefined]}, {of: ["s", null]}, {of: ["s", NaN]}, {of: ["s", [1, 2]]}], reads: [{facet: "s"}]})
+P("Facet.of", ["Facet.of.B3"], [def(["facet", "f", {}]), op("object", {}, "v"), create({ext: {ofVar: ["f", "v"]}}, "s"), facet("s", "f", "o"), item("o", 0, "o0"), same("o0", "v", "r")], $("r"))
+P("Facet.of", ["Facet.of.B1"], [def(["facet", "f", {}]), ext({of: ["f", 1]}, "a"), ext({of: ["f", 1]}, "b"), differ("a", "b", "r")], $("r"))
 S("Facet.of", ["Facet.of.B4"], {defs: [["facet", "f", {combine: "copy", log: true}]], ext: [{of: ["f", "s1"]}, {compute: ["f", ["doc"], "docLength"]}, {of: ["f", "s2"]}], steps: [tr(ins(0, "abc"))], reads: [{facet: "f"}]})
 S("Facet.of", ["Facet.of.B4", "Prec.B1"], {defs: [["facet", "f", {}]], ext: [{prec: ["low", {of: ["f", "low"]}]}, {compute: ["f", [], {const: "dyn"}]}, {prec: ["highest", {of: ["f", "top"]}]}], reads: [{facet: "f"}]})
 
 // ---------------------------------------------------------------- state.cm6.040 Facet.compute
 S("Facet.compute", ["Facet.compute.B1", "Facet^define config FacetConfig.static.B1"], {defs: [["facet", "s", {static: true}]], ext: {compute: ["s", [], {const: 1}]}, reads: []})
-api("Facet.compute", ["Facet.compute.B1"], {api: "computeStaticThrowsAtCall", code: "Facet.define({static: true}).compute([], () => 1)"}, () => Facet.define<number>({static: true}).compute([], () => 1))
+P("Facet.compute", ["Facet.compute.B1"], [def(["facet", "f", {static: true}]), ext({compute: ["f", [], {const: 1}]}, "p")], $("p"))
 S("Facet.compute", ["Facet.compute.B2"], {defs: [["facet", "n", {}]], doc: "abc", ext: {compute: ["n", [], "docLength"], tag: "g"}, reads: [{facet: "n"}]})
 S("Facet.compute", ["Facet.compute.B3"], {defs: [["facet", "n", {}]], doc: "ab", ext: {compute: ["n", ["doc"], "docLength"], tag: "g"},
   steps: [tr({selection: {anchor: 1}}), tr({}), tr(ins(0, "x")), tr({changes: {from: 0, to: 1, insert: "y"}})], reads: [{facet: "n"}]})
@@ -158,8 +141,8 @@ S("Facet.computeN", ["Facet.computeN.B6"], {defs: [["facet", "n", {}]], doc: "ab
 // ---------------------------------------------------------------- state.cm6.042 Facet.from
 S("Facet.from", ["Facet.from.B1", "Facet.from.B2"], {defs: [["field", "x", {create: {const: 5}, update: "inc"}], ["facet", "a", {}], ["facet", "b", {}]],
   ext: [{field: "x"}, {from: ["a", "x"]}, {from: ["b", "x"], get: "x10"}], steps: [tr({})], reads: [{facet: "a"}, {facet: "b"}]})
-api("Facet.from", ["Facet.from.B1"], {api: "fromValueIdentity", code: "v = [1]; field create () => v; state with [field, f.from(field)]; [state.facet(f)[0] === v, state.facet(f)[0] === state.field(field)]"},
-  () => { const v = [1]; const fld = StateField.define({create: () => v, update: x => x}); const f = Facet.define<number[]>(); const s = EditorState.create({extensions: [fld, f.from(fld)]}); return [s.facet(f)[0] === v, s.facet(f)[0] === s.field(fld)] })
+P("Facet.from", ["Facet.from.B1"], [data([1], "v"), def(["field", "fld", {create: {var: "v"}, update: "keep"}]), def(["facet", "f", {}]),
+  create({ext: [{field: "fld"}, {from: ["f", "fld"]}]}, "s"), facet("s", "f", "o"), item("o", 0, "o0"), same("o0", "v", "a"), field("s", "fld", "fv"), same("o0", "fv", "b")], [$("a"), $("b")])
 S("Facet.from", ["Facet.from.B3", "StateField^define config StateFieldSpec.compare.B2"], {defs: [["field", "x", {create: {fresh: [1]}, update: "copy", compare: "length"}], ["field", "y", {create: {fresh: [1]}, update: "copy"}], ["facet", "n", {}], ["facet", "m", {}]],
   ext: [{field: "x"}, {field: "y"}, {from: ["n", "x"], get: "len"}, {from: ["m", "y"], get: "len"}], steps: [tr({})], reads: [{facet: "n"}, {facet: "m"}, {field: "x"}, {field: "y"}]})
 S("Facet.from", ["Facet.from.B4"], {defs: [["field", "x", {create: {const: 5}, update: "keep"}], ["facet", "a", {}]], ext: [{from: ["a", "x"]}], reads: [{facet: "a"}]})
@@ -185,12 +168,12 @@ S("StateField^define", ["StateField^define.B1", "StateField^define config StateF
   ext: [{field: "f"}, {field: "g"}, {compute: ["n", [{field: "f"}, {field: "g"}], {const: 0}], tag: "g"}], steps: [tr({})], reads: [{field: "f"}, {field: "g"}]})
 S("StateField^define", ["StateField^define.B2", "StateField^define config StateFieldSpec.provide.B1"], {defs: [["facet", "s", {}], ["field", "f", {create: {const: "F"}, update: "keep", provide: {from: ["s", "f"]}}]],
   ext: [{field: "f"}, {field: "f"}], steps: [tr({effects: [{append: {field: "f"}}]})], reads: [{facet: "s"}]})
-api("StateField^define", ["StateField^define.B2"], {api: "provideThrows", code: "StateField.define({create, update, provide() { throw new Error('provide failed') }})"},
-  () => StateField.define({create: () => 0, update: v => v, provide: () => { throw new Error("provide failed") }}))
+P("StateField^define", ["StateField^define.B2"], [def(["field", "f", {create: {const: 0}, update: "keep", provide: {throw: "provide failed"}}], "f")], $("f"))
 
 // ---------------------------------------------------------------- state.cm6.048 StateField.init
-api("StateField.init", ["StateField.init.B1"], {api: "initShape", code: "e = f.init(() => 1); [Array.isArray(e), e.length, e[0] === f, f.init(c) !== f.init(c)]"},
-  () => { const f = StateField.define({create: () => 0, update: v => v}); const c = () => 1; const e: any = f.init(c); return [Array.isArray(e), e.length, e[0] === f, f.init(c) !== f.init(c)] })
+P("StateField.init", ["StateField.init.B1"], [def(["field", "f", {create: {const: 0}, update: "keep"}], "f"), ext({init: ["f", {const: 1}]}, "e"),
+  op("isArray", {of: $("e")}, "ia"), op("count", {of: $("e")}, "n"), item("e", 0, "e0"), same("e0", "f", "s0"),
+  ext({init: ["f", {const: 1}]}, "e1"), ext({init: ["f", {const: 1}]}, "e2"), differ("e1", "e2", "d")], [$("ia"), $("n"), $("s0"), $("d")])
 S("StateField.init", ["StateField.init.B2"], {defs: [["field", "f", {create: {const: 0}, update: "keep"}]], ext: [{init: ["f", {const: 1}]}, {init: ["f", {const: 2}]}], reads: [{field: "f"}]})
 S("StateField.init", ["StateField.init.B2"], {defs: [["field", "f", {create: {const: 0}, update: "keep"}]], ext: [{init: ["f", {const: 1}]}, {prec: ["high", {init: ["f", {const: 2}]}]}], reads: [{field: "f"}]})
 S("StateField.init", ["StateField.init.B3"], {defs: [["field", "f", {create: {const: 0}, update: "keep"}], ["compartment", "c"]], ext: {comp: ["c", {init: ["f", {const: 7}]}]},
@@ -205,8 +188,7 @@ S("Extension", ["Extension.B1"], {defs: [["facet", "s", {}]], ext: [{of: ["s", "
 S("Extension", ["Extension.B2"], {defs: [["facet", "s", {}]], ext: [{wrap: {wrap: {of: ["s", "w"]}}}, {wrap: [{of: ["s", "x"]}, {of: ["s", "y"]}]}], reads: [{facet: "s"}]})
 for (const raw of ["plainObject", "number", "string", "nullExtension"])
   S("Extension", ["Extension.B3"], {defs: [], ext: [{raw}], reads: []})
-api("Extension", ["Extension.B3"], {api: "functionExtension", code: "EditorState.create({extensions: [function foo() { return 1 }]})"},
-  () => EditorState.create({extensions: [function foo() { return 1 } as any]}))
+P("Extension", ["Extension.B3"], [create({ext: [{raw: "function"}]}, "s")], $("s"))
 S("Extension", ["Extension.B4"], {defs: [], ext: [{raw: "selfExtension"}], reads: []})
 for (const raw of ["null", "undefined"]) S("Extension", ["Extension.B5"], {defs: [], ext: [{raw}], reads: []})
 S("Extension", ["Extension.B5"], {defs: [], ext: {raw: "null"}, reads: []})
@@ -216,8 +198,9 @@ S("Extension", ["Extension.B6"], {defs: [["facet", "s", {}], ["shared", "arr", [
 S("Extension", ["Extension.B6"], {defs: [["facet", "s", {}], ["shared", "x", {of: ["s", "x"]}]], ext: [{ref: "x"}, {of: ["s", "a"]}, {ref: "x"}, {prec: ["default", {ref: "x"}]}, {prec: ["low", {ref: "x"}]}], reads: [{facet: "s"}]})
 S("Extension", ["Extension.B6", "StateField^define config StateFieldSpec.provide.B3"], {defs: [["facet", "s", {}], ["field", "f", {create: {const: "F"}, update: "keep", provide: {from: ["s", "f"]}}]],
   ext: [{of: ["s", "a"]}, {prec: ["low", {field: "f"}]}, {of: ["s", "b"]}, {prec: ["highest", {field: "f"}]}], reads: [{facet: "s"}]})
-api("Extension", ["Extension.B7", "StateField.extension.B1"], {api: "extensionGetters", code: "f = Facet.define(); p = f.of(1); pr = Prec.high(p); ci = new Compartment().of(p); field = StateField.define({create: () => 0, update: v => v}); [p.extension === p, pr.extension === pr, ci.extension === ci, field.extension === field]"},
-  () => { const f = Facet.define<number>(); const p: any = f.of(1); const pr: any = Prec.high(p); const ci: any = new Compartment().of(p); const fld: any = StateField.define({create: () => 0, update: v => v}); return [p.extension === p, pr.extension === pr, ci.extension === ci, fld.extension === fld] })
+P("Extension", ["Extension.B7", "StateField.extension.B1"], [def(["facet", "f", {}]), ext({of: ["f", 1]}, "p"), ext({prec: ["high", {var: "p"}]}, "pr"),
+  def(["compartment", "c"]), ext({comp: ["c", {var: "p"}]}, "ci"), def(["field", "fld", {create: {const: 0}, update: "keep"}], "fld"),
+  ...["p", "pr", "ci", "fld"].flatMap(x => [extension(x, x + "e"), same(x + "e", x, x + "s")])], [$("ps"), $("prs"), $("cis"), $("flds")])
 S("Extension", ["Extension.B8"], {defs: [["facet", "s", {}]], ext: {of: ["s", "a"]}, steps: [tr({effects: [{append: {raw: "plainObject"}}]})], reads: [{facet: "s"}]})
 
 // ---------------------------------------------------------------- state.cm6.051 Prec and levels
@@ -234,13 +217,15 @@ S("Prec", ["Prec.B4", "Facet^define config FacetConfig.enables.B3"], {defs: [["f
   ext: [{prec: ["lowest", {of: ["e", 1]}]}, {of: ["s", "a"]}, {prec: ["low", {of: ["s", "l"]}]}], reads: [{facet: "s"}]})
 S("Prec", ["Prec.B5", "StateField^define config StateFieldSpec.provide.B1"], {defs: [["facet", "s", {}], ["field", "f", {create: {const: "F"}, update: "keep", provide: {from: ["s", "f"]}}]],
   ext: [{of: ["s", "a"]}, {prec: ["high", {field: "f"}]}, {of: ["s", "b"]}], reads: [{facet: "s"}]})
-api("Prec", ["Prec.B6"], {api: "precLazy", code: "Prec.high({}) does not throw; EditorState.create({extensions: Prec.high({})}) throws"},
-  () => { const e = Prec.high({} as any); try { EditorState.create({extensions: e}); return "created" } catch (x: any) { return ["wrapped ok", x.message] } })
+P("Prec", ["Prec.B6"], [ext({prec: ["high", {raw: "plainObject"}]}, "e"), label("wrapped ok", "w"),
+  op("try", {steps: [create({ext: {var: "e"}}, "s")], mode: "okOrMessage"}, "m")], [$("w"), $("m")])
 S("Prec", ["Prec.B7"], {defs: [["field", "f1", {create: {const: 1}, update: "keep"}], ["field", "f2", {create: {const: 2}, update: "keep"}]],
   ext: [{field: "f1"}, {prec: ["high", {field: "f2"}]}], steps: [tr({})], reads: []})
 S("Prec", ["Prec.B8"], {defs: [["facet", "s", {}], ["shared", "x", {of: ["s", "x"]}]], ext: [{prec: ["low", {ref: "x"}]}, {of: ["s", "a"]}, {prec: ["low", {ref: "x"}]}, {prec: ["lowest", {ref: "x"}]}], reads: [{facet: "s"}]})
-api("Prec", ["Prec.B8"], {api: "precDistinct", code: "[Prec.high(x) !== Prec.high(x), Prec.highest(x).prec, Prec.high(x).prec, Prec.default(x).prec, Prec.low(x).prec, Prec.lowest(x).prec, Object.keys(Prec)]"},
-  () => { const x = Facet.define<number>().of(1); const a: any = Prec.high(x), b: any = Prec.high(x); return [a !== b, (Prec.highest(x) as any).prec, a.prec, (Prec.default(x) as any).prec, (Prec.low(x) as any).prec, (Prec.lowest(x) as any).prec, Object.keys(Prec)] })
+P("Prec", ["Prec.B8"], [def(["facet", "f", {}]), ext({of: ["f", 1]}, "x"), ext({prec: ["high", {var: "x"}]}, "a"), ext({prec: ["high", {var: "x"}]}, "b"), differ("a", "b", "d"),
+  ...["highest", "default", "low", "lowest"].map(l => ext({prec: [l, {var: "x"}]}, l)),
+  ...["highest", "a", "default", "low", "lowest"].map(v => op("prec.level", {of: $(v)}, v + "P")), op("prec.keys", {}, "k")],
+  [$("d"), $("highestP"), $("aP"), $("defaultP"), $("lowP"), $("lowestP"), $("k")])
 // consumer shape: autocomplete completionKeymapExt = Prec.highest(keymap.computeN([completionConfig], ...)); keymap enables handleKeyEvents at Prec.default
 S("Prec.highest", ["Prec.highest.B2"], {defs: [["facet", "cfg", {}], ["facet", "km", {}], ["facet", "dom", {}], ["shared", "handle", {prec: ["default", {of: ["dom", "handleKeyEvents"]}]}], ["facet", "keymap", {enables: {ref: "handle"}}]],
   ext: [{of: ["keymap", "base"]}, {of: ["cfg", "c"]}, {prec: ["highest", {computeN: ["keymap", [{facet: "cfg"}], {fresh: ["completion"]}]}]}, {prec: ["lowest", {of: ["dom", "theme"]}]}], reads: [{facet: "keymap"}, {facet: "dom"}]})
@@ -256,14 +241,18 @@ S("Compartment", ["Compartment.B3", "Compartment.get.B2"], {defs: CD, ext: {comp
   steps: [tr({effects: [{comp: ["d", {label: "j", node: {of: ["s", "j"]}}]}]}), tr({effects: [{comp: ["c", []]}]}), tr({effects: [{comp: ["c", {comp: ["d", {label: "k", node: {of: ["s", "k"]}}]}]}]})], reads: [{facet: "s"}, {comp: "d"}]})
 S("Compartment", ["Compartment.B4"], {defs: [...CD, ["shared", "ci", {comp: ["c", {of: ["s", "C"]}]}]], ext: [{of: ["s", "a"]}, {prec: ["low", {ref: "ci"}]}, {prec: ["high", {ref: "ci"}]}], reads: [{facet: "s"}]})
 S("Compartment", ["Compartment.B5"], {defs: CD, ext: [{of: ["s", "a"]}, {prec: ["lowest", {comp: ["c", {of: ["s", "C"]}]}]}, {of: ["s", "b"]}], steps: [tr({effects: [{comp: ["c", [{of: ["s", "C1"]}, {prec: ["highest", {of: ["s", "C2"]}]}]]}]})], reads: [{facet: "s"}]})
-api("Compartment.of", ["Compartment.of.B1"], {api: "compartmentOfDistinct", code: "c.of(x) !== c.of(x)"}, () => { const c = new Compartment, x: any[] = []; return c.of(x) !== c.of(x) })
+P("Compartment.of", ["Compartment.of.B1"], [def(["compartment", "c"]), def(["shared", "x", []]), ext({comp: ["c", {ref: "x"}]}, "a"), ext({comp: ["c", {ref: "x"}]}, "b"), differ("a", "b", "r")], $("r"))
 S("Compartment.reconfigure", ["Compartment.reconfigure.B2"], {defs: CD, ext: [{of: ["s", "a"]}, {comp: ["c", {of: ["s", "one"]}]}, {of: ["s", "b"]}], steps: [tr({effects: [{comp: ["c", {of: ["s", "two"]}]}]})], reads: [{facet: "s"}]})
-api("Compartment.reconfigure", ["Compartment.reconfigure.B1"], {api: "reconfigureEffect", code: "x = []; e = c.reconfigure(x); changes = EditorState.create({doc: \"ab\"}).changes({from: 0, insert: \"z\"}); [e.value.compartment === c, e.value.extension === x, e.is(Compartment.reconfigure), c.reconfigure(x) !== e, e.map(changes) === e]"},
-  () => { const c = new Compartment, x: any[] = []; const e = c.reconfigure(x); const st = EditorState.create({doc: "ab"}); const ch = st.changes({from: 0, insert: "z"}); return [(e.value as any).compartment === c, (e.value as any).extension === x, e.is((Compartment as any).reconfigure), c.reconfigure(x) !== e, e.map(ch) === e] })
+P("Compartment.reconfigure", ["Compartment.reconfigure.B1"], [def(["compartment", "c"], "c"), def(["shared", "x", []], "x"),
+  op("effect", {effect: {comp: ["c", {ref: "x"}]}}, "e"), create({doc: "ab"}, "st"), op("state.changes", {state: $("st"), spec: {from: 0, insert: "z"}}, "ch"),
+  op("compartment.effectValue", {effect: $("e")}, "ev"), item("ev", 0, "evc"), same("evc", "c", "r1"), item("ev", 1, "evx"), same("evx", "x", "r2"),
+  op("compartment.reconfigureType", {}, "T"), op("effect.is", {effect: $("e"), type: $("T")}, "r3"),
+  op("effect", {effect: {comp: ["c", {ref: "x"}]}}, "e2"), differ("e2", "e", "r4"), op("effect.map", {effect: $("e"), changes: $("ch")}, "em"), same("em", "e", "r5")],
+  [$("r1"), $("r2"), $("r3"), $("r4"), $("r5")])
 S("Compartment.reconfigure", ["Compartment.reconfigure.B3"], {defs: CD, ext: {comp: ["c", {of: ["s", "A"]}]}, steps: [tr({effects: [{comp: ["c", {of: ["s", "B"]}]}, {comp: ["c", {of: ["s", "C"]}]}]})], reads: [{facet: "s"}]})
 S("Compartment.reconfigure", ["Compartment.reconfigure.B3"], {defs: CD, ext: [{comp: ["c", {of: ["s", "A"]}]}, {comp: ["d", {of: ["s", "D"]}]}], steps: [tr({effects: [{comp: ["d", {of: ["s", "E"]}]}, {comp: ["c", {of: ["s", "B"]}]}]})], reads: [{facet: "s"}]})
 S("Compartment.reconfigure", ["Compartment.reconfigure.B4", "Compartment.get.B1"], {defs: CD, ext: {of: ["s", "a"]}, steps: [tr({effects: [{comp: ["c", {of: ["s", "B"]}]}]}), tr({effects: [{append: {comp: ["c", {of: ["s", "C"]}]}}]})], reads: [{facet: "s"}, {comp: "c"}]})
-for (const v of ["<undefined>", null])
+for (const v of [undefined, null])
   S("Compartment.reconfigure", ["Compartment.reconfigure.B5"], {defs: CD, ext: {comp: ["c", {label: "inner", node: {of: ["s", "A"]}}]}, steps: [tr({effects: [{comp: ["c", {label: "B", node: {of: ["s", "B"]}}]}]}), tr({effects: [{comp: ["c", {raw: v === null ? "null" : "undefined"}]}]})], reads: [{facet: "s"}, {comp: "c"}]})
 S("Compartment.reconfigure", ["Compartment.reconfigure.B6", "Compartment.get.B3"], {defs: CD, ext: {comp: ["c", {label: "A", node: {of: ["s", "A"]}}]},
   steps: [tr({effects: [{append: []}, {comp: ["c", {label: "B", node: {of: ["s", "B"]}}]}]}), {from: 0, tr: {effects: [{append: []}]}}], reads: [{facet: "s"}, {comp: "c"}]})
@@ -274,7 +263,7 @@ S("Compartment.get", ["Compartment.get.B1"], {defs: CD, ext: {comp: ["c", {label
 
 // ---------------------------------------------------------------- state.cm6.134 combineConfig
 C(["combineConfig.B1", "combineConfig.B5"], {configs: [{a: 1}, {b: 2}, {a: 1}], defaults: {a: 0, c: 3}})
-C(["combineConfig.B1"], {configs: [{a: "<undefined>"}, {a: 2}, {a: "<undefined>"}], defaults: {a: 9}})
+C(["combineConfig.B1"], {configs: [{a: undefined}, {a: 2}, {a: undefined}], defaults: {a: 9}})
 C(["combineConfig.B1", "combineConfig.B4"], {configs: [{o: {obj: 0}}, {o: {obj: 0}}], defaults: {}})
 C(["combineConfig.B2"], {configs: [{a: 1}, {a: 2}, {a: 4}], defaults: {}, combine: {a: "sum"}})
 C(["combineConfig.B2"], {configs: [{minDepth: 50}, {minDepth: 200}, {newGroupDelay: 800}, {newGroupDelay: 300}], defaults: {minDepth: 100, newGroupDelay: 500}, combine: {minDepth: "max", newGroupDelay: "min"}})
@@ -282,20 +271,20 @@ C(["combineConfig.B2"], {configs: [{a: 1}, {a: 1}, {a: 3}], defaults: {}, combin
 C(["combineConfig.B3"], {configs: [{a: 1}, {a: 2}], defaults: {}})
 C(["combineConfig.B3"], {configs: [{a: 1}, {b: 1}, {b: 2}], defaults: {}, combine: {a: "sum"}})
 C(["combineConfig.B4"], {configs: [{a: null}, {a: 2}], defaults: {}})
-C(["combineConfig.B4"], {configs: [{a: {num: "NaN"}}, {a: {num: "NaN"}}], defaults: {}})
+C(["combineConfig.B4"], {configs: [{a: NaN}, {a: NaN}], defaults: {}})
 C(["combineConfig.B4"], {configs: [{a: {obj: 0}}, {a: {obj: 1}}], defaults: {}})
 C(["combineConfig.B4"], {configs: [{a: 0}, {a: false}], defaults: {}})
 C(["combineConfig.B5"], {configs: [], defaults: {}, defaultsProto: {x: 1}})
-C(["combineConfig.B5"], {configs: [{a: null}], defaults: {a: 5, b: "<undefined>"}})
+C(["combineConfig.B5"], {configs: [{a: null}], defaults: {a: 5, b: undefined}})
 C(["combineConfig.B6"], {configs: [{b: 1, "10": "ten"}, {a: 2, "2": "two"}], defaults: {z: 0, "1": "one"}})
-C(["combineConfig.B7"], {configs: [{a: "<undefined>"}], defaults: {}})
+C(["combineConfig.B7"], {configs: [{a: undefined}], defaults: {}})
 C(["combineConfig.B8"], {configs: [{toString: 1}, {toString: 2}], defaults: {}})
 C(["combineConfig.B8"], {configs: [{toString: 1}, {toString: 2}], defaults: {}, combine: {toString: "sum"}})
 C(["combineConfig.B9"], {configs: [{a: 1}, {a: 2}, {a: 3}], defaults: {a: 0}, combine: {a: "undef"}})
 C(["combineConfig.B10"], {configs: [], defaults: {}})
 C(["combineConfig.B10"], {configs: [], defaults: {a: 1, b: [1, 2]}})
 C(["combineConfig.B3"], {configs: [{a: 1}, {a: "1"}], defaults: {}})
-api("combineConfig", ["combineConfig.B2"], {api: "combineDefaultArgument", code: "combineConfig([{a: 1}, {a: 1}], {}) with no third argument"}, () => combineConfig<any>([{a: 1}, {a: 1}], {}))
+P("combineConfig", ["combineConfig.B2"], [data([{a: 1}, {a: 1}], "cs"), data({}, "d"), op("combineConfig.call", {configs: $("cs"), defaults: $("d")}, "r")], $("r"))
 
 // ---------------------------------------------------------------- config fields 248..258
 S("Facet^define config FacetConfig.combine", ["Facet^define config FacetConfig.combine.B2"], {defs: [["facet", "n", {}]], doc: "a", ext: [{compute: ["n", ["doc"], "docLength"]}],
@@ -352,7 +341,8 @@ C(["combineConfig.B8"], {configs: [{toString: 1}], defaults: {}})
 C(["combineConfig.B8"], {configs: [{constructor: "x"}], defaults: {}})
 C(["combineConfig.B8"], {configs: [], defaults: {toString: 5, valueOf: 6}})
 S("Facet", ["Facet.B9", "Facet.compute.B5"], {defs: [["facet", "b", {combine: "sum"}]], ext: [{compute: ["b", [{facet: "b"}], {const: 1}], tag: "self"}], steps: [tr({})], reads: [{facet: "b"}]})
-api("Compartment.reconfigure", ["Compartment.reconfigure.B4"], {api: "absentCompartmentReconfigured", code: "s = EditorState.create({extensions: f.of(1)}); tr = s.update({effects: c.reconfigure(f.of(2))}); [tr.reconfigured, tr.state.facet(f), c.get(tr.state)]"},
-  () => { const f = Facet.define<number>(), c = new Compartment; const s = EditorState.create({extensions: f.of(1)}); const t = s.update({effects: c.reconfigure(f.of(2))}); return [t.reconfigured, t.state.facet(f), c.get(t.state)] })
+P("Compartment.reconfigure", ["Compartment.reconfigure.B4"], [def(["facet", "f", {}]), def(["compartment", "c"]), create({ext: {of: ["f", 1]}}, "s"),
+  update("s", {effects: [{comp: ["c", {of: ["f", 2]}]}]}, "t"), op("tr.reconfigured", {tr: $("t")}, "rc"), trState("t", "ts"), facet("ts", "f", "fv"),
+  op("compartment.get", {comp: "c", state: $("ts")}, "cg")], [$("rc"), $("fv"), $("cg")])
 S("Facet.computeN", ["Facet.computeN.B5"], {defs: [["facet", "n", {}]], ext: [{computeN: ["n", [], {const: "a😀"}]}], reads: [{facet: "n"}]})
 console.log("fixtures written:", next - 1)

@@ -19,9 +19,10 @@
 //   ASCII, BMP non-ASCII, astral, CRLF, lone CR, U+2028: all in the pool, plus combining marks, ZWJ sequences, flags;
 //   100 times the typical size: one string of 3000 code units (typical about 30), countColumn and findColumn at
 //     20 seeded points.
-import {countColumn, findColumn, findClusterBreak} from "@codemirror/state"
+// Each fixture is a program of interp.ts. The generator calls countColumn itself only to draw the large case's columns.
+import {countColumn} from "@codemirror/state"
 import {rng} from "@harness/lib"
-import {rangeWriter} from "./writer"
+import {rangeWriter, op, prog, step, $, lit, sum} from "./writer"
 
 const SEED = 20261111
 const R = rng(SEED)
@@ -33,25 +34,31 @@ function randomString(): string {
   while (out.length < n) out += R.chance(0.3) ? R.pick(["\t", " "]).repeat(1 + R.int(4)) : R.pick(POOL)
   return out
 }
+const s = $("s"), tab = $("tabSize")
+const strLen = op("count", {of: s})
 for (let c = 0; c < 150; c++) {
-  let s = c == 0 ? "" : randomString(), tabSize = R.pick([1, 2, 3, 4, 4, 4, 8])
-  let total = countColumn(s, tabSize)
-  let count = Array.from({length: s.length + 3}, (_, k) => countColumn(s, tabSize, k - 1))
-  let find = Array.from({length: total + 4}, (_, k) => findColumn(s, k - 1, tabSize))
-  let strict = Array.from({length: total + 4}, (_, k) => findColumn(s, k - 1, tabSize, true))
-  let boundaries: number[] = [0]
-  for (let i = 0; i < s.length;) { i = s.charCodeAt(i) == 9 ? i + 1 : findClusterBreak(s, i); boundaries.push(i) }
-  let roundTrip = boundaries.every(i => findColumn(s, countColumn(s, tabSize, i), tabSize) == i)
+  let str = c == 0 ? "" : randomString(), tabSize = R.pick([1, 2, 3, 4, 4, 4, 8])
+  const cols = op("ints", {from: -1, to: sum($("total"), 2)})
   w("state.cm6.216", ["state.countColumn.B1", "state.countColumn.B2", "state.countColumn.B3", "state.countColumn.B4", "state.countColumn.B5",
     "state.findColumn.B1", "state.findColumn.B2", "state.findColumn.B3", "state.findColumn.B4", "state.findColumn.B5", "state.findColumn.B6"],
-    {seed: SEED, case: c, string: s, tabSize, countTo: "-1..length+1", findCol: "-1..total+2", expr: "total = countColumn(string, tabSize); countColumnAt[k] = countColumn(string, tabSize, k - 1) for k - 1 in countTo; findColumn[k] = findColumn(string, k - 1, tabSize) and findColumnStrict[k] = findColumn(string, k - 1, tabSize, true) for k - 1 in findCol; roundTrip = findColumn(string, countColumn(string, tabSize, i), tabSize) == i for every boundary i (0, then i + 1 after a tab, else findClusterBreak(string, i))"},
-    {ok: {total, countColumnAt: count, findColumn: find, findColumnStrict: strict, roundTrip}})
+    prog([step("s", lit(str)), step("tabSize", lit(tabSize)), step("total", op("countColumn", {string: s, tabSize: tab})),
+      step("countColumnAt", lit(op("map", {over: op("ints", {from: -1, to: sum(strLen, 1)}), as: "k", do: op("countColumn", {string: s, tabSize: tab, to: $("k")})}))),
+      step("findColumn", lit(op("map", {over: cols, as: "k", do: op("findColumn", {string: s, col: $("k"), tabSize: tab})}))),
+      step("findColumnStrict", lit(op("map", {over: cols, as: "k", do: op("findColumn", {string: s, col: $("k"), tabSize: tab, strict: true})}))),
+      step("roundTrip", op("column.roundTrip", {string: s, tabSize: tab}))],
+      {total: $("total"), countColumnAt: $("countColumnAt"), findColumn: $("findColumn"), findColumnStrict: $("findColumnStrict"), roundTrip: $("roundTrip")},
+      {seed: SEED, case: c}))
 }
 {
-  let s = Array.from({length: 1500}, () => R.pick(POOL)).join("").slice(0, 3000), tabSize = 4
-  let tos = Array.from({length: 20}, () => R.int(s.length + 1)), total = countColumn(s, tabSize)
+  let str = Array.from({length: 1500}, () => R.pick(POOL)).join("").slice(0, 3000), tabSize = 4
+  let tos = Array.from({length: 20}, () => R.int(str.length + 1)), total = countColumn(str, tabSize)
   let cols = Array.from({length: 20}, () => R.int(total + 2))
-  w("state.cm6.216", ["state.countColumn.B3", "state.findColumn.B2"], {seed: SEED, case: "large", string: s, tabSize, tos, cols, expr: "total = countColumn(string, tabSize); countColumn(string, tabSize, t) for t in tos; findColumn(string, c, tabSize) and findColumn(string, c, tabSize, true) for c in cols"},
-    {ok: {total, countColumn: tos.map(t => countColumn(s, tabSize, t)), findColumn: cols.map(c => findColumn(s, c, tabSize)), findColumnStrict: cols.map(c => findColumn(s, c, tabSize, true))}})
+  w("state.cm6.216", ["state.countColumn.B3", "state.findColumn.B2"],
+    prog([step("s", lit(str)), step("tabSize", lit(tabSize)), step("total", op("countColumn", {string: s, tabSize: tab})),
+      step("countColumn", lit(op("map", {over: lit(tos), as: "t", do: op("countColumn", {string: s, tabSize: tab, to: $("t")})}))),
+      step("findColumn", lit(op("map", {over: lit(cols), as: "k", do: op("findColumn", {string: s, col: $("k"), tabSize: tab})}))),
+      step("findColumnStrict", lit(op("map", {over: lit(cols), as: "k", do: op("findColumn", {string: s, col: $("k"), tabSize: tab, strict: true})})))],
+      {total: $("total"), countColumn: $("countColumn"), findColumn: $("findColumn"), findColumnStrict: $("findColumnStrict")},
+      {seed: SEED, case: "large"}))
 }
 console.log("gen-column: 151 cases")

@@ -22,6 +22,7 @@
 import {fixtureWriter, rng} from "@harness/lib"
 import {readFileSync} from "node:fs"
 import {run} from "./interp"
+import {stored} from "./lib"
 import {ChangeSet, Text} from "@codemirror/state"
 
 const ROOT = "docs/parity/ferrum-state"
@@ -31,7 +32,8 @@ for (let line of readFileSync(`${ROOT}/raw/inventory.jsonl`, "utf8").split("\n")
 }
 const write = fixtureWriter(`${ROOT}/fixtures/change.jsonl`, false)
 let next = 5001
-function emit(item: string, tags: string[], input: any) {
+function emit(item: string, tags: string[] | ((out: any) => string[]), input: any) {
+  input = stored(input)
   let output = run(input)
   let bs = typeof tags == "function" ? (tags as any)(output) : tags
   write(ids[item], bs.map((b: string) => b.includes(".B") && b.startsWith("state.") ? b : `state.${item}.${b}`), input, output, `F${next++}`)
@@ -150,7 +152,7 @@ for (let i = 0; i <= 40; i++) {
 function randRange(len: number, built: number): any {
   if (built > 0 && R.chance(0.15)) return {ref: R.int(built)}
   let a = pos(len), h = R.chance(0.4) ? a : pos(len)
-  if (R.chance(0.5)) return {cursor: [a, R.pick([null, -1, 1]), R.pick([null, 0, 1, 2, 7]), R.pick([null, 0, 13.5])]}
+  if (R.chance(0.5)) return {cursor: [a, R.pick([undefined, -1, 1]), R.pick([undefined, 0, 1, 2, 7]), R.pick([undefined, 0, 13.5])]}
   if (R.chance(0.1)) return {undir: [Math.min(a, h), Math.max(a, h)]}
   return {range: [a, h]}
 }
@@ -160,7 +162,7 @@ for (let i = 0; i <= 40; i++) {
   for (let k = 0, built = 0; k < n; k++) { let r = randRange(len, built); if (!("ref" in r)) built++; ranges.push(r) }
   if (R.chance(0.3) && !ranges.some(r => "ref" in r)) ranges.sort((x, y) => (x.cursor?.[0] ?? x.range?.[0] ?? x.undir?.[0] ?? 0) - (y.cursor?.[0] ?? y.range?.[0] ?? y.undir?.[0] ?? 0))
   let main = R.int(n)
-  emit("EditorSelection^create", (out: any) => out.ok ? [out.ok.sameArray ? "B2" : "B3", ...(out.ok.ranges.length < n ? ["B4"] : []), ...(out.ok.main === null ? ["B6"] : [])] : ["B1"],
+  emit("EditorSelection^create", (out: any) => out.ok ? [out.ok.sameArray ? "B2" : "B3", ...(out.ok.ranges.length < n ? ["B4"] : []), ...(out.ok.main === null || out.ok.main?.js_undefined ? ["B6"] : [])] : ["B1"],
        {op: "sel.make", sel: {create: ranges, main}, ...(large ? {note: "large"} : {})})
 }
 // 11. EditorSelection.map: random selection through a random change, default or assoc 1.

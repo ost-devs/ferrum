@@ -3,30 +3,21 @@
 // Fixture ids F0600-F0799 (see writer.ts). Run from the repository root:
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/text/probe-category.ts
 // Results depend on the engine's Unicode data for \p{Alphabetic}, \p{Number} and /\S/ (Q7); recorded engine below.
-import {EditorState, CharCategory} from "@codemirror/state"
-import {rangeWriter, cap} from "./writer"
+import {rangeWriter, op, bare, prog, step, $} from "./writer"
 
 const w = rangeWriter(600, 799)
 const ENGINE = {node: process.versions.node, unicode: (process.versions as any).unicode, icu: process.versions.icu}
 
-function categorizer(wordChars?: string) {
-  let st = wordChars === undefined ? EditorState.create()
-    : EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars}])})
-  return st.charCategorizer(0)
-}
 function cat(item: string, b: string, char: string, wordChars?: string, note?: string) {
-  let input: any = {char}
-  if (wordChars !== undefined) input.wordChars = wordChars
-  if (note) input.note = note
-  input.engine = ENGINE
-  input.expr = wordChars === undefined ? "CharCategory[EditorState.create().charCategorizer(0)(char)]"
-    : "CharCategory[EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars}])}).charCategorizer(0)(char)]"
-  w(item, [b], input, cap(() => CharCategory[categorizer(wordChars)(char)]))
+  w(item, [b], bare(op("categorize", {cat: op("categorizer", {wordChars}), char}), {note: note || undefined, engine: ENGINE}))
 }
 
 // CharCategory B1: runtime values of the enum
-w("state.cm6.166", ["state.CharCategory.B1"], {expr: "CharCategory"},
-  cap(() => ({Word: CharCategory.Word, Space: CharCategory.Space, Other: CharCategory.Other, reverse0: CharCategory[0], reverse1: CharCategory[1], reverse2: CharCategory[2], keys: Object.keys(CharCategory)})))
+const get = (key: any) => op("charCategory.get", {key})
+w("state.cm6.166", ["state.CharCategory.B1"], prog([
+  step("Word", get("Word")), step("Space", get("Space")), step("Other", get("Other")),
+  step("r0", get(0)), step("r1", get(1)), step("r2", get(2)), step("keys", op("charCategory.keys")),
+], {Word: $("Word"), Space: $("Space"), Other: $("Other"), reverse0: $("r0"), reverse1: $("r1"), reverse2: $("r2"), keys: $("keys")}))
 // CharCategory B2: order of the checks
 cat("state.cm6.166", "state.CharCategory.B2", "a b", undefined, "word char and space: Word")
 cat("state.cm6.166", "state.CharCategory.B2", " -", undefined, "space and punctuation: Other")
@@ -64,9 +55,8 @@ cat("state.cm6.167", "state.CharCategory.Word.B6", "😀", "\uD83D", "wordChars 
 cat("state.cm6.167", "state.CharCategory.Word.B6", "é", "́", "")
 cat("state.cm6.167", "state.CharCategory.Word.B6", "́", "́", "combining mark alone, listed")
 // wordChars only from the highest-precedence language data value: belongs to EditorState.charCategorizer (chunk state); one fixture for context
-w("state.cm6.167", ["state.CharCategory.Word.B5"], {char: "-", languageData: [{wordChars: "$"}, {wordChars: "-"}], note: "two language data values: only the first (highest precedence) is used", engine: ENGINE,
-   expr: "CharCategory[EditorState.create({extensions: EditorState.languageData.of(() => languageData)}).charCategorizer(0)(char)]"},
-  cap(() => CharCategory[EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars: "$"}, {wordChars: "-"}])}).charCategorizer(0)("-")]))
+w("state.cm6.167", ["state.CharCategory.Word.B5"], bare(op("categorize", {cat: op("categorizer", {languageData: [{wordChars: "$"}, {wordChars: "-"}]}), char: "-"}),
+  {note: "two language data values: only the first (highest precedence) is used", engine: ENGINE}))
 
 // Space B1: empty string
 cat("state.cm6.168", "state.CharCategory.Space.B1", "")

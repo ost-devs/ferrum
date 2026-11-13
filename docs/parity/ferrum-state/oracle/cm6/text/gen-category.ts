@@ -4,6 +4,7 @@
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/text/gen-category.ts
 //
 // Seed: 20261112. Cases: 120 fixtures, each one wordChars setting (none, "", "$", "-", "😀", "$-_") and 20 strings.
+// Each fixture is a program of interp.ts: one categorizer (wordChars absent: none), categorize over the strings.
 // Results depend on the engine's Unicode data (Q7); every fixture records node, Unicode and ICU versions.
 // Checklist (docs/workflow/specification.md §5.5):
 //   empty input: "" is the first string of every fixture; single element: one code point (most strings);
@@ -16,9 +17,8 @@
 //     clusters as commands and view pass them, "" as search and closebrackets pass at edges;
 //   ASCII, BMP non-ASCII, astral, CRLF, lone CR, U+2028: all in the pool;
 //   100 times the typical size: one fixture with a 600-code-unit string (typical about 6).
-import {EditorState, CharCategory} from "@codemirror/state"
 import {rng} from "@harness/lib"
-import {rangeWriter} from "./writer"
+import {rangeWriter, op, prog, step, $, lit} from "./writer"
 
 const SEED = 20261112
 const R = rng(SEED)
@@ -27,27 +27,27 @@ const ENGINE = {node: process.versions.node, unicode: (process.versions as any).
 const POOL = ["a", "Z", "_", "1", "é", "é", "中", "한", "𝐀", "²", "Ⅻ", " ", "\t", " ", " ", "　", "﻿", "​", "\r\n", "\r",
   "-", "$", "/", "<", "©", "😀", "😃", "🇩🇪", "👍🏽", "́", "‍", "\uD83D", "\uDE00", "\u0000", "\u007F", "\u0080", "¿", "À", "￿", "\u{10000}", "\u{10FFFF}"]
 const WORDCHARS = [undefined, "", "$", "-", "😀", "$-_"]
-function categorizer(wordChars?: string) {
-  let st = wordChars === undefined ? EditorState.create() : EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars}])})
-  return st.charCategorizer(0)
-}
-const EXPR = "cat = EditorState.create().charCategorizer(0) when wordChars is \"absent\", else EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars}])}).charCategorizer(0); CharCategory[cat(s)] for each s of strings"
 function randomString() {
   if (R.chance(0.2)) return R.pick(POOL).repeat(2)
   let n = R.chance(0.6) ? 1 : 2 + R.int(5), out = ""
   for (let i = 0; i < n; i++) out += R.pick(POOL)
   return out
 }
+/** The program: the categorizer of wordChars (absent: none), then the category name of each string. */
+const program = (wordChars: string | undefined, strings: string[], c: number | string) => prog([
+  step("cat", op("categorizer", {wordChars})),
+  step("names", lit(op("map", {over: lit(strings), as: "s", do: op("categorize", {cat: $("cat"), char: $("s")})})))],
+  $("names"), {seed: SEED, case: c, engine: ENGINE})
 for (let c = 0; c < 120; c++) {
-  let wordChars = WORDCHARS[c % WORDCHARS.length], cat = categorizer(wordChars)
+  let wordChars = WORDCHARS[c % WORDCHARS.length]
   let strings = [""].concat(Array.from({length: 19}, randomString))
   w("state.cm6.166", ["state.CharCategory.B2", "state.CharCategory.Word.B1", "state.CharCategory.Word.B2", "state.CharCategory.Word.B4", "state.CharCategory.Word.B5",
     "state.CharCategory.Word.B6", "state.CharCategory.Space.B1", "state.CharCategory.Space.B2", "state.CharCategory.Other.B1", "state.CharCategory.Other.B2", "state.CharCategory.Other.B3"],
-    {seed: SEED, case: c, wordChars: wordChars === undefined ? "absent" : wordChars, strings, engine: ENGINE, expr: EXPR}, {ok: strings.map(s => CharCategory[cat(s)])})
+    program(wordChars, strings, c))
 }
 {
   let s = Array.from({length: 300}, () => R.pick(POOL)).join("").slice(0, 600)
   let parts = [s, s.replace(/[\p{Alphabetic}\p{Number}_]/gu, ""), " ".repeat(600)]
-  w("state.cm6.166", ["state.CharCategory.B2"], {seed: SEED, case: "large", wordChars: "absent", strings: parts, engine: ENGINE, expr: EXPR}, {ok: parts.map(p => CharCategory[categorizer()(p)])})
+  w("state.cm6.166", ["state.CharCategory.B2"], program(undefined, parts, "large"))
 }
 console.log("gen-category: 121 cases")

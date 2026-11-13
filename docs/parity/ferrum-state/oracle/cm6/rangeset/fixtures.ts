@@ -1,9 +1,9 @@
 // Golden fixtures for the rangeset chunk (ferrum-state S2), targeted cases: one or more per behavior.
 // Writes docs/parity/ferrum-state/fixtures/rangeset.jsonl from F0001 (fresh). random.ts appends from F5001.
-// Vocabulary: lib.ts header. Behavior ids: docs/parity/ferrum-state/raw/rangeset-behaviors.jsonl.
+// Each input is a program for interp.ts (its header documents the ops); the output is run(input).
+// Behavior ids: docs/parity/ferrum-state/raw/rangeset-behaviors.jsonl.
 // Run: npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/rangeset/fixtures.ts
-import {Pool, Spec, changes, writer, eqLog, RangeSet, Range, ChangeSet, MapMode, Id, V, W, resolve} from "./lib"
-import {RangeSetBuilder} from "@codemirror/state"
+import {Spec, R, MapMode, $, op, of, empty, chOf, chEmpty, map, list, dump, filter, spans, compare, prog, writer} from "./lib"
 
 const fx = writer(true)
 const B = (item: string, ...ns: number[]) => ns.map(n => `state.${item}.B${n}`)
@@ -17,123 +17,101 @@ const ID = {
   add: "state.cm6.203", finish: "state.cm6.204", builder: "state.cm6.201",
 }
 
-// Pool of values reused below. Test-like marks have sides 1/-1 (test-rangeset.ts Value, non-empty default).
+// Value specs reused below. Test-like marks have sides 1/-1 (test-rangeset.ts Value, non-empty default).
 function mark(name: string, extra: Spec = {}): Spec { return {name, startSide: 1, endSide: -1, ...extra} }
 function pt(name: string, extra: Spec = {}): Spec { return {name, startSide: 1, endSide: 1, point: true, ...extra} }
-
-type R = [number, number, number][]
-function setInput(P: Pool, ranges: R, sort = false) { return {values: P.json(), ranges, sort} }
 const ch = (spec: any, length: number) => ({spec, length})
-const mkCh = (c: {spec: any, length: number}) => changes(c.spec, c.length)
-// The map run of a fixture whose input holds `set` and `changes` (named in the input since seed 4105's V22).
-const MAP = "set.map(ChangeSet.of(changes.spec, changes.length))"
-const MAP_LIST = "list(" + MAP + ")"
-// The compare run of a fixture whose input holds `old`, `new` and `textDiff` (lib.ts header: comparator from cmpRec()).
-const COMPARE = "RangeSet.compare(old, new, ChangeSet.of(textDiff.spec, textDiff.length) (ChangeSet.empty(textDiff.length) when spec is null), cmpRec comparator)"
-// The spans run of a fixture whose input holds `sets`, `from` and `to` (lib.ts header: iterator from spansRec()).
-const SPANS = "RangeSet.spans(sets, from, to, spansRec iterator): calls, return value (ret)"
+const mkCh = (c: {spec: any, length: number}) => chOf(c.spec, c.length)
+const size = (set: any) => op("set.prop", {set, prop: "size"})
+const length = (set: any) => op("set.prop", {set, prop: "length"})
+const same = (a: any, b: any) => op("same", {a, b})
+const range = (v: any, from: number, to?: number) => to === undefined ? op("value.range", {v, from}) : op("value.range", {v, from, to})
+const update = (set: any, spec: any) => op("set.update", {set, spec})
+const between = (set: any, from: number, to: number) => op("set.between", {set, from, to})
+const listMany = (sets: any[], from?: number) => from === undefined ? op("set.listMany", {sets}) : op("set.listMany", {sets, from})
+const takeLog = (as: string) => op("eqlog.take", {}, as)
+const R4 = ["value", "from", "to", "rank"]
+// A single spans run with a recording iterator: output {calls, ret}.
+const spansFx = (P: Spec[], sets: any[], from: number, to: number, min?: number, extra: any = {}) =>
+  prog(P, [spans(sets, from, to, min)], {calls: $("calls"), ret: $("ret")}, extra)
 
 // ---------------------------------------------------------------- RangeValue
 {
-  let v = new Id({})
-  fx(ID.RangeValue, [...B("RangeValue", 1, 2)], {construct: "class extends RangeValue {} (no field set)", ranges: [[2, 5, 0]],
-                                                    ops: ["fields: v.startSide, v.endSide, v.point, v.mapMode, Object.keys(v) without the harness's own name field (ownKeys)", "set = RangeSet.of(v.range(2, 5)): size, iter() read as [from, to] (ranges)"]}, () => {
-    let set = RangeSet.of(v.range(2, 5))
-    return {fields: {startSide: (v as any).startSide, endSide: (v as any).endSide, point: (v as any).point, mapMode: (v as any).mapMode,
-                     ownKeys: Object.keys(v).filter(k => k != "name")}, size: set.size, ranges: [...(function* () { for (let i = set.iter(); i.value; i.next()) yield [i.from, i.to] })()]}
-  })
-  let P = new Pool([{name: "v", startSide: 0, endSide: 0}, {name: "m", startSide: -1, endSide: 1}])
-  fx(ID.RangeValue, B("RangeValue", 3), {set: setInput(P, [[0, 10, 1], [2, 4, 0]]), then: "dump (dumpBefore); values[0].point = true; dump (dumpAfter); RangeSet.spans([set], 0, 10) (spans); RangeSet.spans([set], 0, 10, minPointSize 0) (spansMinPoint0); values[0].point = false"}, () => {
-    let set = P.set([[0, 10, 1], [2, 4, 0]])
-    let before = P.dump(set)
-    ;(P.values[0] as any).point = true
-    let after = P.dump(set)
-    let r = P.spansRec(); RangeSet.spans([set], 0, 10, r.it)
-    let r0 = P.spansRec(); RangeSet.spans([set], 0, 10, r0.it, 0)
-    ;(P.values[0] as any).point = false
-    return {dumpBefore: before, dumpAfter: after, spans: r.calls, spansMinPoint0: r0.calls}
-  })
+  fx(ID.RangeValue, [...B("RangeValue", 1, 2)], prog([{cls: "Id"}], [
+    op("value.fields", {v: 0}, "fields"),
+    op("set.of", {range: range(0, 2, 5)}, "set"),
+    op("set.prop", {set: $("set"), prop: "size"}, "size"),
+    op("set.list", {set: $("set"), fields: ["from", "to"]}, "ranges"),
+  ], {fields: $("fields"), size: $("size"), ranges: $("ranges")}))
+  let P: Spec[] = [{name: "v", startSide: 0, endSide: 0}, {name: "m", startSide: -1, endSide: 1}]
+  fx(ID.RangeValue, B("RangeValue", 3), prog(P, [
+    op("set.of", {ranges: [[0, 10, 1], [2, 4, 0]], sort: false}, "set"),
+    op("set.dump", {set: $("set")}, "dumpBefore"),
+    op("value.set", {v: 0, field: "point", to: true}),
+    op("set.dump", {set: $("set")}, "dumpAfter"),
+    spans([$("set")], 0, 10, undefined, "spans", "r1"),
+    spans([$("set")], 0, 10, 0, "spansMinPoint0", "r2"),
+    op("value.set", {v: 0, field: "point", to: false}),
+  ], {dumpBefore: $("dumpBefore"), dumpAfter: $("dumpAfter"), spans: $("spans"), spansMinPoint0: $("spansMinPoint0")}))
 }
 
 // ---------------------------------------------------------------- RangeValue.eq
 {
-  let a = new Id({name: "a"}), b = new Id({name: "a"})
-  fx(ID.eq, B("RangeValue.eq", 1), {values: [resolve(a), resolve(b)], calls: ["values[0].eq(values[0])", "values[0].eq(values[1])"]},
-     () => [a.eq(a), a.eq(b)])
-  let P = new Pool([pt("p"), mark("m")])
-  fx(ID.eq, B("RangeValue.eq", 2), {old: setInput(P, [[0, 5, 1], [3, 3, 0]]), new: "a second RangeSet.of call with the same Range objects' values (same value objects)",
-                                    ops: ["RangeSet.eq([old], [new])", "RangeSet.compare([old], [new], ChangeSet.empty(10), cmp)"]}, () => {
-    let o = P.set([[0, 5, 1], [3, 3, 0]]), n = P.set([[0, 5, 1], [3, 3, 0]])
-    let e = RangeSet.eq([o], [n]); let log1 = eqLog.slice()
-    eqLog.length = 0
-    let r = P.cmpRec(); RangeSet.compare([o], [n], ChangeSet.empty(10), r.comp)
-    return {eq: e, eqCallsDuringEq: log1, compareCalls: r.calls, eqCallsDuringCompare: eqLog.slice()}
-  })
-  let Q = new Pool([pt("p"), pt("p", {cls: "W"}), mark("m"), mark("m", {cls: "W"})])
-  fx(ID.eq, B("RangeValue.eq", 3), {pool: Q.json(), ops: [
-      "RangeSet.eq([of(3,3,v0)], [of(3,3,v1)])", "RangeSet.eq([of(3,3,v1)], [of(3,3,v0)])",
-      "compare([of(0,5,v2)], [of(0,5,v3)], ChangeSet.empty(10))", "compare([of(3,3,v0)], [of(3,3,v1)], ChangeSet.empty(10))"]}, () => {
-    let out: any = {}
-    out.eqVW = RangeSet.eq([Q.set([[3, 3, 0]])], [Q.set([[3, 3, 1]])]); out.logVW = eqLog.splice(0)
-    out.eqWV = RangeSet.eq([Q.set([[3, 3, 1]])], [Q.set([[3, 3, 0]])]); out.logWV = eqLog.splice(0)
-    let r = Q.cmpRec(); RangeSet.compare([Q.set([[0, 5, 2]])], [Q.set([[0, 5, 3]])], ChangeSet.empty(10), r.comp)
-    out.compareMarks = r.calls; out.logMarks = eqLog.splice(0)
-    r = Q.cmpRec(); RangeSet.compare([Q.set([[3, 3, 0]])], [Q.set([[3, 3, 1]])], ChangeSet.empty(10), r.comp)
-    out.comparePoints = r.calls; out.logPoints = eqLog.splice(0)
-    return out
-  })
-  let D = new Pool([pt("old", {cls: "W"}), pt("new", {cls: "W"}), mark("oldm", {cls: "W"}), mark("newm", {cls: "W"})])
-  fx(ID.eq, B("RangeValue.eq", 4), {pool: D.json(), ops: [
-      "RangeSet.eq([of(3,3,v0)], [of(3,3,v1)])", "compare([of(0,5,v2), of(3,3,v0)], [of(0,5,v3), of(3,3,v1)], ChangeSet.empty(10))"]}, () => {
-    let out: any = {}
-    out.eq = RangeSet.eq([D.set([[3, 3, 0]])], [D.set([[3, 3, 1]])]); out.eqLog = eqLog.splice(0)
-    let r = D.cmpRec(); RangeSet.compare([D.set([[0, 5, 2], [3, 3, 0]])], [D.set([[0, 5, 3], [3, 3, 1]])], ChangeSet.empty(10), r.comp)
-    out.compare = r.calls; out.compareLog = eqLog.splice(0)
-    return out
-  })
-  let S = new Pool([mark("a"), mark("b"), mark("a"), mark("b")])
-  fx(ID.eq, B("RangeValue.eq", 5), {pool: S.json(), ops: [
-      "compare([of(0,5,v0)], [of(0,5,v0), of(0,5,v1)])", "compare([of(0,5,v0), of(0,5,v1)], [of(0,5,v3), of(0,5,v2)]) (sets swapped, equal by eq)",
-      "compare([of(0,5,v0), of(0,5,v1)], [of(0,5,v2), of(0,5,v3)])"], textDiff: "ChangeSet.empty(10)"}, () => {
-    let out: any = {}
-    let r = S.cmpRec(); RangeSet.compare([S.set([[0, 5, 0]])], [S.set([[0, 5, 0]]), S.set([[0, 5, 1]])], ChangeSet.empty(10), r.comp)
-    out.lengthDiffers = r.calls; out.lengthLog = eqLog.splice(0)
-    r = S.cmpRec(); RangeSet.compare([S.set([[0, 5, 0]]), S.set([[0, 5, 1]])], [S.set([[0, 5, 3]]), S.set([[0, 5, 2]])], ChangeSet.empty(10), r.comp)
-    out.swapped = r.calls; out.swappedLog = eqLog.splice(0)
-    r = S.cmpRec(); RangeSet.compare([S.set([[0, 5, 0]]), S.set([[0, 5, 1]])], [S.set([[0, 5, 2]]), S.set([[0, 5, 3]])], ChangeSet.empty(10), r.comp)
-    out.sameOrder = r.calls; out.sameOrderLog = eqLog.splice(0)
-    return out
-  })
+  fx(ID.eq, B("RangeValue.eq", 1), prog([{cls: "Id", name: "a"}, {cls: "Id", name: "a"}],
+     [op("value.eq", {v: 0, other: 0}, "aa"), op("value.eq", {v: 0, other: 1}, "ab")], [$("aa"), $("ab")]))
+  let P = [pt("p"), mark("m")]
+  fx(ID.eq, B("RangeValue.eq", 2), prog(P, [
+    op("set.of", {ranges: [[0, 5, 1], [3, 3, 0]], sort: false}, "old"),
+    op("set.of", {ranges: [[0, 5, 1], [3, 3, 0]], sort: false}, "new"),
+    op("set.eq", {old: [$("old")], new: [$("new")]}, "eq"), takeLog("log1"),
+    compare([$("old")], [$("new")], chEmpty(10), "compareCalls"), takeLog("log2"),
+  ], {eq: $("eq"), eqCallsDuringEq: $("log1"), compareCalls: $("compareCalls"), eqCallsDuringCompare: $("log2")}))
+  let Q = [pt("p"), pt("p", {cls: "W"}), mark("m"), mark("m", {cls: "W"})]
+  fx(ID.eq, B("RangeValue.eq", 3), prog(Q, [
+    op("set.eq", {old: [of([[3, 3, 0]])], new: [of([[3, 3, 1]])]}, "eqVW"), takeLog("logVW"),
+    op("set.eq", {old: [of([[3, 3, 1]])], new: [of([[3, 3, 0]])]}, "eqWV"), takeLog("logWV"),
+    compare([of([[0, 5, 2]])], [of([[0, 5, 3]])], chEmpty(10), "compareMarks"), takeLog("logMarks"),
+    compare([of([[3, 3, 0]])], [of([[3, 3, 1]])], chEmpty(10), "comparePoints"), takeLog("logPoints"),
+  ], {eqVW: $("eqVW"), logVW: $("logVW"), eqWV: $("eqWV"), logWV: $("logWV"), compareMarks: $("compareMarks"), logMarks: $("logMarks"),
+      comparePoints: $("comparePoints"), logPoints: $("logPoints")}))
+  let D = [pt("old", {cls: "W"}), pt("new", {cls: "W"}), mark("oldm", {cls: "W"}), mark("newm", {cls: "W"})]
+  fx(ID.eq, B("RangeValue.eq", 4), prog(D, [
+    op("set.eq", {old: [of([[3, 3, 0]])], new: [of([[3, 3, 1]])]}, "eq"), takeLog("eqLog"),
+    compare([of([[0, 5, 2], [3, 3, 0]])], [of([[0, 5, 3], [3, 3, 1]])], chEmpty(10), "compare"), takeLog("compareLog"),
+  ], {eq: $("eq"), eqLog: $("eqLog"), compare: $("compare"), compareLog: $("compareLog")}))
+  let S = [mark("a"), mark("b"), mark("a"), mark("b")]
+  fx(ID.eq, B("RangeValue.eq", 5), prog(S, [
+    compare([of([[0, 5, 0]])], [of([[0, 5, 0]]), of([[0, 5, 1]])], chEmpty(10), "lengthDiffers"), takeLog("lengthLog"),
+    compare([of([[0, 5, 0]]), of([[0, 5, 1]])], [of([[0, 5, 3]]), of([[0, 5, 2]])], chEmpty(10), "swapped"), takeLog("swappedLog"),
+    compare([of([[0, 5, 0]]), of([[0, 5, 1]])], [of([[0, 5, 2]]), of([[0, 5, 3]])], chEmpty(10), "sameOrder"), takeLog("sameOrderLog"),
+  ], {lengthDiffers: $("lengthDiffers"), lengthLog: $("lengthLog"), swapped: $("swapped"), swappedLog: $("swappedLog"),
+      sameOrder: $("sameOrder"), sameOrderLog: $("sameOrderLog")}))
 }
 
 // ---------------------------------------------------------------- startSide
 {
-  let P = new Pool([pt("n1", {startSide: -1, endSide: -1}), pt("z", {startSide: 0, endSide: 0}), pt("p1", {startSide: 1, endSide: 1})])
-  fx(ID.startSide, [...B("RangeValue.startSide", 1), ...B("RangeSet^of", 2)], {set: setInput(P, [[4, 4, 0], [4, 4, 1], [4, 4, 2]])},
-     () => ({list: P.list(P.set([[4, 4, 0], [4, 4, 1], [4, 4, 2]])), dump: P.dump(P.set([[4, 4, 0], [4, 4, 1], [4, 4, 2]]))}))
-  fx(ID.startSide, [...B("RangeValue.startSide", 1), ...B("RangeSet^of", 2)], {set: setInput(P, [[4, 4, 2], [4, 4, 0]])},
-     () => P.list(P.set([[4, 4, 2], [4, 4, 0]])))
-  fx(ID.startSide, [...B("RangeValue.startSide", 1), ...B("RangeSet^of", 4)], {set: setInput(P, [[4, 4, 2], [4, 4, 0], [2, 2, 1]], true)},
-     () => P.list(P.set([[4, 4, 2], [4, 4, 0], [2, 2, 1]], true)))
-  let Q = new Pool([pt("a", {startSide: 5, endSide: 5}), pt("b", {startSide: -5, endSide: -5})])
-  fx(ID.startSide, [...B("RangeValue.startSide", 2), ...B("RangeSet^iter", 1)], {sets: [setInput(Q, [[2, 2, 0]]), setInput(Q, [[2, 2, 1]])], op: "RangeSet.iter([s0, s1])"},
-     () => Q.listMany([Q.set([[2, 2, 0]]), Q.set([[2, 2, 1]])]))
+  let P = [pt("n1", {startSide: -1, endSide: -1}), pt("z", {startSide: 0, endSide: 0}), pt("p1", {startSide: 1, endSide: 1})]
+  fx(ID.startSide, [...B("RangeValue.startSide", 1), ...B("RangeSet^of", 2)], prog(P, [
+    op("set.list", {set: of([[4, 4, 0], [4, 4, 1], [4, 4, 2]])}, "list"), op("set.dump", {set: of([[4, 4, 0], [4, 4, 1], [4, 4, 2]])}, "dump"),
+  ], {list: $("list"), dump: $("dump")}))
+  fx(ID.startSide, [...B("RangeValue.startSide", 1), ...B("RangeSet^of", 2)], prog(P, [op("set.list", {set: of([[4, 4, 2], [4, 4, 0]])}, "list")], $("list")))
+  fx(ID.startSide, [...B("RangeValue.startSide", 1), ...B("RangeSet^of", 4)], prog(P, [op("set.list", {set: of([[4, 4, 2], [4, 4, 0], [2, 2, 1]], true)}, "list")], $("list")))
+  let Q = [pt("a", {startSide: 5, endSide: 5}), pt("b", {startSide: -5, endSide: -5})]
+  fx(ID.startSide, [...B("RangeValue.startSide", 2), ...B("RangeSet^iter", 1)], prog(Q, [op("set.listMany", {sets: [of([[2, 2, 0]]), of([[2, 2, 1]])]}, "list")], $("list")))
   // assoc of the start side
-  let A = new Pool([pt("n", {startSide: -1, endSide: -1, mapMode: MapMode.Simple}), pt("z", {startSide: 0, endSide: 0, mapMode: MapMode.Simple}),
-                    pt("p", {startSide: 1, endSide: 1, mapMode: MapMode.Simple}), {name: "guard", startSide: 0, endSide: 0}])
+  let A = [pt("n", {startSide: -1, endSide: -1, mapMode: MapMode.Simple}), pt("z", {startSide: 0, endSide: 0, mapMode: MapMode.Simple}),
+           pt("p", {startSide: 1, endSide: 1, mapMode: MapMode.Simple}), {name: "guard", startSide: 0, endSide: 0}]
   let base: R = [[0, 1, 3], [5, 5, 0], [5, 5, 1], [5, 5, 2], [9, 10, 3]]
-  for (let c of [ch({from: 5, insert: "xy"}, 10), ch({from: 5, insert: "\ud83d\ude00"}, 10), ch({from: 5, insert: "\u00e9"}, 10),
+  for (let c of [ch({from: 5, insert: "xy"}, 10), ch({from: 5, insert: "😀"}, 10), ch({from: 5, insert: "é"}, 10),
                  ch({from: 5, to: 7, insert: "abc"}, 10), ch({from: 3, to: 5, insert: "abc"}, 10)])
-    fx(ID.startSide, [...B("RangeValue.startSide", 3), ...B("RangeSet.map", 3, 10)], {set: setInput(A, base), changes: c, op: MAP_LIST},
-       () => A.list(A.set(base).map(mkCh(c))))
+    fx(ID.startSide, [...B("RangeValue.startSide", 3), ...B("RangeSet.map", 3, 10)], prog(A, [op("set.list", {set: map(of(base), mkCh(c))}, "list")], $("list")))
   // spans: open count of a point with startSide < 0 vs >= 0
-  let O = new Pool([mark("m", {startSide: -2, endSide: 1}), pt("pn", {startSide: -1, endSide: -1}), pt("pp", {startSide: 1, endSide: 1})])
+  let O = [mark("m", {startSide: -2, endSide: 1}), pt("pn", {startSide: -1, endSide: -1}), pt("pp", {startSide: 1, endSide: 1})]
   for (let r of [[[0, 10, 0], [5, 5, 1]], [[0, 10, 0], [5, 5, 2]], [[5, 10, 0], [5, 5, 1]], [[5, 10, 0], [5, 5, 2]]] as R[])
     for (let from of [0, 3])
-      fx(ID.startSide, [...B("RangeValue.startSide", 4), ...B("RangeSet^spans", 4), ...B("SpanIterator.point", 1)], {set: setInput(O, r), op: `RangeSet.spans([set], ${from}, 10)`},
-         () => { let rec = O.spansRec(); let ret = RangeSet.spans([O.set(r)], from, 10, rec.it); return {calls: rec.calls, ret} })
+      fx(ID.startSide, [...B("RangeValue.startSide", 4), ...B("RangeSet^spans", 4), ...B("SpanIterator.point", 1)], spansFx(O, [of(r)], from, 10))
   // consumer values: @codemirror/view decoration sides (mirrors/cm6/view/src/decoration.ts:170-185, :236-260, :283-287, :321-334, :431)
-  let C = new Pool([
+  let C: Spec[] = [
     {name: "mark", startSide: 5e8, endSide: -6e8},                                   // Decoration.mark default
     {name: "markInc", startSide: -1, endSide: 1},                                   // Decoration.mark({inclusive: true})
     {name: "widgetBefore", startSide: -1e8 - 1, endSide: -1e8 - 1, point: true},    // widget side -1
@@ -149,370 +127,369 @@ const SPANS = "RangeSet.spans(sets, from, to, spansRec iterator): calls, return 
     {name: "gap", startSide: -5e8, endSide: 4e8, point: true, mapMode: MapMode.TrackBefore}, // isBlockGap, block
     {name: "gutter", startSide: -1, endSide: -1, point: true, mapMode: MapMode.TrackBefore}, // GutterMarker
     {name: "wrapper", startSide: -1, endSide: -1},                                   // BlockWrapper
-  ])
+  ]
   let cons: R = [[3, 6, 0], [3, 6, 1], [3, 3, 2], [3, 3, 3], [3, 3, 4], [3, 3, 5], [3, 3, 6], [3, 3, 7], [3, 3, 8], [3, 3, 9],
                  [3, 6, 10], [3, 6, 11], [3, 6, 12], [3, 3, 13], [3, 6, 14]]
-  fx(ID.startSide, [...B("RangeValue.startSide", 5), ...B("RangeSet^of", 4)], {set: setInput(C, cons, true)},
-     () => ({list: C.list(C.set(cons, true)), dump: C.dump(C.set(cons, true))}))
+  fx(ID.startSide, [...B("RangeValue.startSide", 5), ...B("RangeSet^of", 4)], prog(C, [
+    op("set.list", {set: of(cons, true)}, "list"), op("set.dump", {set: of(cons, true)}, "dump")], {list: $("list"), dump: $("dump")}))
   for (let c of [ch({from: 3, insert: "ab"}, 10), ch({from: 6, insert: "ab"}, 10), ch({from: 2, to: 4}, 10)])
-    fx(ID.startSide, [...B("RangeValue.startSide", 5), ...B("RangeSet.map", 3)], {set: setInput(C, cons, true), changes: c, op: MAP_LIST},
-       () => C.list(C.set(cons, true).map(mkCh(c))))
-  fx(ID.startSide, [...B("RangeValue.startSide", 5), ...B("RangeSet^spans", 1)], {set: setInput(C, cons, true), op: "RangeSet.spans([set], 0, 10)"},
-     () => { let rec = C.spansRec(); let ret = RangeSet.spans([C.set(cons, true)], 0, 10, rec.it); return {calls: rec.calls, ret} })
+    fx(ID.startSide, [...B("RangeValue.startSide", 5), ...B("RangeSet.map", 3)], prog(C, [op("set.list", {set: map(of(cons, true), mkCh(c))}, "list")], $("list")))
+  fx(ID.startSide, [...B("RangeValue.startSide", 5), ...B("RangeSet^spans", 1)], spansFx(C, [of(cons, true)], 0, 10))
   // extreme sides against the ±1e9 bounds of Chunk.between and goto
-  let X = new Pool([{name: "e-1e9", startSide: 0, endSide: -1e9}, {name: "e-1e9-1", startSide: 0, endSide: -1e9 - 1},
-                    {name: "s1e9", startSide: 1e9, endSide: 0}, {name: "s1e9+1", startSide: 1e9 + 1, endSide: 0}])
+  let X: Spec[] = [{name: "e-1e9", startSide: 0, endSide: -1e9}, {name: "e-1e9-1", startSide: 0, endSide: -1e9 - 1},
+                   {name: "s1e9", startSide: 1e9, endSide: 0}, {name: "s1e9+1", startSide: 1e9 + 1, endSide: 0}]
   for (let r of [[[0, 5, 0]], [[0, 5, 1]], [[10, 12, 2]], [[10, 12, 3]]] as R[])
-    fx(ID.startSide, [...B("RangeValue.startSide", 6), ...B("RangeSet.between", 5)], {set: setInput(X, r), ops: ["between(5, 10)", "iter(5)"]},
-       () => { let s = X.set(r), found: any[] = []; s.between(5, 10, (f, t, v) => { found.push([f, t, X.idx(v)]) }); return {between: found, iter: X.list(s, 5)} })
+    fx(ID.startSide, [...B("RangeValue.startSide", 6), ...B("RangeSet.between", 5)], prog(X, [
+      op("set.of", {ranges: r, sort: false}, "s"), op("set.between", {set: $("s"), from: 5, to: 10}, "between"), op("set.list", {set: $("s"), from: 5}, "iter"),
+    ], {between: $("between"), iter: $("iter")}))
 }
 
 // ---------------------------------------------------------------- endSide
 {
-  let P = new Pool([{name: "e-1", startSide: 0, endSide: -1}, {name: "e1", startSide: 0, endSide: 1}, {name: "e0", startSide: 0, endSide: 0},
-                    {name: "s1", startSide: 1, endSide: 0}, {name: "s-1", startSide: -1, endSide: 0}, {name: "s0", startSide: 0, endSide: 0}])
+  let P: Spec[] = [{name: "e-1", startSide: 0, endSide: -1}, {name: "e1", startSide: 0, endSide: 1}, {name: "e0", startSide: 0, endSide: 0},
+                   {name: "s1", startSide: 1, endSide: 0}, {name: "s-1", startSide: -1, endSide: 0}, {name: "s0", startSide: 0, endSide: 0}]
   for (let r of [[[0, 5, 0], [5, 8, 3]], [[0, 5, 1], [5, 8, 4]], [[0, 5, 2], [5, 8, 5]], [[0, 5, 1], [5, 8, 3]]] as R[])
-    fx(ID.endSide, [...B("RangeValue.endSide", 1), ...B("RangeSet", 1)], {set: setInput(P, r)}, () => P.dump(P.set(r)))
-  let M = new Pool([mark("ex", {startSide: 1, endSide: -1}), mark("inc", {startSide: -1, endSide: 1})])
+    fx(ID.endSide, [...B("RangeValue.endSide", 1), ...B("RangeSet", 1)], prog(P, [op("set.dump", {set: of(r)}, "dump")], $("dump")))
+  let M = [mark("ex", {startSide: 1, endSide: -1}), mark("inc", {startSide: -1, endSide: 1})]
   for (let c of [ch({from: 2, insert: "ab"}, 10), ch({from: 5, insert: "ab"}, 10)])
-    fx(ID.endSide, [...B("RangeValue.endSide", 2), ...B("RangeSet.map", 5)], {sets: [setInput(M, [[2, 5, 0]]), setInput(M, [[2, 5, 1]])], changes: c, op: "[sets[0], sets[1]].map(s => list of s.map(ChangeSet.of(changes.spec, changes.length)))"},
-       () => [M.list(M.set([[2, 5, 0]]).map(mkCh(c))), M.list(M.set([[2, 5, 1]]).map(mkCh(c)))])
-  let E = new Pool([{name: "grow", startSide: -1, endSide: 1, point: true}, {name: "inverted", startSide: 1, endSide: -1, point: true},
-                    {name: "guard", startSide: 0, endSide: 0}])
-  for (let c of [ch({from: 5, insert: "abc"}, 10), ch({from: 5, insert: "\ud83d\ude00"}, 10)])
+    fx(ID.endSide, [...B("RangeValue.endSide", 2), ...B("RangeSet.map", 5)], prog(M, [
+      op("set.list", {set: map(of([[2, 5, 0]]), mkCh(c))}, "l0"), op("set.list", {set: map(of([[2, 5, 1]]), mkCh(c))}, "l1")], [$("l0"), $("l1")]))
+  let E: Spec[] = [{name: "grow", startSide: -1, endSide: 1, point: true}, {name: "inverted", startSide: 1, endSide: -1, point: true},
+                   {name: "guard", startSide: 0, endSide: 0}]
+  for (let c of [ch({from: 5, insert: "abc"}, 10), ch({from: 5, insert: "😀"}, 10)])
     for (let i of [0, 1])
-      fx(ID.endSide, [...B("RangeValue.endSide", 3), ...B("RangeSet.map", 4, 10)], {set: setInput(E, [[0, 1, 2], [5, 5, i]]), changes: c, op: "list: " + MAP_LIST},
-         () => ({list: E.list(E.set([[0, 1, 2], [5, 5, i]]).map(mkCh(c)))}))
+      fx(ID.endSide, [...B("RangeValue.endSide", 3), ...B("RangeSet.map", 4, 10)], prog(E, [
+        op("set.list", {set: map(of([[0, 1, 2], [5, 5, i]]), mkCh(c))}, "list")], {list: $("list")}))
   // collapse rules for non-empty ranges (rangeset.ts:149, :151)
-  let K = new Pool([{name: "s-1e-2", startSide: -1, endSide: -2}, {name: "s-1e1", startSide: -1, endSide: 1}, {name: "s1e-1", startSide: 1, endSide: -1},
-                    {name: "s0e0", startSide: 0, endSide: 0}, {name: "s-1e-1", startSide: -1, endSide: -1}, {name: "s2e1", startSide: 2, endSide: 1},
-                    {name: "s1e1", startSide: 1, endSide: 1}, {name: "guard", startSide: 0, endSide: 0}])
+  let K: Spec[] = [{name: "s-1e-2", startSide: -1, endSide: -2}, {name: "s-1e1", startSide: -1, endSide: 1}, {name: "s1e-1", startSide: 1, endSide: -1},
+                   {name: "s0e0", startSide: 0, endSide: 0}, {name: "s-1e-1", startSide: -1, endSide: -1}, {name: "s2e1", startSide: 2, endSide: 1},
+                   {name: "s1e1", startSide: 1, endSide: 1}, {name: "guard", startSide: 0, endSide: 0}]
   for (let i = 0; i < 7; i++)
-    fx(ID.endSide, [...B("RangeValue.endSide", 4), ...B("RangeSet.map", 5)], {set: setInput(K, [[0, 1, 7], [3, 6, i]]), changes: ch({from: 3, to: 6}, 10), op: MAP_LIST},
-       () => K.list(K.set([[0, 1, 7], [3, 6, i]]).map(mkCh({spec: {from: 3, to: 6}, length: 10}))))
+    fx(ID.endSide, [...B("RangeValue.endSide", 4), ...B("RangeSet.map", 5)], prog(K, [
+      op("set.list", {set: map(of([[0, 1, 7], [3, 6, i]]), mkCh({spec: {from: 3, to: 6}, length: 10}))}, "list")], $("list")))
   // empty ranges whose endSide < startSide: Decoration.replace({inclusiveStart: true}) and ({inclusiveEnd: true}) at an empty range
-  let R2 = new Pool([{name: "replaceIncStart", startSide: -2, endSide: -6e8 + 1, point: true}, {name: "replaceIncEnd", startSide: 5e8 - 1, endSide: 2, point: true},
-                     {name: "mark", startSide: 5e8, endSide: -6e8}])
+  let R2: Spec[] = [{name: "replaceIncStart", startSide: -2, endSide: -6e8 + 1, point: true}, {name: "replaceIncEnd", startSide: 5e8 - 1, endSide: 2, point: true},
+                    {name: "mark", startSide: 5e8, endSide: -6e8}]
   for (let i of [0, 1])
     for (let c of [ch({from: 9, insert: "x"}, 20), ch({from: 15, insert: "x"}, 20)])
-      fx(ID.endSide, [...B("RangeValue.endSide", 4), ...B("RangeSet.map", 4, 2)], {set: setInput(R2, [[3, 3, i], [8, 10, 2]]), changes: c, ops: ["list: " + MAP_LIST, "dump: dump(set) (the set before mapping)"]},
-         () => ({list: R2.list(R2.set([[3, 3, i], [8, 10, 2]]).map(mkCh(c))), dump: R2.dump(R2.set([[3, 3, i], [8, 10, 2]]))}))
+      fx(ID.endSide, [...B("RangeValue.endSide", 4), ...B("RangeSet.map", 4, 2)], prog(R2, [
+        op("set.list", {set: map(of([[3, 3, i], [8, 10, 2]]), mkCh(c))}, "list"), op("set.dump", {set: of([[3, 3, i], [8, 10, 2]])}, "dump"),
+      ], {list: $("list"), dump: $("dump")}))
   // activeForPoint: a range ending where the point ends is included only when its endSide >= the point's endSide
-  let F = new Pool([mark("m", {startSide: -1, endSide: 1}), pt("p1", {startSide: -1, endSide: 1}), pt("p2", {startSide: -1, endSide: 2}), pt("p0", {startSide: -1, endSide: 0})])
+  let F = [mark("m", {startSide: -1, endSide: 1}), pt("p1", {startSide: -1, endSide: 1}), pt("p2", {startSide: -1, endSide: 2}), pt("p0", {startSide: -1, endSide: 0})]
   for (let i of [1, 2, 3])
-    fx(ID.endSide, [...B("RangeValue.endSide", 5), ...B("RangeSet^spans", 4)], {set: setInput(F, [[0, 5, 0], [2, 5, i]]), op: "RangeSet.spans([set], 0, 8)"},
-       () => { let rec = F.spansRec(); let ret = RangeSet.spans([F.set([[0, 5, 0], [2, 5, i]])], 0, 8, rec.it); return {calls: rec.calls, ret} })
+    fx(ID.endSide, [...B("RangeValue.endSide", 5), ...B("RangeSet^spans", 4)], spansFx(F, [of([[0, 5, 0], [2, 5, i]])], 0, 8))
   // iteration tie-breaks across layers: to, then endSide, then the heap
-  let T = new Pool([{name: "a"}, {name: "b"}, {name: "c", endSide: 1}, {name: "d", endSide: -1}])
+  let T: Spec[] = [{name: "a"}, {name: "b"}, {name: "c", endSide: 1}, {name: "d", endSide: -1}]
   for (let r of [[[0, 10, 0], [0, 5, 1]], [[0, 5, 2], [0, 5, 3]], [[1, 3, 0], [1, 3, 1]], [[1, 3, 0], [1, 3, 1], [1, 3, 0], [1, 3, 1]]] as R[])
-    fx(ID.endSide, [...B("RangeValue.endSide", 6), ...B("RangeSet.iter", 2)], {set: setInput(T, r)}, () => ({dump: T.dump(T.set(r)), list: T.list(T.set(r))}))
+    fx(ID.endSide, [...B("RangeValue.endSide", 6), ...B("RangeSet.iter", 2)], prog(T, [
+      op("set.dump", {set: of(r)}, "dump"), op("set.list", {set: of(r)}, "list")], {dump: $("dump"), list: $("list")}))
 }
 
 // ---------------------------------------------------------------- mapMode
 {
-  let P = new Pool([{name: "guard", startSide: 0, endSide: 0},
-                    pt("simple", {startSide: 0, endSide: 0, mapMode: MapMode.Simple}), pt("trackDel", {startSide: 0, endSide: 0, mapMode: MapMode.TrackDel}),
-                    pt("trackBefore", {startSide: 0, endSide: 0, mapMode: MapMode.TrackBefore}), pt("trackAfter", {startSide: 0, endSide: 0, mapMode: MapMode.TrackAfter})])
+  let P: Spec[] = [{name: "guard", startSide: 0, endSide: 0},
+                   pt("simple", {startSide: 0, endSide: 0, mapMode: MapMode.Simple}), pt("trackDel", {startSide: 0, endSide: 0, mapMode: MapMode.TrackDel}),
+                   pt("trackBefore", {startSide: 0, endSide: 0, mapMode: MapMode.TrackBefore}), pt("trackAfter", {startSide: 0, endSide: 0, mapMode: MapMode.TrackAfter})]
   let r: R = [[0, 1, 0], [5, 5, 1], [5, 5, 2], [5, 5, 3], [5, 5, 4], [18, 19, 0]]
   for (let c of [ch({from: 4, to: 6}, 20), ch({from: 5, to: 6}, 20), ch({from: 4, to: 5}, 20), ch({from: 4, to: 6, insert: "xyz"}, 20),
-                 ch({from: 5, insert: "q"}, 20), ch({from: 4, to: 6, insert: "\ud83d\ude00"}, 20)])
-    fx(ID.mapMode, [...B("RangeValue.mapMode", 1), ...B("RangeSet.map", 3, 10)], {set: setInput(P, r), changes: c, op: MAP_LIST}, () => P.list(P.set(r).map(mkCh(c))))
-  let N = new Pool([{name: "guard", startSide: 0, endSide: 0}, {name: "nonEmptySimple", startSide: 0, endSide: 0, mapMode: MapMode.Simple},
-                    {name: "nonEmptyTrackDel", startSide: 0, endSide: 0, mapMode: MapMode.TrackDel}])
+                 ch({from: 5, insert: "q"}, 20), ch({from: 4, to: 6, insert: "😀"}, 20)])
+    fx(ID.mapMode, [...B("RangeValue.mapMode", 1), ...B("RangeSet.map", 3, 10)], prog(P, [op("set.list", {set: map(of(r), mkCh(c))}, "list")], $("list")))
+  let N: Spec[] = [{name: "guard", startSide: 0, endSide: 0}, {name: "nonEmptySimple", startSide: 0, endSide: 0, mapMode: MapMode.Simple},
+                   {name: "nonEmptyTrackDel", startSide: 0, endSide: 0, mapMode: MapMode.TrackDel}]
   for (let i of [1, 2])
-    fx(ID.mapMode, [...B("RangeValue.mapMode", 2), ...B("RangeSet.map", 5)], {set: setInput(N, [[0, 1, 0], [4, 6, i], [18, 19, 0]]), changes: ch({from: 3, to: 7}, 20), op: MAP_LIST},
-       () => N.list(N.set([[0, 1, 0], [4, 6, i], [18, 19, 0]]).map(mkCh({spec: {from: 3, to: 7}, length: 20}))))
+    fx(ID.mapMode, [...B("RangeValue.mapMode", 2), ...B("RangeSet.map", 5)], prog(N, [
+      op("set.list", {set: map(of([[0, 1, 0], [4, 6, i], [18, 19, 0]]), mkCh({spec: {from: 3, to: 7}, length: 20}))}, "list")], $("list")))
   // Q19 reproduction: a chunk strictly covered by a deletion is dropped whole (no "cover" branch)
-  let Q = new Pool([{name: "inc", startSide: -1, endSide: 1}, {name: "s0", startSide: 0, endSide: 0},
-                    pt("simplePoint", {startSide: 0, endSide: 0, mapMode: MapMode.Simple}), {name: "neighbour", startSide: 0, endSide: 0}])
+  let Q: Spec[] = [{name: "inc", startSide: -1, endSide: 1}, {name: "s0", startSide: 0, endSide: 0},
+                   pt("simplePoint", {startSide: 0, endSide: 0, mapMode: MapMode.Simple}), {name: "neighbour", startSide: 0, endSide: 0}]
   let c = ch({from: 0, to: 10, insert: "abc"}, 20)
   for (let r of [[[5, 6, 0]], [[5, 6, 0], [15, 16, 3]], [[5, 6, 1]], [[5, 6, 1], [15, 16, 3]], [[5, 5, 2]], [[5, 5, 2], [15, 16, 3]]] as R[])
-    fx(ID.map, [...B("RangeSet.map", 7), ...B("RangeValue.mapMode", 3)], {set: setInput(Q, r), changes: c, question: "Q19",
-                                                                       ops: ["touchesRange: ChangeSet.of(changes.spec, changes.length).touchesRange(ranges[0][0], ranges[ranges.length - 1][1])", "list: " + MAP_LIST]},
-       () => ({touchesRange: mkCh(c).touchesRange(r[0][0], r[r.length - 1][1]), list: Q.list(Q.set(r).map(mkCh(c)))}))
+    fx(ID.map, [...B("RangeSet.map", 7), ...B("RangeValue.mapMode", 3)], prog(Q, [
+      op("changes.touchesRange", {changes: mkCh(c), from: r[0][0], to: r[r.length - 1][1]}, "touchesRange"),
+      op("set.list", {set: map(of(r), mkCh(c))}, "list"),
+    ], {touchesRange: $("touchesRange"), list: $("list")}, {question: "Q19"}))
 }
 
 // ---------------------------------------------------------------- point
 {
-  let P = new Pool([pt("p3", {startSide: 0, endSide: 0}), pt("p5", {startSide: 0, endSide: 0}), {name: "m8"}, pt("p0", {startSide: 0, endSide: 0})])
+  let P: Spec[] = [pt("p3", {startSide: 0, endSide: 0}), pt("p5", {startSide: 0, endSide: 0}), {name: "m8"}, pt("p0", {startSide: 0, endSide: 0})]
   for (let r of [[[0, 3, 0], [5, 10, 1], [12, 20, 2]], [[12, 20, 2]], [[4, 4, 3]], [[0, 20, 2], [5, 10, 1], [12, 13, 0]]] as R[])
-    fx(ID.point, [...B("RangeValue.point", 1), ...B("RangeSet", 3)], {set: setInput(P, r)}, () => P.dump(P.set(r)))
-  let S = new Pool([mark("m"), pt("p", {startSide: -1, endSide: 1}), mark("n"), pt("q", {startSide: 1, endSide: 1}), pt("e", {startSide: 1, endSide: 1})])
+    fx(ID.point, [...B("RangeValue.point", 1), ...B("RangeSet", 3)], prog(P, [op("set.dump", {set: of(r)}, "dump")], $("dump")))
+  let S = [mark("m"), pt("p", {startSide: -1, endSide: 1}), mark("n"), pt("q", {startSide: 1, endSide: 1}), pt("e", {startSide: 1, endSide: 1})]
   let r: R = [[0, 10, 0], [2, 6, 1], [3, 4, 2], [4, 4, 3], [6, 6, 4]]
-  fx(ID.point, [...B("RangeValue.point", 2), ...B("RangeSet^spans", 5)], {set: setInput(S, r), op: "RangeSet.spans([set], 0, 10)"},
-     () => { let rec = S.spansRec(); let ret = RangeSet.spans([S.set(r)], 0, 10, rec.it); return {calls: rec.calls, ret} })
-  let Z = new Pool([mark("m"), pt("e0", {startSide: 1, endSide: 1}), pt("s2"), pt("s5"), pt("s20")])
+  fx(ID.point, [...B("RangeValue.point", 2), ...B("RangeSet^spans", 5)], spansFx(S, [of(r)], 0, 10))
+  let Z = [mark("m"), pt("e0", {startSide: 1, endSide: 1}), pt("s2"), pt("s5"), pt("s20")]
   let zr: R = [[0, 30, 0], [1, 1, 1], [2, 4, 2], [5, 10, 3], [10, 30, 4]]
   for (let min of [-1, 0, 3, 20, 21])
-    fx(ID.point, [...B("RangeValue.point", 3), ...B("RangeSet^spans", 7)], {set: setInput(Z, zr), op: `RangeSet.spans([set], 0, 30, it, ${min})`},
-       () => { let rec = Z.spansRec(); let ret = RangeSet.spans([Z.set(zr)], 0, 30, rec.it, min); return {calls: rec.calls, ret} })
+    fx(ID.point, [...B("RangeValue.point", 3), ...B("RangeSet^spans", 7)], spansFx(Z, [of(zr)], 0, 30, min))
 }
 
 // ---------------------------------------------------------------- RangeValue.range, Range
 {
-  let v = new Id({name: "v"})
-  fx(ID.range, [...B("RangeValue.range", 1, 3), ...B("Range", 1), ...B("Range.from", 1), ...B("Range.to", 1), ...B("Range.value", 1)],
-     {value: resolve(v), calls: ["v.range(4)", "v.range(4)", "v.range(1, 7)"],
-      reads: "a, b, c = the three results; a: [a.from, a.to]; c: [c.from, c.to]; valueIsV: a.value === v && c.value === v; distinctObjects: a !== b; isRange: a instanceof Range"}, () => {
-    let a = v.range(4), b = v.range(4), c = v.range(1, 7)
-    return {a: [a.from, a.to], c: [c.from, c.to], valueIsV: a.value === v && c.value === v, distinctObjects: a !== b, isRange: a instanceof Range}
-  })
-  let P = new Pool([{name: "v"}, {name: "w"}])
+  let v: Spec = {cls: "Id", name: "v"}
+  fx(ID.range, [...B("RangeValue.range", 1, 3), ...B("Range", 1), ...B("Range.from", 1), ...B("Range.to", 1), ...B("Range.value", 1)], prog([v], [
+    op("value.range", {v: 0, from: 4}, "a"), op("value.range", {v: 0, from: 4}, "b"), op("value.range", {v: 0, from: 1, to: 7}, "c"),
+    op("range.fromTo", {range: $("a")}, "aFromTo"), op("range.fromTo", {range: $("c")}, "cFromTo"),
+    op("all", {of: [same(op("range.value", {range: $("a")}), op("value", {v: 0})), same(op("range.value", {range: $("c")}), op("value", {v: 0}))]}, "valueIsV"),
+    op("not", {of: same($("a"), $("b"))}, "distinctObjects"),
+    op("range.isRange", {range: $("a")}, "isRange"),
+  ], {a: $("aFromTo"), c: $("cFromTo"), valueIsV: $("valueIsV"), distinctObjects: $("distinctObjects"), isRange: $("isRange")}))
+  let P: Spec[] = [{name: "v"}, {name: "w"}]
   for (let r of [[[5, 3, 0]], [[5, 3, 0], [4, 6, 1]], [[-3, -1, 0], [0, 2, 1]], [[0.5, 2.5, 0]]] as R[])
-    fx(ID.range, [...B("RangeValue.range", 2), ...B("Range", 1), ...B("RangeSetBuilder", 2)], {set: setInput(P, r), ops: ["dump", "list", "size", "between(-10, 10)", "length (internal)"]}, () => {
-      let s = P.set(r), found: any[] = []; s.between(-10, 10, (f, t, x) => { found.push([f, t, P.idx(x)]) })
-      return {dump: P.dump(s), list: P.list(s), size: s.size, between: found, length: (s as any).length}
-    })
-  fx(ID.range, [...B("RangeValue.range", 2), ...B("RangeSetBuilder.add", 4)], {set: setInput(P, [[-1e9, -1e9, 0]]), question: "Q20"}, () => P.set([[-1e9, -1e9, 0]]).size)
-  fx(ID.range, [...B("RangeValue.range", 2), ...B("RangeSetBuilder.add", 4)], {set: setInput(P, [[-1e9, -1e9 + 1, 0]]), question: "Q20"}, () => P.list(P.set([[-1e9, -1e9 + 1, 0]])))
-  fx(ID.Range, [...B("Range", 2), ...B("RangeSet^of", 1), ...B("RangeCursor.value", 1)], {value: resolve(v), op: "RangeSet.of(v.range(2, 4)) (a single Range, not an array)"}, () => {
-    let s = RangeSet.of(v.range(2, 4)); let out: any[] = []; for (let i = s.iter(); i.value; i.next()) out.push([i.from, i.to, i.value === v]); return out
-  })
+    fx(ID.range, [...B("RangeValue.range", 2), ...B("Range", 1), ...B("RangeSetBuilder", 2)], prog(P, [
+      op("set.of", {ranges: r, sort: false}, "s"), op("set.between", {set: $("s"), from: -10, to: 10}, "between"),
+      op("set.dump", {set: $("s")}, "dump"), op("set.list", {set: $("s")}, "list"), op("set.prop", {set: $("s"), prop: "size"}, "size"),
+      op("set.prop", {set: $("s"), prop: "length"}, "length"),
+    ], {dump: $("dump"), list: $("list"), size: $("size"), between: $("between"), length: $("length")}))
+  fx(ID.range, [...B("RangeValue.range", 2), ...B("RangeSetBuilder.add", 4)], prog(P, [op("set.prop", {set: of([[-1e9, -1e9, 0]]), prop: "size"}, "size")], $("size"), {question: "Q20"}))
+  fx(ID.range, [...B("RangeValue.range", 2), ...B("RangeSetBuilder.add", 4)], prog(P, [op("set.list", {set: of([[-1e9, -1e9 + 1, 0]])}, "list")], $("list"), {question: "Q20"}))
+  fx(ID.Range, [...B("Range", 2), ...B("RangeSet^of", 1), ...B("RangeCursor.value", 1)], prog([v], [
+    op("set.of", {range: range(0, 2, 4)}, "s"),
+    op("set.list", {set: $("s"), fields: ["from", "to", {is: 0}]}, "list"),
+  ], $("list")))
 }
 
 // ---------------------------------------------------------------- RangeSet structure, size, empty
 {
-  let P = new Pool([{name: "a"}, {name: "b"}, {name: "c"}, {name: "d"}])
+  let P: Spec[] = [{name: "a"}, {name: "b"}, {name: "c"}, {name: "d"}]
   let r: R = [[0, 10, 0], [2, 4, 1], [3, 8, 2], [10, 12, 3]]
-  fx(ID.RangeSet, [...B("RangeSet", 1), ...B("RangeSet.size", 2), ...B("RangeSet^of", 5)], {set: setInput(P, r)}, () => {
-    let s = P.set(r); return {dump: P.dump(s), size: s.size, length: (s as any).length}
-  })
+  fx(ID.RangeSet, [...B("RangeSet", 1), ...B("RangeSet.size", 2), ...B("RangeSet^of", 5)], prog(P, [
+    op("set.of", {ranges: r, sort: false}, "s"), op("set.dump", {set: $("s")}, "dump"), op("set.prop", {set: $("s"), prop: "size"}, "size"),
+    op("set.prop", {set: $("s"), prop: "length"}, "length")], {dump: $("dump"), size: $("size"), length: $("length")}))
   let big: R = []; for (let i = 0; i < 600; i++) big.push([i, i + 1, i % 4])
-  fx(ID.RangeSet, [...B("RangeSet", 2), ...B("RangeSetBuilder.add", 5)], {set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 4] for i in 0..600"}}, () => {
-    let s = P.set(big); return {dump: P.dump(s), size: s.size}
-  })
-  fx(ID.RangeSet, [...B("RangeSet", 4), ...B("RangeSet^empty", 1), ...B("RangeSet^of", 7)], {ops: [
-      "RangeSet.of([]) === RangeSet.empty", "new RangeSetBuilder().finish() === RangeSet.empty", "RangeSet.join([]) === RangeSet.empty",
-      "of(0,5,a).update({filter: () => false}) === RangeSet.empty", "of(0,5,a).map(delete 0..10 of 10) === RangeSet.empty (a has sides 0/0, so the range survives as [0,0])",
-      "RangeSet.empty.update({add: []}) === RangeSet.empty", "RangeSet.empty.map(insert at 0) === RangeSet.empty",
-      "RangeSet.empty.update({filter: () => true}) === RangeSet.empty"], values: P.json()}, () => [
-    RangeSet.of([]) === RangeSet.empty, new RangeSetBuilder().finish() === RangeSet.empty, RangeSet.join([]) === RangeSet.empty,
-    P.set([[0, 5, 0]]).update({filter: () => false}) === RangeSet.empty, P.set([[0, 5, 0]]).map(changes({from: 0, to: 10}, 10)) === RangeSet.empty,
-    RangeSet.empty.update({add: []}) === RangeSet.empty, RangeSet.empty.map(changes({from: 0, insert: "x"}, 0)) === RangeSet.empty,
-    RangeSet.empty.update({filter: () => true}) === RangeSet.empty])
-  fx(ID.empty, B("RangeSet^empty", 1), {op: "properties of RangeSet.empty: size, length (internal), maxPoint, chunk count, nextLayer === itself; iter() read as [value, from, to, rank]; between(0, 1e9) callback count (betweenCalls); RangeSet.spans([RangeSet.empty], 0, 5) calls and return value (spans, spansRet)"}, () => {
-    let e: any = RangeSet.empty, it = e.iter(), calls = 0; e.between(0, 1e9, () => { calls++ })
-    let rec = new Pool([]).spansRec(); let ret = RangeSet.spans([e], 0, 5, rec.it)
-    return {size: e.size, length: e.length, maxPoint: e.maxPoint, chunks: e.chunk.length, nextLayerIsSelf: e.nextLayer === e,
-            iter: [it.value, it.from, it.to, it.rank], betweenCalls: calls, spans: rec.calls, spansRet: ret}
-  })
+  fx(ID.RangeSet, [...B("RangeSet", 2), ...B("RangeSetBuilder.add", 5)], prog(P, [
+    op("set.of", {ranges: big, sort: false}, "s"), op("set.dump", {set: $("s")}, "dump"), op("set.prop", {set: $("s"), prop: "size"}, "size")],
+    {dump: $("dump"), size: $("size")}))
+  fx(ID.RangeSet, [...B("RangeSet", 4), ...B("RangeSet^empty", 1), ...B("RangeSet^of", 7)], prog(P, [
+    op("same", {a: op("set.of", {ranges: []}), b: empty}, "r0"),
+    op("same", {a: op("builder.finish", {builder: op("builder.new")}), b: empty}, "r1"),
+    op("same", {a: op("set.join", {sets: []}), b: empty}, "r2"),
+    op("same", {a: update(of([[0, 5, 0]]), {filter: filter({const: false})}), b: empty}, "r3"),
+    op("same", {a: map(of([[0, 5, 0]]), chOf({from: 0, to: 10}, 10)), b: empty}, "r4"),
+    op("same", {a: update(empty, {add: []}), b: empty}, "r5"),
+    op("same", {a: map(empty, chOf({from: 0, insert: "x"}, 0)), b: empty}, "r6"),
+    op("same", {a: update(empty, {filter: filter({const: true})}), b: empty}, "r7"),
+  ], ["r0", "r1", "r2", "r3", "r4", "r5", "r6", "r7"].map($)))
+  fx(ID.empty, B("RangeSet^empty", 1), prog([], [
+    op("set.empty", {}, "e"), op("set.iter", {set: $("e")}, "it"), op("count", {of: op("set.between", {set: $("e"), from: 0, to: 1e9})}, "betweenCalls"),
+    spans([$("e")], 0, 5, undefined, "spans", "spansRet"),
+    op("set.prop", {set: $("e"), prop: "size"}, "size"), op("set.prop", {set: $("e"), prop: "length"}, "length"),
+    op("set.prop", {set: $("e"), prop: "maxPoint"}, "maxPoint"), op("set.chunkCount", {set: $("e")}, "chunks"),
+    op("same", {a: op("set.nextLayer", {set: $("e")}), b: $("e")}, "nextLayerIsSelf"), op("cursor.read", {cursor: $("it"), fields: R4}, "iter"),
+  ], {size: $("size"), length: $("length"), maxPoint: $("maxPoint"), chunks: $("chunks"), nextLayerIsSelf: $("nextLayerIsSelf"),
+      iter: $("iter"), betweenCalls: $("betweenCalls"), spans: $("spans"), spansRet: $("spansRet")}))
   for (let r2 of [[[0, 10, 0], [2, 30, 1]], [[0, 10, 0], [2, 4, 1], [20, 22, 2]], [[5, 3, 0]]] as R[])
-    fx(ID.RangeSet, B("RangeSet", 5), {set: setInput(P, r2), op: "length (internal getter)"}, () => (P.set(r2) as any).length)
-  fx(ID.RangeSet, [...B("RangeSet", 6), ...B("RangeSet.update", 6)], {set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 4]"}, op: "u = set.update({add: [range(550, 550, d)]}); sharedChunks: for each chunk of u, its index in set's chunks (-1 if new); newChunkPos: u's chunkPos (internal); oldUnchanged: list(set) after the update equals list(set) before it; newSize: u.size"}, () => {
-    let s: any = P.set(big), before = P.list(s), u: any = s.update({add: [P.r(550, 550, 3)]})
-    return {sharedChunks: u.chunk.map((c: any) => s.chunk.indexOf(c)), newChunkPos: u.chunkPos, oldUnchanged: JSON.stringify(P.list(s)) == JSON.stringify(before), newSize: u.size}
-  })
-  fx(ID.size, B("RangeSet.size", 1, 2), {ops: ["RangeSet.empty.size", "of([0,10,a],[2,4,b],[3,8,c]).size"], values: P.json()},
-     () => [RangeSet.empty.size, P.set([[0, 10, 0], [2, 4, 1], [3, 8, 2]]).size])
+    fx(ID.RangeSet, B("RangeSet", 5), prog(P, [op("set.prop", {set: of(r2), prop: "length"}, "length")], $("length")))
+  fx(ID.RangeSet, [...B("RangeSet", 6), ...B("RangeSet.update", 6)], prog(P, [
+    op("set.of", {ranges: big, sort: false}, "s"), op("set.list", {set: $("s")}, "before"),
+    op("set.update", {set: $("s"), spec: {add: [[550, 550, 3]]}}, "u"),
+    op("set.chunkSources", {set: $("u"), in: $("s")}, "sharedChunks"), op("set.prop", {set: $("u"), prop: "chunkPos"}, "newChunkPos"),
+    op("jsonEqual", {a: op("set.list", {set: $("s")}), b: $("before")}, "oldUnchanged"), op("set.prop", {set: $("u"), prop: "size"}, "newSize"),
+  ], {sharedChunks: $("sharedChunks"), newChunkPos: $("newChunkPos"), oldUnchanged: $("oldUnchanged"), newSize: $("newSize")}))
+  fx(ID.size, B("RangeSet.size", 1, 2), prog(P, [size(empty), size(of([[0, 10, 0], [2, 4, 1], [3, 8, 2]]))].map((x, i) => ({...x, as: "s" + i})), [$("s0"), $("s1")]))
 }
 
 // ---------------------------------------------------------------- update
 {
-  let P = new Pool([{name: "a"}, {name: "b"}, {name: "c"}, pt("p", {startSide: 0, endSide: 0}), pt("q", {startSide: 0, endSide: 0})])
+  let P = [{name: "a"}, {name: "b"}, {name: "c"}, pt("p", {startSide: 0, endSide: 0}), pt("q", {startSide: 0, endSide: 0})]
   let r: R = [[0, 2, 0], [5, 5, 3], [8, 12, 1]]
-  fx(ID.update, [...B("RangeSet.update", 1), ...B("RangeSetUpdate.sort", 1)], {set: setInput(P, r), ops: ["update({})", "update({add: []})", "update({add: [], sort: true})",
-      "update({filter: undefined})", "update({filterFrom: 3, filterTo: 4})", "update({filter: null})"]}, () => {
-    let s = P.set(r)
-    return [s.update({}) === s, s.update({add: []}) === s, s.update({add: [], sort: true}) === s, s.update({filter: undefined}) === s,
-            s.update({filterFrom: 3, filterTo: 4}) === s, s.update({filter: null as any}) === s]
-  })
+  let specs = [{}, {add: []}, {add: [], sort: true}, {filter: undefined}, {filterFrom: 3, filterTo: 4}, {filter: null}]
+  fx(ID.update, [...B("RangeSet.update", 1), ...B("RangeSetUpdate.sort", 1)], prog(P, [
+    op("set.of", {ranges: r, sort: false}, "s"),
+    ...specs.map((spec, i) => op("same", {a: update($("s"), spec), b: $("s")}, "u" + i)),
+  ], specs.map((_, i) => $("u" + i))))
   let add: R = [[9, 9, 4], [3, 4, 2], [9, 9, 3], [1, 1, 3]]
-  fx(ID.update, [...B("RangeSet.update", 2), ...B("RangeSetUpdate.sort", 1, 2)], {set: setInput(P, r), add, op: "u = set.update({add, sort: true}), add given as an array of Range objects: list(u), dump(u); inputUntouched: every element of that array is still the same object at the same index after the call"}, () => {
-    let s = P.set(r), arr = add.map(([f, t, i]) => P.r(f, t, i)), copy = arr.slice()
-    let u = s.update({add: arr, sort: true})
-    return {list: P.list(u), dump: P.dump(u), inputUntouched: arr.every((x, i) => x === copy[i])}
-  })
-  fx(ID.update, [...B("RangeSet.update", 3), ...B("RangeSetUpdate.add", 2)], {set: "RangeSet.empty", add: [[5, 6, 0], [1, 2, 1]], ops: ["update({add}) on the empty set", "update({add, sort: true}) on the empty set", "update({filter}) on the empty set"]}, () => {
-    let arr = [P.r(5, 6, 0), P.r(1, 2, 1)]
-    let e1 = (() => { try { RangeSet.empty.update({add: arr}); return "no error" } catch (e: any) { return {error: e.message} } })()
-    return {unsorted: e1, sorted: P.list(RangeSet.empty.update({add: arr, sort: true})), filterOnly: RangeSet.empty.update({filter: () => false}) === RangeSet.empty}
-  })
+  fx(ID.update, [...B("RangeSet.update", 2), ...B("RangeSetUpdate.sort", 1, 2)], prog(P, [
+    op("set.of", {ranges: r, sort: false}, "s"), op("ranges", {ranges: add}, "arr"), op("copy", {of: $("arr")}, "copy"),
+    op("set.update", {set: $("s"), spec: {add: $("arr"), sort: true}}, "u"),
+    op("set.list", {set: $("u")}, "list"), op("set.dump", {set: $("u")}, "dump"), op("sameItems", {a: $("arr"), b: $("copy")}, "inputUntouched"),
+  ], {list: $("list"), dump: $("dump"), inputUntouched: $("inputUntouched")}))
+  fx(ID.update, [...B("RangeSet.update", 3), ...B("RangeSetUpdate.add", 2)], prog(P, [
+    op("ranges", {ranges: [[5, 6, 0], [1, 2, 1]]}, "arr"),
+    op("try", {mode: "noErrorOrMessage", steps: [update(empty, {add: $("arr")})]}, "unsorted"),
+    op("set.list", {set: update(empty, {add: $("arr"), sort: true})}, "sorted"),
+    op("same", {a: update(empty, {filter: filter({const: false})}), b: empty}, "filterOnly"),
+  ], {unsorted: $("unsorted"), sorted: $("sorted"), filterOnly: $("filterOnly")}))
   for (let a of [[[10, 11, 0], [2, 3, 1]], [[20, 30, 0], [2, 3, 1], [25, 26, 2]]] as R[])
-    fx(ID.update, [...B("RangeSet.update", 4), ...B("RangeSetUpdate.add", 2)], {set: setInput(P, [[50, 51, 2]]), add: a, op: "update({add}) without sort"}, () => {
-      let u = P.set([[50, 51, 2]]).update({add: a.map(([f, t, i]) => P.r(f, t, i))}); return {list: P.list(u), dump: P.dump(u)}
-    })
-  fx(ID.update, [...B("RangeSet.update", 5), ...B("RangeSetUpdate.add", 1)], {set: setInput(P, [[5, 5, 3], [5, 8, 0]]), add: [[5, 5, 4], [5, 8, 1]], op: "update({add})"}, () => {
-    let u = P.set([[5, 5, 3], [5, 8, 0]]).update({add: [P.r(5, 5, 4), P.r(5, 8, 1)]}); return {list: P.list(u), dump: P.dump(u)}
-  })
+    fx(ID.update, [...B("RangeSet.update", 4), ...B("RangeSetUpdate.add", 2)], prog(P, [
+      op("set.update", {set: of([[50, 51, 2]]), spec: {add: a}}, "u"), op("set.list", {set: $("u")}, "list"), op("set.dump", {set: $("u")}, "dump"),
+    ], {list: $("list"), dump: $("dump")}))
+  fx(ID.update, [...B("RangeSet.update", 5), ...B("RangeSetUpdate.add", 1)], prog(P, [
+    op("set.update", {set: of([[5, 5, 3], [5, 8, 0]]), spec: {add: [[5, 5, 4], [5, 8, 1]]}}, "u"), op("set.list", {set: $("u")}, "list"), op("set.dump", {set: $("u")}, "dump"),
+  ], {list: $("list"), dump: $("dump")}))
   let big: R = []; for (let i = 0; i < 600; i++) big.push([i, i + 1, i % 3])
-  for (let spec of [{add: [[550, 550, 3]]}, {add: [[250, 250, 3]]}, {add: [[249, 249, 3]]}, {filter: "from != 265", filterFrom: 260, filterTo: 270},
-                    {filter: "from != 265", filterFrom: 250, filterTo: 270}, {filter: "from != 265", filterFrom: 260, filterTo: 500}, {filter: "from != 265"}] as any[])
-    fx(ID.update, [...B("RangeSet.update", 6), ...B("RangeSetUpdate.filterFrom", 1), ...B("RangeSetUpdate.filterTo", 1)],
-       {set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 3]"}, update: spec,
-        op: "u = set.update({add: update.add ranges (or []), filter: from != 265 when update.filter is given, filterFrom: update.filterFrom, filterTo: update.filterTo}); chunkSourceIndex: for each chunk of u, its index in set's chunks (-1 if new); chunkPos: u's chunkPos (internal); chunkSizes: range count of each chunk of u; size: u.size"}, () => {
-      let s: any = P.set(big)
-      let u: any = s.update({add: (spec.add || []).map(([f, t, i]: number[]) => P.r(f, t, i)), filter: spec.filter ? (f: number) => f != 265 : undefined,
-                             filterFrom: spec.filterFrom, filterTo: spec.filterTo})
-      return {chunkSourceIndex: u.chunk.map((c: any) => s.chunk.indexOf(c)), chunkPos: u.chunkPos, chunkSizes: u.chunk.map((c: any) => c.value.length), size: u.size}
-    })
+  for (let spec of [{add: [[550, 550, 3]]}, {add: [[250, 250, 3]]}, {add: [[249, 249, 3]]}, {filter: true, filterFrom: 260, filterTo: 270},
+                    {filter: true, filterFrom: 250, filterTo: 270}, {filter: true, filterFrom: 260, filterTo: 500}, {filter: true}] as any[])
+    fx(ID.update, [...B("RangeSet.update", 6), ...B("RangeSetUpdate.filterFrom", 1), ...B("RangeSetUpdate.filterTo", 1)], prog(P, [
+      op("set.of", {ranges: big, sort: false}, "s"),
+      op("set.update", {set: $("s"), spec: {add: spec.add || [], filter: spec.filter ? filter({fromNe: 265}) : undefined, filterFrom: spec.filterFrom, filterTo: spec.filterTo}}, "u"),
+      op("set.chunkSources", {set: $("u"), in: $("s")}, "chunkSourceIndex"), op("set.prop", {set: $("u"), prop: "chunkPos"}, "chunkPos"),
+      op("set.chunkSizes", {set: $("u")}, "chunkSizes"), op("set.prop", {set: $("u"), prop: "size"}, "size"),
+    ], {chunkSourceIndex: $("chunkSourceIndex"), chunkPos: $("chunkPos"), chunkSizes: $("chunkSizes"), size: $("size")}))
   let small: R = []; for (let i = 0; i < 20; i++) small.push([i, i + 1, 0])
   for (let [ff, ft] of [[5, 8], [8, 8], [10, 5], [0, 0], [20, 20], [21, 30]])
-    fx(ID.update, [...B("RangeSet.update", 7), ...B("RangeSetUpdate.filter", 1), ...B("RangeSetUpdate.filterFrom", 1), ...B("RangeSetUpdate.filterTo", 1)],
-       {set: {values: P.json(), rangesRule: "20 ranges [i, i+1, 0]"}, op: `update({filter: record and return false, filterFrom: ${ff}, filterTo: ${ft}})`}, () => {
-      let calls: any[] = []
-      let u = P.set(small).update({filter: (f, t) => { calls.push([f, t]); return false }, filterFrom: ff, filterTo: ft})
-      return {calls, list: P.list(u)}
-    })
-  fx(ID.update, [...B("RangeSet.update", 7), ...B("RangeSetUpdate.filter", 2)], {set: setInput(P, [[0, 1, 0], [2, 3, 1], [4, 5, 2], [6, 7, 0], [8, 9, 1]]),
-     op: "update({filter}) where filter returns, per call: 1, 'x', 0, '', null"}, () => {
-    let res = [1, "x", 0, "", null], k = 0
-    return P.list(P.set([[0, 1, 0], [2, 3, 1], [4, 5, 2], [6, 7, 0], [8, 9, 1]]).update({filter: () => res[k++] as any}))
-  })
-  fx(ID.update, [...B("RangeSet.update", 8), ...B("RangeSetUpdate.filter", 3)], {set: setInput(P, [[0, 10, 0]]), add: [[2, 4, 1]], op: "update({add, filter: () => false})"},
-     () => P.list(P.set([[0, 10, 0]]).update({add: [P.r(2, 4, 1)], filter: () => false})))
+    fx(ID.update, [...B("RangeSet.update", 7), ...B("RangeSetUpdate.filter", 1), ...B("RangeSetUpdate.filterFrom", 1), ...B("RangeSetUpdate.filterTo", 1)], prog(P, [
+      op("set.update", {set: of(small), spec: {filter: filter({const: false}, "calls"), filterFrom: ff, filterTo: ft}}, "u"),
+      op("set.list", {set: $("u")}, "list"),
+    ], {calls: $("calls"), list: $("list")}))
+  fx(ID.update, [...B("RangeSet.update", 7), ...B("RangeSetUpdate.filter", 2)], prog(P, [
+    op("set.list", {set: update(of([[0, 1, 0], [2, 3, 1], [4, 5, 2], [6, 7, 0], [8, 9, 1]]), {filter: filter({seq: [1, "x", 0, "", null]})})}, "list"),
+  ], $("list")))
+  fx(ID.update, [...B("RangeSet.update", 8), ...B("RangeSetUpdate.filter", 3)], prog(P, [
+    op("set.list", {set: update(of([[0, 10, 0]]), {add: [[2, 4, 1]], filter: filter({const: false})})}, "list")], $("list")))
   let L: R = [[0, 10, 0], [2, 4, 1], [3, 8, 2], [12, 14, 0]]
-  fx(ID.update, [...B("RangeSet.update", 9), ...B("RangeSetUpdate.filter", 1)], {set: setInput(P, L), add: [[1, 6, 1]], op: "u = set.update({add, filter: record [from, to] and keep all but [3,8]}): calls; dumpBefore: dump(set) (the set before the update); dump(u); list(u)"}, () => {
-    let calls: any[] = []
-    let u = P.set(L).update({add: [P.r(1, 6, 1)], filter: (f, t) => { calls.push([f, t]); return !(f == 3 && t == 8) }})
-    return {calls, dumpBefore: P.dump(P.set(L)), dump: P.dump(u), list: P.list(u)}
-  })
-  fx(ID.update, [...B("RangeSet.update", 10), ...B("RangeSetUpdate.filterTo", 2)], {set: setInput(P, [[0, 4, 0], [2, 30, 1], [30, 30, 3]]), op: "set.update({filter: record [from, to], keep all}) with default filterFrom/filterTo: calls; length: set's length (internal getter) of the set before the update"}, () => {
-    let calls: any[] = [], s = P.set([[0, 4, 0], [2, 30, 1], [30, 30, 3]])
-    s.update({filter: (f, t) => { calls.push([f, t]); return true }})
-    return {calls, length: (s as any).length}
-  })
-  fx(ID.update, [...B("RangeSet.update", 11, 12)], {set: setInput(P, [[0, 10, 0], [2, 4, 1]]), ops: ["update({filter: () => false}) === RangeSet.empty", "update({filter: f => f == 0}).nextLayer === RangeSet.empty", "dump(set) (the set the two updates were called on)"]}, () => {
-    let s = P.set([[0, 10, 0], [2, 4, 1]])
-    return [s.update({filter: () => false}) === RangeSet.empty, (s.update({filter: (f) => f == 0}) as any).nextLayer === RangeSet.empty, P.dump(s)]
-  })
+  fx(ID.update, [...B("RangeSet.update", 9), ...B("RangeSetUpdate.filter", 1)], prog(P, [
+    op("set.update", {set: of(L), spec: {add: [[1, 6, 1]], filter: filter({notSpan: [3, 8]}, "calls")}}, "u"),
+    op("set.dump", {set: of(L)}, "dumpBefore"), op("set.dump", {set: $("u")}, "dump"), op("set.list", {set: $("u")}, "list"),
+  ], {calls: $("calls"), dumpBefore: $("dumpBefore"), dump: $("dump"), list: $("list")}))
+  fx(ID.update, [...B("RangeSet.update", 10), ...B("RangeSetUpdate.filterTo", 2)], prog(P, [
+    op("set.of", {ranges: [[0, 4, 0], [2, 30, 1], [30, 30, 3]], sort: false}, "s"),
+    update($("s"), {filter: filter({const: true}, "calls")}),
+    op("set.prop", {set: $("s"), prop: "length"}, "length"),
+  ], {calls: $("calls"), length: $("length")}))
+  fx(ID.update, [...B("RangeSet.update", 11, 12)], prog(P, [
+    op("set.of", {ranges: [[0, 10, 0], [2, 4, 1]], sort: false}, "s"),
+    op("same", {a: update($("s"), {filter: filter({const: false})}), b: empty}, "allFiltered"),
+    op("same", {a: op("set.nextLayer", {set: update($("s"), {filter: filter({fromEq: 0})})}), b: empty}, "nextLayerEmpty"),
+    op("set.dump", {set: $("s")}, "dump"),
+  ], [$("allFiltered"), $("nextLayerEmpty"), $("dump")]))
 }
 
 // ---------------------------------------------------------------- map
 {
-  let P = new Pool([{name: "a", startSide: 0, endSide: 0}, {name: "b", startSide: 0, endSide: 0}])
-  fx(ID.map, B("RangeSet.map", 1), {set: setInput(P, [[2, 4, 0]]), ops: ["set.map(ChangeSet.empty(10)) === set", "set.map(ChangeSet.of([], 10)) === set", "RangeSet.empty.map(insert at 0 of 10) === RangeSet.empty"]}, () => {
-    let s = P.set([[2, 4, 0]])
-    return [s.map(ChangeSet.empty(10)) === s, s.map(ChangeSet.of([], 10)) === s, RangeSet.empty.map(changes({from: 0, insert: "x"}, 10)) === RangeSet.empty]
-  })
+  let P: Spec[] = [{name: "a", startSide: 0, endSide: 0}, {name: "b", startSide: 0, endSide: 0}]
+  fx(ID.map, B("RangeSet.map", 1), prog(P, [
+    op("set.of", {ranges: [[2, 4, 0]], sort: false}, "s"),
+    op("same", {a: map($("s"), chEmpty(10)), b: $("s")}, "r0"), op("same", {a: map($("s"), chOf([], 10)), b: $("s")}, "r1"),
+    op("same", {a: map(empty, chOf({from: 0, insert: "x"}, 10)), b: empty}, "r2"),
+  ], [$("r0"), $("r1"), $("r2")]))
   let big: R = []; for (let i = 0; i < 600; i++) big.push([i, i + 1, i % 2])
   for (let c of [ch({from: 550, insert: "xyz"}, 600), ch({from: 100, insert: "xyz"}, 600), ch({from: 250, insert: "x"}, 600), ch({from: 100, to: 120}, 600)])
-    fx(ID.map, B("RangeSet.map", 2, 6), {set: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 2]"}, changes: c,
-                                     op: "m = set.map(ChangeSet.of(changes.spec, changes.length)); chunkSourceIndex: for each chunk of m, its index in set's chunks (-1 if new); chunkPos: m's chunkPos (internal); chunkSizes: range count of each chunk of m; size: m.size; first: the first three entries of list(m)"}, () => {
-      let s: any = P.set(big), m: any = s.map(mkCh(c))
-      return {chunkSourceIndex: m.chunk.map((x: any) => s.chunk.indexOf(x)), chunkPos: m.chunkPos, chunkSizes: m.chunk.map((x: any) => x.value.length), size: m.size, first: P.list(m).slice(0, 3)}
-    })
+    fx(ID.map, B("RangeSet.map", 2, 6), prog(P, [
+      op("set.of", {ranges: big, sort: false}, "s"), op("set.map", {set: $("s"), changes: mkCh(c)}, "m"),
+      op("set.chunkSources", {set: $("m"), in: $("s")}, "chunkSourceIndex"), op("set.prop", {set: $("m"), prop: "chunkPos"}, "chunkPos"),
+      op("set.chunkSizes", {set: $("m")}, "chunkSizes"), op("set.prop", {set: $("m"), prop: "size"}, "size"),
+      op("slice", {of: op("set.list", {set: $("m")}), start: 0, end: 3}, "first"),
+    ], {chunkSourceIndex: $("chunkSourceIndex"), chunkPos: $("chunkPos"), chunkSizes: $("chunkSizes"), size: $("size"), first: $("first")}))
   // reordering of points and spilling (rangeset.ts:155-175)
-  let O = new Pool([pt("a", {startSide: 1, endSide: 1}), pt("b", {startSide: -1, endSide: -1}), pt("c", {startSide: 0, endSide: 0}),
-                    {name: "r", startSide: -1, endSide: 1}, {name: "s", startSide: -1, endSide: 1}])
+  let O: Spec[] = [pt("a", {startSide: 1, endSide: 1}), pt("b", {startSide: -1, endSide: -1}), pt("c", {startSide: 0, endSide: 0}),
+                   {name: "r", startSide: -1, endSide: 1}, {name: "s", startSide: -1, endSide: 1}]
   for (let [r, c] of [[[[1, 1, 0], [2, 2, 1]], ch({from: 1, to: 2}, 10)], [[[0, 3, 3], [5, 5, 1], [6, 6, 2]], ch({from: 3, to: 6}, 10)],
                       [[[0, 1, 3], [2, 3, 4]], ch({from: 1, to: 2}, 10)], [[[0, 4, 3], [5, 5, 1]], ch({from: 3, to: 5}, 10)]] as [R, any][])
-    fx(ID.map, B("RangeSet.map", 6), {set: setInput(O, r), changes: c, op: "m = " + MAP + ": dump(m), list(m)"}, () => { let m = O.set(r).map(mkCh(c)); return {dump: O.dump(m), list: O.list(m)} })
+    fx(ID.map, B("RangeSet.map", 6), prog(O, [
+      op("set.map", {set: of(r), changes: mkCh(c)}, "m"), op("set.dump", {set: $("m")}, "dump"), op("set.list", {set: $("m")}, "list"),
+    ], {dump: $("dump"), list: $("list")}))
   // spilled layers sit between the mapped top layer and the mapped lower layers
-  let SP = new Pool([{name: "top1", startSide: -1, endSide: 1}, {name: "top2", startSide: -1, endSide: 1}, {name: "low", startSide: 0, endSide: 0}])
-  fx(ID.map, B("RangeSet.map", 8), {set: setInput(SP, [[0, 2, 0], [1, 8, 2], [4, 6, 1]]), changes: ch({from: 2, to: 4}, 10),
-                                 op: "dumpBefore: dump(set) (before mapping); dump: dump(" + MAP + ")"}, () => {
-    let s = SP.set([[0, 2, 0], [1, 8, 2], [4, 6, 1]]); let m = s.map(changes({from: 2, to: 4}, 10)); return {dumpBefore: SP.dump(s), dump: SP.dump(m)}
-  })
+  let SP: Spec[] = [{name: "top1", startSide: -1, endSide: 1}, {name: "top2", startSide: -1, endSide: 1}, {name: "low", startSide: 0, endSide: 0}]
+  fx(ID.map, B("RangeSet.map", 8), prog(SP, [
+    op("set.of", {ranges: [[0, 2, 0], [1, 8, 2], [4, 6, 1]], sort: false}, "s"), op("set.map", {set: $("s"), changes: chOf({from: 2, to: 4}, 10)}, "m"),
+    op("set.dump", {set: $("s")}, "dumpBefore"), op("set.dump", {set: $("m")}, "dump"),
+  ], {dumpBefore: $("dumpBefore"), dump: $("dump")}))
   // cross-chunk spill: a touched chunk's first range falls before the previous chunk's last end
-  let X = new Pool([{name: "r", startSide: 1, endSide: 1}, pt("pb", {startSide: -1, endSide: -1, mapMode: MapMode.Simple})])
+  let X: Spec[] = [{name: "r", startSide: 1, endSide: 1}, pt("pb", {startSide: -1, endSide: -1, mapMode: MapMode.Simple})]
   let xr: R = []; for (let i = 0; i < 250; i++) xr.push([i, i + 1, 0]); xr.push([260, 260, 1], [270, 271, 0])
-  fx(ID.map, B("RangeSet.map", 9), {set: {values: X.json(), rangesRule: "250 ranges [i, i+1, 0] for i in 0..250, then [260, 260, 1], [270, 271, 0]"}, changes: ch({from: 250, to: 260}, 300),
-                    op: "m = " + MAP + "; layers: dump(m) with each chunk reduced to {pos, n: its range count, last: [from, to, v] of its last range}; tail: the last three entries of list(m)"}, () => {
-    let m = X.set(xr).map(changes({from: 250, to: 260}, 300)); let d = X.dump(m)
-    return {layers: d.map(l => ({maxPoint: l.maxPoint, chunks: l.chunks.map(c => ({pos: c.pos, n: c.v.length, last: [c.from[c.from.length - 1], c.to[c.to.length - 1], c.v[c.v.length - 1]]}))})), tail: X.list(m).slice(-3)}
-  })
+  fx(ID.map, B("RangeSet.map", 9), prog(X, [
+    op("set.map", {set: of(xr), changes: chOf({from: 250, to: 260}, 300)}, "m"),
+    op("set.dumpSummary", {set: $("m")}, "layers"), op("slice", {of: op("set.list", {set: $("m")}), start: -3}, "tail"),
+  ], {layers: $("layers"), tail: $("tail")}))
   // out-of-range sets: mapPos throws
   for (let [r, c] of [[[[15, 20, 0]], ch({from: 2, insert: "x"}, 10)], [[[5, 30, 0]], ch({from: 8, insert: "x"}, 10)], [[[5, 8, 0]], ch({from: 2, insert: "x"}, 10)]] as [R, any][])
-    fx(ID.map, B("RangeSet.map", 11), {set: setInput(P, r), changes: c, op: MAP_LIST}, () => P.list(P.set(r).map(mkCh(c))))
+    fx(ID.map, B("RangeSet.map", 11), prog(P, [op("set.list", {set: map(of(r), mkCh(c))}, "list")], $("list")))
   // maxPoint after map
-  let MP = new Pool([pt("p", {startSide: 0, endSide: 0}), {name: "m", startSide: 0, endSide: 0}])
-  fx(ID.map, B("RangeSet.map", 6), {set: setInput(MP, [[0, 10, 0], [12, 14, 1]]), changes: ch({from: 2, to: 8}, 20), op: "dump(" + MAP + ")"}, () => {
-    let m = MP.set([[0, 10, 0], [12, 14, 1]]).map(changes({from: 2, to: 8}, 20)); return MP.dump(m)
-  })
+  let MP: Spec[] = [pt("p", {startSide: 0, endSide: 0}), {name: "m", startSide: 0, endSide: 0}]
+  fx(ID.map, B("RangeSet.map", 6), prog(MP, [op("set.dump", {set: map(of([[0, 10, 0], [12, 14, 1]]), chOf({from: 2, to: 8}, 20))}, "dump")], $("dump")))
 }
 
 // ---------------------------------------------------------------- between
 {
-  let P = new Pool([{name: "a"}, pt("p", {startSide: 0, endSide: 0}), {name: "b"}, pt("q", {startSide: 0, endSide: 0}), {name: "c"}, {name: "d"}])
+  let P: Spec[] = [{name: "a"}, pt("p", {startSide: 0, endSide: 0}), {name: "b"}, pt("q", {startSide: 0, endSide: 0}), {name: "c"}, {name: "d"}]
   let r: R = [[0, 2, 0], [2, 2, 1], [2, 5, 2], [5, 5, 3], [6, 8, 4], [1, 7, 5]].sort((x, y) => x[0] - y[0]) as R
   let q = [[2, 5], [5, 5], [8, 8], [9, 20], [5, 2], [-5, -1], [0, 1e9]]
   for (let [f, t] of q)
-    fx(ID.between, B("RangeSet.between", 2, 3, 6, 7), {set: setInput(P, r), op: `dump: dump(set); calls: set.between(${f}, ${t}) callback arguments`}, () => {
-      let found: any[] = []; P.set(r).between(f, t, (a, b, v) => { found.push([a, b, P.idx(v)]) }); return {dump: P.dump(P.set(r)), calls: found}
-    })
+    fx(ID.between, B("RangeSet.between", 2, 3, 6, 7), prog(P, [
+      op("set.between", {set: of(r), from: f, to: t}, "calls"), op("set.dump", {set: of(r)}, "dump"),
+    ], {dump: $("dump"), calls: $("calls")}))
   for (let stopVal of [false, undefined, 0, null, ""])
-    fx(ID.between, B("RangeSet.between", 4), {set: setInput(P, r), op: `between(0, 10) with a callback returning ${JSON.stringify(stopVal) ?? "undefined"} at the second call`}, () => {
-      let found: any[] = [], k = 0; P.set(r).between(0, 10, (a, b, v) => { found.push([a, b, P.idx(v)]); if (++k == 2) return stopVal as any }); return found
-    })
-  fx(ID.between, B("RangeSet.between", 1), {op: "RangeSet.empty.between(0, 10)"}, () => { let n = 0; RangeSet.empty.between(0, 10, () => { n++ }); return n })
+    fx(ID.between, B("RangeSet.between", 4), prog(P, [op("set.between", {set: of(r), from: 0, to: 10, stop: {at: 2, value: stopVal}}, "found")], $("found")))
+  fx(ID.between, B("RangeSet.between", 1), prog([], [op("count", {of: between(empty, 0, 10)}, "n")], $("n")))
 }
 
 // ---------------------------------------------------------------- iter, RangeSet^iter, cursor
 {
-  let P = new Pool([{name: "a"}, {name: "b"}, {name: "c"}, {name: "d"}])
+  let P: Spec[] = [{name: "a"}, {name: "b"}, {name: "c"}, {name: "d"}]
   let r: R = [[0, 10, 0], [2, 3, 1], [5, 6, 2], [11, 12, 3]]
   for (let from of [0, 4, 10, 11, 12, 13])
-    fx(ID.iter, B("RangeSet.iter", 1, 4), {set: setInput(P, r), op: `iter(${from})`}, () => P.list(P.set(r), from))
-  fx(ID.iter, [...B("RangeSet.iter", 3), ...B("RangeCursor", 1), ...B("RangeCursor.next", 1, 2), ...B("RangeCursor.value", 1), ...B("RangeCursor.from", 1), ...B("RangeCursor.to", 1), ...B("RangeCursor.rank", 2)], {sets: [setInput(P, [[1, 2, 0]])], ops: ["RangeSet.empty.iter()", "of(1,2,a).iter() then next() three times"]}, () => {
-    let e = RangeSet.empty.iter(), s = P.set([[1, 2, 0]]).iter(), steps: any[] = []
-    for (let k = 0; k < 4; k++) { steps.push([P.idx(s.value), s.from, s.to, s.rank]); s.next() }
-    return {empty: [e.value, e.from, e.to, e.rank], steps}
-  })
-  let Q = new Pool([{name: "x"}, {name: "y"}, {name: "z"}])
+    fx(ID.iter, B("RangeSet.iter", 1, 4), prog(P, [op("set.list", {set: of(r), from}, "list")], $("list")))
+  let steps: any[] = []
+  for (let k = 0; k < 4; k++) steps.push(op("cursor.read", {cursor: $("s"), fields: ["index", "from", "to", "rank"]}, "step" + k), op("cursor.next", {cursor: $("s")}))
+  fx(ID.iter, [...B("RangeSet.iter", 3), ...B("RangeCursor", 1), ...B("RangeCursor.next", 1, 2), ...B("RangeCursor.value", 1), ...B("RangeCursor.from", 1), ...B("RangeCursor.to", 1), ...B("RangeCursor.rank", 2)], prog(P, [
+    op("set.iter", {set: empty}, "e"), op("set.iter", {set: of([[1, 2, 0]])}, "s"), ...steps,
+    op("cursor.read", {cursor: $("e"), fields: R4}, "empty"),
+  ], {empty: $("empty"), steps: [0, 1, 2, 3].map(k => $("step" + k))}))
+  let Q: Spec[] = [{name: "x"}, {name: "y"}, {name: "z"}]
   let s0: R = [[0, 5, 0], [6, 8, 0]], s1: R = [[0, 5, 1], [3, 4, 1]], s2: R = [[0, 5, 2]]
-  fx(ID.siter, [...B("RangeSet^iter", 1, 2), ...B("RangeCursor.rank", 1)], {sets: [setInput(Q, s0), "RangeSet.empty", setInput(Q, s1), setInput(Q, s2)], op: "RangeSet.iter(sets)"},
-     () => Q.listMany([Q.set(s0), RangeSet.empty, Q.set(s1), Q.set(s2)]))
-  fx(ID.siter, B("RangeSet^iter", 5), {sets: [setInput(Q, s1), "the same set object again"], op: "RangeSet.iter([s, s])"}, () => { let s = Q.set(s1); return Q.listMany([s, s]) })
-  fx(ID.siter, [...B("RangeSet^iter", 4), ...B("RangeCursor.rank", 2)], {op: "none: RangeSet.iter([]); oneAtIndex1: RangeSet.iter([RangeSet.empty, of([1,2,x])]) then next() once; twoSets: RangeSet.iter([of([1,2,x]), of([1,3,y])]) then next() twice; each read as [value, from, to, rank] (all three end at the end)", values: Q.json()}, () => {
-    let a = RangeSet.iter([]), b = RangeSet.iter([RangeSet.empty, Q.set([[1, 2, 0]])]); b.next()
-    let c = RangeSet.iter([Q.set([[1, 2, 0]]), Q.set([[1, 3, 1]])]); c.next(); c.next()
-    return {none: [a.value, a.from, a.to, a.rank], oneAtIndex1: [b.value, b.from, b.to, b.rank], twoSets: [c.value, c.from, c.to, c.rank]}
-  })
-  let QF = new Pool([{name: "x", startSide: 0, endSide: 0}, {name: "far", startSide: 1, endSide: 1}])
+  fx(ID.siter, [...B("RangeSet^iter", 1, 2), ...B("RangeCursor.rank", 1)], prog(Q, [op("set.listMany", {sets: [of(s0), empty, of(s1), of(s2)]}, "list")], $("list")))
+  fx(ID.siter, B("RangeSet^iter", 5), prog(Q, [op("set.of", {ranges: s1, sort: false}, "s"), op("set.listMany", {sets: [$("s"), $("s")]}, "list")], $("list")))
+  fx(ID.siter, [...B("RangeSet^iter", 4), ...B("RangeCursor.rank", 2)], prog(Q, [
+    op("set.iterMany", {sets: []}, "a"), op("set.iterMany", {sets: [empty, of([[1, 2, 0]])]}, "b"), op("cursor.next", {cursor: $("b")}),
+    op("set.iterMany", {sets: [of([[1, 2, 0]]), of([[1, 3, 1]])]}, "c"), op("cursor.next", {cursor: $("c")}), op("cursor.next", {cursor: $("c")}),
+    op("cursor.read", {cursor: $("a"), fields: R4}, "none"), op("cursor.read", {cursor: $("b"), fields: R4}, "oneAtIndex1"),
+    op("cursor.read", {cursor: $("c"), fields: R4}, "twoSets"),
+  ], {none: $("none"), oneAtIndex1: $("oneAtIndex1"), twoSets: $("twoSets")}))
+  let QF: Spec[] = [{name: "x", startSide: 0, endSide: 0}, {name: "far", startSide: 1, endSide: 1}]
   for (let far of [1e9 - 1, 1e9, 1e9 + 5])
-    fx(ID.siter, B("RangeSet^iter", 3), {sets: [setInput(QF, [[0, 1, 0]]), setInput(QF, [[far, far + 2, 1]])], question: "Q20", op: "RangeSet.iter([s0, s1])"},
-       () => QF.listMany([QF.set([[0, 1, 0]]), QF.set([[far, far + 2, 1]])]))
+    fx(ID.siter, B("RangeSet^iter", 3), prog(QF, [op("set.listMany", {sets: [of([[0, 1, 0]]), of([[far, far + 2, 1]])]}, "list")], $("list"), {question: "Q20"}))
   // goto
-  let G = new Pool([{name: "a"}, {name: "b"}])
-  fx(ID.goto, [...B("RangeCursor.goto", 1, 2, 3), ...B("RangeCursor.from", 1), ...B("RangeCursor.to", 1)], {sets: [setInput(G, [[0, 2, 0], [4, 6, 0], [8, 10, 0]]), setInput(G, [[1, 9, 1]])],
-     op: "multi: c = RangeSet.iter(sets); read; goto(5); read; goto(1); read; goto(11); read; goto(0); read; next(); read (read = [from, to, value index, rank]). single: d = sets[0].iter(7); read [from, to]; goto(3); read [from, to]; goto(100); read [from, to, value]"}, () => {
-    let c = RangeSet.iter([G.set([[0, 2, 0], [4, 6, 0], [8, 10, 0]]), G.set([[1, 9, 1]])]), out: any[] = []
-    let rd = () => out.push([c.from, c.to, G.idx(c.value), c.rank])
-    rd(); c.goto(5); rd(); c.goto(1); rd(); c.goto(11); rd(); c.goto(0); rd(); c.next(); rd()
-    let one = G.set([[0, 2, 0], [4, 6, 0], [8, 10, 0]]).iter(7), o2: any[] = [[one.from, one.to]]; one.goto(3); o2.push([one.from, one.to]); one.goto(100); o2.push([one.from, one.to, one.value])
-    return {multi: out, single: o2}
-  })
+  let G: Spec[] = [{name: "a"}, {name: "b"}]
+  const rd = (k: number) => op("cursor.read", {cursor: $("c"), fields: ["from", "to", "index", "rank"]}, "m" + k)
+  const gt = (cursor: string, pos: number) => op("cursor.goto", {cursor: $(cursor), pos})
+  fx(ID.goto, [...B("RangeCursor.goto", 1, 2, 3), ...B("RangeCursor.from", 1), ...B("RangeCursor.to", 1)], prog(G, [
+    op("set.iterMany", {sets: [of([[0, 2, 0], [4, 6, 0], [8, 10, 0]]), of([[1, 9, 1]])]}, "c"),
+    rd(0), gt("c", 5), rd(1), gt("c", 1), rd(2), gt("c", 11), rd(3), gt("c", 0), rd(4), op("cursor.next", {cursor: $("c")}), rd(5),
+    op("set.iter", {set: of([[0, 2, 0], [4, 6, 0], [8, 10, 0]]), from: 7}, "one"),
+    op("cursor.read", {cursor: $("one"), fields: ["from", "to"]}, "o0"), gt("one", 3), op("cursor.read", {cursor: $("one"), fields: ["from", "to"]}, "o1"),
+    gt("one", 100), op("cursor.read", {cursor: $("one"), fields: ["from", "to", "value"]}, "o2"),
+  ], {multi: [0, 1, 2, 3, 4, 5].map(k => $("m" + k)), single: [$("o0"), $("o1"), $("o2")]}))
   let big: R = []; for (let i = 0; i < 600; i++) big.push([i, i + 1, 0])
-  fx(ID.goto, B("RangeCursor.goto", 1), {set: {values: G.json(), rangesRule: "600 ranges [i, i+1, 0]"}, op: "iter(); goto(400); goto(260); goto(250); goto(0)"}, () => {
-    let c = G.set(big).iter(), out: any[] = []
-    for (let p of [400, 260, 250, 0]) { c.goto(p); out.push([c.from, c.to]) }
-    return out
-  })
+  let gsteps: any[] = [], gout: any[] = []
+  for (let p of [400, 260, 250, 0]) { gsteps.push(gt("c", p), op("cursor.read", {cursor: $("c"), fields: ["from", "to"]}, "g" + p)); gout.push($("g" + p)) }
+  fx(ID.goto, B("RangeCursor.goto", 1), prog(G, [op("set.iter", {set: of(big)}, "c"), ...gsteps], gout))
 }
 
 // ---------------------------------------------------------------- compare
 {
-  let P = new Pool([mark("a"), mark("b"), pt("p", {startSide: -1, endSide: 1}), pt("q", {startSide: -1, endSide: 1}), mark("c")])
-  const run = (o: R[], n: R[] | ((s: RangeSet<any>[]) => RangeSet<any>[]), c: any, opts: {min?: number, bound?: boolean} = {}) => {
-    let os = o.map(x => P.set(x)), ns = typeof n == "function" ? n(os) : n.map(x => P.set(x))
-    let rec = P.cmpRec(opts.bound !== false)
-    RangeSet.compare(os, ns, c.spec ? mkCh(c) : ChangeSet.empty(c.length), rec.comp, opts.min)
-    return rec.calls
-  }
+  let P = [mark("a"), mark("b"), pt("p", {startSide: -1, endSide: 1}), pt("q", {startSide: -1, endSide: 1}), mark("c")]
+  // One compare run: old and new sets built from range lists, the text diff ChangeSet.of(spec, length) or ChangeSet.empty(length).
+  const diff = (c: {spec?: any, length: number}) => c.spec ? mkCh(c as any) : chEmpty(c.length)
+  const cmp = (o: R[], n: R[], c: any, into: string, opts: {min?: number, bound?: boolean} = {}) => compare(o.map(x => of(x)), n.map(x => of(x)), diff(c), into, opts)
   // minPointSize filtering and Q21
   let mk0: R = [[0, 10, 0]], withPointBelow: R = [[0, 10, 0], [5, 5, 2]], withPointTop: R = [[5, 5, 2], [5, 10, 0]]
   for (let min of [-1, 0, 1])
     for (let n of [withPointBelow, withPointTop])
-      fx(ID.compare, [...B("RangeSet^compare", 1, 8)], {old: [setInput(P, mk0)], new: [setInput(P, n)], textDiff: ch(null, 20), minPointSize: min, question: "Q21",
-                                                  ops: ["dumpNew: dump(new[0])", "calls: " + COMPARE + " with minPointSize"]},
-         () => ({dumpNew: P.dump(P.set(n)), calls: run([mk0], [n], {length: 20}, {min})}))
-  fx(ID.compare, B("RangeSet^compare", 8), {old: [setInput(P, [[0, 10, 0], [12, 15, 2], [16, 16, 2]])], new: [setInput(P, [[0, 8, 1], [12, 15, 3], [16, 16, 3]])], textDiff: ch(null, 20), minPointSize: [0, 1, 3, 4],
-     op: "for each m of minPointSize: calls of " + COMPARE + " with minPointSize m"},
-     () => [0, 1, 3, 4].map(min => run([[[0, 10, 0], [12, 15, 2], [16, 16, 2]]], [[[0, 8, 1], [12, 15, 3], [16, 16, 3]]], {length: 20}, {min})))
+      fx(ID.compare, [...B("RangeSet^compare", 1, 8)], prog(P, [
+        op("set.dump", {set: of(n)}, "dumpNew"), cmp([mk0], [n], {length: 20}, "calls", {min}),
+      ], {dumpNew: $("dumpNew"), calls: $("calls")}, {question: "Q21"}))
+  fx(ID.compare, B("RangeSet^compare", 8), prog(P, [0, 1, 3, 4].map(min => cmp([[[0, 10, 0], [12, 15, 2], [16, 16, 2]]], [[[0, 8, 1], [12, 15, 3], [16, 16, 3]]], {length: 20}, "calls" + min, {min})),
+     [0, 1, 3, 4].map(min => $("calls" + min))))
   // shared chunks
   let big: R = []; for (let i = 0; i < 600; i++) big.push([i, i + 1, i % 2])
-  fx(ID.compare, B("RangeSet^compare", 2), {old: {values: P.json(), rangesRule: "600 ranges [i, i+1, i % 2] (a, b alternate)"}, new: "old.map(insert 'xyz' at 550)", textDiff: ch({from: 550, insert: "xyz"}, 600),
-     op: "o = old set, c = ChangeSet.of(textDiff.spec, textDiff.length), n = o.map(c); chunksShared: [n.chunk[0] === o.chunk[0], n.chunk[1] === o.chunk[1]]; make reading `value` of n's chunks 0 and 1 throw (as test-rangeset.ts:266 does); sharedRun: \"ok\" or the message thrown by RangeSet.compare([o], [n], c, cmp); sharedCalls: its calls; rebuiltCalls: calls of RangeSet.compare([fresh old set], [n2], c, cmp), n2 = RangeSet.of over the same 600 ranges with positions >= 550 moved by 3, each from a second pool of equal but distinct values (same names, sides and point); eqCallsRebuilt: count of eq calls during that second compare"}, () => {
-    let o: any = P.set(big), c = changes({from: 550, insert: "xyz"}, 600), n: any = o.map(c)
-    let shared = [n.chunk[0] === o.chunk[0], n.chunk[1] === o.chunk[1]]
-    for (let k of [0, 1]) Object.defineProperty(n.chunk[k], "value", {get() { throw new Error("NO TOUCH") }})
-    let rec = P.cmpRec(); let r1: any = "ok"; try { RangeSet.compare([o], [n], c, rec.comp) } catch (e: any) { r1 = e.message }
-    let P2 = new Pool(P.json().map((v: any) => ({name: v.name, startSide: v.startSide, endSide: v.endSide, point: v.point})))
-    let n2 = RangeSet.of(big.map(([f, t, i]) => P2.values[i].range(f < 550 ? f : f + 3, t < 550 ? t : t + 3)))
-    eqLog.length = 0
-    let rec2 = P.cmpRec(); RangeSet.compare([P.set(big)], [n2], c, rec2.comp)
-    return {chunksShared: shared, sharedRun: r1, sharedCalls: rec.calls, rebuiltCalls: rec2.calls, eqCallsRebuilt: eqLog.length}
-  })
+  // the second pool: values equal to P's (same names, sides and point) but distinct objects, so their index is -1
+  let P2: Spec[] = P.map(v => ({name: v.name, startSide: v.startSide ?? 0, endSide: v.endSide ?? 0, point: v.point ?? false}))
+  let big2 = big.map(([f, t, i]) => [f < 550 ? f : f + 3, t < 550 ? t : t + 3, {other: i}])
+  fx(ID.compare, B("RangeSet^compare", 2), {...prog(P, [
+    op("set.of", {ranges: big, sort: false}, "o"), op("changes.of", {spec: {from: 550, insert: "xyz"}, length: 600}, "c"),
+    op("set.map", {set: $("o"), changes: $("c")}, "n"),
+    op("set.chunk", {set: $("n"), index: 0}, "n0"), op("set.chunk", {set: $("n"), index: 1}, "n1"),
+    op("same", {a: $("n0"), b: op("set.chunk", {set: $("o"), index: 0})}, "shared0"), op("same", {a: $("n1"), b: op("set.chunk", {set: $("o"), index: 1})}, "shared1"),
+    op("chunk.poison", {chunk: $("n0")}), op("chunk.poison", {chunk: $("n1")}),
+    op("try", {mode: "okOrMessage", steps: [compare([$("o")], [$("n")], $("c"), "sharedCalls")]}, "sharedRun"),
+    op("set.of", {ranges: big2}, "n2"),
+    op("eqlog.clear"),
+    compare([of(big)], [$("n2")], $("c"), "rebuiltCalls"),
+    op("eqlog.count", {}, "eqCallsRebuilt"),
+  ], {chunksShared: [$("shared0"), $("shared1")], sharedRun: $("sharedRun"), sharedCalls: $("sharedCalls"), rebuiltCalls: $("rebuiltCalls"), eqCallsRebuilt: $("eqCallsRebuilt")}),
+    otherValues: P2})
   // gaps, compareRange, comparePoint, clipping
   let cases: [string, R[], R[], any, number[]][] = [
     ["mark added", [[[2, 4, 0]]], [[[2, 4, 0], [3, 9, 1]]], {length: 20}, [3, 4]],
@@ -529,10 +506,9 @@ const SPANS = "RangeSet.spans(sets, from, to, spansRec iterator): calls, return 
     ["more sets on one side", [[[2, 4, 0]]], [[[2, 4, 0]], [[6, 8, 1]]], {length: 20}, [9]],
     ["same sets swapped", [[[2, 4, 0]], [[2, 4, 1]]], [[[2, 4, 1]], [[2, 4, 0]]], {length: 20}, [10]],
   ]
-  for (let [name, o, n, c, bs] of cases) {
-    fx(ID.compare, [...B("RangeSet^compare", ...bs), ...(bs.includes(4) ? B("RangeComparator.compareRange", 1) : []), ...(bs.includes(5) ? B("RangeComparator.comparePoint", 1) : [])], {name, old: o.map(x => setInput(P, x)), new: n.map(x => setInput(P, x)), textDiff: c.spec ? c : ch(null, c.length), op: "calls of " + COMPARE},
-       () => run(o, n, c))
-  }
+  for (let [name, o, n, c, bs] of cases)
+    fx(ID.compare, [...B("RangeSet^compare", ...bs), ...(bs.includes(4) ? B("RangeComparator.compareRange", 1) : []), ...(bs.includes(5) ? B("RangeComparator.comparePoint", 1) : [])],
+       prog(P, [cmp(o, n, c, "calls")], $("calls"), {name}))
   // boundChange
   let bcases: [string, R, R][] = [
     ["split into two", [[0, 10, 0]], [[0, 5, 0], [5, 10, 0]]],
@@ -543,23 +519,26 @@ const SPANS = "RangeSet.spans(sets, from, to, spansRec iterator): calls, return 
   ]
   for (let [name, o, n] of bcases) {
     let c = name.startsWith("boundary at the end") ? {spec: {from: 5, to: 6, insert: "q"}, length: 20} : {length: 20}
-    fx(ID.compare, [...B("RangeSet^compare", 6), ...B("RangeComparator", 1), ...B("RangeComparator.boundChange", 1)], {name, old: [setInput(P, o)], new: [setInput(P, n)], textDiff: c.spec ? c : ch(null, 20), ops: ["withBound: calls of " + COMPARE, "withoutBound: calls of " + COMPARE + ", the comparator without boundChange"]},
-       () => ({withBound: run([o], [n], c), withoutBound: run([o], [n], c, {bound: false})}))
+    fx(ID.compare, [...B("RangeSet^compare", 6), ...B("RangeComparator", 1), ...B("RangeComparator.boundChange", 1)], prog(P, [
+      cmp([o], [n], c, "withBound"), cmp([o], [n], c, "withoutBound", {bound: false}),
+    ], {withBound: $("withBound"), withoutBound: $("withoutBound")}, {name}))
   }
   // aliasing of the arrays passed to compareRange
-  fx(ID.compare, [...B("RangeSet^compare", 11), ...B("RangeComparator.compareRange", 1)], {old: [setInput(P, [[0, 10, 0], [2, 4, 1]])], new: [setInput(P, [[0, 10, 4]])], textDiff: ch(null, 20),
-     op: "RangeSet.compare(old, new, ChangeSet.empty(textDiff.length), comparator with compareRange (records and keeps its arrays) and an empty comparePoint, no boundChange); atCall: [from, to, a, b] read at each call; afterReturn: the kept [a, b] read after compare returns; sameArrayEveryCall: every kept a is the first call's a"}, () => {
-    let seen: any[] = [], kept: any[] = []
-    RangeSet.compare([P.set([[0, 10, 0], [2, 4, 1]])], [P.set([[0, 10, 4]])], ChangeSet.empty(20), {
-      compareRange(f, t, a, b) { seen.push([f, t, P.idxs(a), P.idxs(b)]); kept.push([a, b]) }, comparePoint() {}})
-    return {atCall: seen, afterReturn: kept.map(([a, b]) => [P.idxs(a), P.idxs(b)]), sameArrayEveryCall: kept.every(([a]) => a === kept[0][0])}
-  })
+  fx(ID.compare, [...B("RangeSet^compare", 11), ...B("RangeComparator.compareRange", 1)], prog(P, [
+    op("compare", {old: [of([[0, 10, 0], [2, 4, 1]])], new: [of([[0, 10, 4]])], changes: chEmpty(20), comparator: {fn: "cmpKeep", seen: "seen", kept: "kept"}}),
+    op("indexes", {of: $("kept")}, "afterReturn"), op("allSame", {of: op("column", {of: $("kept"), index: 0})}, "sameArrayEveryCall"),
+  ], {atCall: $("seen"), afterReturn: $("afterReturn"), sameArrayEveryCall: $("sameArrayEveryCall")}))
 }
 
 // ---------------------------------------------------------------- RangeSet^eq
 {
-  let P = new Pool([mark("m"), mark("n"), pt("p", {startSide: 0, endSide: 0}), pt("p", {startSide: 0, endSide: 0}), pt("q", {startSide: 0, endSide: 0})])
-  const E = (o: R[], n: R[], from?: number, to?: number) => RangeSet.eq(o.map(x => P.set(x)), n.map(x => P.set(x)), from, to)
+  let P = [mark("m"), mark("n"), pt("p", {startSide: 0, endSide: 0}), pt("p", {startSide: 0, endSide: 0}), pt("q", {startSide: 0, endSide: 0})]
+  const E = (o: R[], n: R[], from?: number, to?: number) => {
+    let a: any = {old: o.map(x => of(x)), new: n.map(x => of(x))}
+    if (from !== undefined) a.from = from
+    if (to !== undefined) a.to = to
+    return a
+  }
   let cases: [string, R[], R[], number?, number?][] = [
     ["marks differ in extent", [[[0, 5, 0]]], [[[0, 6, 0]]]],
     ["marks differ in value", [[[0, 5, 0]]], [[[0, 5, 1]]]],
@@ -577,25 +556,21 @@ const SPANS = "RangeSet.spans(sets, from, to, spansRec iterator): calls, return 
   ]
   for (let [name, o, n, from, to] of cases)
     fx(ID.seq, B("RangeSet^eq", ...(name.startsWith("marks") || name.startsWith("mark only") ? [3] : name.startsWith("set count") || name == "no sets" ? [2] : name.includes("after to") ? [5] : name.includes("from") ? [6] : [4])),
-       {name, old: o.map(x => setInput(P, x)), new: n.map(x => setInput(P, x)), from: from ?? "default", to: to ?? "default", question: name.startsWith("mark") ? "Q22" : undefined,
-        op: "RangeSet.eq(old, new, from, to), from and to omitted when \"default\""},
-       () => E(o, n, from, to))
-  fx(ID.seq, B("RangeSet^eq", 2), {op: "s = of(3,3,p); RangeSet.eq([s, of(0,5,m)], [of(0,5,n), s]) and RangeSet.eq([s, RangeSet.empty], [s])"}, () => {
-    let s = P.set([[3, 3, 2]])
-    return [RangeSet.eq([s, P.set([[0, 5, 0]])], [P.set([[0, 5, 1]]), s]), RangeSet.eq([s, RangeSet.empty], [s])]
-  })
-  fx(ID.seq, B("RangeSet^eq", 1), {sets: [[setInput(P, [[3, 3, 2], [999999998, 999999998, 2]])], [setInput(P, [[3, 3, 2], [999999998, 999999998, 4]])], [setInput(P, [[3, 3, 2], [1e9 + 3, 1e9 + 3, 2]])], [setInput(P, [[3, 3, 2], [1e9 + 3, 1e9 + 3, 4]])]],
-     ops: ["eq(sets0, sets1) defaults", "eq(sets2, sets3) defaults"], question: "Q20"},
-     () => [E([[[3, 3, 2], [999999998, 999999998, 2]]], [[[3, 3, 2], [999999998, 999999998, 4]]]),
-            E([[[3, 3, 2], [1e9 + 3, 1e9 + 3, 2]]], [[[3, 3, 2], [1e9 + 3, 1e9 + 3, 4]]])])
+       prog(P, [op("set.eq", E(o, n, from, to), "eq")], $("eq"), name.startsWith("mark") ? {name, question: "Q22"} : {name}))
+  fx(ID.seq, B("RangeSet^eq", 2), prog(P, [
+    op("set.of", {ranges: [[3, 3, 2]], sort: false}, "s"),
+    op("set.eq", {old: [$("s"), of([[0, 5, 0]])], new: [of([[0, 5, 1]]), $("s")]}, "e0"),
+    op("set.eq", {old: [$("s"), empty], new: [$("s")]}, "e1"),
+  ], [$("e0"), $("e1")]))
+  fx(ID.seq, B("RangeSet^eq", 1), prog(P, [
+    op("set.eq", E([[[3, 3, 2], [999999998, 999999998, 2]]], [[[3, 3, 2], [999999998, 999999998, 4]]]), "e0"),
+    op("set.eq", E([[[3, 3, 2], [1e9 + 3, 1e9 + 3, 2]]], [[[3, 3, 2], [1e9 + 3, 1e9 + 3, 4]]]), "e1"),
+  ], [$("e0"), $("e1")], {question: "Q20"}))
 }
 
 // ---------------------------------------------------------------- spans
 {
-  let P = new Pool([mark("a"), mark("b"), mark("c"), pt("p", {startSide: -1, endSide: 1}), pt("e", {startSide: 1, endSide: 1}), pt("f", {startSide: 1, endSide: 1})])
-  const S = (sets: R[], from: number, to: number, min?: number) => {
-    let rec = P.spansRec(); let ret = RangeSet.spans(sets.map(x => P.set(x)), from, to, rec.it, min); return {calls: rec.calls, ret}
-  }
+  let P = [mark("a"), mark("b"), mark("c"), pt("p", {startSide: -1, endSide: 1}), pt("e", {startSide: 1, endSide: 1}), pt("f", {startSide: 1, endSide: 1})]
   let cases: [string, R[], number, number, number[]][] = [
     ["plain spans", [[[2, 5, 0], [3, 8, 1]]], 0, 10, [1, 2, 3]],
     ["iteration starts inside ranges", [[[2, 5, 0], [3, 8, 1]]], 4, 10, [3]],
@@ -613,85 +588,89 @@ const SPANS = "RangeSet.spans(sets, from, to, spansRec iterator): calls, return 
     ["empty set", [[]], 0, 3, [1]],
   ]
   for (let [name, sets, from, to, bs] of cases)
-    fx(ID.spans, [...B("RangeSet^spans", ...bs), ...(bs.includes(1) ? [...B("SpanIterator", 1), ...B("SpanIterator.span", 1)] : []), ...(bs.includes(4) ? B("SpanIterator.point", 1) : [])], {name, sets: sets.map(x => setInput(P, x)), from, to, op: SPANS}, () => S(sets, from, to))
+    fx(ID.spans, [...B("RangeSet^spans", ...bs), ...(bs.includes(1) ? [...B("SpanIterator", 1), ...B("SpanIterator.span", 1)] : []), ...(bs.includes(4) ? B("SpanIterator.point", 1) : [])],
+       spansFx(P, sets.map(x => of(x)), from, to, undefined, {name}))
   // span openStart and aliasing of active
-  fx(ID.spans, [...B("SpanIterator.span", 1, 2)], {sets: [setInput(P, [[0, 6, 0], [2, 4, 1]])], from: 0, to: 6, op: "RangeSet.spans(sets, from, to, iterator with span (records and keeps its active array) and an empty point); atCall: [from, to, active, openStart] read at each call; afterReturn: the kept arrays read after spans returns; sameArray: every kept array is the first one"}, () => {
-    let kept: any[] = [], seen: any[] = []
-    RangeSet.spans([P.set([[0, 6, 0], [2, 4, 1]])], 0, 6, {span(f, t, a, o) { seen.push([f, t, P.idxs(a), o]); kept.push(a) }, point() {}})
-    return {atCall: seen, afterReturn: kept.map(a => P.idxs(a)), sameArray: kept.every(a => a === kept[0])}
-  })
-  fx(ID.spans, B("SpanIterator.point", 2), {sets: [setInput(P, [[2, 4, 3]])], from: 0, to: 6, op: "point with no active ranges: RangeSet.spans(sets, from, to, iterator whose span and point keep their active array); n: number of calls; pointArrayIsSpanArray: the second call's array is the first call's; lengths: length of each kept array after spans returns"}, () => {
-    let arrs: any[] = []
-    RangeSet.spans([P.set([[2, 4, 3]])], 0, 6, {span(f, t, a) { arrs.push(a) }, point(f, t, v, a) { arrs.push(a) }})
-    return {n: arrs.length, pointArrayIsSpanArray: arrs[1] === arrs[0], lengths: arrs.map(a => a.length)}
-  })
+  fx(ID.spans, [...B("SpanIterator.span", 1, 2)], prog(P, [
+    op("spans", {sets: [of([[0, 6, 0], [2, 4, 1]])], from: 0, to: 6, iterator: {fn: "spansKeep", seen: "seen", kept: "kept", point: false}}),
+    op("indexes", {of: $("kept")}, "afterReturn"), op("allSame", {of: $("kept")}, "sameArray"),
+  ], {atCall: $("seen"), afterReturn: $("afterReturn"), sameArray: $("sameArray")}))
+  fx(ID.spans, B("SpanIterator.point", 2), prog(P, [
+    op("spans", {sets: [of([[2, 4, 3]])], from: 0, to: 6, iterator: {fn: "spansKeep", seen: "seen", kept: "kept", point: true}}),
+    op("count", {of: $("kept")}, "n"), op("same", {a: op("item", {of: $("kept"), index: 1}), b: op("item", {of: $("kept"), index: 0})}, "pointArrayIsSpanArray"),
+    op("lengths", {of: $("kept")}, "lengths"),
+  ], {n: $("n"), pointArrayIsSpanArray: $("pointArrayIsSpanArray"), lengths: $("lengths")}))
   // consumer minPointSize values: -1 (default), 0 (view heightmap.ts:715), 20 (view viewstate.ts:563, :634)
   let cr: R = [[0, 50, 0], [5, 5, 4], [10, 25, 3], [30, 40, 5]]
   for (let min of [-1, 0, 20])
-    fx(ID.spans, B("RangeSet^spans", 7), {sets: [setInput(P, cr)], from: 0, to: 50, minPointSize: min, op: SPANS + " with minPointSize"}, () => S([cr], 0, 50, min))
+    fx(ID.spans, B("RangeSet^spans", 7), spansFx(P, [of(cr)], 0, 50, min))
 }
 
 // ---------------------------------------------------------------- RangeSet^of, RangeSetBuilder
 {
-  let P = new Pool([{name: "a"}, {name: "b"}, {name: "c"}])
-  fx(ID.of, B("RangeSet^of", 2), {sets: [setInput(P, [[8, 9, 0], [7, 10, 1]]), setInput(P, [[1, 1, 0], [1, 1, 1]])], values: "a, b sides 0/0; the second pair given b.startSide = -1",
-     ops: ["of([8,9,a],[7,10,b])", "of([1,1,a with startSide 1],[1,1,b with startSide -1])"]}, () => {
-    let r1 = (() => { try { P.set([[8, 9, 0], [7, 10, 1]]); return "ok" } catch (e: any) { return {error: e.constructor.name, message: e.message} } })()
-    let Q = new Pool([{name: "a", startSide: 1, endSide: 1}, {name: "b", startSide: -1, endSide: -1}])
-    let r2 = (() => { try { Q.set([[1, 1, 0], [1, 1, 1]]); return "ok" } catch (e: any) { return {error: e.constructor.name, message: e.message} } })()
-    return [r1, r2]
-  })
-  fx(ID.of, B("RangeSet^of", 3), {set: setInput(P, [[5, 6, 0], [1, 2, 1], [5, 6, 2], [1, 2, 0]], true)}, () => P.list(P.set([[5, 6, 0], [1, 2, 1], [5, 6, 2], [1, 2, 0]], true)))
-  fx(ID.of, B("RangeSet^of", 6), {set: setInput(P, [[1, 3, 0], [1, 3, 0], [4, 4, 1], [4, 4, 1]])}, () => P.dump(P.set([[1, 3, 0], [1, 3, 0], [4, 4, 1], [4, 4, 1]])))
+  let P: Spec[] = [{name: "a"}, {name: "b"}, {name: "c"}]
+  fx(ID.of, B("RangeSet^of", 2), {...prog(P, [
+    op("try", {mode: "okOrError", steps: [of([[8, 9, 0], [7, 10, 1]])]}, "r1"),
+    op("try", {mode: "okOrError", steps: [of([[1, 1, {other: 0}], [1, 1, {other: 1}]])]}, "r2"),
+  ], [$("r1"), $("r2")]), otherValues: [{name: "a", startSide: 1, endSide: 1}, {name: "b", startSide: -1, endSide: -1}]})
+  fx(ID.of, B("RangeSet^of", 3), prog(P, [op("set.list", {set: of([[5, 6, 0], [1, 2, 1], [5, 6, 2], [1, 2, 0]], true)}, "list")], $("list")))
+  fx(ID.of, B("RangeSet^of", 6), prog(P, [op("set.dump", {set: of([[1, 3, 0], [1, 3, 0], [4, 4, 1], [4, 4, 1]])}, "dump")], $("dump")))
   // builder
-  fx(ID.add, B("RangeSetBuilder.add", 1, 2, 3), {values: P.json(), ops: ["b.add(0,10,a); b.add(5,6,b); b.add(3,4,c)", "b.add(0,10,a); b.add(5,6,b); b.add(7,8,c); finish"]}, () => {
-    let b1 = new RangeSetBuilder<any>(); b1.add(0, 10, P.values[0]); b1.add(5, 6, P.values[1])
-    let r1 = (() => { try { b1.add(3, 4, P.values[2]); return "ok" } catch (e: any) { return {error: e.constructor.name, message: e.message} } })()
-    let b2 = new RangeSetBuilder<any>(); b2.add(0, 10, P.values[0]); b2.add(5, 6, P.values[1]); b2.add(7, 8, P.values[2])
-    return {throwsInNestedLayer: r1, dump: P.dump(b2.finish())}
-  })
-  fx(ID.add, B("RangeSetBuilder.add", 6), {values: P.json(), op: "add(5,3,a) (reversed); add(4,6,b) (from < previous from); finish"}, () => {
-    let b = new RangeSetBuilder<any>(); b.add(5, 3, P.values[0]); b.add(4, 6, P.values[1]); let s = b.finish(); return {dump: P.dump(s), list: P.list(s)}
-  })
-  fx(ID.add, B("RangeSetBuilder.add", 7), {values: P.json(), ops: ["addFits: b1.add(0,5,a); b1.finish(); b1.add(10,11,b)", "addOverlaps: b2.add(0,5,a); b2.finish(); b2.add(2,3,b)", "finishAfterOverlap: then dump(b2.finish())", "finishTwice: b3.add(0,5,a); b3.finish(); dump(b3.finish())",
-                                                       "each read as {ok: the value, or \"returned undefined\"} or {error, message}"]}, () => {
-    let t = (f: () => any) => { try { let r = f(); return {ok: r === undefined ? "returned undefined" : r} } catch (e: any) { return {error: e.constructor.name, message: e.message} } }
-    let b1 = new RangeSetBuilder<any>(); b1.add(0, 5, P.values[0]); b1.finish()
-    let b2 = new RangeSetBuilder<any>(); b2.add(0, 5, P.values[0]); b2.finish()
-    let b3 = new RangeSetBuilder<any>(); b3.add(0, 5, P.values[0]); b3.finish()
-    return {addFits: t(() => b1.add(10, 11, P.values[1])), addOverlaps: t(() => b2.add(2, 3, P.values[1])), finishAfterOverlap: t(() => P.dump(b2.finish())), finishTwice: t(() => P.dump(b3.finish()))}
-  })
-  fx(ID.finish, [...B("RangeSetBuilder.finish", 1, 2), ...B("RangeSetBuilder.constructor", 1)], {values: P.json(), ops: ["new builder; firstEmpty: finish() === RangeSet.empty; secondEmpty: finish() === RangeSet.empty again; add(1,2,a); thenUsable: list(finish())"]}, () => {
-    let b = new RangeSetBuilder<any>()
-    let e1 = b.finish() === RangeSet.empty, e2 = b.finish() === RangeSet.empty
-    b.add(1, 2, P.values[0]); let s = b.finish()
-    return {firstEmpty: e1, secondEmpty: e2, thenUsable: P.list(s)}
-  })
-  fx(ID.finish, B("RangeSetBuilder.finish", 3), {values: P.json(), op: "add(0,10,a); add(2,8,b); add(3,4,c); add(12,13,a); finish"}, () => {
-    let b = new RangeSetBuilder<any>(); b.add(0, 10, P.values[0]); b.add(2, 8, P.values[1]); b.add(3, 4, P.values[2]); b.add(12, 13, P.values[0])
-    return P.dump(b.finish())
-  })
-  let Q = new Pool([pt("p", {startSide: 0, endSide: 0}), {name: "m", startSide: 0, endSide: 0}])
-  fx(ID.builder, B("RangeSetBuilder", 1), {values: Q.json(), op: "add(0,10,m); add(2,6,p); add(7,7,p); finish (the points land in the nested layer)"}, () => {
-    let b = new RangeSetBuilder<any>(); b.add(0, 10, Q.values[1]); b.add(2, 6, Q.values[0]); b.add(7, 7, Q.values[0])
-    return Q.dump(b.finish())
-  })
+  const add = (b: string, from: number, to: number, v: number) => op("builder.add", {builder: $(b), from, to, v})
+  const finish = (b: string, as: string) => op("builder.finish", {builder: $(b)}, as)
+  fx(ID.add, B("RangeSetBuilder.add", 1, 2, 3), prog(P, [
+    op("builder.new", {}, "b1"), add("b1", 0, 10, 0), add("b1", 5, 6, 1),
+    op("try", {mode: "okOrError", steps: [add("b1", 3, 4, 2)]}, "r1"),
+    op("builder.new", {}, "b2"), add("b2", 0, 10, 0), add("b2", 5, 6, 1), add("b2", 7, 8, 2),
+    op("set.dump", {set: op("builder.finish", {builder: $("b2")})}, "dump"),
+  ], {throwsInNestedLayer: $("r1"), dump: $("dump")}))
+  fx(ID.add, B("RangeSetBuilder.add", 6), prog(P, [
+    op("builder.new", {}, "b"), add("b", 5, 3, 0), add("b", 4, 6, 1), finish("b", "s"),
+    op("set.dump", {set: $("s")}, "dump"), op("set.list", {set: $("s")}, "list"),
+  ], {dump: $("dump"), list: $("list")}))
+  fx(ID.add, B("RangeSetBuilder.add", 7), prog(P, [
+    op("builder.new", {}, "b1"), add("b1", 0, 5, 0), finish("b1", "f1"),
+    op("builder.new", {}, "b2"), add("b2", 0, 5, 0), finish("b2", "f2"),
+    op("builder.new", {}, "b3"), add("b3", 0, 5, 0), finish("b3", "f3"),
+    op("try", {mode: "okValueOrError", steps: [add("b1", 10, 11, 1)]}, "addFits"),
+    op("try", {mode: "okValueOrError", steps: [add("b2", 2, 3, 1)]}, "addOverlaps"),
+    op("try", {mode: "okValueOrError", steps: [finish("b2", "s2"), op("set.dump", {set: $("s2")}, "d2")], result: "d2"}, "finishAfterOverlap"),
+    op("try", {mode: "okValueOrError", steps: [finish("b3", "s3"), op("set.dump", {set: $("s3")}, "d3")], result: "d3"}, "finishTwice"),
+  ], {addFits: $("addFits"), addOverlaps: $("addOverlaps"), finishAfterOverlap: $("finishAfterOverlap"), finishTwice: $("finishTwice")}))
+  fx(ID.finish, [...B("RangeSetBuilder.finish", 1, 2), ...B("RangeSetBuilder.constructor", 1)], prog(P, [
+    op("builder.new", {}, "b"),
+    op("same", {a: op("builder.finish", {builder: $("b")}), b: empty}, "firstEmpty"), op("same", {a: op("builder.finish", {builder: $("b")}), b: empty}, "secondEmpty"),
+    add("b", 1, 2, 0), finish("b", "s"), op("set.list", {set: $("s")}, "thenUsable"),
+  ], {firstEmpty: $("firstEmpty"), secondEmpty: $("secondEmpty"), thenUsable: $("thenUsable")}))
+  fx(ID.finish, B("RangeSetBuilder.finish", 3), prog(P, [
+    op("builder.new", {}, "b"), add("b", 0, 10, 0), add("b", 2, 8, 1), add("b", 3, 4, 2), add("b", 12, 13, 0),
+    op("set.dump", {set: op("builder.finish", {builder: $("b")})}, "dump"),
+  ], $("dump")))
+  let Q: Spec[] = [pt("p", {startSide: 0, endSide: 0}), {name: "m", startSide: 0, endSide: 0}]
+  fx(ID.builder, B("RangeSetBuilder", 1), prog(Q, [
+    op("builder.new", {}, "b"), add("b", 0, 10, 1), add("b", 2, 6, 0), add("b", 7, 7, 0),
+    op("set.dump", {set: op("builder.finish", {builder: $("b")})}, "dump"),
+  ], $("dump")))
 }
 
 // ---------------------------------------------------------------- join
 {
-  let P = new Pool([{name: "a"}, {name: "b"}, pt("p", {startSide: 0, endSide: 0})])
-  fx(ID.join, B("RangeSet^join", 1, 2, 4), {op: "join([]) === empty; join([s]) === s; join([empty, s]) === s; join([s, empty]) === s; dump(join([s, empty]))"}, () => {
-    let s = P.set([[0, 2, 0]])
-    return [RangeSet.join([]) === RangeSet.empty, RangeSet.join([s]) === s, RangeSet.join([RangeSet.empty, s]) === s, RangeSet.join([s, RangeSet.empty]) === s,
-            P.dump(RangeSet.join([s, RangeSet.empty]))]
-  })
+  let P: Spec[] = [{name: "a"}, {name: "b"}, pt("p", {startSide: 0, endSide: 0})]
+  const join = (sets: any[]) => op("set.join", {sets})
+  fx(ID.join, B("RangeSet^join", 1, 2, 4), prog(P, [
+    op("set.of", {ranges: [[0, 2, 0]], sort: false}, "s"),
+    op("same", {a: join([]), b: empty}, "j0"), op("same", {a: join([$("s")]), b: $("s")}, "j1"),
+    op("same", {a: join([empty, $("s")]), b: $("s")}, "j2"), op("same", {a: join([$("s"), empty]), b: $("s")}, "j3"),
+    op("set.dump", {set: join([$("s"), empty])}, "dump"),
+  ], [$("j0"), $("j1"), $("j2"), $("j3"), $("dump")]))
   let s0: R = [[0, 10, 0], [2, 4, 1]], s1: R = [[1, 9, 2]], s2: R = [[3, 5, 1]]
-  fx(ID.join, B("RangeSet^join", 3, 5, 6), {sets: [setInput(P, s0), setInput(P, s1), setInput(P, s2)], op: "j = RangeSet.join(sets): dump(j); list: RangeSet.iter([j]) list with ranks; layerChunkSources: for each layer of j, the index in [sets[0], sets[0].nextLayer, sets[1], sets[2]] of the layer whose first chunk is its first chunk; perLayerMaxPointOfSources: maxPoint of sets[0], sets[0].nextLayer, sets[1], sets[2]"}, () => {
-    let a: any = P.set(s0), b: any = P.set(s1), c: any = P.set(s2), j: any = RangeSet.join([a, b, c])
-    let layers = []; for (let l = j; !l.isEmpty; l = l.nextLayer) layers.push(l)
-    return {dump: P.dump(j), list: P.listMany([j]), layerChunkSources: layers.map(l => [a, a.nextLayer, b, c].findIndex(x => x.chunk[0] === l.chunk[0])),
-            perLayerMaxPointOfSources: [a.maxPoint, a.nextLayer.maxPoint, b.maxPoint, c.maxPoint]}
-  })
+  const maxPoint = (set: any, as: string) => op("set.prop", {set, prop: "maxPoint"}, as)
+  fx(ID.join, B("RangeSet^join", 3, 5, 6), prog(P, [
+    op("set.of", {ranges: s0, sort: false}, "a"), op("set.of", {ranges: s1, sort: false}, "b"), op("set.of", {ranges: s2, sort: false}, "c"),
+    op("set.join", {sets: [$("a"), $("b"), $("c")]}, "j"),
+    op("set.dump", {set: $("j")}, "dump"), op("set.listMany", {sets: [$("j")]}, "list"),
+    op("set.layerSources", {set: $("j"), sources: [$("a"), op("set.nextLayer", {set: $("a")}), $("b"), $("c")]}, "layerChunkSources"),
+    maxPoint($("a"), "mA"), maxPoint(op("set.nextLayer", {set: $("a")}), "mA2"), maxPoint($("b"), "mB"), maxPoint($("c"), "mC"),
+  ], {dump: $("dump"), list: $("list"), layerChunkSources: $("layerChunkSources"), perLayerMaxPointOfSources: [$("mA"), $("mA2"), $("mB"), $("mC")]}))
 }
 console.log("fixtures written")

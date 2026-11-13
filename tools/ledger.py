@@ -5,7 +5,8 @@
     python3 tools/ledger.py report [<crate>]             cost per stage and step, escapes, open expectations
 
 Kinds and their keys (date defaults to today; numbers are parsed):
-  step     crate stage step role effort tokens [attempts] [note]     one finished worker run or orchestrator step
+  step     crate stage step role effort tokens [attempts] [note]     one finished worker run or orchestrator step;
+                                                                     tokens=none when not measured (never 0)
   escape   crate defect class severity made_in found_in [note]       a defect one step made and a later step found
                                                                      (severity: high | low, specification.md §8 item 3)
   expect   id change expects check_at                                a method change and the measurement that confirms it
@@ -31,7 +32,7 @@ def add(kind, pairs):
     row = {"kind": kind, "date": datetime.date.today().isoformat()}
     for p in pairs:
         k, _, v = p.partition("=")
-        row[k] = int(v) if v.isdigit() else v
+        row[k] = int(v) if v.isdigit() else None if (k, v) == ("tokens", "none") else v
     missing = [k for k in KEYS[kind] if k not in row]
     if missing: sys.exit(f"{kind} needs {', '.join(missing)}")
     with open(PATH, "a", encoding="utf-8") as f:
@@ -43,13 +44,17 @@ def report(crate=None):
     steps = [r for r in data if r["kind"] == "step"]
     per = collections.OrderedDict()
     for r in steps:
-        k = (r["crate"], r["stage"], r["step"]); t = per.setdefault(k, [0, 0]); t[0] += r["tokens"]; t[1] += 1
+        k = (r["crate"], r["stage"], r["step"]); t = per.setdefault(k, [0, 0, 0]); t[1] += 1
+        if r["tokens"] is None: t[2] += 1
+        else: t[0] += r["tokens"]
     print("## Tokens per step")
-    stage_total = collections.Counter()
-    for (c, st, s), (tok, n) in per.items():
-        stage_total[(c, st)] += tok
-        print(f"{c:14} {st:15} {s:28} {tok:>10,} in {n} run(s)")
-    for (c, st), tok in stage_total.items(): print(f"{c:14} {st:15} {'TOTAL':28} {tok:>10,}")
+    stage_total, unmeasured = collections.Counter(), collections.Counter()
+    for (c, st, s), (tok, n, u) in per.items():
+        stage_total[(c, st)] += tok; unmeasured[(c, st)] += u
+        print(f"{c:14} {st:15} {s:28} {tok:>10,} in {n} run(s)" + (f", {u} not measured" if u else ""))
+    for (c, st), tok in stage_total.items():
+        u = unmeasured[(c, st)]
+        print(f"{c:14} {st:15} {'TOTAL':28} {tok:>10,}" + (f" (plus {u} run(s) not measured)" if u else ""))
     esc = [r for r in data if r["kind"] == "escape"]
     if esc:
         print("\n## Escapes: defects by the step that made them, the step that found them, severity")

@@ -1,6 +1,6 @@
 # Ferrum
 
-A native Rust editor engine that reproduces the observable behavior of CodeMirror 6 (cm6): `docs/foundation/ferrum-foundation.md`. What the maintainer wants from it and from the work binds everything else: `docs/foundation/maintainer-intent.md`. How the work runs: `docs/workflow/README.md`.
+A native Rust editor engine that reproduces the observable behavior of CodeMirror 6 (cm6), as its floor and not its ceiling: `docs/foundation/ferrum-foundation.md`. What the maintainer wants from it and from the work binds everything else: `docs/foundation/maintainer-intent.md`. How the work runs: `docs/workflow/README.md`.
 
 `dev/ptbr/` holds Portuguese translations for human readers. Never read, search, cite or edit it; only the `translator` agent keeps it.
 
@@ -20,6 +20,7 @@ Only the `consultant` agent (`.claude/agents/consultant.md`) or the maintainer d
 - No options and no recommendation: the consultant builds the alternatives from the evidence. A consequence you found is a fact ("cm6 throws at `state.ts:120` when …; the test at `test-state.ts:88` expects it"), not a menu.
 - State the problem, not a mechanism: "callers cannot tell X from Y", not "should X return a `Result`".
 - A question already decided (`docs/decisions/`) is raised again only with the earlier decision and the new evidence.
+- A way for Ferrum to do better than cm6 (a result a standard or cm6's own documentation shows to be a limitation, a sharper error, a simpler call) is raised the same way, with its source, and you implement or record what cm6 does: only the consultant adopts an improvement and decides when it is made (D16, `.claude/rules/decisions.md`).
 
 ## Reporting from a card
 

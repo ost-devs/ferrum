@@ -24,6 +24,8 @@ Ele abre dizendo o que espera por você. Use essa sessão para entender ou quest
 | Quanto custou e o que escapou em cada etapa | `python3 tools/ledger.py report` |
 | Todas as decisões, com a pergunta, as razões, as alternativas e a confiança | `docs/decisions/` em inglês; a tradução em `dev/ptbr/` |
 | Rascunhos esperando você confirmar | `dev/maintainer/drafts/` |
+| Onde o Ferrum pode ser melhor que o cm6, e o que foi decidido sobre cada ponto (feito, agendado com data, em avaliação, recusado com o motivo) | `docs/parity/<crate>/raw/improvements.jsonl`; resumido em cada relatório |
+| As suas diretrizes, com as suas palavras | `dev/maintainer/instructions/` |
 | Relatórios de cada estágio e de cada crate terminada | `dev/maintainer/reports/` |
 | Como o trabalho roda e se aperfeiçoa | `docs/workflow/README.md` |
 
@@ -34,5 +36,7 @@ Ele abre dizendo o que espera por você. Use essa sessão para entender ou quest
 - **Decisões de impacto extremo** cujo caminho continua incerto depois da evidência.
 - **Dependências com licença fora de MIT ou Apache-2.0:** a responsabilidade jurídica é sua.
 - **Um relatório ao fim de cada estágio:** o que foi feito, a evidência, o custo, o que mudou no método e por quê.
+
+O cm6 é o piso, nunca o teto: o consultor registra toda oportunidade de o Ferrum ser melhor, decide sozinho se e quando ela é feita, e nenhuma é descartada em silêncio. Você não é chamado para escolher o momento de uma melhoria.
 
 O resto o consultor decide sozinho e registra, e o trabalho segue. Um rascunho trava só o que depende dele.

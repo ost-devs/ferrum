@@ -25,7 +25,7 @@ Ferrum is **not**:
 
 These are what Ferrum is for: the person editing text, and the application that embeds Ferrum, get natively what cm6 already solved for an editor. Code that does not reach them yet is unfinished, not a reason to lower them.
 
-- **1:1 behavioral parity with cm6** for every item that is behavioral or contract parity (section 2), judged by what a user or an embedding application can observe: same results, same invariants, the same tests passing with the same expected values, and the same outputs as cm6 on the same inputs. Names stay recognizable to a developer who knows cm6, in idiomatic Rust (the **Names** rule under Architecture in `.claude/rules/rust-crates.md`).
+- **1:1 behavioral parity with cm6** for every item that is behavioral or contract parity (section 2), judged by what a user or an embedding application can observe: same results, same invariants, the same tests passing with the same expected values, and the same outputs as cm6 on the same inputs. That parity is the floor, never the ceiling (`docs/foundation/maintainer-intent.md`): the user gets cm6's quality, capability and stability or better, and where Ferrum can be better than cm6 it is, as a recorded improvement with evidence of its own (section 2). Names stay recognizable to a developer who knows cm6, in idiomatic Rust (the **Names** rule under Architecture in `.claude/rules/rust-crates.md`).
 - **Native performance**: large documents without whole-document work, fast startup, low input latency, smooth rendering at high refresh rates. The maintainer's targets: the core (state update, viewport and decoration work) handles a typical keystroke in under 1 ms; the surface renders at the display's refresh rate, up to 120 FPS (8.3 ms per frame); an input is visible in the next frame the display shows. Each target becomes a reproducible benchmark.
 - **A stable public API** for applications, reached through the facade crate `ferrum` (section 4.1) once the foundation is complete.
 
@@ -53,6 +53,8 @@ Every cm6 item falls into one of three kinds of fidelity. This is the filter tha
 | **Not ported** | Exists only because of the DOM, CSS or browsers. | One-line reason; note whether a surface crate must offer a native equivalent. | DOM reconciliation (`docview`, `tile`, `buildtile`), `MutationObserver` handling (`domobserver`, `domchange`, `domreader`), `style-mod` theming, `EditContext`, browser workarounds |
 
 **cm6's stack is not the target.** cm6 is shaped by where it runs: one JavaScript thread, a garbage collector, UTF-16 strings, a browser that owns layout and input. That shows in some of its behavior (positions in UTF-16 code units) and in many of its mechanisms (parsing in time slices so the only thread stays responsive). Ferrum ports what cm6 does for the editor, not what its stack forced on it. For each behavior or mechanism, ask what problem it solves and whether Rust has the same problem. If it does not (Rust can run work on other threads), Ferrum may solve it another way when that serves a goal of section 1; a capability is never used only because Rust has it. If the problem exists natively too (measuring text is costly in any toolkit), cm6's solution is the starting point. A different mechanism with the same observable behavior is an implementation choice, shown by the ported tests; a change in observable behavior or public API is a decision (section 6) that names the limitation as cm6's code shows it and records the consequences of each option.
+
+**cm6 is the floor, not the ceiling.** A limitation or an inferior behavior of cm6 is not kept for the sake of imitation. Every way in which Ferrum can serve the person editing or the embedding application better than cm6 (correctness, capability, ergonomics) is recorded in the crate's improvement register (`docs/parity/<crate>/raw/improvements.jsonl`) and is adopted, scheduled or declined there by the consultant, who weighs its cost and risk and chooses its moment: a drastic change made in a hurry is not wanted. An improvement is held to the same standard as parity: its expected values come from a reference that runs (cm6 with the improvement applied, or the test data of a standard), and everything it does not touch stays equal to cm6 (`.claude/rules/decisions.md` D11, D16; `docs/workflow/README.md` §1).
 
 ---
 
@@ -124,7 +126,7 @@ The four foundation packages of cm6 depend on each other like this (verified in 
                               │ ferrum-view       │  → state (layout/input via traits)
                               └─────────┬─────────┘
                               ┌─────────▼─────────┐
-                              │ ferrum-state      │  → no Ferrum deps (library candidates: D2)
+                              │ ferrum-state      │  → no Ferrum deps
                               └───────────────────┘
 ```
 
@@ -179,18 +181,17 @@ cm6 never lays out text; the browser does. In Ferrum:
 
 These decisions shape the whole foundation; implementing before taking them risks doing the work twice. The `consultant` agent (`docs/workflow/README.md` §2) takes each when its evidence exists and before the work that needs it; their first iteration is drafted for the maintainer to confirm (`docs/foundation/maintainer-intent.md`). A decision taken is written in `.claude/rules/decisions.md` under its id, its record with the reasoning in `docs/decisions/foundation.md`, and its entry below then points there instead of repeating it (`docs/workflow/README.md` §3). An open entry states the question and, where a first reading found them, facts that bear on it, preliminary until verified; it never states an answer.
 
-**D1. Position unit.** What does an integer position mean? Preliminary facts: cm6 counts UTF-16 code units, and so do its tests and the LSP default; Rust strings, `regex` and tree-sitter (which also uses row/column points) index UTF-8 bytes, as do the text systems the surfaces would use (`cosmic-text`, GPUI); `ropey` indexes chars and converts to bytes and UTF-16. For ASCII-only text every unit gives the same numbers, so the unit mostly affects non-ASCII tests and every boundary with those libraries.
+**D1. Position unit. Decided 2026-11-13 (consultant, confirmed by the maintainer): UTF-8 bytes.** `.claude/rules/decisions.md` D1; record: `docs/decisions/foundation.md`.
 
-**D2. Line breaks and the `Text` model.** cm6 splits input on `\r\n?|\n` (or on `lineSeparator`), stores lines without separators, counts every line break as one position, and reinserts the separator on output (`state.lineBreak`, `sliceDoc`). How does Ferrum's `Text` reproduce that, and on which libraries? Preliminary fact: `ropey` by default also breaks lines on lone CR and other Unicode line separators (its `cr_lines` and `unicode_lines` features).
-The libraries behind `Text` and `findClusterBreak` are part of this decision (`ropey` and `unicode-segmentation` have been named as candidates). cm6's `findClusterBreak` comes from `@marijn/find-cluster-break`; another implementation may place grapheme cluster boundaries differently for some sequences, which changes cursor motion and deletion. Before choosing: compare the rules and Unicode versions of both, record the observable consequences, and say whether each difference is cm6 design or a limitation of its stack (section 2).
+**D2. Line breaks and the `Text` model. Decided 2026-11-13 (consultant, confirmed by the maintainer; the cluster rule delegated to the consultant): cm6's line tree ported on no library; cm6's cluster rule first, then the Unicode rule as an improvement.** `.claude/rules/decisions.md` D2; record: `docs/decisions/foundation.md`.
 
 **D3. Syntax backend and tree abstraction.** Which backend parses, and which Ferrum types replace `Tree`, `SyntaxNode`, `NodeType`, `NodeProp`? How are cm6's node-prop-based strategies (indentation, folding, bracket matching, language data) expressed? What replaces `@lezer/highlight` tags? What becomes of `StreamLanguage` (cm6's `legacy-modes` use it heavily)? When does a syntax tree become available after an edit (cm6 parses in time slices on its one thread)? Preliminary facts: tree-sitter, the backend considered so far, is written in C, which complicates `wasm32-unknown-unknown`, and ships its own query files (`indents.scm`, `folds.scm`, `highlights.scm`).
 
 **D4. Layout contract.** The exact trait `ferrum-view` uses to ask a surface about geometry, and its unit. Where is bidi order computed (cm6 computes it itself, in `bidi.ts`, while a shaper also computes it)?
 
-**D5. Command type.** cm6 has `StateCommand = (target: {state, dispatch}) => boolean` and `Command = (view) => boolean`. Decide both Rust signatures, and how view-dependent commands run in headless tests.
+**D5. Command type. Decided in part, 2026-11-13 (consultant, confirmed by the maintainer): `StateCommand`.** `.claude/rules/decisions.md` D5; record: `docs/decisions/foundation.md`. Open: the Rust signature of cm6's `Command = (view) => boolean`, and how view-dependent commands run in headless tests; it is decided with `ferrum-view`.
 
-**D6. Ownership and threading.** Which values are shared, and across which threads; whether parsing or indexing may run on other threads; how determinism is kept in tests.
+**D6. Ownership and threading. Decided 2026-11-13 (consultant, confirmed by the maintainer): immutable values, `Send + Sync`.** `.claude/rules/decisions.md` D6; record: `docs/decisions/foundation.md`. Whether parsing or indexing runs on other threads is decided with the crate that would do it (D3 for parsing).
 
 **D7. Style model.** cm6 decorations and themes carry CSS classes and attributes. What typed replacement do surfaces understand?
 
@@ -215,7 +216,7 @@ Not started before the four foundation crates are complete and stable (section 5
 | Languages | `ferrum-lang-*`, `ferrum-markdown` | `lang-*` | Grammar + language data + indentation/folding/highlight configuration. Markdown first. Live preview (hiding syntax, rendering widgets) is built from decorations and widgets. |
 | Collaboration | `ferrum-collab` | `@codemirror/collab` | cm6 collab is central-authority OT via `ChangeSet` mapping. CRDT integration (Yjs, Automerge) is a different model and a separate decision, not part of a cm6 port. |
 | Merge/diff | `ferrum-merge` | `@codemirror/merge` | Diff algorithm is portable; side-by-side view is mostly surface. |
-| LSP | `ferrum-lsp-client` | `@codemirror/lsp-client` | Completion, hover, diagnostics, formatting through LSP; needs UTF-16 conversion (D1). |
+| LSP | `ferrum-lsp-client` | `@codemirror/lsp-client` | Completion, hover, diagnostics, formatting through LSP; converts between Ferrum's byte positions and the LSP position encoding (D1). |
 | PKM | outside the engine | none | Vault indexing, wikilinks, backlinks, tags, frontmatter. It does not need the editor engine and should not depend on it: a sibling library or part of the application. `markdown-oxide` (Apache-2.0) is a reference; whether Ferrum depends on it or ports it the way it ports cm6 is undecided (a port would be an Apache-2.0 crate, D9). |
 | Facade | `ferrum` | `codemirror` | Re-exports and presets (a `basic_setup` equivalent) behind feature flags. |
 
