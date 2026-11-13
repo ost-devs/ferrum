@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Mechanical checks of a crate's specification (docs/workflow/specification.md §8 item 1).
 
-    python3 tools/spec_check.py <crate> [--no-run] [--chunk <name> ...]
+    python3 tools/spec_check.py <crate> [--no-run] [--chunk <name> ...] [--same-outputs-as <git ref>]
 
 Run from the repository root. Reads docs/parity/<crate>/raw/*.jsonl, fixtures/*.jsonl and
 oracle/cm6/order.json ({"package": <cm6 package>, "chunks": {<chunk>: [generator files, in run order]}}).
@@ -12,6 +12,9 @@ measures which lines and branches of the cm6 package's source the generators rea
 The unreached ones are written to docs/parity/<crate>/raw/coverage.jsonl, one row per site. A site reported on the
 first line of a file is dropped, and one on the line of a function declaration or of a closing brace comes from mapping
 the compiled code back to the source: read the function before treating it as a branch.
+
+With --same-outputs-as <git ref>, every fixture file is also compared with its version at that commit: the same ids,
+and for each id the same item, behaviors and output. It is the check of a change that may rewrite inputs only.
 
 Needs the harness (python3 tools/cm6/setup_harness.py <package>) and npx (tsx, c8). Exit status 1 when a check
 fails; an unreached branch is a fact to judge, not a failure.
@@ -76,6 +79,18 @@ def main():
     for c, files in chunks.items():
         missing = [f for f in files if f not in on_disk.get(c, [])]
         if missing: bad.append(f"order.json names generators that do not exist in {c}: {missing}")
+
+    if "--same-outputs-as" in args:
+        ref = args[args.index("--same-outputs-as") + 1]
+        for c in chunks:
+            rel = f"docs/parity/{crate}/fixtures/{c}.jsonl"
+            old = subprocess.run(["git", "show", f"{ref}:{rel}"], cwd=ROOT, capture_output=True).stdout.decode("utf-8")
+            was = {r["id"]: r for r in (json.loads(l) for l in old.split("\n") if l.strip())}
+            now = {r["id"]: r for r in fx[c]}
+            diff = [i for i in sorted(set(was) | set(now)) if i not in was or i not in now
+                    or any(was[i].get(k) != now[i].get(k) for k in ("item_id", "behaviors", "output"))]
+            print(f"outputs of {c} against {ref}: {len(now)} fixtures, {len(diff)} differ")
+            if diff: bad.append(f"fixtures/{c}.jsonl differs from {ref} in id, item, behaviors or output: {diff[:10]}")
 
     if run:
         work = os.path.join(ROOT, ".scratch", "spec-check")

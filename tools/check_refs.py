@@ -108,7 +108,9 @@ def main():
     files = []
     for a in args:
         p = pathlib.Path(a)
-        files += sorted(x for x in p.rglob('*.md') if '/oracle/' not in str(x)) if p.is_dir() else [p]
+        # dated records keep the references of their date: decision records and learnings are not checked
+        files += sorted(x for x in p.rglob('*.md') if '/oracle/' not in str(x) and '/decisions/' not in str(x)
+                        and x.name != 'learnings.md') if p.is_dir() else [p]
     out = []
     for f in files:
         check(f.resolve(), out)

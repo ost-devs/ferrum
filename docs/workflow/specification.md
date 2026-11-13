@@ -79,7 +79,7 @@ Schemas (one JSON object per line; `[]` marks arrays):
 - `raw/throws.jsonl`: `cm6, kind, error, condition, protects, checkable, public_entry, behaviors[], fixtures[], tests[]`
 - `raw/names.jsonl`: `id, item, signature, does, case` (which kind of §7 `names` case it is)
 - `raw/tests.jsonl`: `id, file, line, describe, name, generated, scenario, expected, behaviors[], class, class_reason, port_notes`
-- `fixtures/<chunk>.jsonl`: `id, item_id, behaviors[], input, output, encoding`. Values JSON cannot hold (`NaN`, infinities, `-0`, `undefined`, a lone surrogate) are written in the one encoding `tools/cm6/oracle-lib.ts` defines, the same in every chunk
+- `fixtures/<chunk>.jsonl`: `id, item_id, behaviors[], input, output, encoding`. Values JSON cannot hold are written in one encoding, applied to inputs and outputs by `tools/cm6/oracle-lib.ts` and by nothing else: a string with a lone surrogate as `{"utf16": [every code unit]}`; `NaN`, `Infinity`, `-Infinity` and `-0` as `{"js_number": "NaN"}` and so on; `undefined` as `{"js_undefined": true}`; a function value as `{"js_function": true}`; a value that differs between runs (the wall clock) as `{"js_unstable": "<what>"}`. `null` then always means `null`, and a string is always that string
 - `raw/xc.jsonl`: `capability, cm6, direction (needs|offers), crate, searched, exists`
 
 Ids:
@@ -173,9 +173,7 @@ A cm6 test that looks wrong (for example a loop that overwrites its own random r
 
 The orchestrator writes, from the merged rows:
 
-- `contracts.md`, grouped by the question asked (input to D3, D4 and D8);
-- `hazards.md`;
-- `stack.md`;
+- `raw/contracts.jsonl` for a crate with `CONTRACT` items: per item the question asked of the platform, what the logic does with each answer, the smallest fake (input to D3, D4 and D8);
 - `raw/xc.jsonl`:
   - every capability this crate needs from a lower crate, checked against the lower crate's specification. A capability missing or different becomes a question in the lower crate's `questions.md`, with a fixture showing what is needed;
   - every capability higher cm6 packages use from this one, for the later stages.
@@ -185,8 +183,10 @@ The orchestrator writes, from the merged rows:
   - every quirk or apparent bug of cm6 whose reproduction is a choice.
 
   Each question has the shape of `CLAUDE.md` "Raising a question": no options, no recommendation.
-- `names.md`: every inventory row whose name the mechanical conversion of `.claude/rules/rust-crates.md` Architecture 4 may not settle, with what the member does and its signature: a static member; a name that is a std trait method or convention (the names in clippy's `should_implement_trait` table, such as `next`, `from_str`, `default`, `add`, `hash`; and `len`, `is_empty`, `to_string`, `iter`, `into_iter`, `from`, `as_ref`); serialization (`toJSON`, `fromJSON`); a name an entry of `.claude/rules/rust-naming-decisions.md` covers, to check that the entry's category fits it. Facts only: the consultant decides the entries at S5.
-- in `hazards.md`, for each cm6 throw: its condition (`file:line`), what it protects, and whether a caller can check the condition in advance.
+- `raw/names.jsonl`: every inventory row whose name the mechanical conversion of `.claude/rules/rust-crates.md` Architecture 4 may not settle, with what the member does and its signature: a static member; a name that is a std trait method or convention (the names in clippy's `should_implement_trait` table, such as `next`, `from_str`, `default`, `add`, `hash`; and `len`, `is_empty`, `to_string`, `iter`, `into_iter`, `from`, `as_ref`); serialization (`toJSON`, `fromJSON`); a name an entry of `.claude/rules/rust-naming-decisions.md` covers, to check that the entry's category fits it. Facts only: the consultant decides the entries at S5.
+- `raw/throws.jsonl`: for each cm6 throw, its condition (`file:line`), what it protects, and whether a caller can check the condition in advance.
+
+Hazards and stack notes stay on their behaviors; `tools/spec_synth.py` groups them per item when the consultant reads them.
 
 The consultant writes at S5 (§9), from those facts, `design.md`: the crate's Rust design. It records decisions, each with its reason and its entry in `docs/decisions/`. A choice in it that changes observable behavior or public API is a deviation: it is recorded in the item's row or in `.claude/rules/decisions.md`, where annotations can cite it, the design points to it, and a first iteration of D1–D10 goes to a draft for the maintainer (`docs/workflow/README.md` §3). It contains:
 - **Module map**: one Rust module per cm6 source file in scope, its public items, what stays `pub(crate)`.
@@ -206,11 +206,11 @@ The consultant writes at S5 (§9), from those facts, `design.md`: the crate's Ru
   | module-level counter, `Date.now()` | determinism in tests |
   | strings and UTF-16 offsets | positions in the unit of D1; no whole-document `String` |
 
-- **Error contract per precondition**, from the throw facts in `hazards.md`: what a Rust caller observes when the precondition fails where cm6 throws, and how a test checks it.
+- **Error contract per precondition**, from `raw/throws.jsonl`: what a Rust caller observes when the precondition fails where cm6 throws, and how a test checks it.
 - **Ownership and threading** (D6) and **dependencies** with license.
 - **The checks a fixture cannot give**: which behaviors need a written test (identity, hazards, cost) and why, the fakes, the oracle drivers.
 - **Obvious decisions**: one line each, `OBVIOUS-<n>: <decision>: <reason>`, for choices with a single reasonable answer.
-- **Native opportunities**: where a mechanism in `stack.md` exists only because of cm6's stack and another serves a Ferrum goal better: what cm6 does (`file:line`), the mechanism chosen, the goal, the measurement that confirms the benefit, and the behavior impact. With no observable impact, the implementer adopts it with a proof test; an observable impact makes it a deviation, recorded as above.
+- **Native opportunities**: where a mechanism the stack notes record exists only because of cm6's stack and another serves a Ferrum goal better: what cm6 does (`file:line`), the mechanism chosen, the goal, the measurement that confirms the benefit, and the behavior impact. With no observable impact, the implementer adopts it with a proof test; an observable impact makes it a deviation, recorded as above.
 
 ## 8. Verification
 
@@ -239,11 +239,11 @@ Each kind of error is checked by the cheapest means that shows it, and the check
 |---|---|---|---|
 | S0 Setup | orchestrator | Pin the package and the core packages it reads for consumer values at their latest release (`npm view @codemirror/<package> version`, then `/mirrors pin cm6/<package> @<version>`), re-resolve the dependency pins (`.claude/rules/mirrors.md` "Dependency pins"), and queue a release delta for every conforming crate whose package moved (`docs/workflow/README.md` §1 "The cm6 reference"). Commit `mirrors/mirrors.json`. Check the mirrors (`/mirrors check`) and build the harness (`tools/cm6/setup_harness.py`). Run the inventory and test tools; expand generated test cases. Declare the totals. List the scope: source files, test files, consumer packages. Split into chunks of about 40–80 inventory rows or up to 1,000 source lines. Write `docs/progress/<crate>.md`. The consultant then writes the "Specification" section of `plan.md` from the package as the tools show it (rows per file, tests, what needs a browser or a grammar, the decisions in force and the open ones this crate must take, the ledger of the crates before), and the orchestrator writes the cards from it | raw rows, plan, cards, progress |
 | S1 Facts | orchestrator. For a package too large to read in one context, `spec-auditor`s per group of files | The facts of every row (`does`, `platform`, `used_by`, §4) and of every source file, no disposition. `used_by` starts from one reference list per package that a shared tool in `tools/cm6/` produces with the TypeScript checker over `mirrors/cm6/*/src` (written before the first S1 that lacks it); the worker cross-checks it with grep and judges each reference, rather than writing its own search. The checker does not report a read through an untyped receiver (`(x as any).member`, a value typed `any`), so the grep covers each member name on such receivers, and an empty `used_by` says it did (in `ferrum-state` a `DROP` rested on an empty `used_by` that missed such a read: `docs/parity/ferrum-state/verification.md` "Seed 4101" V1). Entries of `docs/parity/<crate>/early-decisions.md`, if it exists, are written into their rows as decided and the file is deleted (`docs/workflow/README.md` §3) | facts in `raw/inventory.jsonl` |
-| S1 Dispositions | `consultant` | Derives a disposition and an item-specific reason for every row and every file from the facts and cm6's code; verifies the premise of every `DROP` against cm6 | dispositions in the rows, `dispositions.md`, `Decided-by: consultant` |
+| S1 Dispositions | `consultant` | Derives a disposition and an item-specific reason for every row and every file from the facts and cm6's code; verifies the premise of every `DROP` against cm6 | dispositions in the rows, their entry in `docs/decisions/` |
 | S2 Chunks | `spec-auditor`, one per chunk, at most 4 at a time | §5, §6 for the chunk's items and test cases | rows, fixtures and probes per chunk; tokens per chunk in progress |
 | S3 Synthesis | orchestrator | §7; `tools/check_refs.py` | the remaining deliverables |
 | S4 Verification | orchestrator (item 1), `spec-auditor`s in fresh contexts (item 2), `verifier` (item 3) | §8 | `verification.md`, with the rates per severity |
-| S5 Decision | `consultant` | Decides `questions.md`; decides an entry of `.claude/rules/rust-naming-decisions.md` for every case in `names.md` that no entry settles; writes the crate's design (`design.md`, §7) and the "Implementation" section of `plan.md` (`docs/workflow/implementation.md` §3); takes the decisions D1–D10 whose evidence this specification provides; approves the specification. Drafts for the maintainer per `README.md` §3 | decisions in their places with their entries in `docs/decisions/`; the questions file emptied of decided entries |
+| S5 Decision | `consultant` | Decides `questions.md`; decides an entry of `.claude/rules/rust-naming-decisions.md` for every case in `raw/names.jsonl` that no entry settles; writes the crate's design (`design.md`, §7) and the "Implementation" section of `plan.md` (`docs/workflow/implementation.md` §3); takes the decisions D1–D10 whose evidence this specification provides; approves the specification. Drafts for the maintainer per `README.md` §3 | decisions in their places with their entries in `docs/decisions/`; the questions file emptied of decided entries |
 | S6 Review | `consultant`, called by the orchestrator | the end-of-stage review of `README.md` §7: open method questions decided, expectations settled from the ledger. The orchestrator writes the stage report for the maintainer (`README.md` §6) and points progress at the implementation stage | decisions, report, progress |
 
 S2 starts only after the S1 dispositions, because chunks cover only the items in scope. The first chunk of S2 is the pilot of the plan.
@@ -304,7 +304,7 @@ Write only: docs/parity/[crate]/raw/[chunk]-*.jsonl, fixtures/[chunk].jsonl, ora
 
 ## Schemas (§4)
 [paste the schemas of the files this worker writes; for each field, one line: who reads it and what a wrong
- or missing value causes later (a missing behavior is missing from Ferrum; a missing tag leaves a conversion
+ or missing value causes later (a missing behavior is missing from Ferrum; a missing text class leaves a conversion
  untested; a stack note is the evidence of a design decision)]
 
 ## Decisions in force that bear on your rows

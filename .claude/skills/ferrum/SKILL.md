@@ -30,10 +30,11 @@ A headless, embeddable Rust editor engine whose core has cm6's architecture and 
 | Parity is stated against a published cm6 release, not `main` | Applications run releases; `main` can carry unreleased API | `docs/workflow/README.md` §1 "The cm6 reference" |
 | Mirror dependencies pinned at the newest version npm resolves, not the range minimum | The oracle runs what npm installs; another version produces false mismatches | `.claude/rules/mirrors.md` "Dependency pins" |
 | The maintainer is not asked technical questions; the `consultant` agent decides them | Their intent: not judge choices beyond their knowledge, not stop the work waiting on them, and find every decision recorded as the consultant's. The agents that produce the work bring facts and questions; the consultant derives the decisions | `docs/foundation/maintainer-intent.md`; `docs/workflow/README.md` §3 |
-| The specification is audited before D1–D10 are taken | The audit records what cm6 does, decision-neutral; decisions are taken with its evidence before the implementation that needs them (`ferrum-foundation.md` §6 asks for them before implementation, not before the audit) | `docs/workflow/README.md` §1 |
+| Parity is shown by runs, not by descriptions | Values come from running cm6 and are replayed on Ferrum; in the first specification no recorded value was wrong and every defect was in text written beside the runs | `docs/workflow/README.md` §1 |
+| Each crate has its own plan for each stage; the briefs are short | A procedure fixed before a crate's facts exist was wrong twice for the first crate; the consultant derives the plan from the crate and the ledger | `docs/workflow/README.md` §1, §7; `docs/parity/<crate>/plan.md` |
 
 ## Known open gaps
-- Foundational decisions D1–D8 (position unit, line breaks and `Text` libraries, syntax backend, layout contract, command type, threading, style model, input/IME/accessibility) are open; D9 (licensing: MIT per crate, Apache-2.0 only for ports of Apache code) and D10 (nothing deferred: each crate covers its whole cm6 package, items left out only by their own disposition) are decided. The consultant takes them with the evidence of each crate's specification; where they will be recorded: `docs/workflow/README.md` §3. `ferrum-foundation.md` §6.
+- Foundational decisions D1–D8 (position unit, line breaks and `Text` libraries, syntax backend, layout contract, command type, threading, style model, input/IME/accessibility) are open; D9 (licensing) and D10 (nothing deferred) are decided. The consultant takes each when its evidence exists and before the work that needs it. `ferrum-foundation.md` §6.
 - No Ferrum code yet; the work runs crate by crate through `/ferrum-run`; where it is: `docs/progress/`.
 
 ## Where each topic lives
@@ -48,12 +49,12 @@ A headless, embeddable Rust editor engine whose core has cm6's architecture and 
 | cm6 package dependencies and size | `ferrum-foundation.md` §3 |
 | Mirror pins and how to update | `mirrors/mirrors.json`; `.claude/rules/mirrors.md` "Dependency pins"; `mirrors` skill (`/mirrors` fetches every copy after a clone) |
 | The maintainer's intent (binding) | `docs/foundation/maintainer-intent.md` |
-| How the work runs: stages, roles, decisions, drafts | `docs/workflow/README.md`; stage briefs `docs/workflow/specification.md`, `implementation.md`, `conformance.md` |
-| Agents: who decides, researches, audits, tests, implements, checks | `.claude/agents/` (`consultant`, `cm6-researcher`, `rust-researcher`, `spec-auditor`, `verifier`, `test-writer`, `implementer`, `conformance-checker`); write and spawn limits in `.claude/hooks/guard.py` |
-| Decisions taken | binding text: `.claude/rules/decisions.md` (cross-cutting), `.claude/rules/rust-naming-decisions.md` (names), the crate's `implementation-plan.md` (its design), or the item's specification row; authorship: `git log --grep='^Decided-by:'` |
-| A crate's specification, questions and conformance | `docs/parity/<crate>/` |
-| cm6 harness, inventory, renderer, reference checker | `tools/README.md` |
-| Work in progress: state, next step | `docs/progress/` |
+| How the work runs: stages, roles, decisions, drafts, the ledger, how the method improves itself | `docs/workflow/README.md`; stage briefs `docs/workflow/specification.md`, `implementation.md`, `conformance.md`; open method questions `docs/workflow/questions.md` |
+| Agents: who decides, researches, audits, tests, implements, checks | `.claude/agents/` (`consultant`, `cm6-researcher`, `rust-researcher`, `spec-auditor`, `test-writer`, `implementer`, `verifier`); write and spawn limits in `.claude/hooks/guard.py` |
+| Decisions taken | the record with its reasoning: `docs/decisions/`; the binding text: `.claude/rules/decisions.md` (cross-cutting), `.claude/rules/rust-naming-decisions.md` (names), the crate's `design.md` and `plan.md`, or the item's specification row |
+| A crate's specification, design, plan, questions and conformance | `docs/parity/<crate>/` |
+| cm6 harness, inventory, specification checks and cm6 coverage, the ledger, reference checker | `tools/README.md` |
+| Work in progress: where it is; what it cost and missed | `docs/progress/<crate>.md`; `docs/progress/ledger.jsonl` (`python3 tools/ledger.py report`) |
 | For the maintainer (Portuguese): how to run, drafts, reports | `dev/maintainer/` |
 | cm6 copyright notice | `THIRD-PARTY-NOTICES.md` |
 | Verified cm6 facts | `.claude/agent-memory/cm6-researcher/MEMORY.md` |

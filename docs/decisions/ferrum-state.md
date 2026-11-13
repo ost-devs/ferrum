@@ -217,3 +217,29 @@ Confidence: high; every call site in mirrors/cm6/*/src read.
 Reopens if: a mirrored package is found that calls either method (the
 reason then gains a consumer), or history's JSON is itself dropped,
 which would make the rows' only consumer outside state an application.
+
+## 2026-11-13 · One encoding for the values JSON cannot hold (Q40), fixture inputs become programs, what remains of the specification
+
+*Decided by the consultant, under the maintainer's instruction of 2026-11-13 to realign the whole system. Binding text: `docs/workflow/specification.md` §4 (the fixture schema) and §5 item 3; `docs/parity/ferrum-state/plan.md` "Specification: what remains".*
+
+**Question (Q40).** The five fixture files write `NaN`, infinities, `undefined` and functions in four ways, and two of them cannot tell `undefined` from `null`. The replayer must read all five.
+
+**Decision.** One encoding, written by `tools/cm6/oracle-lib.ts` alone: typed objects (`{"utf16": …}`, `{"js_number": …}`, `{"js_undefined": true}`, `{"js_function": true}`, `{"js_unstable": …}`), so that `null` always means `null` and a string is always that string.
+
+**Reasons.** A marker string (`"<undefined>"`) cannot be told from a real string with that text, and cm6 takes arbitrary strings; `null` for `undefined` loses a difference cm6 makes (`goalColumn`, omitted arguments). Chunk `text` already writes typed objects (210 values) and corrected a defect of the shared `encodeStr`; putting the encoding in the shared tool is what stops a fifth convention in the next crate. The cost is small now and grows with every consumer: no Rust reads the fixtures yet.
+
+**Alternatives.** Per-chunk decoding in the replayer: four decoders to write and keep, and the `null` ambiguity stays. Marker strings everywhere: ambiguous with real strings. Deciding it at S5 with the other questions: the conversion of the inputs (below) would then touch every generator twice.
+
+**Question (fixture inputs).** 3,015 of 4,950 fixtures record their call as JavaScript text (781 distinct texts, `raw/fixture-calls.jsonl`). The implementation and the differential oracle need to run the same input on Ferrum.
+
+**Decision.** The generators of `text`, `state`, `rangeset` and the rest of `facet` are rewritten so that each input is data run by the chunk's interpreter; ids, items, behaviors and outputs do not change, which a tool checks for every fixture. `rangeset` is the pilot. Effort `medium`.
+
+**Reasons.** This is not redoing a finished stage to look better: without it, parity on these fixtures would rest on about 781 hand translations of call texts into Rust, each able to be wrong in a way only its own failing output would hint at, and conformance could not run fresh seeds. The chunk that already works this way had none of the 1,700 input defects (`docs/workflow/learnings.md` W39). The outputs are known good (six samples, no fixture output wrong; regeneration byte for byte), so the change is fully checked by output equality, which is why `medium` effort is enough.
+
+**Alternatives.** Translate the call texts in the Rust replayer: the cost moves to the implementation and loses the check. Keep only the 1,935 runnable fixtures: drops the evidence for `Text`, `EditorState` and `RangeSet`, the core of the crate.
+
+**Also decided.** The 627 `derived:` test rows, the rendered views (`behaviors.md`, `tests.md`, `inventory.md`, `hazards.md`, `stack.md`, `contracts.md`, `dispositions.md`, `names.md`, 2.1 MB that repeated `raw/`) and the cards of finished steps are deleted. The 33 sites of cm6 no fixture reaches (`raw/coverage.jsonl`) are each given a fixture or a reason before S5.
+
+**Confidence.** High on the encoding and on converting; medium on the budgets (no such step has run), which the pilot settles.
+
+**Reopens.** The pilot showing that a class of calls (callbacks whose body matters) cannot be written as data at a cost near the budget.

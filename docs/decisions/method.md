@@ -540,3 +540,37 @@ whole context into workers (most of it is not actionable to them, and
 the defects came from not knowing what a field is for).
 The parts that are the maintainer's (the intent; where the work runs) are
 drafted in dev/maintainer/drafts/intencao-e-nuvem.md and block nothing.
+
+## 2026-11-13 · The system realigned to the result: evidence that runs, a plan per crate, a ledger, decision records, a loop that checks its own changes
+
+*Decided by the consultant under the maintainer's instruction of 2026-11-13: review and realign everything needed to reach the result, discard what is ineffective, with nothing untouchable, the intent and the foundation included. The intent file was rewritten on that instruction. Binding text: `docs/foundation/maintainer-intent.md`, `docs/workflow/` (README and the three briefs), `.claude/agents/`, `.claude/skills/ferrum-run/`, `.claude/skills/consultant-context/`, `tools/`. It replaces, where they differ, the entries above on effort (M1), on decision tags (M3, M7) and the entry of the same day on M1, M9–M11, M13–M19, whose reasons still stand.*
+
+**Question.** Seen from the result the maintainer wants (Ferrum giving its users what cm6 solved, with parity that is shown, reached almost without the maintainer and without debt), what must the system be, judged without regard for what exists?
+
+**What the evidence says** (`docs/workflow/learnings.md` W33, W39–W47; `python3 tools/ledger.py report`). The specification of the first crate cost 11.4 million tokens and no line of Rust exists. 7.7 million of them went to sampling and fixing. In six samples no value produced by running cm6 was wrong; every defect was in text written beside the runs. A tool written on 2026-11-13 re-ran all 4,950 fixtures and measured cm6's coverage in 84 seconds with no agent. So: what runs is reliable and cheap to check; what is described is neither.
+
+**Decisions.**
+1. *Proof is what runs* (`README.md` §1). Fixtures as programs, ported tests, replay, fresh-seed differential runs, coverage on both sides, mutation. Prose serves agents and decisions. The table of §1 assigns each kind of error to the cheapest means that shows it.
+2. *A brief holds what is true of every crate; each stage of each crate has a plan* (`docs/parity/<crate>/plan.md`), written by the consultant from the crate and the ledger, with units, checks, effort, a token budget per step and a pilot. The Rust design is `design.md`. This extends the decision on the implementation brief to all three stages.
+3. *Stop-loss.* The orchestrator stops a step at 1.5 times its budget, at a third failure of a check on one unit, or at a third round of a fix loop, and calls the consultant. Nothing questioned the verification loop of `ferrum-state` for six rounds.
+4. *A ledger* (`docs/progress/ledger.jsonl`, `tools/ledger.py`): each run, each defect a later step finds in an earlier step's output, each method change with the measurement that should confirm it, and its outcome. The progress file shrinks to where the work is (it had grown to 35 KB loaded into every session).
+5. *The method loop* (`README.md` §7): measure, review at four fixed points without being asked, change, confirm. A change its measurement refutes is undone.
+6. *Decision records are documents* (`docs/decisions/`), not commit messages. A cloud clone had 52 of 202 commits and showed 8 of 21 decisions; commit messages are not translated for the maintainer and cannot be cited or corrected. The `Decided-by` trailers are dropped; the 19 earlier decisions were moved here.
+7. *Decision tags (`deps`) are dropped* for the crates that follow. Their three uses each have a cheaper means: which fixtures a behavior needs (the text classes of `specification.md` §5 item 3, whatever was decided), when an item can be implemented (all of a crate's decisions precede its implementation; a draft names what waits), evidence for a decision (its question lists the items). They cost about 1.5 million tokens of tagging passes and three of the sampled mismatches. M8 falls with them.
+8. *No committed view repeats the rows* (M2): the schemas of `specification.md` §4 now name every file the stage writes; views are printed on demand.
+9. *The checks that sweeps did by hand are the tool and the completeness reading* (M4): no separate sweep step at S3.
+10. *Write limits* (M5, M12): a guard sees the Write and Edit tools only, so the orchestrator checks `git status --short` against the card's paths before merging; a check that the consultant's fields are unchanged is added to `tools/spec_check.py` when the next specification starts.
+11. *One checking role.* `conformance-checker` did what `verifier` does (an independent reading with verdicts); the definitions are merged. Conformance gains coverage of Ferrum's code by the checks and mutation as gates, and its oracle runs on seeds the implementation never saw.
+12. *Where the work runs*: the maintainer's machine or a cloud session (the three reasons for the machine alone were checked and do not hold, W44). The session-start hook fetches every mirror.
+13. *Removed as ineffective*: the `consolidate` skill (recording as the work happens replaces it, and it pointed to the maintainer's auto memory); `tools/transcript_digest.py` (a repair for records not written in time); the agenda and the draft of the same day (applied).
+
+**Alternatives and why each lost.**
+- *Keep the stages as they were and only tune them*: the cost sat in verifying descriptions; tuning the sampling keeps paying for the wrong object.
+- *Drop the behavior rows altogether and keep only runs*: a run does not say which case of cm6 it shows, the consultant's decisions and the completeness reading need the cases named, and `ferrum-state`'s questions cite them. The rows stay, slimmer, each tied to fixtures.
+- *Decide every crate's foundational questions before its audit*: the evidence for D1, D2 and D6 came from the audit; for later crates the plan says which decisions precede which step, per crate.
+- *Rename the stages and move every file to a new layout*: churn with no effect on the result; names and paths stay where the content could be made right in place.
+- *Keep reasoning in commit messages and add an index*: two places for one record, and the index is the part that goes stale.
+
+**Confidence.** High that proof must be what runs, on the records, the ledger and the stop-loss: each answers a measured failure. Medium on the per-stage plan and the loop as written: they are reasoned from one crate's one stage, and no implementation or conformance has run. The expectations E1–E6 in the ledger say what will confirm or refute each.
+
+**Reopens.** An expectation refuted at its checking point; a stage whose plan had to be abandoned mid-way; the maintainer finding that what reaches them (reports, drafts, records in Portuguese) does not let them follow the work.

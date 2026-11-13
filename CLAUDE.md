@@ -1,10 +1,12 @@
 # Ferrum
 
+A native Rust editor engine that reproduces the observable behavior of CodeMirror 6 (cm6): `docs/foundation/ferrum-foundation.md`. What the maintainer wants from it and from the work binds everything else: `docs/foundation/maintainer-intent.md`. How the work runs: `docs/workflow/README.md`.
+
 `dev/ptbr/` holds Portuguese translations for human readers. Never read, search, cite or edit it; only the `translator` agent keeps it.
 
 ## Raising a question
 
-Only the `consultant` agent (`.claude/agents/consultant.md`) or the maintainer decides (`docs/workflow/README.md` §3). Every other session and agent brings facts and questions, never a proposal to approve. When cm6's code, the specification and the decisions in force (`.claude/rules/decisions.md`, `.claude/rules/rust-naming-decisions.md`, the crate's `implementation-plan.md`, the item's row) do not settle a choice, raise a question in this shape, in the file your card or brief names, or in your report if none does:
+Only the `consultant` agent (`.claude/agents/consultant.md`) or the maintainer decides (`docs/workflow/README.md` §3). Every other session and agent brings facts and questions, never a proposal to approve. When cm6's code, the specification and the decisions in force (`.claude/rules/decisions.md`, `.claude/rules/rust-naming-decisions.md`, the crate's `design.md`, the item's row) do not settle a choice, raise a question in this shape, in the file your card names, or in your report if none does (a crate's questions: `docs/parity/<crate>/questions.md`; the method's: `docs/workflow/questions.md`):
 
 ```
 ## Q<n>. <the problem in one line, not a choice between answers>
@@ -17,7 +19,7 @@ Only the `consultant` agent (`.claude/agents/consultant.md`) or the maintainer d
 
 - No options and no recommendation: the consultant builds the alternatives from the evidence. A consequence you found is a fact ("cm6 throws at `state.ts:120` when …; the test at `test-state.ts:88` expects it"), not a menu.
 - State the problem, not a mechanism: "callers cannot tell X from Y", not "should X return a `Result`".
-- A question already decided is raised again only with the earlier decision and the new evidence.
+- A question already decided (`docs/decisions/`) is raised again only with the earlier decision and the new evidence.
 
 ## Reporting from a card
 
@@ -25,4 +27,4 @@ A worker that runs from a card (`docs/parity/<crate>/cards/<role>.md`) ends its 
 
 ## Outside sources
 
-Outside sources are copied in `mirrors/` (the list and pins: `mirrors/mirrors.json`): cm6 and its dependencies, pinned, and the Claude Code documentation (`mirrors/claude-code-docs/en/`), refreshed at session start. Read them there, not on the web. A missing or stale copy is updated with the `mirrors` skill.
+Outside sources are copied in `mirrors/` (the list and pins: `mirrors/mirrors.json`): cm6 and its dependencies, pinned, and the Claude Code documentation (`mirrors/claude-code-docs/en/`). Both are fetched at session start. Read them there, not on the web. A missing or stale copy is updated with the `mirrors` skill.
