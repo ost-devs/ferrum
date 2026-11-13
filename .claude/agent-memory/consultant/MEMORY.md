@@ -23,6 +23,7 @@
 - A record that must be found later is a file, never a commit message (shallow clones, no translation, not citeable). Same entry
 - Before designing a check, write the tool and run it: 84 seconds of tool replaced the mechanical half of six verifier runs and gave a fact (coverage) no agent had produced. Same entry
 - Keeping agents out of files: a permission deny (it also filters searches), plus one line of text only for what it cannot see. `4483420`
+- Completeness of a recorded input: replay it with read tracking (every key consumed), never a list of keys that may hold text; and every consumer of fixtures gets one language, not one dialect per chunk. Before relying on a check design, prototype it on the pilot's output. `docs/decisions/ferrum-state.md`, "Step A after the pilot"
 
 ## Calibration
 - [Maintainer's suggestions](feedback-maintainer-suggestions.md) — weigh, don't obey or reject for show; they prize decider independence and nothing silent
