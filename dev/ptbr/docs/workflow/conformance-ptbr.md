@@ -1,10 +1,10 @@
-> Tradução para leitura de `docs/workflow/conformance.md` (commit `30d5121`). O original em inglês é o que vale; as seções citadas (§2, G5…) seguem a numeração do original. O modelo de cartão (apêndice) também está traduzido; o orquestrador usa o do original, em inglês.
+> Tradução para leitura de `docs/workflow/conformance.md` (commit `ae094f2`). O original em inglês é o que vale; as seções citadas (§2, G5…) seguem a numeração do original. O modelo de cartão (apêndice) também está traduzido; o orquestrador usa o do original, em inglês.
 
 # Etapa de conformidade
 
-Responde a uma pergunta sobre um crate implementado: **ele faz exatamente o que sua especificação aprovada diz?** Se não, lista exatamente onde não, com reproduções. Esta etapa relata achados e nunca os corrige: a etapa de implementação os corrige e os portões que falharam rodam de novo. Papéis e decisões: [`docs/workflow/README.md`](README-ptbr.md).
+Responde a uma pergunta sobre um crate implementado: **ele faz o que o cm6 faz, como sua especificação aprovada o registra, e nada além disso?** Se não, lista exatamente onde não, com reproduções. Esta etapa relata achados e nunca os corrige: a etapa de implementação os corrige e os portões que falharam rodam de novo. Papéis e decisões: [`docs/workflow/README.md`](README-ptbr.md).
 
-A ser refinada com o que as etapas anteriores do primeiro crate ensinarem ([`README.md`](README-ptbr.md#7-refinando-o-método) §7).
+Este roteiro traz o que vale para todo crate. Como um crate é conferido (quais portões rodam como ferramentas, as sementes, as unidades lidas por um `verifier`, esforço e orçamento) é a seção "Conformance" de `docs/parity/<crate>/plan.md`, escrita pelo consultor quando a implementação entrega.
 
 ---
 
@@ -46,7 +46,7 @@ Um crate é `CONFORMANT` quando todo portão da §2 passa. Não há limiar perce
 
 ## 2. Portões
 
-Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador. As verificações por leitura vão para workers `conformance-checker` por módulo (cartão: Apêndice A).
+Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador, cada um como uma ferramenta. As verificações por leitura vão para workers `verifier` por unidade (cartão: Apêndice A), que não escreveram os testes nem o código que leem.
 
 **G1. Superfície pública.**
 - Todo item no escopo tem exatamente um correspondente anotado `/// cm6: <nome>` ou `/// cm6 contract: <nome>`, público no JSON do rustdoc ([`tools/ferrum_pub.py`](../../../../tools/ferrum_pub.py)).
@@ -57,11 +57,11 @@ Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador. 
 - Um item não portado não tem substituto com o nome dele do cm6.
 
 **G2. Comportamentos.**
-- Todo id de comportamento tem um teste que passa em `crates/<crate>/tests/` e o nomeia (`// covers:`).
-- Verificação por leitura: o teste realmente afirma o comportamento, na classe de entrada certa e sobre o resultado observável inteiro que o comportamento declara; senão o teste é `WEAKER`.
-- Todo teste derivado existe com o valor esperado da sua fixture.
-- Arquivos de teste sem mudança desde o commit do passo 2, exceto mudanças listadas (`git log`).
-- Recomendado: uma ferramenta de mutação (`cargo-mutants`) numa amostra de funções centrais. Um mutante sobrevivente que um comportamento proíbe é um teste faltando ou fraco.
+- Todo id de comportamento é nomeado por uma verificação que passa ([`docs/workflow/implementation.md`](implementation-ptbr.md) §2 item 5): uma fixture reproduzida cujo `behaviors` o lista, um teste do cm6 portado, ou um teste em `crates/<crate>/tests/` com `// covers:`.
+- Verificação por leitura, para testes escritos: o teste realmente afirma o comportamento, na classe de entrada certa e sobre o resultado observável inteiro que o comportamento declara; senão o teste é `WEAKER`. Para o replayer, uma vez: ele roda a entrada gravada e compara a saída gravada inteira, sem pular nenhum campo.
+- Arquivos de teste e o replayer sem mudança desde o commit que precedeu o código da sua unidade, exceto mudanças listadas (`git log`).
+- **Cobertura do código do Ferrum pelas verificações:** toda linha e todo ramo do crate que nenhum replay de fixture e nenhum teste alcança é listado. Cada um é código pelo qual nenhuma evidência fala: ganha uma verificação, um motivo, ou é removido.
+- **Mutação** (`cargo-mutants`) nas funções que o plano do crate nomeia. Um mutante sobrevivente que um comportamento proíbe é uma verificação faltando ou fraca.
 
 **G3. Testes do cm6 portados.**
 - Todo caso `LOGIC-ONLY`, `NEEDS LAYOUT` e `NEEDS GRAMMAR` tem seu teste `test_cm6_<file>_<nn>_<slug>`.
@@ -73,7 +73,7 @@ Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador. 
 **G4. Fixtures de referência.** Toda fixture é reproduzida contra o crate, com as posições convertidas para a unidade de D1 e os separadores conforme D2. Exigido: 0 divergências.
 
 **G5. Oráculo diferencial.**
-- Para todo gerador em `oracle/cm6/`, um driver do Ferrum; o cm6 e o Ferrum rodam nas mesmas entradas com semente, pelo menos 5.000 casos por grupo de itens. Exigido: 0 divergências depois da conversão de unidade decidida.
+- Todo gerador em `oracle/cm6/` roda de novo com sementes que a implementação nunca viu; o cm6 produz as saídas e o replayer do crate roda as mesmas entradas gravadas. Pelo menos 5.000 casos por grupo de itens. Exigido: 0 divergências depois da conversão de unidade decidida.
 - **Cobertura:** contar, por entrada da lista de formas ([`specification.md`](specification-ptbr.md#5-comportamentos-e-evidência) §5), quantos casos a tiveram. Um gerador que nunca produziu uma entrada não passa.
 - **Sensibilidade:** numa cópia de rascunho, introduzir um desvio deliberado por grupo de itens (inverter o sinal de um `assoc`, remover uma deduplicação) e confirmar que o oráculo o relata. Um oráculo que fica em 0 não passa.
 
@@ -82,7 +82,7 @@ Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador. 
 - Toda decisão que exige um desvio é aplicada onde quer que se aplique, por exemplo as conversões de D1 em toda API que recebe posições.
 - Nenhuma outra diferença existe.
 
-**G7. Riscos.** Para todo risco em `hazards.md`, um teste o exercita, mais uma verificação dirigida:
+**G7. Riscos.** Para todo risco registrado num comportamento, uma verificação o exercita, mais uma verificação dirigida:
 - identidade mantida onde o cm6 depende dela;
 - cálculos com cache calculados uma vez, reentrância como no cm6;
 - valores de consumidores passam por toda API sem truncamento;
@@ -110,8 +110,8 @@ Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador. 
   - todo item com um risco;
   - todo item `CONTRACT`;
   - todo item que um desvio toca.
-- Um `verifier` que não rodou nenhum portão então reconfere pelo menos 10% dos veredictos (mínimo 20). Ele roda de novo as reproduções deles e os scripts dos portões, e acrescenta a `verification.md`.
-- As divergências são corrigidas, e novas amostras são tiradas até uma voltar limpa.
+- Um `verifier` que não rodou nenhum portão então reconfere pelo menos 10% dos veredictos (mínimo 20). Ele roda de novo as reproduções deles e acrescenta a `verification.md` as divergências e a taxa delas. Os scripts dos portões são ferramentas que o orquestrador roda; nenhum worker os reescreve.
+- Um veredicto errado é corrigido como uma classe: a condição que um veredicto correto cumpre é testada em todo veredicto desse tipo, não nos amostrados. A amostra é uma medição e não é repetida até voltar limpa; uma segunda só é tirada quando a primeira achou um veredicto que deixou passar um item que falha, depois de o portão que o deixou passar ser corrigido para todo item ([`docs/workflow/specification.md`](specification-ptbr.md) §8 itens 4–5 dão o motivo).
 
 ## 4. Relatório e aceitação
 
@@ -125,7 +125,7 @@ Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador. 
 
 O veredicto só é `CONFORMANT` se todo portão passa. `NOT CONFORMANT` devolve os achados à etapa de implementação.
 
-Quando o relatório é `CONFORMANT`, o consultor revisa toda diferença explicada e aceita o veredicto (`Decided-by: consultant`). O orquestrador então escreve, em português, para o mantenedor:
+Quando o relatório é `CONFORMANT`, o consultor revisa toda diferença explicada e aceita o veredicto (uma entrada em `docs/decisions/`). O orquestrador então escreve, em português, para o mantenedor:
 - o que o crate agora faz;
 - a evidência;
 - o que não foi portado e por quê;
@@ -142,14 +142,14 @@ Isso vai em `dev/maintainer/reports/<crate>-conformance.md`. Depois da aceitaç�
 
 ---
 
-## Apêndice A. Modelo de cartão: `conformance-checker`
+## Apêndice A. Modelo de cartão: `verifier` (conformidade)
 
 ```
-# cartão do conformance-checker: [crate], módulo [módulo]
+# cartão do verifier: [crate] conformidade, unidade [unidade]
 
 Portões que você confere lendo: G2 (qualidade das asserções), G3 (cenário e asserções), G7 (testes de riscos) para os itens [ids].
-Entradas: as linhas do módulo em docs/parity/[crate]/; crates/[crate]/ no commit [commit]; as decisões [ids].
-Acrescente uma linha por veredicto a docs/parity/[crate]/raw/conformance-[módulo].jsonl
+Entradas: as linhas da unidade em docs/parity/[crate]/; crates/[crate]/ no commit [commit]; as decisões [ids].
+Acrescente uma linha por veredicto a docs/parity/[crate]/raw/conformance-[unidade].jsonl
 ({id, kind, verdict, evidence, repro}); a evidência cita file:line dos dois lados.
 Nunca mude código nem testes. Relatório final: contagem de veredictos, cada id que falhou com o motivo em uma linha, ids não conferidos.
 ```

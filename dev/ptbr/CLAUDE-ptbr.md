@@ -1,12 +1,14 @@
-> Tradução para leitura de `CLAUDE.md` (commit `30d5121`). O original em inglês é o que vale. O Claude Code carrega o original em toda sessão e em todo subagente.
+> Tradução para leitura de `CLAUDE.md` (commit `ae094f2`). O original em inglês é o que vale. O Claude Code carrega o original em toda sessão e em todo subagente.
 
 # Ferrum
+
+Um motor de editor nativo em Rust que reproduz o comportamento observável do CodeMirror 6 (cm6): [`docs/foundation/ferrum-foundation.md`](docs/foundation/ferrum-foundation-ptbr.md). O que o mantenedor quer dele e do trabalho obriga tudo o mais: [`docs/foundation/maintainer-intent.md`](docs/foundation/maintainer-intent-ptbr.md). Como o trabalho corre: [`docs/workflow/README.md`](docs/workflow/README-ptbr.md).
 
 `dev/ptbr/` guarda traduções para português para leitores humanos. Nunca leia, pesquise, cite nem edite; só o agente `translator` a mantém.
 
 ## Levantando uma pergunta (Raising a question)
 
-Só o agente `consultant` ([`.claude/agents/consultant.md`](claude/agents/consultant-ptbr.md)) ou o mantenedor decide ([`docs/workflow/README.md`](docs/workflow/README-ptbr.md#3-decisões) §3). Toda outra sessão e todo outro agente trazem fatos e perguntas, nunca uma proposta para aprovar. Quando o código do cm6, a especificação e as decisões em vigor ([`.claude/rules/decisions.md`](claude/rules/decisions-ptbr.md), [`.claude/rules/rust-naming-decisions.md`](claude/rules/rust-naming-decisions-ptbr.md), o `implementation-plan.md` do crate, a linha do item) não resolvem uma escolha, levante uma pergunta neste formato, no arquivo que seu cartão ou roteiro indica, ou no seu relatório se nenhum indicar:
+Só o agente `consultant` ([`.claude/agents/consultant.md`](claude/agents/consultant-ptbr.md)) ou o mantenedor decide ([`docs/workflow/README.md`](docs/workflow/README-ptbr.md#3-decisões) §3). Toda outra sessão e todo outro agente trazem fatos e perguntas, nunca uma proposta para aprovar. Quando o código do cm6, a especificação e as decisões em vigor ([`.claude/rules/decisions.md`](claude/rules/decisions-ptbr.md), [`.claude/rules/rust-naming-decisions.md`](claude/rules/rust-naming-decisions-ptbr.md), o `design.md` do crate, a linha do item) não resolvem uma escolha, levante uma pergunta neste formato, no arquivo que seu cartão indica, ou no seu relatório se nenhum indicar (as perguntas de um crate: `docs/parity/<crate>/questions.md`; as do método: [`docs/workflow/questions.md`](docs/workflow/questions-ptbr.md)):
 
 ```
 ## Q<n>. <o problema em uma linha, não uma escolha entre respostas>
@@ -19,7 +21,7 @@ Só o agente `consultant` ([`.claude/agents/consultant.md`](claude/agents/consul
 
 - Sem opções e sem recomendação: o consultor constrói as alternativas a partir da evidência. Uma consequência que você encontrou é um fato ("o cm6 lança uma exceção em `state.ts:120` quando …; o teste em `test-state.ts:88` a espera"), não um cardápio.
 - Declare o problema, não um mecanismo: "quem chama não consegue distinguir X de Y", e não "X deveria retornar um `Result`?".
-- Uma pergunta já decidida só é levantada de novo com a decisão anterior e a evidência nova.
+- Uma pergunta já decidida ([`docs/decisions/`](docs/decisions/README-ptbr.md)) só é levantada de novo com a decisão anterior e a evidência nova.
 
 ## Relatando a partir de um cartão (Reporting from a card)
 
@@ -27,4 +29,4 @@ Um worker que roda a partir de um cartão (`docs/parity/<crate>/cards/<role>.md`
 
 ## Fontes externas (Outside sources)
 
-As fontes externas são copiadas em `mirrors/` (a lista e as fixações: `mirrors/mirrors.json`): o cm6 e suas dependências, fixados, e a documentação do Claude Code (`mirrors/claude-code-docs/en/`), atualizada no início da sessão. Leia-as ali, não na web. Uma cópia ausente ou desatualizada é atualizada com a skill `mirrors`.
+As fontes externas são copiadas em `mirrors/` (a lista e as fixações: `mirrors/mirrors.json`): o cm6 e suas dependências, fixados, e a documentação do Claude Code (`mirrors/claude-code-docs/en/`). Ambos são buscados no início da sessão. Leia-os ali, não na web. Uma cópia ausente ou desatualizada é atualizada com a skill `mirrors`.
