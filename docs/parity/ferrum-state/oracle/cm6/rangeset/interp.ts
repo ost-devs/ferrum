@@ -25,111 +25,127 @@
 // Eq log: a list of [thisName, otherName], appended by every eq call of a "V" or "W" value.
 //
 // An argument written <expr> below is an expression of the language; other arguments are data.
-// Range list (argument `ranges`, update `add`): an array of triples [from, to, value reference], each built as
-// value.range(from, to) at that point (fresh Range objects), or an <expr> whose value is an array of Range objects.
-// Ops of the chunk (result in brackets; "undefined" = the op returns nothing):
+// Positions: an argument or result field marked (pos) is a document position, offset or length in UTF-16 code units
+// (the replayer converts these and nothing else). Every from, to, pos, length, filterFrom, filterTo of an op below
+// and of a range triple is one; a change spec (`spec` of changes.of) holds positions as ChangeSet.of reads them
+// (from, to, and the length of `insert` text).
+// Range list (argument `ranges`, update `add`): an array of triples [from (pos), to (pos), value reference], each built
+// as value.range(from, to) at that point (fresh Range objects), or an <expr> whose value is an array of Range objects.
+// Value indexes in results are found with values.indexOf (===): they report which input value object cm6 handed back.
+// Ops of the chunk: name, arguments, {kinds}, result in brackets ("undefined" = the op returns nothing):
 // values and ranges
-//   value {v}                         [the value object]
-//   value.fields {v}                  [{startSide, endSide, point, mapMode, ownKeys: Object.keys(v) without "name"}]
-//   value.set {v, field, to}          v[field] = to [undefined]
-//   value.eq {v, other}               [v.eq(other)]
-//   value.range {v, from, to?}        [v.range(from) when `to` is absent, else v.range(from, to)]
-//   ranges {ranges}                   [the range list as an array of Range objects]
-//   range.fromTo {range: expr}        [[range.from, range.to]]
-//   range.value {range: expr}         [range.value]
-//   range.isRange {range: expr}       [range instanceof Range]
+//   value {v}  {api}                  [the value object]
+//   value.fields {v}  {api, internal} [{startSide, endSide, point, mapMode, ownKeys: Object.keys(v) without "name"};
+//                                      ownKeys shows which fields are own properties rather than the prototype
+//                                      defaults RangeValue sets (mirrors/cm6/state/src/rangeset.ts:34)]
+//   value.set {v, field, to}  {api}   v[field] = to [undefined]
+//   value.eq {v, other}  {api}        [v.eq(other)]
+//   value.range {v, from (pos), to? (pos)}  {api}    [v.range(from) when `to` is absent, else v.range(from, to)]
+//   ranges {ranges}  {api}            [the range list as an array of Range objects]
+//   range.fromTo {range: expr}  {api} [[range.from (pos), range.to (pos)]]
+//   range.value {range: expr}  {api}  [range.value]
+//   range.isRange {range: expr}  {api}    [range instanceof Range]
 // change sets
-//   changes.of {spec, length, lineSep?}   [ChangeSet.of(spec, length) or ChangeSet.of(spec, length, lineSep)]
-//   changes.empty {length}                [ChangeSet.empty(length)]
-//   changes.newLength {changes: expr}     [changes.newLength]
-//   changes.touchesRange {changes: expr, from, to}   [changes.touchesRange(from, to)]
+//   changes.of {spec, length (pos), lineSep?}  {api}   [ChangeSet.of(spec, length) or ChangeSet.of(spec, length, lineSep)]
+//   changes.empty {length (pos)}  {api}   [ChangeSet.empty(length)]
+//   changes.newLength {changes: expr}  {api}   [changes.newLength (pos)]
+//   changes.touchesRange {changes: expr, from (pos), to (pos)}  {api}   [changes.touchesRange(from, to)]
 // range sets
-//   set.of {ranges, sort?}            [RangeSet.of(range list, sort); sort not passed when absent]
-//   set.of {range: expr}              [RangeSet.of(range): one Range, not an array]
-//   set.empty {}                      [RangeSet.empty]
-//   set.join {sets: [expr]}           [RangeSet.join(sets)]
-//   set.map {set: expr, changes: expr}    [set.map(changes)]
-//   set.update {set: expr, spec}      [set.update(u)]: u has exactly the keys of `spec`, with the same values except
-//       `add` (a range list, built into an array of Range objects) and a `filter` that is a function spec
+//   set.of {ranges, sort?}  {api}     [RangeSet.of(range list, sort); sort not passed when absent]
+//   set.of {range: expr}  {api}       [RangeSet.of(range): one Range, not an array]
+//   set.empty {}  {api}               [RangeSet.empty]
+//   set.join {sets: [expr]}  {api}    [RangeSet.join(sets)]
+//   set.map {set: expr, changes: expr}  {api}   [set.map(changes)]
+//   set.update {set: expr, spec}  {api, callbacks}   [set.update(u)]: u has exactly the keys of `spec`, with the same
+//       values (filterFrom, filterTo (pos)) except `add` (a range list, built into an array of Range objects) and a
+//       `filter` that is a function spec
 //       {"fn": "filter", "keep": predicate, "log"?: name}: a function (from, to, value) that, when `log` is given,
-//       appends [from, to] to the array in that variable (set to [] when the function is built), then returns:
+//       appends [from (pos), to (pos)] to the array in that variable (set to [] when the function is built), then
+//       returns:
 //         {"const": x}: x  |  {"seq": [x0, x1, ...]}: x0 at the first call, x1 at the second, ...
-//         {"fromEq": n}: from == n  |  {"fromNe": n}: from != n  |  {"notSpan": [f, t]}: !(from == f && to == t)
-//         {"mod": m, "rem": r}: (from + 2 * to) % m != r
+//         {"fromEq": n (pos)}: from == n  |  {"fromNe": n (pos)}: from != n
+//         {"notSpan": [f (pos), t (pos)]}: !(from == f && to == t)
+//         {"mod": m, "rem": r}: (from + 2 * to) % m != r  (m and r are not positions: they act on the raw numbers)
 //       A `filter` that is not such an object (null, undefined) is passed as it is.
-//   set.nextLayer {set: expr}         [set.nextLayer (internal)]
-//   set.prop {set: expr, prop}        [set[prop]; prop one of size, length (internal getter), maxPoint, chunkPos
-//                                      (internal array), isEmpty]
-//   set.chunkCount {set: expr}        [set.chunk.length (internal)]
-//   set.chunk {set: expr, index}      [set.chunk[index] (internal Chunk object)]
-//   set.chunkSources {set: expr, in: expr}   [for each chunk of set, its index in in.chunk (-1 when absent)]
-//   set.chunkSizes {set: expr}        [for each chunk of set, chunk.value.length]
-//   set.chunkStats {set: expr}        [for each chunk of set, [chunk.value.length, chunk.maxPoint]]
-//   set.layerSources {set: expr, sources: [expr]}   [for each layer l of set (set, set.nextLayer, ... while not
-//                                      isEmpty), the first index i with sources[i].chunk[0] === l.chunk[0], or -1]
-//   set.dump {set: expr}              [one entry per layer (set, nextLayer, ... while not isEmpty): {maxPoint, chunks:
-//                                      [{pos: chunkPos[i], maxPoint, from: [...], to: [...], v: [value indexes]}]};
-//                                      from and to as stored in the chunk (relative to pos)]
-//   set.dumpSummary {set: expr}       [set.dump with each chunk replaced by {pos, n: its range count,
-//                                      last: [from, to, v] of its last range}]
-//   set.list {set: expr, from?, fields?}   [for c = set.iter(from ?? 0), while c.value is not null: the cursor.read
-//                                      of `fields` (default ["from", "to", "index"]), then c.next(); the list of reads]
-//   set.listMany {sets: [expr], from?}    [the same for RangeSet.iter(sets, from ?? 0), fields from, to, index, rank]
-//   set.between {set: expr, from, to, stop?: {at, value}}   [set.between(from, to, f), f appending
-//                                      [from, to, value index] and returning stop.value at its stop.at-th call
-//                                      (counted from 1), undefined otherwise; the appended list]
-//   set.eq {old: [expr], new: [expr], from?, to?}   [RangeSet.eq(old, new, from, to); from and to passed only when
-//                                      present (to only after from)]
+//   set.nextLayer {set: expr}  {internal}   [set.nextLayer (@internal)]
+//   set.prop {set: expr, prop}  {api, internal}   [set[prop]; prop one of size (api), length (@internal getter, pos),
+//                                      maxPoint (@internal, pos), chunkPos (@internal array, pos), isEmpty (@internal)]
+//   set.chunkCount {set: expr}  {internal}   [set.chunk.length (@internal)]
+//   set.chunk {set: expr, index}  {internal}   [set.chunk[index] (internal Chunk object)]
+//   set.chunkSources {set: expr, in: expr}  {internal, identity}   [for each chunk of set, its index in in.chunk
+//                                      (indexOf, ===; -1 when absent)]
+//   set.chunkSizes {set: expr}  {internal}   [for each chunk of set, chunk.value.length]
+//   set.chunkStats {set: expr}  {internal}   [for each chunk of set, [chunk.value.length, chunk.maxPoint (pos)]]
+//   set.layerSources {set: expr, sources: [expr]}  {internal, identity}   [for each layer l of set (set, set.nextLayer,
+//                                      ... while not isEmpty), the first index i with sources[i].chunk[0] === l.chunk[0],
+//                                      or -1]
+//   set.dump {set: expr}  {internal}  [one entry per layer (set, nextLayer, ... while not isEmpty): {maxPoint (pos),
+//                                      chunks: [{pos (pos): chunkPos[i], maxPoint (pos), from: [(pos)...],
+//                                      to: [(pos)...], v: [value indexes]}]}; from and to as stored in the chunk
+//                                      (relative to pos)]
+//   set.dumpSummary {set: expr}  {internal}   [set.dump with each chunk replaced by {pos (pos), n: its range count,
+//                                      last: [from (pos), to (pos), v] of its last range}]
+//   set.list {set: expr, from? (pos), fields?}  {api}   [for c = set.iter(from ?? 0), while c.value is not null: the
+//                                      cursor.read of `fields` (default ["from", "to", "index"]), then c.next(); the
+//                                      list of reads]
+//   set.listMany {sets: [expr], from? (pos)}  {api}   [the same for RangeSet.iter(sets, from ?? 0), fields from (pos),
+//                                      to (pos), index, rank]
+//   set.between {set: expr, from (pos), to (pos), stop?: {at, value}}  {api, callbacks}   [set.between(from, to, f),
+//                                      f appending [from (pos), to (pos), value index] and returning stop.value at its
+//                                      stop.at-th call (counted from 1), undefined otherwise; the appended list]
+//   set.eq {old: [expr], new: [expr], from? (pos), to? (pos)}  {api}   [RangeSet.eq(old, new, from, to); from and to
+//                                      passed only when present (to only after from)]
 // cursors
-//   set.iter {set: expr, from?}       [set.iter() or set.iter(from)]
-//   set.iterMany {sets: [expr], from?}    [RangeSet.iter(sets) or RangeSet.iter(sets, from)]
-//   cursor.next {cursor: expr}        [undefined]
-//   cursor.goto {cursor: expr, pos}   [undefined]
-//   cursor.read {cursor: expr, fields}    [an array, one entry per field: "from", "to", "rank", "value" (the value
-//                                      object itself; null at the end), "index" (the value's index), or an object
-//                                      {"is": value reference}: c.value === that value]
-//   cursor.walk {cursor: expr, max}   [while the cursor's value is not null, at most max times: append
-//                                      [from, to, value index, rank], then next(); the appended list]
+//   set.iter {set: expr, from? (pos)}  {api}   [set.iter() or set.iter(from)]
+//   set.iterMany {sets: [expr], from? (pos)}  {api}   [RangeSet.iter(sets) or RangeSet.iter(sets, from)]
+//   cursor.next {cursor: expr}  {api} [undefined]
+//   cursor.goto {cursor: expr, pos (pos)}  {api}   [undefined]
+//   cursor.read {cursor: expr, fields}  {api, identity}   [an array, one entry per field: "from" (pos), "to" (pos),
+//                                      "rank", "value" (the value object itself; null at the end), "index" (the
+//                                      value's index), or an object {"is": value reference}: c.value === that value]
+//   cursor.walk {cursor: expr, max}  {api}   [while the cursor's value is not null, at most max times: append
+//                                      [from (pos), to (pos), value index, rank], then next(); the appended list]
 // spans and compare
-//   spans {sets: [expr], from, to, iterator, minPointSize?}   [RangeSet.spans(sets, from, to, iterator) or with
-//       minPointSize; its return value]. iterator:
+//   spans {sets: [expr], from (pos), to (pos), iterator, minPointSize? (pos)}  {api, callbacks}
+//       [RangeSet.spans(sets, from, to, iterator) or with minPointSize; its return value: the number of
+//       ranges still open at `to`, a count, not a position]. iterator:
 //       {"fn": "spansRecord", "into": name}: span(from, to, active, openStart) appends
-//         ["span", from, to, [active value indexes], openStart]; point(from, to, value, active, openStart, index)
-//         appends ["point", from, to, value index, [active value indexes], openStart, index]; the list is the
-//         variable `into` (set to [] when the iterator is built).
+//         ["span", from (pos), to (pos), [active value indexes], openStart]; point(from, to, value, active, openStart,
+//         index) appends ["point", from (pos), to (pos), value index, [active value indexes], openStart, index]; the
+//         list is the variable `into` (set to [] when the iterator is built).
 //       {"fn": "spansKeep", "seen": name, "kept": name, "point": bool}: span(from, to, active, openStart) appends
-//         [from, to, [active value indexes], openStart] to `seen` and the active array object itself to `kept`;
-//         point(from, to, value, active) appends the active array object to `kept` when "point" is true, else does
-//         nothing.
-//   compare {old: [expr], new: [expr], changes: expr, comparator, minPointSize?}   [RangeSet.compare(old, new,
-//       changes, comparator) or with minPointSize; undefined]. comparator:
+//         [from (pos), to (pos), [active value indexes], openStart] to `seen` and the active array object itself to
+//         `kept`; point(from, to, value, active) appends the active array object to `kept` when "point" is true, else
+//         does nothing.
+//   compare {old: [expr], new: [expr], changes: expr, comparator, minPointSize? (pos)}  {api, callbacks}
+//       [RangeSet.compare(old, new, changes, comparator) or with minPointSize; undefined]. comparator:
 //       {"fn": "cmpRecord", "into": name, "boundChange": bool}: compareRange(from, to, a, b) appends
-//         ["range", from, to, [a indexes], [b indexes]]; comparePoint(from, to, a, b) appends
-//         ["point", from, to, a index, b index]; when boundChange is true it also has boundChange(pos), which appends
-//         ["bound", pos] (when false the comparator object has no boundChange property).
+//         ["range", from (pos), to (pos), [a indexes], [b indexes]]; comparePoint(from, to, a, b) appends
+//         ["point", from (pos), to (pos), a index, b index]; when boundChange is true it also has boundChange(pos),
+//         which appends ["bound", pos (pos)] (when false the comparator object has no boundChange property).
 //       {"fn": "cmpKeep", "seen": name, "kept": name}: compareRange(from, to, a, b) appends
-//         [from, to, [a indexes], [b indexes]] to `seen` and the pair [a, b] (the array objects) to `kept`;
+//         [from (pos), to (pos), [a indexes], [b indexes]] to `seen` and the pair [a, b] (the array objects) to `kept`;
 //         comparePoint does nothing; no boundChange.
 // builder
-//   builder.new {}                    [new RangeSetBuilder()]
-//   builder.add {builder: expr, from, to, v}   [builder.add(from, to, value); undefined]
-//   builder.finish {builder: expr}    [builder.finish()]
+//   builder.new {}  {api}             [new RangeSetBuilder()]
+//   builder.add {builder: expr, from (pos), to (pos), v}  {api}   [builder.add(from, to, value); undefined]
+//   builder.finish {builder: expr}  {api}   [builder.finish()]
 // internals made observable
-//   chunk.maxPoint {chunk: expr}      [chunk.maxPoint]
-//   chunk.poison {chunk: expr}        [replaces the chunk's `value` property by a getter that throws
+//   chunk.maxPoint {chunk: expr}  {internal}   [chunk.maxPoint (pos)]
+//   chunk.poison {chunk: expr}  {internal}   [replaces the chunk's `value` property by a getter that throws
 //                                      Error("NO TOUCH"); undefined]
-//   chunk.countReads {chunk: expr, label, hits: name}   [replaces the chunk's `value` array by a Proxy of it that,
-//                                      on each read of an index property (a key of decimal digits), adds 1 to
+//   chunk.countReads {chunk: expr, label, hits: name}  {internal}   [replaces the chunk's `value` array by a Proxy of
+//                                      it that, on each read of an index property (a key of decimal digits), adds 1 to
 //                                      hits[label] (starting from 0 when the key is absent) of the object held by the
 //                                      variable named by `hits` (set beforehand, by an `object` step); undefined]
-//   eqlog.take {}                     [a copy of the eq log; the log is then emptied]
-//   eqlog.clear {}                    [empties the eq log; undefined]
-//   eqlog.count {}                    [the number of entries in the eq log]
+//   eqlog.take {}  {callbacks}        [a copy of the eq log; the log is then emptied]
+//   eqlog.clear {}  {harness}         [empties the eq log; undefined]
+//   eqlog.count {}  {callbacks}       [the number of entries in the eq log]
 // plain values
-//   indexes {of: expr}                [the value with every RangeValue in it (at any array depth) replaced by its index]
+//   indexes {of: expr}  {harness}     [the value with every RangeValue in it (at any array depth) replaced by its index]
 // A callback spec (`filter`, `iterator`, `comparator`, `stop`) is read whole when the callback is built.
 import {RangeValue, RangeSet, Range, RangeSetBuilder, ChangeSet} from "@codemirror/state"
-import {Language, Program, markRead} from "@harness/program"
+import {Language, Program, markRead, type Kind} from "@harness/program"
 
 const eqLog: [any, any][] = []
 
@@ -369,17 +385,25 @@ export const lang = new Language("rangeset", ["name", "case", "seed", "question"
   eqLog.length = 0
   return new Prog(p, inp)
 })
-for (const name of [
-  "value", "value.fields", "value.set", "value.eq", "value.range", "ranges",
-  "range.fromTo", "range.value", "range.isRange", "changes.of", "changes.empty", "changes.newLength",
-  "changes.touchesRange", "set.of", "set.empty", "set.join", "set.map", "set.update",
-  "set.nextLayer", "set.prop", "set.chunkCount", "set.chunk", "set.chunkSources", "set.chunkSizes",
-  "set.chunkStats", "set.layerSources", "set.dump", "set.dumpSummary", "set.list", "set.listMany",
-  "set.between", "set.eq", "set.iter", "set.iterMany", "cursor.next", "cursor.goto",
-  "cursor.read", "cursor.walk", "spans", "compare", "builder.new", "builder.add",
-  "builder.finish", "chunk.maxPoint", "chunk.poison", "chunk.countReads", "eqlog.take", "eqlog.clear",
-  "eqlog.count", "indexes",
-]) lang.op(name, [], (a, p) => p.chunk.op(a))
+const KINDS_OF: Record<string, Kind[]> = {
+  "value": ["api"], "value.fields": ["api", "internal"], "value.set": ["api"], "value.eq": ["api"],
+  "value.range": ["api"], "ranges": ["api"],
+  "range.fromTo": ["api"], "range.value": ["api"], "range.isRange": ["api"],
+  "changes.of": ["api"], "changes.empty": ["api"], "changes.newLength": ["api"], "changes.touchesRange": ["api"],
+  "set.of": ["api"], "set.empty": ["api"], "set.join": ["api"], "set.map": ["api"], "set.update": ["api", "callbacks"],
+  "set.nextLayer": ["internal"], "set.prop": ["api", "internal"], "set.chunkCount": ["internal"],
+  "set.chunk": ["internal"], "set.chunkSources": ["internal", "identity"], "set.chunkSizes": ["internal"],
+  "set.chunkStats": ["internal"], "set.layerSources": ["internal", "identity"], "set.dump": ["internal"],
+  "set.dumpSummary": ["internal"], "set.list": ["api"], "set.listMany": ["api"],
+  "set.between": ["api", "callbacks"], "set.eq": ["api"], "set.iter": ["api"], "set.iterMany": ["api"],
+  "cursor.next": ["api"], "cursor.goto": ["api"], "cursor.read": ["api", "identity"], "cursor.walk": ["api"],
+  "spans": ["api", "callbacks"], "compare": ["api", "callbacks"],
+  "builder.new": ["api"], "builder.add": ["api"], "builder.finish": ["api"],
+  "chunk.maxPoint": ["internal"], "chunk.poison": ["internal"], "chunk.countReads": ["internal"],
+  "eqlog.take": ["callbacks"], "eqlog.clear": ["harness"], "eqlog.count": ["callbacks"],
+  "indexes": ["harness"],
+}
+for (const [name, kinds] of Object.entries(KINDS_OF)) lang.op(name, kinds, (a, p) => p.chunk.op(a))
 
 /** Run one fixture input (as read from the fixture file, or as a generator built it) and return its output. */
 export const run = lang.run

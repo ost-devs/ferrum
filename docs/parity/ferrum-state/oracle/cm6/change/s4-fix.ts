@@ -5,7 +5,7 @@
 //   map returns the selection itself (selection.ts:128). replaceRange on the same selection, default `which` (= mainIndex
 //   -1), sets an array property instead of an element and reaches the same throw (selection.ts:162-165).
 // - O2: EditorSelection.fromJSON accepts a NaN `main` (typeof NaN == "number", NaN >= length is false; selection.ts:176).
-//   NaN is written {"num": "NaN"}, the convention of this chunk (interp.ts header; how fixtures write NaN is question Q40).
+//   The input holds the JavaScript value NaN; the fixture file stores it in the one encoding of tools/cm6/oracle-lib.ts.
 // Appends to fixtures/change.jsonl (fresh = false) with ids F5500-F5549; rerunning first drops that range.
 // Run order for the chunk: s2-fixtures.ts, s2-generator.ts, gapfill-mapset.ts, then this file. From the repository root:
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/change/s4-fix.ts
@@ -15,6 +15,7 @@
 import {readFileSync, writeFileSync} from "node:fs"
 import {fixtureWriter} from "@harness/lib"
 import {run} from "./interp"
+import {stored} from "./lib"
 import {EditorSelection, ChangeSet, ChangeDesc} from "@codemirror/state"
 
 const FILE = "docs/parity/ferrum-state/fixtures/change.jsonl"
@@ -27,6 +28,7 @@ const write = fixtureWriter(FILE, false)
 let next = FIRST
 
 function f(item_id: string, behaviors: string[], inp: any) {
+  inp = stored(inp)
   let out = run(inp), id = `F${String(next++).padStart(4, "0")}`
   console.log(id, behaviors.join(","), JSON.stringify(inp), "->", JSON.stringify(out))
   write(item_id, behaviors, inp, out, id)
@@ -64,5 +66,5 @@ f(MAP, [B1, B6], {op: "sel.map", sel: zero, change: {empty: 5}, args: []})
 f(REPLACE, ["state.EditorSelection.replaceRange.B2"], {op: "sel.replaceRange", sel: zero, range: {cursor: [1]}})
 f(REPLACE, ["state.EditorSelection.replaceRange.B2"], {op: "sel.replaceRange", sel: zero, range: {cursor: [1]}, which: 0})
 // O2: NaN main, with one range and with zero ranges
-f(FROMJSON, ["state.EditorSelection^fromJSON.B3"], {op: "sel.fromJSON", json: {ranges: [{anchor: 1, head: 1}], main: {num: "NaN"}}})
-f(FROMJSON, ["state.EditorSelection^fromJSON.B3"], {op: "sel.fromJSON", json: {ranges: [], main: {num: "NaN"}}})
+f(FROMJSON, ["state.EditorSelection^fromJSON.B3"], {op: "sel.fromJSON", json: {ranges: [{anchor: 1, head: 1}], main: NaN}})
+f(FROMJSON, ["state.EditorSelection^fromJSON.B3"], {op: "sel.fromJSON", json: {ranges: [], main: NaN}})

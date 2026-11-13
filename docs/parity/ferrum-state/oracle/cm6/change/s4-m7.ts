@@ -19,6 +19,7 @@
 import {readFileSync, writeFileSync} from "node:fs"
 import {fixtureWriter} from "@harness/lib"
 import {run} from "./interp"
+import {stored} from "./lib"
 
 const ROOT = "docs/parity/ferrum-state"
 const FILE = `${ROOT}/fixtures/change.jsonl`
@@ -35,7 +36,9 @@ const write = fixtureWriter(FILE, false)
 let next = FIRST
 
 // item: inventory item of the first behavior; bs: behavior ids without the "state." prefix
-function f(bs: string[], input: any, output = run(input)) {
+function f(bs: string[], input: any, output?: any) {
+  input = stored(input)
+  if (output === undefined) output = run(input)
   let item = bs[0].replace(/\.B\d+$/, "")
   if (!ids[item]) throw new Error("unknown item " + item)
   if (next > LAST) throw new Error("id range exhausted")

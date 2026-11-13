@@ -1,27 +1,3 @@
-{"chunk": "text", "key": "expr", "text": "\"findClusterBreak(str, pos)\"", "other_input_keys": ["pos", "str"], "fixtures": 11, "first": "F0001"}
-{"chunk": "text", "key": "expr", "text": "\"findClusterBreak(str, pos, forward, includeExtending)\"", "other_input_keys": ["forward", "includeExtending", "note", "pos", "str"], "fixtures": 91, "first": "F0006"}
-{"chunk": "text", "key": "expr", "text": "\"findClusterBreak(str, pos, forward, includeExtending)\"", "other_input_keys": ["forward", "includeExtending", "pos", "str"], "fixtures": 19, "first": "F0025"}
-{"chunk": "text", "key": "expr", "text": "\"forward: i = N; while i < str.length: n = findClusterBreak(str, i, true, includeExtending), record n, stop if n == i, i = n. backward: i = str.length; while i > N: n = findClusterBreak(str, i, false, includeExtending), record n, stop if n == i, i = n\"", "other_input_keys": ["includeExtending", "note", "str", "walk"], "fixtures": 8, "first": "F0043"}
-{"chunk": "text", "key": "expr", "text": "\"findClusterBreak(str, pos, forward)\"", "other_input_keys": ["forward", "pos", "str"], "fixtures": 15, "first": "F0066"}
-{"chunk": "text", "key": "expr", "text": "\"codePointAt(str, pos)\"", "other_input_keys": ["pos", "str"], "fixtures": 10, "first": "F0109"}
-{"chunk": "text", "key": "expr", "text": "\"codePointAt(str, pos)\"", "other_input_keys": ["note", "pos", "str"], "fixtures": 11, "first": "F0117"}
-{"chunk": "text", "key": "expr", "text": "\"codePointSize(code)\"", "other_input_keys": ["code"], "fixtures": 7, "first": "F0130"}
-{"chunk": "text", "key": "expr", "text": "\"codePointSize(code)\"", "other_input_keys": ["code", "note"], "fixtures": 6, "first": "F0133"}
-{"chunk": "text", "key": "expr", "text": "\"codePointSize(codePointAt(str, pos))\"", "other_input_keys": ["note", "pos", "str"], "fixtures": 5, "first": "F0143"}
-{"chunk": "text", "key": "expr", "text": "\"countColumn(string, tabSize)\"", "other_input_keys": ["string", "tabSize"], "fixtures": 19, "first": "F0400"}
-{"chunk": "text", "key": "expr", "text": "\"countColumn(string, tabSize, to)\"", "other_input_keys": ["note", "string", "tabSize", "to"], "fixtures": 9, "first": "F0402"}
-{"chunk": "text", "key": "expr", "text": "\"countColumn(string, tabSize)\"", "other_input_keys": ["note", "string", "tabSize"], "fixtures": 16, "first": "F0405"}
-{"chunk": "text", "key": "expr", "text": "\"countColumn(string, tabSize, to)\"", "other_input_keys": ["string", "tabSize", "to"], "fixtures": 9, "first": "F0423"}
-{"chunk": "text", "key": "expr", "text": "\"findColumn(string, col, tabSize)\"", "other_input_keys": ["col", "string", "tabSize"], "fixtures": 35, "first": "F0441"}
-{"chunk": "text", "key": "expr", "text": "\"findColumn(string, col, tabSize, strict)\"", "other_input_keys": ["col", "note", "strict", "string", "tabSize"], "fixtures": 3, "first": "F0442"}
-{"chunk": "text", "key": "expr", "text": "\"findColumn(string, col, tabSize, strict)\"", "other_input_keys": ["col", "strict", "string", "tabSize"], "fixtures": 14, "first": "F0443"}
-{"chunk": "text", "key": "expr", "text": "\"findColumn(string, col, tabSize)\"", "other_input_keys": ["col", "note", "string", "tabSize"], "fixtures": 11, "first": "F0473"}
-{"chunk": "text", "key": "expr", "text": "\"CharCategory\"", "other_input_keys": [], "fixtures": 1, "first": "F0600"}
-{"chunk": "text", "key": "expr", "text": "\"CharCategory[EditorState.create().charCategorizer(N)(char)]\"", "other_input_keys": ["char", "engine", "note"], "fixtures": 41, "first": "F0601"}
-{"chunk": "text", "key": "expr", "text": "\"CharCategory[EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars}])}).charCategorizer(N)(char)]\"", "other_input_keys": ["char", "engine", "note", "wordChars"], "fixtures": 9, "first": "F0603"}
-{"chunk": "text", "key": "expr", "text": "\"CharCategory[EditorState.create().charCategorizer(N)(char)]\"", "other_input_keys": ["char", "engine"], "fixtures": 35, "first": "F0607"}
-{"chunk": "text", "key": "expr", "text": "\"CharCategory[EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars}])}).charCategorizer(N)(char)]\"", "other_input_keys": ["char", "engine", "wordChars"], "fixtures": 8, "first": "F0635"}
-{"chunk": "text", "key": "expr", "text": "\"CharCategory[EditorState.create({extensions: EditorState.languageData.of(() => languageData)}).charCategorizer(N)(char)]\"", "other_input_keys": ["char", "engine", "languageData", "note"], "fixtures": 1, "first": "F0646"}
 {"chunk": "text", "key": "expr", "text": "\"doc.line(N) === doc.line(N); doc.lineAt(N) === doc.line(N); doc.line(N) instanceof Line; Object.keys(doc.line(N))\"", "other_input_keys": ["doc"], "fixtures": 1, "first": "F0800"}
 {"chunk": "text", "key": "expr", "text": "\"every line: from\"", "other_input_keys": ["doc"], "fixtures": 4, "first": "F0801"}
 {"chunk": "text", "key": "expr", "text": "\"every line: to; doc.length\"", "other_input_keys": ["doc"], "fixtures": 4, "first": "F0802"}
@@ -203,7 +179,15 @@
 {"chunk": "text", "key": "expr", "text": "\"after done (next() until done) on a fresh cursor: next(), next(k), next(); rawN: iter(), k = -N; rawN: iter(), k = -N; partialN: iterRange(N, length), k = -N; linesN: iterLines(), k = -N; linesN: iterLines(), k = -N\"", "other_input_keys": ["doc"], "fixtures": 1, "first": "F6092"}
 {"chunk": "text", "key": "expr", "text": "\"findClusterBreak(str, pos, forward)\"", "other_input_keys": ["forward", "note", "pos", "str"], "fixtures": 7, "first": "F6093"}
 {"chunk": "text", "key": "expr", "text": "\"c = codePointAt(str, pos); codePointSize(c)\"", "other_input_keys": ["pos", "str"], "fixtures": 2, "first": "F6100"}
+{"chunk": "text", "key": "expr", "text": "\"countColumn(string, tabSize)\"", "other_input_keys": ["string", "tabSize"], "fixtures": 2, "first": "F6102"}
+{"chunk": "text", "key": "expr", "text": "\"countColumn(string, tabSize, to)\"", "other_input_keys": ["string", "tabSize", "to"], "fixtures": 4, "first": "F6103"}
+{"chunk": "text", "key": "expr", "text": "\"findColumn(string, col, tabSize)\"", "other_input_keys": ["col", "string", "tabSize"], "fixtures": 13, "first": "F6108"}
+{"chunk": "text", "key": "expr", "text": "\"findColumn(string, col, tabSize, strict)\"", "other_input_keys": ["col", "strict", "string", "tabSize"], "fixtures": 2, "first": "F6119"}
+{"chunk": "text", "key": "expr", "text": "\"CharCategory[EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars}])}).charCategorizer(N)(char)]\"", "other_input_keys": ["char", "engine", "wordChars"], "fixtures": 4, "first": "F6123"}
 {"chunk": "text", "key": "expr", "text": "\"for every code point c in N..NxNFFFF outside U+DN-U+DFFF: findClusterBreak(\\\"a\\\" + String.fromCodePoint(c), N, true, includeExtending) > N, as inclusive ranges [first, last] of code points\"", "other_input_keys": ["includeExtending"], "fixtures": 1, "first": "F7000"}
+{"chunk": "text", "key": "expr", "text": "\"findClusterBreak(str, pos, forward, includeExtending)\"", "other_input_keys": ["forward", "includeExtending", "note", "pos", "str"], "fixtures": 31, "first": "F7001"}
+{"chunk": "text", "key": "expr", "text": "\"countColumn(string, tabSize)\"", "other_input_keys": ["note", "string", "tabSize"], "fixtures": 1, "first": "F7019"}
+{"chunk": "text", "key": "expr", "text": "\"findColumn(string, col, tabSize)\"", "other_input_keys": ["col", "note", "string", "tabSize"], "fixtures": 2, "first": "F7020"}
 {"chunk": "text", "key": "expr", "text": "\"findClusterBreak(str, pos, true, includeExtending) for every str and pos, includeExtending true then false\"", "other_input_keys": ["positions", "strs"], "fixtures": 1, "first": "F7035"}
 {"chunk": "text", "key": "expr", "text": "\"backward: findClusterBreak(str, pos, false) for pos -N, -N, length + N, length + N\"", "other_input_keys": ["strs"], "fixtures": 1, "first": "F7036"}
 {"chunk": "text", "key": "expr", "text": "\"iter(dir as any): next() until done (at most N steps), for dir N, -N, N\"", "other_input_keys": ["build", "doc", "shape", "source", "variant"], "fixtures": 5, "first": "F7037"}
