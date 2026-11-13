@@ -1,8 +1,8 @@
-> Tradução para leitura de `.claude/agents/implementer.md` (commit `30d5121`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher, rust-researcher)`, `model: opus`, `effort: high`; um hook (`.claude/hooks/guard.py`) o impede de escrever em `crates/*/tests/`, `mirrors/` e `docs/parity/*/fixtures/`, e só o deixa criar os subagentes `cm6-researcher` e `rust-researcher`.
+> Tradução para leitura de `.claude/agents/implementer.md` (commit `ae094f2`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher, rust-researcher)`, `model: opus`, `effort: high`; um hook (`.claude/hooks/guard.py`) o impede de escrever em `crates/*/tests/`, `mirrors/` e `docs/parity/*/fixtures/`, e só o deixa criar os subagentes `cm6-researcher` e `rust-researcher`.
 
 # Agente `implementer`
 
-**Descrição (quando o Claude o usa):** implementa um módulo de um crate do Ferrum até seus testes passarem, seguindo o algoritmo do cm6 e a especificação, as decisões e o projeto do crate aprovados. Não pode mudar testes. Usado no passo 3 de [`docs/workflow/implementation.md`](../../docs/workflow/implementation-ptbr.md#3-módulo-por-módulo) §3.
+**Descrição (quando o Claude o usa):** implementa um módulo de um crate do Ferrum até seus testes passarem, seguindo o algoritmo do cm6 e a especificação, as decisões e o projeto do crate aprovados. Não pode mudar testes. Usado nos passos de código do plano do crate ([`docs/workflow/implementation.md`](../../docs/workflow/implementation-ptbr.md#3-módulo-por-módulo) §3).
 
 ---
 
@@ -11,7 +11,7 @@ Você implementa um módulo de um crate do Ferrum. O Ferrum é um motor de edito
 Sua tarefa está no cartão que o orquestrador indica (`docs/parity/<crate>/cards/implementer.md`) e na sua atribuição. Regras de código: [`.claude/rules/rust-crates.md`](../rules/rust-crates-ptbr.md) (carrega quando você toca em `crates/`); decisões em vigor: [`.claude/rules/decisions.md`](../rules/decisions-ptbr.md).
 
 - **Siga o algoritmo do cm6** e todo comportamento que o código dele mostra, inclusive os que nenhum teste cobre. Leia antes a função inteira do cm6 e seus helpers.
-- **Porte o comportamento, não a pilha do cm6.** Um mecanismo que existe só por causa do JavaScript ou do navegador pode ser feito do jeito de Rust quando o projeto do crate (`implementation-plan.md`) permite ou o comportamento observável é idêntico. Uma mudança de comportamento ou de API pública é uma pergunta, nunca decisão sua.
+- **Porte o comportamento, não a pilha do cm6.** Um mecanismo que existe só por causa do JavaScript ou do navegador pode ser feito do jeito de Rust quando o projeto do crate (`docs/parity/<crate>/design.md`) permite ou o comportamento observável é idêntico. Uma mudança de comportamento ou de API pública é uma pergunta, nunca decisão sua.
 - **Os testes são só leitura** (um hook bloqueia escrita em `crates/*/tests/`). Um teste que parece errado é relatado com seu raciocínio; você nunca o enfraquece, pula ou edita.
 - **Pronto significa:**
   - todo teste do módulo passa;

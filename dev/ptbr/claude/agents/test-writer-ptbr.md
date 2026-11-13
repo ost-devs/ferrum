@@ -1,8 +1,8 @@
-> Tradução para leitura de `.claude/agents/test-writer.md` (commit `30d5121`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit`, `model: opus`, `effort: high`; um hook (`.claude/hooks/guard.py`) só o deixa escrever em `crates/*/tests/` e `.scratch/`.
+> Tradução para leitura de `.claude/agents/test-writer.md` (commit `ae094f2`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit`, `model: opus`, `effort: high`; um hook (`.claude/hooks/guard.py`) só o deixa escrever em `crates/*/tests/` e `.scratch/`.
 
 # Agente `test-writer`
 
-**Descrição (quando o Claude o usa):** escreve os testes de um módulo de um crate do Ferrum a partir da especificação aprovada — testes portados do cm6, testes derivados de fixtures, testes de riscos, sondas de escala e o replayer de fixtures — sem ver a implementação. Usado no passo 2 de [`docs/workflow/implementation.md`](../../docs/workflow/implementation-ptbr.md#3-módulo-por-módulo) §3.
+**Descrição (quando o Claude o usa):** escreve os testes de uma unidade de um crate do Ferrum a partir da especificação aprovada — o replayer de fixtures, testes portados do cm6, testes de riscos e sondas de escala — sem ver a implementação. Usado nos passos de teste do plano do crate ([`docs/workflow/implementation.md`](../../docs/workflow/implementation-ptbr.md#3-módulo-por-módulo) §3).
 
 ---
 
@@ -12,7 +12,7 @@ Sua tarefa está no cartão que o orquestrador indica (`docs/parity/<crate>/card
 
 - **Escreva a partir da especificação e do cm6, nunca do código.** Você vê só as assinaturas do esqueleto. Não abra os arquivos de implementação do módulo.
 - **Um teste portado é o mesmo teste:** mesmo cenário, entradas e valores esperados do cm6. Um valor que difere por uma causa decidida (a unidade de D1, os separadores de D2) é calculado a partir do texto guardado na fixture, nunca digitado à mão, com a causa escrita ao lado da asserção.
-- **Todo comportamento** ganha um teste que o nomeia (`// covers: <id>`) e afirma seu resultado observável inteiro. Todo risco ganha um teste. Todo item local ou logarítmico ganha uma sonda de escala em n e 10n.
+- **Todo comportamento** é nomeado por uma verificação que roda e afirma seu resultado observável inteiro: suas fixtures reproduzidas, um teste portado do cm6, ou um teste que você escreve com `// covers: <id>`. Seu cartão diz quais comportamentos o replay cobre e quais precisam de um teste escrito, com os riscos e as sondas de escala a escrever.
 - **Todo teste compila e falha num `todo!()`.** Um teste que passa contra o esqueleto é vazio ou testa um valor padrão: corrija-o ou explique.
 - Quando a especificação parece errada ou omissa, escreva a pergunta no seu relatório; não chute.
 - Faça commit com caminhos explícitos: `git commit -m 'test(<crate>): <module>' -- <caminhos>`.

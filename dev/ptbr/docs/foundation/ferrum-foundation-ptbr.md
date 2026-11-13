@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/foundation/ferrum-foundation.md` (commit `30d5121`). O original em inglês é o que vale; as seções citadas em outros documentos (§1 "Goals" etc.) seguem a numeração e os títulos em inglês do original.
+> Tradução para leitura de `docs/foundation/ferrum-foundation.md` (commit `ae094f2`). O original em inglês é o que vale; as seções citadas em outros documentos (§1 "Goals" etc.) seguem a numeração e os títulos em inglês do original.
 
 # Ferrum: propósito, arquitetura e fundação
 
@@ -25,9 +25,9 @@ O Ferrum **não** é:
 
 ### Objetivos (Goals)
 
-É para isto que o Ferrum existe. Código que ainda não os alcança está inacabado, e isso não é motivo para rebaixá-los.
+É para isto que o Ferrum existe: quem edita o texto, e a aplicação que embute o Ferrum, recebem de forma nativa o que o cm6 já resolveu para um editor. Código que ainda não os alcança está inacabado, e isso não é motivo para rebaixá-los.
 
-- **Paridade de comportamento 1:1 com o cm6** para todo item de paridade de comportamento ou de contrato (seção 2): mesmos resultados, mesmos invariantes, os mesmos testes passando com os mesmos valores esperados. Os nomes continuam reconhecíveis para um desenvolvedor que conhece o cm6, em Rust idiomático (a regra **Names**, em Architecture, de [`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md)).
+- **Paridade de comportamento 1:1 com o cm6** para todo item de paridade de comportamento ou de contrato (seção 2), julgada pelo que um usuário ou uma aplicação que embute o Ferrum consegue observar: mesmos resultados, mesmos invariantes, os mesmos testes passando com os mesmos valores esperados, e as mesmas saídas do cm6 para as mesmas entradas. Os nomes continuam reconhecíveis para um desenvolvedor que conhece o cm6, em Rust idiomático (a regra **Names**, em Architecture, de [`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md)).
 - **Desempenho nativo**: documentos grandes sem trabalho no documento inteiro, inicialização rápida, baixa latência de entrada, renderização suave em altas taxas de atualização. As metas do mantenedor: o núcleo (atualização do estado, trabalho de viewport e de decorações) trata uma tecla típica em menos de 1 ms; a superfície renderiza na taxa de atualização da tela, até 120 FPS (8,3 ms por frame); uma entrada fica visível no próximo frame que a tela mostra. Cada meta vira um benchmark reproduzível.
 - **Uma API pública estável** para aplicações, alcançada pelo crate fachada `ferrum` (seção 4.1) quando a fundação estiver completa.
 
@@ -50,7 +50,7 @@ Todo item do cm6 cai num de três tipos de fidelidade. Este é o filtro que impe
 
 | Tipo | Significado | Como a paridade é medida | Exemplos |
 |---|---|---|---|
-| **Paridade de comportamento** | A lógica é independente de plataforma. O Ferrum a reproduz exatamente. | Testes do cm6 portados com cenários e valores esperados idênticos; oráculo diferencial opcional contra o cm6 rodando no Node. | `Text`, `ChangeSet`, `EditorSelection`, `RangeSet`, facets, transações, histórico, alternância de comentários, heightmap, ordenação bidi, lógica de resolução de keymaps |
+| **Paridade de comportamento** | A lógica é independente de plataforma. O Ferrum a reproduz exatamente. | Valores gravados rodando o cm6 são reproduzidos contra o Ferrum; testes do cm6 são portados com cenários e valores esperados idênticos; o cm6 e o Ferrum rodam nas mesmas entradas geradas e são comparados. | `Text`, `ChangeSet`, `EditorSelection`, `RangeSet`, facets, transações, histórico, alternância de comentários, heightmap, ordenação bidi, lógica de resolução de keymaps |
 | **Paridade de contrato** | No cm6 a lógica pergunta ao DOM (geometria) ou ao Lezer (sintaxe). O Ferrum define um trait de Rust para essa pergunta e reproduz a lógica em cima dele. | Os testes rodam contra uma implementação fake do trait (layout de largura fixa, árvores montadas à mão) e reproduzem os resultados esperados do cm6 onde o cenário permite. | `moveVertically`, `moveToLineBoundary` (linhas visuais), `posAtCoords`, `coordsAtPos`, indentação guiada pela sintaxe, dobramento, casamento de colchetes |
 | **Não portado** | Existe só por causa do DOM, do CSS ou dos navegadores. | Motivo em uma linha; anotar se um crate de superfície precisa oferecer um equivalente nativo. | Reconciliação do DOM (`docview`, `tile`, `buildtile`), tratamento de `MutationObserver` (`domobserver`, `domchange`, `domreader`), temas com `style-mod`, `EditContext`, contornos para navegadores |
 
@@ -173,13 +173,13 @@ Por isso `cosmic-text` pertence a uma superfície (ou a um crate auxiliar compar
 ## 5. Situação e escopo
 
 - **Escopo: só os quatro crates de fundação** (`ferrum-state`, `ferrum-view`, `ferrum-language`, `ferrum-commands`), construídos na ordem das dependências. Nada mais (fachada, superfícies, crates de funcionalidade, aplicações) começa até esses quatro estarem completos e estáveis.
-- **O workflow**: como um crate é especificado, implementado e conferido, por quais agentes, e como as decisões são tomadas e registradas: [`docs/workflow/README.md`](../workflow/README-ptbr.md). A intenção do mantenedor, que o obriga: [`docs/foundation/maintainer-intent.md`](maintainer-intent-ptbr.md). Onde o trabalho está: [`docs/progress/`](../../../../docs/progress/).
+- **O workflow**: como um crate é especificado, implementado e conferido, por quais agentes, e como as decisões são tomadas e registradas, e como o trabalho se mede e se aprimora: [`docs/workflow/README.md`](../workflow/README-ptbr.md). A intenção do mantenedor, que o obriga: [`docs/foundation/maintainer-intent.md`](maintainer-intent-ptbr.md). Onde o trabalho está: [`docs/progress/`](../../../../docs/progress/). Toda decisão com seu raciocínio: [`docs/decisions/`](../decisions/README-ptbr.md).
 
 ---
 
 ## 6. Decisões fundamentais (antes de qualquer implementação)
 
-Estas decisões moldam toda a fundação; implementar antes de tomá-las arrisca fazer o trabalho duas vezes. O agente `consultant` ([`docs/workflow/README.md`](../workflow/README-ptbr.md#2-papéis) §2) as toma com a evidência da especificação de cada crate, antes da implementação que precisa delas; a primeira iteração delas é redigida como rascunho para o mantenedor confirmar ([`docs/foundation/maintainer-intent.md`](maintainer-intent-ptbr.md)). Uma decisão tomada é escrita em [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) sob seu id, e a entrada dela abaixo passa então a apontar para lá em vez de repeti-la ([`docs/workflow/README.md`](../workflow/README-ptbr.md#3-decisões) §3). Uma entrada em aberto declara a pergunta e, onde uma primeira leitura os encontrou, os fatos que pesam sobre ela, preliminares até serem verificados; nunca declara uma resposta.
+Estas decisões moldam toda a fundação; implementar antes de tomá-las arrisca fazer o trabalho duas vezes. O agente `consultant` ([`docs/workflow/README.md`](../workflow/README-ptbr.md#2-papéis) §2) toma cada uma quando sua evidência existe e antes do trabalho que precisa dela; a primeira iteração delas é redigida como rascunho para o mantenedor confirmar ([`docs/foundation/maintainer-intent.md`](maintainer-intent-ptbr.md)). Uma decisão tomada é escrita em [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) sob seu id, seu registro com o raciocínio em [`docs/decisions/foundation.md`](../decisions/foundation-ptbr.md), e a entrada dela abaixo passa então a apontar para lá em vez de repeti-la ([`docs/workflow/README.md`](../workflow/README-ptbr.md#3-decisões) §3). Uma entrada em aberto declara a pergunta e, onde uma primeira leitura os encontrou, os fatos que pesam sobre ela, preliminares até serem verificados; nunca declara uma resposta.
 
 **D1. Unidade de posição.** O que significa uma posição inteira? Fatos preliminares: o cm6 conta unidades de código UTF-16, e assim fazem seus testes e o padrão do LSP; as strings de Rust, `regex` e tree-sitter (que também usa pontos linha/coluna) indexam bytes UTF-8, assim como os sistemas de texto que as superfícies usariam (`cosmic-text`, GPUI); `ropey` indexa chars e converte para bytes e UTF-16. Para texto só com ASCII toda unidade dá os mesmos números, então a unidade afeta sobretudo os testes não ASCII e toda fronteira com essas bibliotecas.
 
