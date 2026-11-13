@@ -40,6 +40,9 @@
 //   lengths {of: expr}                [value.map(x => x.length)]
 //   jsonEqual {a: expr, b: expr}      [JSON.stringify(a) == JSON.stringify(b)]
 //   object {}                         [a new empty object {}]
+//   label {text}                      [text, a string: a word the output carries beside cm6's values to say which
+//                                      step was reached. It shows nothing about cm6. It is the only way a value
+//                                      written in the input reaches the output; tools/spec_check.py lists the labels]
 //   map {over: expr, as: name, do: expr}   [for each element of the list `over`, in order: the variable `as` is set
 //                                      to it and `do` is evaluated; the list of those values. Here `as` names the
 //                                      element's variable, not the step's result: a `map` used as a step stores
@@ -140,6 +143,7 @@ export class Language {
     o("lengths", ["harness"], (a, p) => p.ev(a.of).map((x: any) => x.length))
     o("jsonEqual", ["harness"], (a, p) => JSON.stringify(p.ev(a.a)) == JSON.stringify(p.ev(a.b)))
     o("object", ["harness"], () => ({}))
+    o("label", ["harness"], a => { if (typeof a.text != "string") throw new Error("label: text must be a string"); return a.text })
     o("map", ["harness"], (a, p) => {
       const over = p.ev(a.over)
       if (!over.length) markRead(a.do)

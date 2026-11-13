@@ -21,6 +21,9 @@ stood for ({"num": x} as {"js_number": x}, "<undefined>" as undefined, "<NaN>" a
 unstable value), and a value the old JSON could not hold may now be exact: null where the output now has undefined,
 NaN, an infinity or a function; 0 where it now has -0; no property where it now has an undefined or function one.
 The count of such values is printed per chunk ("now exact"); any other difference fails.
+An output that was written bare and is now exactly {"ok": <it>} is the same output (counted, "now wrapped in ok").
+Without a run it also prints, per chunk, the fixtures whose `out` references a variable bound by a `data` step (a
+value written in the input; any fails) and the labels of the op `label`, the one way such a value may reach an output.
 
 Without --no-run it also replays every fixture (tools/cm6/replay.ts): the recorded input, decoded and run through
 the `lang` its chunk's oracle/cm6/<chunk>/interp.ts exports (tools/cm6/program.ts) while every key read is recorded.
@@ -164,11 +167,42 @@ def main():
             was = {r["id"]: r for r in (json.loads(l) for l in old.split("\n") if l.strip())}
             now = {r["id"]: r for r in fx[c]}
             exact, n = [0], collections.Counter()
+            wrapped = [0]
+            def same_output(w, v):
+                # The language writes every output as {"ok": value} or {"error": …}; an older output written bare
+                # is the same output when the new one is exactly {"ok": <it>} (counted).
+                bare = not (isinstance(w, dict) and len(w) == 1 and next(iter(w)) in ("ok", "error", "timeout"))
+                if bare and isinstance(v, dict) and list(v) == ["ok"] and same_value(w, v["ok"], exact):
+                    wrapped[0] += 1; return True
+                return same_value(w, v, exact)
             diff = [i for i in sorted(set(was) | set(now)) if i not in was or i not in now
                     or any(was[i].get(k) != now[i].get(k) for k in ("item_id", "behaviors"))
-                    or not same_value(old_forms(was[i].get("output"), n), old_forms(now[i].get("output"), n), exact)]
-            print(f"outputs of {c} against {ref}: {len(now)} fixtures, {len(diff)} differ, {exact[0]} values now exact")
+                    or not same_output(old_forms(was[i].get("output"), n), old_forms(now[i].get("output"), n))]
+            print(f"outputs of {c} against {ref}: {len(now)} fixtures, {len(diff)} differ, {exact[0]} values now exact, "
+                  f"{wrapped[0]} now wrapped in ok")
             if diff: bad.append(f"fixtures/{c}.jsonl differs from {ref} in id, item, behaviors or output: {diff[:10]}")
+
+    # A value written in the input may reach the output only through the op `label`: a variable a `data` step binds
+    # is never referenced by `out` (an expected value would then pass without cm6 producing it).
+    def walk(v, f):
+        if isinstance(v, dict):
+            f(v)
+            for x in v.values(): walk(x, f)
+        elif isinstance(v, list):
+            for x in v: walk(x, f)
+    for c, v in fx.items():
+        data_out, labels = [], collections.Counter()
+        for r in v:
+            i = r["input"]
+            if not isinstance(i, dict): continue
+            bound, used = set(), set()
+            walk(i.get("steps"), lambda d: bound.add(d["as"]) if d.get("op") == "data" and "as" in d else None)
+            walk(i, lambda d: labels.update([d.get("text")]) if d.get("op") == "label" else None)
+            walk(i.get("out"), lambda d: used.add(d["$"]) if set(d) == {"$"} else None)
+            if bound & used or i.get("op") in ("data", "label"): data_out.append(r["id"])
+        print(f"values of {c} written in the input: {len(data_out)} fixtures give `out` a `data` value; "
+              f"labels: {dict(labels) or 'none'}")
+        if data_out: bad.append(f"fixtures/{c}.jsonl: {len(data_out)} fixtures give `out` a value of a `data` step: {data_out[:10]}")
 
     calls = []
     for c, v in fx.items():

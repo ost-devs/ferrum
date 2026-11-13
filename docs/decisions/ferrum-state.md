@@ -270,3 +270,23 @@ which would make the rows' only consumer outside state an application.
 **Confidence.** High on replay with read tracking (tried on the pilot's 388 fixtures; it finds exactly the class the key list missed, and its false positives are removed in one place, the evaluator). High on one language (the evidence is that the replayer is one consumer of five chunks). Medium on the budgets: one pilot, and `state` is the chunk with the most distinct calls and the extension vocabulary to share.
 
 **Reopens.** A2–A5 over 1.5 times their budgets (E7); the language unable to express a chunk's calls without per-fixture ops; the replayer at implementation needing per-chunk evaluators anyway (E8).
+
+## 2026-11-13 · Q58: outputs of the language are always wrapped; a value written in the input reaches an output only as a label
+
+*Decided by the consultant when the stop-loss of unit A4 (`facet`) fired. Binding text: `docs/parity/ferrum-state/plan.md` step A "For every unit"; `docs/workflow/specification.md` §5 item 3 and §8 item 1; `tools/cm6/program.ts` (op `label`), `tools/spec_check.py` (the comparison with an earlier commit, the count of `data` values in `out`).*
+
+**Question.** A4 converted all 527 `facet` fixtures; replay is clean, but the comparison with c2d1fca fails on 344 outputs that are now `{"ok": <the old value>}`. And 36 outputs hold words the old probes wrote ("built", "update"), which the worker kept through a chunk op `data` that returns a value written in the input.
+
+**What I verified.** The comparison, run with the change below on the worker's uncommitted file: 527 fixtures, 0 differ, 344 wrapped. A static search of every fixture for an `out` that references a variable bound by a `data` step: 37 in `facet` (the 36 labels and one more), none in `rangeset` or `change`. A broader prototype (every `out` value must descend from a cm6 op) gave false positives in `rangeset`, where a cm6 op fills an object it is given by name; it is not adopted.
+
+**Decisions.**
+1. *The wrapper is the right form, and my plan was wrong to ask for both.* Step A asked that scenario inputs become bare expressions of the language and that outputs equal those of c2d1fca; the language wraps every output. One output form is what the replayer should read (`{"ok"}` or `{"error"}`), and 183 `facet` outputs already had it. The check now accepts an output that was bare and is exactly `{"ok": <it>}`, counts it, and accepts no other change. The values are still compared one by one.
+2. *Labels go through `label`, nothing else written in the input reaches an output.* A label shows nothing about cm6, but dropping it would change 36 outputs in a way no mechanical comparison accepts, and this step's whole check is that outputs do not change. So the language has `label {text}` (a string), the tool lists every label per chunk, and it fails on an `out` that references a `data` variable: that was a way for an expected value to pass without cm6 producing it, which the count of literal leaves did not see. `data` stays for what it is for: a value the program hands to cm6. `list`, `set` and `isArray` take expressions and stay.
+
+**Alternatives.** A second, unwrapped output form in the language: two forms for the replayer to read, to keep a historical accident. Stripping `ok` in the worker's own script: a check outside the tool, which is what the method forbids. Dropping the labels: changes outputs. A general check that every output value descends from a cm6 op: right in principle, but a static one misreads ops that fill an object by name, and a dynamic one cannot mark primitive values; the narrow check closes the path that exists.
+
+**What A4 does.** Replace each label written with `data` by `label`, restructure the one other fixture whose `out` takes a `data` value so that the value comes from cm6, regenerate, run the check. A5 (`state`) uses `label` the same way.
+
+**Confidence.** High on 1. Medium-high on 2: the remaining path (a `data` value passed through a harness op into `out`) is not checked; the labels are few and listed.
+
+**Reopens.** A chunk needing a value in `out` that neither cm6 produces nor a label can be; a fixture found whose output holds an input value through a harness op.
