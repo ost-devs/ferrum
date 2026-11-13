@@ -16,34 +16,21 @@
 // output on every recomputation. Each scenario reads a facet without combine and a control facet with combine "copy"
 // (values.slice()) side by side. `same` in the output is `===` against the previous state's read (interp.ts header).
 //
-// Scenario inputs (`defs`/`ext`/`steps`/`reads`) are replayed by interp.ts (its header documents the JSON).
+// Every input is a {"op": "scenario"} expression run by interp.ts (its header documents it; the `steps` written below
+// are stored as its `updates`).
 //
 // Checklist (docs/workflow/specification.md §5.5): empty: the facet absent before a reconfiguration (default []);
 // single / many: one provider, two providers, a static provider beside a computed one; equal and duplicate elements,
 // same object reused: new provider objects with equal values, the same provider object reused through {"ref"}, a
 // getter returning the same primitive; positions, numeric parameters, text classes and the 100x case do not apply
 // (the facet logic reads no position or text; the size of the provider list is covered by s2-generator.ts).
-import {readFileSync, writeFileSync} from "node:fs"
-import {fixtureWriter} from "@harness/lib"
-import {run} from "./interp"
-import {ids} from "./s2-fixtures-lib"
+import {scenario, writer} from "./s2-fixtures-lib"
 
-const FILE = "docs/parity/ferrum-state/fixtures/facet.jsonl"
 const FIRST = 7000, LAST = 7499
-writeFileSync(FILE, readFileSync(FILE, "utf8").split("\n").filter(l => {
-  if (!l) return false
-  let n = Number(JSON.parse(l).id.slice(1)); return n < FIRST || n > LAST
-}).map(l => l + "\n").join(""))
-const write = fixtureWriter(FILE, false)
+const write = writer(false, [FIRST, LAST])
 let next = FIRST
 const fid = () => "F" + String(next++).padStart(4, "0")
-const B = (bs: string[]) => bs.map(b => "state." + b)
-function S(item: string, bs: string[], scenario: any) {
-  if (!ids[item]) throw new Error("no item " + item)
-  const id = fid(), output = run(scenario)
-  console.log(id, bs.join(","), JSON.stringify(output))
-  write(ids[item], B(bs), scenario, output, id)
-}
+function S(item: string, bs: string[], sc: any) { const id = fid(); console.log(id, bs.join(","), JSON.stringify(write(item, bs, id, scenario(sc)))) }
 const tr = (t: any) => ({tr: t})
 const CB2 = "Facet^define config FacetConfig.combine.B2"
 const CB1 = "Facet^define config FacetConfig.combine.B1"

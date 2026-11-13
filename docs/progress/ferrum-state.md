@@ -4,12 +4,15 @@ Where the work is, and nothing else (`docs/workflow/README.md` §5). What it cos
 
 - **Stage:** specification (`docs/workflow/specification.md`), `@codemirror/state` 6.7.6, mirror commit 651084c. Consumer pins: `cm6/view` 6.43.15, `cm6/language` 6.13.1, `cm6/commands` 6.11.1 (`mirrors/mirrors.json`).
 - **Done:** S0 to S4. Verification was closed by the maintainer on 2026-11-12 and confirmed by the consultant on 2026-11-13 (`docs/decisions/method.md`); no further sample is drawn.
-- **Next, in order** (`docs/parity/ferrum-state/plan.md` "Specification: what remains"; step A was rewritten after the pilot, 61604d3):
-  1. A4 (`facet`): converted and uncommitted; Q58 is decided (245515f, `docs/decisions/ferrum-state.md`), and the check now fails for it on 37 fixtures that give `out` a value of a `data` step. The A4 worker is resumed with that decision. A2 and A3 are merged.
-  2. A5 (`state`, 550,000) after A4 is merged. When A ends: remove `raw/fixture-calls.jsonl` and its count from `tools/spec_check.py` (`plan.md`, step A "For every unit").
-  3. Step B: the 33 sites of `raw/coverage.jsonl`.
-  4. Step C: S5 Decision (consultant): started while A2 to A4 run; it is called again when A ends (the kinds of every op in `raw/fixture-ops.jsonl`) and after B.
-  5. S6: review, report for the maintainer, a new session for the implementation stage.
+- **Next, in order** (`docs/parity/ferrum-state/plan.md` "Specification: what remains"):
+  1. A5 (`state`, budget 550,000): one `spec-auditor` at `medium` (card: `docs/parity/ferrum-state/cards/spec-auditor.md`); it may add forms to `oracle/cm6/facet/interp.ts`, so the check runs on `--chunk state --chunk facet`, against c2d1fca. A2, A3 and A4 are merged.
+  2. When A ends: remove `raw/fixture-calls.jsonl` and its count from `tools/spec_check.py`; gather with a tool the three facts the consultant asked for (below); call the consultant (what the replayer does with each op not only `api`, the fixture lists of the rows of `raw/decisions.jsonl` with `fixtures_to_list` true, E7).
+  3. Step B: the 33 sites of `raw/coverage.jsonl`. Then the consultant again: the "Implementation" section of `plan.md` and the approval of the specification.
+  4. S6: review, report for the maintainer, a new session for the implementation stage.
+- **Facts the consultant asked for at the end of step A** (by a tool, not a reading):
+  1. per chunk and op whose kinds are not only `api`: which output fields hold an identity or layout value (`src`, `same`, chunk indexes);
+  2. for each row of `raw/decisions.jsonl` with `fixtures_to_list` true: the fixture ids whose input matches the row's condition;
+  3. the 47 implicit `TypeError` rows of `raw/throws.jsonl` classified: excluded by D12, does not compile, or Ferrum's own panic.
 - **Facts for the consultant at its next review** (A1, done by the orchestrator, 384e7ae):
   - `tools/cm6/program.ts` registers `same`, `allSame` and `sameItems` with the kinds `harness` and `identity` (they compare with `===`); `plan.md` lists them among the ops that touch no cm6 value.
   - In `map {over, as, do}`, `as` names the element's variable, so a `map` used as a step stores no result under `as`.
@@ -26,6 +29,15 @@ Where the work is, and nothing else (`docs/workflow/README.md` §5). What it cos
   - Four fixtures of `oracle/cm6/text/s4-fix6.ts` keep the output `{cases, agree, perDoc, mismatches}`, which compares cm6 with a flat restatement of `RawTextCursor` and `PartialTextCursor` and with the slice rule; those models are now inside the `check.*` ops, so a replayer has to implement them.
   - Values the generators used to describe as rules (grid positions, `iterRange` pairs, line numbers, the columns of the large `gen-column` case) are now computed by the generator and written as data.
   - The worker's Write tool turned `\uXXXX` escapes into literal characters (a U+2028 in a comment broke a parse; three U+2028 data strings became spaces); it restored them from the baseline and compared every input string with c2d1fca.
-- **Blocked:** A5 waits on the merge of A4. Drafts for the maintainer: see the consultant's report of step C when it ends.
+- **Facts for the consultant from A4** (`facet`, 234,910 tokens against 200,000; four runs of the check, two of them failing only on Q58; interrupted once by the usage limit):
+  - 36 labels remain (`built` 12, `update` 12, `defined` 8, `created` 3, `wrapped ok` 1). F7180 no longer gives `out` the defaults object written in the input: its last entry is `combineConfig([], d)`, a copy cm6 makes, with the same content.
+  - The scenario key `steps` was renamed `updates`: a bare expression with a `steps` array is read by `tools/cm6/program.ts` as a program.
+  - `oracle/cm6/facet/interp.ts` exports `Scope` and `buildExtension` for chunk `state`.
+  - Each chunk met gaps of the language and filled them with harness ops of its own: `text` has `capture`, `block`, `list`, `record`, `let`, `ints`, `sum`, `floor`, `ceil`, `div`, `mod` and more; `facet` has `data`, `list`, `set`, `isArray`; `list` exists in both, written separately. The card for A5 names them for reuse; nothing was added to `tools/cm6/program.ts` by a worker.
+- **Blocked:** nothing in the specification stage. **Drafts waiting for the maintainer** (`dev/maintainer/drafts/`, written by the consultant at c6f4a53; none blocks steps A, B or the approval; together they block the start of the implementation):
+  - `d1-unidade-de-posicao.md` (D1): blocks Q41, `design.md` §2, every position signature, the replayer's position mapping.
+  - `d2-modelo-de-texto.md` (D2): blocks Q8, Q42, Q54, `design.md` §4.
+  - `d5-comando-de-estado.md` (D5): blocks Q43, `design.md` §7, item `state.cm6.035`.
+  - `d6-posse-e-threads.md` (D6): blocks Q44, `design.md` §6.
 - **Read before acting:** `docs/workflow/README.md` whole; `docs/workflow/specification.md` §5 item 3 and §8; the plan section named above; `tools/README.md`.
 - **Set up a session:** `python3 .claude/skills/mirrors/fetch_mirrors.py` if `mirrors/cm6/` is missing; `python3 tools/cm6/setup_harness.py state` if `.harness/state/` is missing; then `python3 tools/spec_check.py ferrum-state` must end with "checks passed".
