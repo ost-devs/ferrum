@@ -16,6 +16,7 @@
 {"chunk": "text", "key": "expr", "text": "\"findColumn(string, col, tabSize, strict)\"", "other_input_keys": ["col", "note", "strict", "string", "tabSize"], "fixtures": 3, "first": "F0442"}
 {"chunk": "text", "key": "expr", "text": "\"findColumn(string, col, tabSize, strict)\"", "other_input_keys": ["col", "strict", "string", "tabSize"], "fixtures": 14, "first": "F0443"}
 {"chunk": "text", "key": "expr", "text": "\"findColumn(string, col, tabSize)\"", "other_input_keys": ["col", "note", "string", "tabSize"], "fixtures": 11, "first": "F0473"}
+{"chunk": "text", "key": "expr", "text": "\"CharCategory\"", "other_input_keys": [], "fixtures": 1, "first": "F0600"}
 {"chunk": "text", "key": "expr", "text": "\"CharCategory[EditorState.create().charCategorizer(N)(char)]\"", "other_input_keys": ["char", "engine", "note"], "fixtures": 41, "first": "F0601"}
 {"chunk": "text", "key": "expr", "text": "\"CharCategory[EditorState.create({extensions: EditorState.languageData.of(() => [{wordChars}])}).charCategorizer(N)(char)]\"", "other_input_keys": ["char", "engine", "note", "wordChars"], "fixtures": 9, "first": "F0603"}
 {"chunk": "text", "key": "expr", "text": "\"CharCategory[EditorState.create().charCategorizer(N)(char)]\"", "other_input_keys": ["char", "engine"], "fixtures": 35, "first": "F0607"}
@@ -67,6 +68,10 @@
 {"chunk": "text", "key": "expr", "text": "\"a = [\\\"ab\\\"]; t = Text.of(a); a[N] = \\\"abcdef\\\"; a.push(\\\"zz\\\"); t.length, t.lines, t.toString(), t.lineAt(N), t.toJSON()\"", "other_input_keys": ["lines"], "fixtures": 1, "first": "F0887"}
 {"chunk": "text", "key": "expr", "text": "\"a = new Array(N).fill(\\\"ab\\\"); t = Text.of(a); a[N] = \\\"abcdef\\\"; t.line(N).text; t.length\"", "other_input_keys": ["lines", "note"], "fixtures": 1, "first": "F0888"}
 {"chunk": "text", "key": "expr", "text": "\"j = t.toJSON(); j[N] = \\\"zzz\\\" (the array is a copy); t.toString()\"", "other_input_keys": ["doc"], "fixtures": 1, "first": "F0889"}
+{"chunk": "text", "key": "expr", "text": "\"doc.length\"", "other_input_keys": ["doc"], "fixtures": 7, "first": "F0890"}
+{"chunk": "text", "key": "expr", "text": "\"doc.length\"", "other_input_keys": ["recipe"], "fixtures": 1, "first": "F0897"}
+{"chunk": "text", "key": "expr", "text": "\"doc.lines\"", "other_input_keys": ["doc"], "fixtures": 5, "first": "F0898"}
+{"chunk": "text", "key": "expr", "text": "\"doc.lines\"", "other_input_keys": ["recipe"], "fixtures": 1, "first": "F0903"}
 {"chunk": "text", "key": "expr", "text": "\"doc.lineAt(pos)\"", "other_input_keys": ["doc", "pos"], "fixtures": 14, "first": "F0904"}
 {"chunk": "text", "key": "expr", "text": "\"doc.lineAt(pos) for every pos N..length\"", "other_input_keys": ["doc"], "fixtures": 3, "first": "F0909"}
 {"chunk": "text", "key": "expr", "text": "\"doc.lineAt(pos)\"", "other_input_keys": ["doc", "note", "pos"], "fixtures": 2, "first": "F0912"}
@@ -123,6 +128,7 @@
 {"chunk": "text", "key": "expr", "text": "\"Text.of(lines) === Text.empty\"", "other_input_keys": ["lines"], "fixtures": 1, "first": "F1073"}
 {"chunk": "text", "key": "expr", "text": "\"Text.of(lines) === Text.empty; length; lines\"", "other_input_keys": ["lines"], "fixtures": 1, "first": "F1074"}
 {"chunk": "text", "key": "expr", "text": "\"children; lines; length\"", "other_input_keys": ["recipe"], "fixtures": 3, "first": "F1075"}
+{"chunk": "text", "key": "expr", "text": "\"shape\"", "other_input_keys": ["recipe"], "fixtures": 4, "first": "F1078"}
 {"chunk": "text", "key": "expr", "text": "\"Text.of(lines): lines, length, toString, line(N)\"", "other_input_keys": ["lines"], "fixtures": 1, "first": "F1081"}
 {"chunk": "text", "key": "expr", "text": "\"Text.of(lines): lines, length\"", "other_input_keys": ["lines"], "fixtures": 1, "first": "F1082"}
 {"chunk": "text", "key": "expr", "text": "\"Text.empty: length, lines, children, toString, toJSON\"", "other_input_keys": [], "fixtures": 1, "first": "F1083"}
@@ -151,6 +157,7 @@
 {"chunk": "text", "key": "expr", "text": "\"at = Math.floor(docN.length / N); d = docN, then ten times d = d.replace(at, at, Text.of([\\\"abc\\\".repeat(N)])); at; depth(d); ok: d.toString() == textN.slice(N, at) + \\\"abc\\\".repeat(N) + textN.slice(at)\"", "other_input_keys": ["recipe", "test"], "fixtures": 1, "first": "F5001"}
 {"chunk": "text", "key": "expr", "text": "\"d = docN.replace(N, textN.length - N, Text.empty); depth(d), d.length, d.toString()\"", "other_input_keys": ["recipe", "test"], "fixtures": 1, "first": "F5002"}
 {"chunk": "text", "key": "expr", "text": "\"d = Text.of([\\\"?\\\" + line].concat(lines.slice(N))); d.length, textN.length + N\"", "other_input_keys": ["recipe", "test"], "fixtures": 1, "first": "F5003"}
+{"chunk": "text", "key": "expr", "text": "\"docN.children[N].length\"", "other_input_keys": ["recipe", "test"], "fixtures": 1, "first": "F5004"}
 {"chunk": "text", "key": "expr", "text": "\"slice: doc.slice(N, N).toString(); length: doc.length; str: the N lines joined with \\\"\\\\n\\\", sliced N..N (the string model)\"", "other_input_keys": ["recipe", "test"], "fixtures": 1, "first": "F5005"}
 {"chunk": "text", "key": "expr", "text": "\"number of positions i = N, N, ... < docN.length; number of them with i % N == N (line ends)\"", "other_input_keys": ["recipe", "test"], "fixtures": 1, "first": "F5006"}
 {"chunk": "text", "key": "expr", "text": "\"number of line numbers i = N, N, ... < docN.lines\"", "other_input_keys": ["recipe", "test"], "fixtures": 1, "first": "F5007"}
@@ -749,8 +756,7 @@
 {"chunk": "rangeset", "key": "op", "text": "\"calls of RangeSet.compare(old, new, ChangeSet.of(textDiff.spec, textDiff.length) (ChangeSet.empty(textDiff.length) when spec is null), cmpRec comparator)\"", "other_input_keys": ["name", "new", "old", "textDiff"], "fixtures": 13, "first": "F0178"}
 {"chunk": "rangeset", "key": "ops", "text": "[\"withBound: calls of RangeSet.compare(old, new, ChangeSet.of(textDiff.spec, textDiff.length) (ChangeSet.empty(textDiff.length) when spec is null), cmpRec comparator)\", \"withoutBound: calls of RangeSet.compare(old, new, ChangeSet.of(textDiff.spec, textDiff.length) (ChangeSet.empty(textDiff.length) when spec is null), cmpRec comparator), the comparator without boundChange\"]", "other_input_keys": ["name", "new", "old", "textDiff"], "fixtures": 5, "first": "F0191"}
 {"chunk": "rangeset", "key": "op", "text": "\"RangeSet.compare(old, new, ChangeSet.empty(textDiff.length), comparator with compareRange (records and keeps its arrays) and an empty comparePoint, no boundChange); atCall: [from, to, a, b] read at each call; afterReturn: the kept [a, b] read after compare returns; sameArrayEveryCall: every kept a is the first call's a\"", "other_input_keys": ["new", "old", "textDiff"], "fixtures": 1, "first": "F0196"}
-{"chunk": "rangeset", "key": "op", "text": "\"RangeSet.eq(old, new, from, to), from and to omitted when \\\"default\\\"\"", "other_input_keys": ["from", "name", "new", "old", "question", "to"], "fixtures": 3, "first": "F0197"}
-{"chunk": "rangeset", "key": "op", "text": "\"RangeSet.eq(old, new, from, to), from and to omitted when \\\"default\\\"\"", "other_input_keys": ["from", "name", "new", "old", "to"], "fixtures": 10, "first": "F0200"}
+{"chunk": "rangeset", "key": "op", "text": "\"RangeSet.eq(old, new, from, to), from and to omitted when \\\"default\\\"\"", "other_input_keys": ["from", "name", "new", "old", "question", "to"], "fixtures": 13, "first": "F0197"}
 {"chunk": "rangeset", "key": "op", "text": "\"s = of(N,N,p); RangeSet.eq([s, of(N,N,m)], [of(N,N,n), s]) and RangeSet.eq([s, RangeSet.empty], [s])\"", "other_input_keys": [], "fixtures": 1, "first": "F0210"}
 {"chunk": "rangeset", "key": "ops", "text": "[\"eq(setsN, setsN) defaults\", \"eq(setsN, setsN) defaults\"]", "other_input_keys": ["question", "sets"], "fixtures": 1, "first": "F0211"}
 {"chunk": "rangeset", "key": "op", "text": "\"RangeSet.spans(sets, from, to, spansRec iterator): calls, return value (ret)\"", "other_input_keys": ["from", "name", "sets", "to"], "fixtures": 14, "first": "F0212"}

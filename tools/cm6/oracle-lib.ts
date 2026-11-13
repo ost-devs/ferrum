@@ -1,4 +1,4 @@
-// Shared helpers for cm6 probes and generators (docs/workflow/specification.md §5).
+// Shared helpers for cm6 probes and generators (docs/workflow/specification.md §4, §5).
 // Imported as "@harness/lib" (mapped by tools/cm6/setup_harness.py). Keep it small and stable: every audit uses it.
 import {writeFileSync, appendFileSync} from "node:fs"
 import {spawnSync} from "node:child_process"
@@ -11,7 +11,18 @@ export function rng(seed: number) {
   return {next, int: (n: number) => Math.floor(next() * n), pick: <T>(xs: readonly T[]) => xs[Math.floor(next() * xs.length)], chance: (p: number) => next() < p}
 }
 
-/** Strings that Rust can hold: lone surrogates become {utf16: [code units]} (docs/workflow/specification.md §5). */
+// The one encoding of the values JSON cannot hold (docs/workflow/specification.md §4, `fixtures/<chunk>.jsonl`).
+// It is written here and nowhere else: `fixtureWriter` applies `encode` to every input and output, and an
+// interpreter reads its input back with `decode`. A generator never writes a marker of its own.
+//   a string with a lone surrogate          {"utf16": [every code unit]}
+//   NaN, Infinity, -Infinity, -0            {"js_number": "NaN" | "Infinity" | "-Infinity" | "-0"}
+//   undefined (a value, an object property, an array element or hole)   {"js_undefined": true}
+//   a function value                        {"js_function": true}
+//   a value that differs between runs       {"js_unstable": "<what>"}, written by the generator with `unstable`
+// So `null` always means null, a string is always that string, and no property is dropped silently. An object with
+// exactly one of these keys is read as the encoded value; cm6 values recorded in fixtures have no such property.
+
+/** A string as JSON and Rust can hold it: one with a lone surrogate becomes {utf16: [every code unit]}. */
 export function encodeStr(s: string): string | {utf16: number[]} {
   for (let i = 0; i < s.length; i++) {
     const c = s.charCodeAt(i)
@@ -21,25 +32,52 @@ export function encodeStr(s: string): string | {utf16: number[]} {
   return s
 }
 
-/** Deep-encode every string of a value with encodeStr. */
+/** Deep-encode a value for a fixture (the table above). An object with a `toJSON` method is encoded as what that
+ * method returns, as JSON.stringify would write it. Encoding an encoded value gives the same value. */
 export function encode(v: any): any {
+  if (v === undefined) return {js_undefined: true}
+  if (v === null || typeof v === "boolean") return v
+  if (typeof v === "number") return Object.is(v, -0) ? {js_number: "-0"} : Number.isFinite(v) ? v : {js_number: String(v)}
   if (typeof v === "string") return encodeStr(v)
-  if (Array.isArray(v)) return v.map(encode)
-  if (v && typeof v === "object") return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, encode(x)]))
+  if (typeof v === "function") return {js_function: true}
+  if (typeof v !== "object") throw new Error(`encode: no encoding for a ${typeof v}`)
+  if (typeof v.toJSON === "function") return encode(v.toJSON())
+  if (Array.isArray(v)) return Array.from(v, encode)  // Array.from visits holes, map would skip them
+  return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, encode(x)]))
+}
+
+/** The inverse of `encode`, for an interpreter reading a fixture input: strings, numbers and undefined come back as
+ * JavaScript values. {js_function} and {js_unstable} stay as they are: the interpreter's op says what stands there. */
+export function decode(v: any): any {
+  if (Array.isArray(v)) return v.map(decode)
+  if (v && typeof v === "object") {
+    const keys = Object.keys(v)
+    if (keys.length == 1) {
+      if (keys[0] == "utf16" && Array.isArray(v.utf16)) return String.fromCharCode(...v.utf16)
+      if (keys[0] == "js_number") return Number(v.js_number)
+      if (keys[0] == "js_undefined") return undefined
+      if (keys[0] == "js_function" || keys[0] == "js_unstable") return v
+    }
+    return Object.fromEntries(keys.map(k => [k, decode(v[k])]))
+  }
   return v
 }
+
+/** The recorded form of a value that differs between runs (the wall clock); `what` names it. */
+export function unstable(what: string): {js_unstable: string} { return {js_unstable: what} }
 
 /** Run f and record either its result or the thrown error as the output (exceptions are outputs). */
 export function capture<T>(f: () => T): {ok: any} | {error: {name: string, message: string}} {
   try { return {ok: encode(f())} } catch (e: any) { return {error: {name: e?.name ?? "Error", message: String(e?.message ?? e)}} }
 }
 
-/** Append fixtures as JSON Lines: {id, item_id, behaviors, input, output, encoding}. */
+/** Append fixtures as JSON Lines: {id, item_id, behaviors, input, output, encoding}. Input and output are written
+ * through `encode`; `encoding` names the unit of the positions in them (UTF-16 code units, as cm6 counts). */
 export function fixtureWriter(path: string, fresh = true) {
   if (fresh) writeFileSync(path, "")
   let n = 0
   return (item_id: string, behaviors: string[], input: any, output: any, id?: string) => {
-    n++; appendFileSync(path, JSON.stringify({id: id ?? `F${String(n).padStart(4, "0")}`, item_id, behaviors, input: encode(input), output, encoding: "utf16"}) + "\n")
+    n++; appendFileSync(path, JSON.stringify({id: id ?? `F${String(n).padStart(4, "0")}`, item_id, behaviors, input: encode(input), output: encode(output), encoding: "utf16"}) + "\n")
   }
 }
 

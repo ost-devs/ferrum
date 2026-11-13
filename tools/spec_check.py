@@ -15,13 +15,71 @@ the compiled code back to the source: read the function before treating it as a 
 
 With --same-outputs-as <git ref>, every fixture file is also compared with its version at that commit: the same ids,
 and for each id the same item, behaviors and output. It is the check of a change that may rewrite inputs only.
+Outputs are compared as values, so that a chunk may move to the one encoding of tools/cm6/oracle-lib.ts
+(docs/workflow/specification.md §4) in the same change. The forms a chunk used before are read as the value they
+stood for ({"num": x} as {"js_number": x}, "<undefined>" as undefined, "<NaN>" as NaN, "<wall-clock>" as an
+unstable value), and a value the old JSON could not hold may now be exact: null where the output now has undefined,
+NaN, an infinity or a function; 0 where it now has -0; no property where it now has an undefined or function one.
+The count of such values is printed per chunk ("now exact"); any other difference fails.
+
+It also writes raw/fixture-calls.jsonl: the fixture inputs that still record their call as JavaScript text for a
+reader instead of data for the chunk's interpreter (§5 item 3), grouped by text with digits replaced by N. Such an
+input has a string under `expr`, `call` or `code`, or a string with a parenthesis, a space or `=` under `op`, `ops`
+or `calls`. And it prints how many values of each chunk are still written in a form older than the one encoding.
 
 Needs the harness (python3 tools/cm6/setup_harness.py <package>) and npx (tsx, c8). Exit status 1 when a check
 fails; an unreached branch is a fact to judge, not a failure.
 """
-import collections, json, os, shutil, subprocess, sys
+import collections, json, os, re, shutil, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+OLD_STRINGS = {"<undefined>": {"js_undefined": True}, "<NaN>": {"js_number": "NaN"}, "<wall-clock>": {"js_unstable": "wall-clock"},
+               "<omitted>": {"js_undefined": True}}
+TYPED = ("utf16", "js_number", "js_undefined", "js_function", "js_unstable")
+
+
+def typed(v):
+    """The key of an encoded value ({"js_number": ...}), or None."""
+    return next(iter(v)) if isinstance(v, dict) and len(v) == 1 and next(iter(v)) in TYPED else None
+
+
+def old_forms(v, count):
+    """v with every pre-§4 form replaced by the one encoding; count[form] += 1 for each one found."""
+    if isinstance(v, str) and v in OLD_STRINGS:
+        count[v] += 1; return OLD_STRINGS[v]
+    if isinstance(v, list): return [old_forms(x, count) for x in v]
+    if isinstance(v, dict):
+        if len(v) == 1 and "num" in v and isinstance(v["num"], str):
+            count['{"num"}'] += 1; return {"js_number": v["num"]}
+        return {k: old_forms(x, count) for k, x in v.items()}
+    return v
+
+
+def same_value(was, now, exact):
+    """True when output `now` is `was`, or is `was` with values the old JSON could not hold made exact (counted)."""
+    t = typed(now)
+    if t == "js_unstable": return typed(was) == "js_unstable"
+    if t and was == now: return True
+    if (t in ("js_undefined", "js_function") and was is None) or (t == "js_number" and (
+            (was is None and now[t] in ("NaN", "Infinity", "-Infinity")) or (was == 0 and type(was) is not bool and now[t] == "-0"))):
+        exact[0] += 1; return True
+    if t: return False
+    if isinstance(was, dict) and isinstance(now, dict):
+        for k in set(was) | set(now):
+            if k not in now: return False
+            if k not in was:
+                if typed(now[k]) not in ("js_undefined", "js_function"): return False
+                exact[0] += 1
+            elif not same_value(was[k], now[k], exact): return False
+        return True
+    if isinstance(was, list) and isinstance(now, list):
+        return len(was) == len(now) and all(same_value(a, b, exact) for a, b in zip(was, now))
+    return type(was) is type(now) and was == now
+
+
+def js_text(key, v):
+    if isinstance(v, list): return any(js_text(key, x) for x in v)
+    return isinstance(v, str) and (key in ("expr", "call", "code") or bool(re.search(r"[(\s=]", v)))
 
 
 def rows(path):
@@ -87,10 +145,29 @@ def main():
             old = subprocess.run(["git", "show", f"{ref}:{rel}"], cwd=ROOT, capture_output=True).stdout.decode("utf-8")
             was = {r["id"]: r for r in (json.loads(l) for l in old.split("\n") if l.strip())}
             now = {r["id"]: r for r in fx[c]}
+            exact, n = [0], collections.Counter()
             diff = [i for i in sorted(set(was) | set(now)) if i not in was or i not in now
-                    or any(was[i].get(k) != now[i].get(k) for k in ("item_id", "behaviors", "output"))]
-            print(f"outputs of {c} against {ref}: {len(now)} fixtures, {len(diff)} differ")
+                    or any(was[i].get(k) != now[i].get(k) for k in ("item_id", "behaviors"))
+                    or not same_value(old_forms(was[i].get("output"), n), old_forms(now[i].get("output"), n), exact)]
+            print(f"outputs of {c} against {ref}: {len(now)} fixtures, {len(diff)} differ, {exact[0]} values now exact")
             if diff: bad.append(f"fixtures/{c}.jsonl differs from {ref} in id, item, behaviors or output: {diff[:10]}")
+
+    calls = []
+    for c, v in fx.items():
+        groups, n = collections.OrderedDict(), collections.Counter()
+        for r in v:
+            old_forms([r["input"], r["output"]], n)
+            i = r["input"] if isinstance(r["input"], dict) else {}
+            for k in ("expr", "call", "code", "op", "ops", "calls"):
+                if k in i and js_text(k, i[k]):
+                    text = re.sub(r"\d+", "N", json.dumps(i[k], ensure_ascii=False))
+                    groups.setdefault((k, text, tuple(sorted(x for x in i if x != k))), []).append(r["id"])
+        calls += [{"chunk": c, "key": k, "text": t, "other_input_keys": list(o), "fixtures": len(ids), "first": ids[0]}
+                  for (k, t, o), ids in groups.items()]
+        left = len({i for ids in groups.values() for i in ids})
+        print(f"inputs of {c}: {left} fixtures record their call as JavaScript text; older encodings: {dict(n) or 'none'}")
+    with open(os.path.join(base, "raw", "fixture-calls.jsonl"), "w", encoding="utf-8") as f:
+        for r in calls: f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
     if run:
         work = os.path.join(ROOT, ".scratch", "spec-check")
