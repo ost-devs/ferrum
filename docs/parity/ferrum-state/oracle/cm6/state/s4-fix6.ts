@@ -6,14 +6,13 @@
 // Run order for the chunk: s2-run.ts (truncates the file), s4-fix.ts, s4-tags.ts, s4-m7.ts, s4-fix4.ts, s4-fix5.ts,
 // then this file. From the repository root:
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/state/s4-fix6.ts
-// Not a generator in the §5 item 5 sense: two hand-picked cases, no randomness. The output records, for a throw, the
-// first mirrors/cm6/state/src frame of the stack (the throw site).
+// Not a generator in the §5 item 5 sense: two hand-picked cases, no randomness. The output records a throw as {name, message}.
 import {writer, dropRange, $, op, R, set, rec, block, cond, create, update, get, chJSON, chOf} from "./s2-lib"
 
 const FIRST = 7100, LAST = 7199
 dropRange(FIRST, LAST)
 const fx = writer(FIRST)
-const site = (d: any) => op("captureSite", {do: d})
+const site = (d: any) => op("capture", {do: d})
 
 for (let sequential of [true, false]) {
   let id = fx("state.cm6.098", ["state.Transaction.newDoc.B3"],

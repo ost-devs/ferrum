@@ -49,10 +49,6 @@
 //   block {steps: [step], result}    [runs the steps (their variables stay set); the variable `result` after them]
 //   capture {do: expr}               [{ok: value} or, when `do` throws, {error: {name: e.name ("Error" when absent),
 //                                     message}}; on a throw, the rest of `do` counts as read]
-//   captureSite {do: expr}  {harness, internal}   [as capture, and an error also has `site`: the first frame of the
-//                                     error's stack in a file of the package's src directory, written
-//                                     "mirrors/cm6/state/src/<file>.ts:<line>" ("" when none); it depends on the
-//                                     package's source layout]
 //   cond {test: expr, then: arg, else: arg}   [the value of `then` when `test` is truthy, else of `else`; only the chosen
 //                                     branch is evaluated, the other is read]
 //   add {a: arg, b: arg} [a + b] | sub {a, b} [a - b] | mul {a, b} [a * b] | div {a, b} [a / b] | floor {of: arg}
@@ -248,8 +244,6 @@ function spec(p: Program, s: any) {
   if (isExpr(s)) return p.ev(s)
   return Object.fromEntries(Object.keys(s).map(k => [k, A(p, s[k])]))
 }
-const site = (e: any) => (String(e?.stack ?? "").split("\n").find(l => /state\/src\/\w+\.ts:\d+/.test(l)) ?? "")
-  .replace(/.*\/state\/src\/(\w+\.ts:\d+).*/, "mirrors/cm6/state/src/$1")
 
 // serializers
 const jRange = (r: any) => r == null ? r : {anchor: r.anchor, head: r.head, from: r.from, to: r.to, assoc: r.assoc,
@@ -300,9 +294,6 @@ o("record", H, (a, p) => Object.fromEntries(Object.keys(a.of).map(k => [k, A(p, 
 o("merge", H, (a, p) => Object.assign({}, ...p.evs(a.of)))
 o("block", H, (a, p) => { p.steps(a.steps); return p.get(a.result) })
 o("capture", H, (a, p) => { try { return {ok: p.ev(a.do)} } catch (e: any) { markRead(a.do); return {error: err(e)} } })
-o("captureSite", ["harness", "internal"], (a, p) => {
-  try { return {ok: p.ev(a.do)} } catch (e: any) { markRead(a.do); return {error: {...err(e), site: site(e)}} }
-})
 o("cond", H, (a, p) => { if (p.ev(a.test)) { markRead(a.else); return A(p, a.then) } markRead(a.then); return A(p, a.else) })
 o("add", H, (a, p) => A(p, a.a) + A(p, a.b))
 o("sub", H, (a, p) => A(p, a.a) - A(p, a.b))
