@@ -8,7 +8,7 @@ Where the work is, and nothing else (`docs/workflow/README.md` §5). What it cos
   1. A2 (`rangeset` kinds and chunk `change`, budget 100,000), A3 (`text`, 400,000), A4 (`facet`, 200,000): running together, one `spec-auditor` each at `medium` (card: `docs/parity/ferrum-state/cards/spec-auditor.md`). Check before merging each: `python3 tools/spec_check.py ferrum-state --chunk <chunk> --same-outputs-as c2d1fca`.
   2. A5 (`state`, 550,000) after A4 is merged. When A ends: remove `raw/fixture-calls.jsonl` and its count from `tools/spec_check.py` (`plan.md`, step A "For every unit").
   3. Step B: the 33 sites of `raw/coverage.jsonl`.
-  4. Step C: S5 Decision (consultant). It may start while step A's later chunks run.
+  4. Step C: S5 Decision (consultant): started while A2 to A4 run; it is called again when A ends (the kinds of every op in `raw/fixture-ops.jsonl`) and after B.
   5. S6: review, report for the maintainer, a new session for the implementation stage.
 - **Facts for the consultant at its next review** (A1, done by the orchestrator, 384e7ae):
   - `tools/cm6/program.ts` registers `same`, `allSame` and `sameItems` with the kinds `harness` and `identity` (they compare with `===`); `plan.md` lists them among the ops that touch no cm6 value.
