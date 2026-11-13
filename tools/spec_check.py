@@ -22,6 +22,24 @@ unstable value), and a value the old JSON could not hold may now be exact: null 
 NaN, an infinity or a function; 0 where it now has -0; no property where it now has an undefined or function one.
 The count of such values is printed per chunk ("now exact"); any other difference fails.
 
+Without --no-run it also replays every fixture (tools/cm6/replay.ts): the recorded input, decoded and run through
+the `lang` its chunk's oracle/cm6/<chunk>/interp.ts exports (tools/cm6/program.ts) while every key read is recorded.
+One line per chunk; each count but the first must be zero:
+  N fixtures                               replayed
+  outputs differ                           the recorded input does not give the recorded output
+  have keys nothing read                   a key of the input, outside the descriptive keys the interpreter names,
+                                           that neither the interpreter nor cm6 read: it says something the run
+                                           does not do (the FAIL line lists the paths, array indexes as [])
+  hold call text under a descriptive key   a descriptive key named expr, call, code, op, ops or calls with text
+  have a literal in out                    a leaf of the `out` template that is not {"$": name}: an expected value
+                                           written in the input
+  run no op of kind api or internal        the fixture shows nothing of cm6
+  ops without kinds                        an op registered with no kind
+  not named in the header                  an op the header of interp.ts does not name
+  files with eval or Function              in the chunk's oracle directory
+A chunk with no interpreter in the language fails with "not run". It writes raw/fixture-ops.jsonl: per chunk and op
+that ran, its kinds, the number of fixtures that ran it and their behavior ids.
+
 It also writes raw/fixture-calls.jsonl: the fixture inputs that still record their call as JavaScript text for a
 reader instead of data for the chunk's interpreter (§5 item 3), grouped by text with digits replaced by N. Such an
 input has a string under `expr`, `call` or `code`, or a string with a parenthesis, a space or `=` under `op`, `ops`
@@ -170,6 +188,34 @@ def main():
         for r in calls: f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
     if run:
+        todo = [c for c in chunks if not only or c in only]
+        out = subprocess.run(["npx", "--yes", "tsx", "--tsconfig", os.path.join(".harness", pkg, "tsconfig.json"),
+                              os.path.join("tools", "cm6", "replay.ts"), crate, *todo],
+                             cwd=ROOT, capture_output=True, text=True, timeout=3600)
+        reps = {}
+        for l in out.stdout.split("\n"):
+            if l.startswith("{"): r = json.loads(l); reps[r["chunk"]] = r
+        ops_path = os.path.join(base, "raw", "fixture-ops.jsonl")
+        ops = [r for r in (rows(ops_path) if os.path.exists(ops_path) else []) if r["chunk"] in chunks and r["chunk"] not in todo]
+        for c in todo:
+            r = reps.get(c) or {"error": "replay did not report: " + (out.stderr or out.stdout)[-300:]}
+            if "error" in r:
+                print(f"replay of {c}: not run: {r['error']}"); bad.append(f"replay of {c}: {r['error']}"); continue
+            counts = [("differ", "outputs differ"), ("unreadFixtures", "have keys nothing read"), ("descriptiveText", "hold call text under a descriptive key"),
+                      ("literalOut", "have a literal in out"), ("noCm6Op", "run no op of kind api or internal")]
+            n = {k: r[k] if isinstance(r[k], int) else len(r[k]) for k, _ in counts}
+            print(f"replay of {c}: {r['fixtures']} fixtures; " + "; ".join(f"{n[k]} {t}" for k, t in counts)
+                  + f"; ops without kinds {len(r['opsWithoutKinds'])}, not named in the header {len(r['opsNotInHeader'])}; "
+                  + f"files with eval or Function {len(r['evalUse'])}")
+            for k, t in counts:
+                if n[k]: bad.append(f"replay of {c}: {n[k]} fixtures {t}: {dict(sorted(r['unread'].items())[:20]) if k == 'unreadFixtures' else r[k][:10]}")
+            for k, t in (("opsWithoutKinds", "ops without kinds"), ("opsNotInHeader", "ops not named in the header"), ("evalUse", "files with eval or Function")):
+                if r[k]: bad.append(f"replay of {c}: {len(r[k])} {t}: {r[k][:12]}")
+            ops += [{"chunk": c, **o} for o in r["ops"]]
+        order_of = {c: i for i, c in enumerate(chunks)}
+        with open(ops_path, "w", encoding="utf-8") as f:
+            for o in sorted(ops, key=lambda o: (order_of[o["chunk"]], o["op"])): f.write(json.dumps(o, ensure_ascii=False) + "\n")
+
         work = os.path.join(ROOT, ".scratch", "spec-check")
         shutil.rmtree(work, ignore_errors=True); os.makedirs(os.path.join(work, "docs", "parity"))
         shutil.copytree(base, os.path.join(work, "docs", "parity", crate))

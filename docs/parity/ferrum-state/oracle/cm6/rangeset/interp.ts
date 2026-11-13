@@ -4,9 +4,9 @@
 // A Rust replayer mirrors this file op by op. The generators (fixtures.ts, random.ts, s4-tags.ts, s4-fix5.ts) only
 // build inputs; `run` is the one place where cm6 is called.
 //
-// An input is a small program:
+// An input is a program in the language of tools/cm6/program.ts (its header: steps, variables, `if`, the `out`
+// template, the ops that touch no cm6 value, `try`), with two setup keys:
 //   {"values": [value spec], "otherValues"?: [value spec], "steps": [step], "out": template, ...descriptive keys}
-// - `run` reads the input with `decode` (tools/cm6/oracle-lib.ts) first, so {"js_undefined": true} is undefined.
 // - Before the steps run, the eq log (below) is emptied and every value spec is built into one RangeValue object.
 // - Descriptive keys that no op reads: `name`, `case`, `seed`, `question`, `note`.
 //
@@ -24,17 +24,10 @@
 // not there (an otherValues object), null for null/undefined.
 // Eq log: a list of [thisName, otherName], appended by every eq call of a "V" or "W" value.
 //
-// Step: an expression with optional "as": "<name>" (its result is stored in that variable) and optional "if": <expr>
-// (the step runs only when the expression is truthy). Steps run in order; a step that throws makes the whole
-// output {"error": ...} unless it is inside a "try" step.
-// Expression: {"$": "<name>"} reads a variable (an error when it is unset); {"op": "<op>", ...arguments} runs an op.
-// An argument written <expr> below is an expression; other arguments are data.
+// An argument written <expr> below is an expression of the language; other arguments are data.
 // Range list (argument `ranges`, update `add`): an array of triples [from, to, value reference], each built as
 // value.range(from, to) at that point (fresh Range objects), or an <expr> whose value is an array of Range objects.
-// out: a template; each {"$": "<name>"} in it is replaced by the variable's value, arrays and other objects are
-// copied with their members filled the same way. The filled template is the output.
-//
-// Ops (result in brackets; "undefined" = the op returns nothing):
+// Ops of the chunk (result in brackets; "undefined" = the op returns nothing):
 // values and ranges
 //   value {v}                         [the value object]
 //   value.fields {v}                  [{startSide, endSide, point, mapMode, ownKeys: Object.keys(v) without "name"}]
@@ -129,34 +122,14 @@
 //                                      on each read of an index property (a key of decimal digits), adds 1 to
 //                                      hits[label] (starting from 0 when the key is absent) of the object held by the
 //                                      variable named by `hits` (set beforehand, by an `object` step); undefined]
-//   object {}                         [a new empty object {}]
 //   eqlog.take {}                     [a copy of the eq log; the log is then emptied]
 //   eqlog.clear {}                    [empties the eq log; undefined]
 //   eqlog.count {}                    [the number of entries in the eq log]
 // plain values
-//   same {a: expr, b: expr}           [a === b]
-//   all {of: [expr]}                  [true when every expression's value is truthy (evaluated left to right,
-//                                      stopping at the first falsy one), else false]
-//   not {of: expr}                    [!value]
-//   count {of: expr}                  [value.length]
-//   slice {of: expr, start, end?}     [value.slice(start) or value.slice(start, end)]
-//   item {of: expr, index}            [value[index]]
-//   column {of: expr, index}          [value.map(x => x[index])]
-//   allSame {of: expr}                [value.every(x => x === value[0])]
-//   sameItems {a: expr, b: expr}      [a.every((x, i) => x === b[i])]
-//   copy {of: expr}                   [value.slice()]
-//   lengths {of: expr}                [value.map(x => x.length)]
 //   indexes {of: expr}                [the value with every RangeValue in it (at any array depth) replaced by its index]
-//   jsonEqual {a: expr, b: expr}      [JSON.stringify(a) == JSON.stringify(b)]
-//   try {steps: [step], mode, result?}    runs the steps (their variables stay set); r = the variable `result` after
-//       them (undefined when `result` is absent). On a throw, e is the thrown error. The op's result by mode:
-//         "okOrError":        "ok" | {error: e.constructor.name, message: e.message}
-//         "noErrorOrMessage": "no error" | {error: e.message}
-//         "okValueOrError":   {ok: r, or "returned undefined" when r is undefined} | {error: e.constructor.name,
-//                             message: e.message}
-//         "okOrMessage":      "ok" | e.message
+// A callback spec (`filter`, `iterator`, `comparator`, `stop`) is read whole when the callback is built.
 import {RangeValue, RangeSet, Range, RangeSetBuilder, ChangeSet} from "@codemirror/state"
-import {capture, decode} from "@harness/lib"
+import {Language, Program, markRead} from "@harness/program"
 
 const eqLog: [any, any][] = []
 
@@ -191,8 +164,7 @@ const mkValue = (s: Spec): RangeValue => s.cls == "W" ? new W(s) : s.cls == "Id"
 class Prog {
   values: RangeValue[]
   others: RangeValue[]
-  vars: Record<string, any> = Object.create(null)
-  constructor(inp: any) {
+  constructor(readonly p: Program, inp: any) {
     this.values = (inp.values ?? []).map(mkValue)
     this.others = (inp.otherValues ?? []).map(mkValue)
   }
@@ -204,36 +176,7 @@ class Prog {
     return v
   }
   ranges(x: any): Range<any>[] {
-    return Array.isArray(x) ? x.map(([f, t, v]: any[]) => this.val(v).range(f, t)) : this.ev(x)
-  }
-  ev(x: any): any {
-    if (x && typeof x == "object" && !Array.isArray(x)) {
-      if ("$" in x) {
-        if (!(x.$ in this.vars)) throw new Error("interp: unset variable " + x.$)
-        return this.vars[x.$]
-      }
-      if ("op" in x) return this.op(x)
-    }
-    throw new Error("interp: not an expression: " + JSON.stringify(x))
-  }
-  evs(xs: any[]) { return xs.map(x => this.ev(x)) }
-  steps(steps: any[]) {
-    for (let s of steps) {
-      if ("if" in s && !this.ev(s.if)) continue
-      let r = this.op(s)
-      if (s.as !== undefined) this.vars[s.as] = r
-    }
-  }
-  fill(t: any): any {
-    if (Array.isArray(t)) return t.map(x => this.fill(x))
-    if (t && typeof t == "object") {
-      if ("$" in t && Object.keys(t).length == 1) {
-        if (!(t.$ in this.vars)) throw new Error("interp: unset variable " + t.$)
-        return this.vars[t.$]
-      }
-      return Object.fromEntries(Object.entries(t).map(([k, v]) => [k, this.fill(v)]))
-    }
-    return t
+    return Array.isArray(x) ? x.map(([f, t, v]: any[]) => this.val(v).range(f, t)) : this.p.ev(x)
   }
   dump(set: any) {
     let layers = []
@@ -244,8 +187,9 @@ class Prog {
   }
   filter(f: any) {
     if (!(f && typeof f == "object" && f.fn == "filter")) return f
+    markRead(f)
     let log: any[] | null = null
-    if (f.log !== undefined) log = this.vars[f.log] = []
+    if (f.log !== undefined) log = this.p.vars[f.log] = []
     let k = f.keep, n = 0
     return (from: number, to: number) => {
       if (log) log.push([from, to])
@@ -260,8 +204,9 @@ class Prog {
   }
   spansIterator(it: any) {
     let p = this
+    markRead(it)
     if (it.fn == "spansRecord") {
-      let calls: any[] = this.vars[it.into] = []
+      let calls: any[] = this.p.vars[it.into] = []
       return {
         span(from: number, to: number, active: readonly any[], openStart: number) { calls.push(["span", from, to, p.idxs(active), openStart]) },
         point(from: number, to: number, value: any, active: readonly any[], openStart: number, index: number) {
@@ -269,7 +214,7 @@ class Prog {
       }
     }
     if (it.fn == "spansKeep") {
-      let seen: any[] = this.vars[it.seen] = [], kept: any[] = this.vars[it.kept] = [], point = it.point
+      let seen: any[] = this.p.vars[it.seen] = [], kept: any[] = this.p.vars[it.kept] = [], point = it.point
       return {
         span(from: number, to: number, active: readonly any[], openStart: number) { seen.push([from, to, p.idxs(active), openStart]); kept.push(active) },
         point(from: number, to: number, value: any, active: readonly any[]) { if (point) kept.push(active) }
@@ -279,8 +224,9 @@ class Prog {
   }
   comparator(c: any) {
     let p = this
+    markRead(c)
     if (c.fn == "cmpRecord") {
-      let calls: any[] = this.vars[c.into] = []
+      let calls: any[] = this.p.vars[c.into] = []
       let comp: any = {
         compareRange(from: number, to: number, a: any[], b: any[]) { calls.push(["range", from, to, p.idxs(a), p.idxs(b)]) },
         comparePoint(from: number, to: number, a: any, b: any) { calls.push(["point", from, to, p.idx(a), p.idx(b)]) }
@@ -289,7 +235,7 @@ class Prog {
       return comp
     }
     if (c.fn == "cmpKeep") {
-      let seen: any[] = this.vars[c.seen] = [], kept: any[] = this.vars[c.kept] = []
+      let seen: any[] = this.p.vars[c.seen] = [], kept: any[] = this.p.vars[c.kept] = []
       return {
         compareRange(from: number, to: number, a: any[], b: any[]) { seen.push([from, to, p.idxs(a), p.idxs(b)]); kept.push([a, b]) },
         comparePoint() {}
@@ -317,144 +263,123 @@ class Prog {
       case "value.eq": return this.val(a.v).eq(this.val(a.other))
       case "value.range": return "to" in a ? this.val(a.v).range(a.from, a.to) : this.val(a.v).range(a.from)
       case "ranges": return this.ranges(a.ranges)
-      case "range.fromTo": { let r = this.ev(a.range); return [r.from, r.to] }
-      case "range.value": return this.ev(a.range).value
-      case "range.isRange": return this.ev(a.range) instanceof Range
+      case "range.fromTo": { let r = this.p.ev(a.range); return [r.from, r.to] }
+      case "range.value": return this.p.ev(a.range).value
+      case "range.isRange": return this.p.ev(a.range) instanceof Range
       case "changes.of": return "lineSep" in a ? ChangeSet.of(a.spec, a.length, a.lineSep) : ChangeSet.of(a.spec, a.length)
       case "changes.empty": return ChangeSet.empty(a.length)
-      case "changes.newLength": return this.ev(a.changes).newLength
-      case "changes.touchesRange": return this.ev(a.changes).touchesRange(a.from, a.to)
+      case "changes.newLength": return this.p.ev(a.changes).newLength
+      case "changes.touchesRange": return this.p.ev(a.changes).touchesRange(a.from, a.to)
       case "set.of":
-        if ("range" in a) return RangeSet.of(this.ev(a.range))
+        if ("range" in a) return RangeSet.of(this.p.ev(a.range))
         return "sort" in a ? RangeSet.of(this.ranges(a.ranges), a.sort) : RangeSet.of(this.ranges(a.ranges))
       case "set.empty": return RangeSet.empty
-      case "set.join": return RangeSet.join(this.evs(a.sets))
-      case "set.map": return this.ev(a.set).map(this.ev(a.changes))
+      case "set.join": return RangeSet.join(this.p.evs(a.sets))
+      case "set.map": return this.p.ev(a.set).map(this.p.ev(a.changes))
       case "set.update": {
         let u: any = {}
         for (let k of Object.keys(a.spec)) {
           let v = a.spec[k]
           u[k] = k == "add" ? this.ranges(v) : k == "filter" ? this.filter(v) : v
         }
-        return this.ev(a.set).update(u)
+        return this.p.ev(a.set).update(u)
       }
-      case "set.nextLayer": return this.ev(a.set).nextLayer
+      case "set.nextLayer": return this.p.ev(a.set).nextLayer
       case "set.prop": {
         if (!["size", "length", "maxPoint", "chunkPos", "isEmpty"].includes(a.prop)) throw new Error("interp: bad set prop " + a.prop)
-        return this.ev(a.set)[a.prop]
+        return this.p.ev(a.set)[a.prop]
       }
-      case "set.chunkCount": return this.ev(a.set).chunk.length
-      case "set.chunk": return this.ev(a.set).chunk[a.index]
-      case "set.chunkSources": { let s = this.ev(a.set), o = this.ev(a.in); return s.chunk.map((c: any) => o.chunk.indexOf(c)) }
-      case "set.chunkSizes": return this.ev(a.set).chunk.map((c: any) => c.value.length)
-      case "set.chunkStats": return this.ev(a.set).chunk.map((c: any) => [c.value.length, c.maxPoint])
+      case "set.chunkCount": return this.p.ev(a.set).chunk.length
+      case "set.chunk": return this.p.ev(a.set).chunk[a.index]
+      case "set.chunkSources": { let s = this.p.ev(a.set), o = this.p.ev(a.in); return s.chunk.map((c: any) => o.chunk.indexOf(c)) }
+      case "set.chunkSizes": return this.p.ev(a.set).chunk.map((c: any) => c.value.length)
+      case "set.chunkStats": return this.p.ev(a.set).chunk.map((c: any) => [c.value.length, c.maxPoint])
       case "set.layerSources": {
-        let s = this.ev(a.set), src = this.evs(a.sources), out = []
+        let s = this.p.ev(a.set), src = this.p.evs(a.sources), out = []
         for (let l = s; !l.isEmpty; l = l.nextLayer) out.push(src.findIndex((x: any) => x.chunk[0] === l.chunk[0]))
         return out
       }
-      case "set.dump": return this.dump(this.ev(a.set))
-      case "set.dumpSummary": return this.dump(this.ev(a.set)).map(l => ({maxPoint: l.maxPoint, chunks: l.chunks.map((c: any) => (
+      case "set.dump": return this.dump(this.p.ev(a.set))
+      case "set.dumpSummary": return this.dump(this.p.ev(a.set)).map(l => ({maxPoint: l.maxPoint, chunks: l.chunks.map((c: any) => (
         {pos: c.pos, n: c.v.length, last: [c.from[c.from.length - 1], c.to[c.to.length - 1], c.v[c.v.length - 1]]}))}))
       case "set.list": {
         let out = []
-        for (let it = this.ev(a.set).iter(a.from ?? 0); it.value; it.next()) out.push(this.read(it, a.fields ?? ["from", "to", "index"]))
+        for (let it = this.p.ev(a.set).iter(a.from ?? 0); it.value; it.next()) out.push(this.read(it, a.fields ?? ["from", "to", "index"]))
         return out
       }
       case "set.listMany": {
         let out = []
-        for (let it = RangeSet.iter(this.evs(a.sets), a.from ?? 0); it.value; it.next()) out.push([it.from, it.to, this.idx(it.value), it.rank])
+        for (let it = RangeSet.iter(this.p.evs(a.sets), a.from ?? 0); it.value; it.next()) out.push([it.from, it.to, this.idx(it.value), it.rank])
         return out
       }
       case "set.between": {
         let found: any[] = [], k = 0, stop = a.stop
-        this.ev(a.set).between(a.from, a.to, (f: number, t: number, v: any) => {
+        markRead(stop)
+        this.p.ev(a.set).between(a.from, a.to, (f: number, t: number, v: any) => {
           found.push([f, t, p.idx(v)])
           if (stop && ++k == stop.at) return stop.value
         })
         return found
       }
       case "set.eq": {
-        let o = this.evs(a.old), n = this.evs(a.new)
+        let o = this.p.evs(a.old), n = this.p.evs(a.new)
         return "to" in a ? RangeSet.eq(o, n, a.from, a.to) : "from" in a ? RangeSet.eq(o, n, a.from) : RangeSet.eq(o, n)
       }
-      case "set.iter": return "from" in a ? this.ev(a.set).iter(a.from) : this.ev(a.set).iter()
-      case "set.iterMany": return "from" in a ? RangeSet.iter(this.evs(a.sets), a.from) : RangeSet.iter(this.evs(a.sets))
-      case "cursor.next": this.ev(a.cursor).next(); return undefined
-      case "cursor.goto": this.ev(a.cursor).goto(a.pos); return undefined
-      case "cursor.read": return this.read(this.ev(a.cursor), a.fields)
+      case "set.iter": return "from" in a ? this.p.ev(a.set).iter(a.from) : this.p.ev(a.set).iter()
+      case "set.iterMany": return "from" in a ? RangeSet.iter(this.p.evs(a.sets), a.from) : RangeSet.iter(this.p.evs(a.sets))
+      case "cursor.next": this.p.ev(a.cursor).next(); return undefined
+      case "cursor.goto": this.p.ev(a.cursor).goto(a.pos); return undefined
+      case "cursor.read": return this.read(this.p.ev(a.cursor), a.fields)
       case "cursor.walk": {
-        let c = this.ev(a.cursor), seen: any[] = []
+        let c = this.p.ev(a.cursor), seen: any[] = []
         for (let k = 0; k < a.max && c.value; k++) { seen.push([c.from, c.to, this.idx(c.value), c.rank]); c.next() }
         return seen
       }
       case "spans": {
-        let sets = this.evs(a.sets), it = this.spansIterator(a.iterator)
+        let sets = this.p.evs(a.sets), it = this.spansIterator(a.iterator)
         return "minPointSize" in a ? RangeSet.spans(sets, a.from, a.to, it, a.minPointSize) : RangeSet.spans(sets, a.from, a.to, it)
       }
       case "compare": {
-        let o = this.evs(a.old), n = this.evs(a.new), c = this.ev(a.changes), comp = this.comparator(a.comparator)
+        let o = this.p.evs(a.old), n = this.p.evs(a.new), c = this.p.ev(a.changes), comp = this.comparator(a.comparator)
         if ("minPointSize" in a) RangeSet.compare(o, n, c, comp, a.minPointSize); else RangeSet.compare(o, n, c, comp)
         return undefined
       }
       case "builder.new": return new RangeSetBuilder<any>()
-      case "builder.add": this.ev(a.builder).add(a.from, a.to, this.val(a.v)); return undefined
-      case "builder.finish": return this.ev(a.builder).finish()
-      case "chunk.maxPoint": return this.ev(a.chunk).maxPoint
-      case "chunk.poison": Object.defineProperty(this.ev(a.chunk), "value", {get() { throw new Error("NO TOUCH") }}); return undefined
+      case "builder.add": this.p.ev(a.builder).add(a.from, a.to, this.val(a.v)); return undefined
+      case "builder.finish": return this.p.ev(a.builder).finish()
+      case "chunk.maxPoint": return this.p.ev(a.chunk).maxPoint
+      case "chunk.poison": Object.defineProperty(this.p.ev(a.chunk), "value", {get() { throw new Error("NO TOUCH") }}); return undefined
       case "chunk.countReads": {
-        let chunk = this.ev(a.chunk), hits = this.ev({$: a.hits}), label = a.label
+        let chunk = this.p.ev(a.chunk), hits = this.p.get(a.hits), label = a.label
         let px = new Proxy(chunk.value, {get(t, k, r) { if (typeof k == "string" && /^\d+$/.test(k)) hits[label] = (hits[label] || 0) + 1; return Reflect.get(t, k, r) }})
         Object.defineProperty(chunk, "value", {value: px})
         return undefined
       }
-      case "object": return {}
       case "eqlog.take": return eqLog.splice(0)
       case "eqlog.clear": eqLog.length = 0; return undefined
       case "eqlog.count": return eqLog.length
-      case "same": return this.ev(a.a) === this.ev(a.b)
-      case "all": { for (let x of a.of) if (!this.ev(x)) return false; return true }
-      case "not": return !this.ev(a.of)
-      case "count": return this.ev(a.of).length
-      case "slice": return "end" in a ? this.ev(a.of).slice(a.start, a.end) : this.ev(a.of).slice(a.start)
-      case "item": return this.ev(a.of)[a.index]
-      case "column": return this.ev(a.of).map((x: any) => x[a.index])
-      case "allSame": { let v = this.ev(a.of); return v.every((x: any) => x === v[0]) }
-      case "sameItems": { let x = this.ev(a.a), y = this.ev(a.b); return x.every((e: any, i: number) => e === y[i]) }
-      case "copy": return this.ev(a.of).slice()
-      case "lengths": return this.ev(a.of).map((x: any) => x.length)
-      case "indexes": return this.indexes(this.ev(a.of))
-      case "jsonEqual": return JSON.stringify(this.ev(a.a)) == JSON.stringify(this.ev(a.b))
-      case "try": {
-        try {
-          this.steps(a.steps)
-          let r = a.result === undefined ? undefined : this.ev({$: a.result})
-          switch (a.mode) {
-            case "okOrError": case "okOrMessage": return "ok"
-            case "noErrorOrMessage": return "no error"
-            case "okValueOrError": return {ok: r === undefined ? "returned undefined" : r}
-          }
-        } catch (e: any) {
-          switch (a.mode) {
-            case "okOrError": case "okValueOrError": return {error: e.constructor.name, message: e.message}
-            case "noErrorOrMessage": return {error: e.message}
-            case "okOrMessage": return e.message
-          }
-        }
-        throw new Error("interp: bad try mode " + a.mode)
-      }
+      case "indexes": return this.indexes(this.p.ev(a.of))
     }
     throw new Error("interp: unknown op " + a.op)
   }
 }
 
-/** Run one fixture input (as read from the fixture file, or as a generator built it) and return its output. */
-export function run(input: any): any {
-  let inp = decode(input)
+/** The chunk's interpreter. Each op is registered with its kinds (tools/cm6/program.ts, "Kinds"). */
+export const lang = new Language("rangeset", ["name", "case", "seed", "question", "note"], (inp, p) => {
   eqLog.length = 0
-  return capture(() => {
-    let p = new Prog(inp)
-    p.steps(inp.steps)
-    return p.fill(inp.out)
-  })
-}
+  return new Prog(p, inp)
+})
+for (const name of [
+  "value", "value.fields", "value.set", "value.eq", "value.range", "ranges",
+  "range.fromTo", "range.value", "range.isRange", "changes.of", "changes.empty", "changes.newLength",
+  "changes.touchesRange", "set.of", "set.empty", "set.join", "set.map", "set.update",
+  "set.nextLayer", "set.prop", "set.chunkCount", "set.chunk", "set.chunkSources", "set.chunkSizes",
+  "set.chunkStats", "set.layerSources", "set.dump", "set.dumpSummary", "set.list", "set.listMany",
+  "set.between", "set.eq", "set.iter", "set.iterMany", "cursor.next", "cursor.goto",
+  "cursor.read", "cursor.walk", "spans", "compare", "builder.new", "builder.add",
+  "builder.finish", "chunk.maxPoint", "chunk.poison", "chunk.countReads", "eqlog.take", "eqlog.clear",
+  "eqlog.count", "indexes",
+]) lang.op(name, [], (a, p) => p.chunk.op(a))
+
+/** Run one fixture input (as read from the fixture file, or as a generator built it) and return its output. */
+export const run = lang.run

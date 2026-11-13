@@ -1,0 +1,192 @@
+// The one language of fixture inputs (docs/workflow/specification.md §5 item 3). Imported as "@harness/program".
+// A chunk's interpreter (docs/parity/<crate>/oracle/cm6/<chunk>/interp.ts) creates a `Language`, registers its ops
+// on it and exports it as `lang`, with `run = lang.run`. A generator builds an input as data and records
+// `run(input)` beside it; tools/cm6/replay.ts runs every recorded input again (tools/spec_check.py). The crate's
+// fixture replayer implements this file once, and each chunk's ops from the header of its interpreter.
+//
+// An input is one of
+//   a program           {"steps": [step], "out": template, ...setup keys of the chunk, ...descriptive keys}
+//   a bare expression   {"op": "<op>", ...arguments, ...descriptive keys}: a program of one step whose value is
+//                       the output.
+// The input is read with `decode` (tools/cm6/oracle-lib.ts) first, so {"js_undefined": true} is undefined and so on.
+// The output is {"ok": value} or, when a step throws outside a `try`, {"error": {name, message}}, the value encoded
+// by `encode`.
+// - Setup keys: what the chunk builds before the steps run (the header of its interpreter names them).
+// - Descriptive keys: top-level keys no op reads (a seed, a case name, a note). The chunk's interpreter names them;
+//   every other key of an input must be read when the input runs.
+//
+// Step: an expression, with optional "as": "<name>" (its value is stored in that variable) and optional
+//   "if": <expr> (the step runs only when the expression's value is truthy). Steps run in order.
+// Expression (written <expr> in an op's arguments; every other argument is data):
+//   {"$": "<name>"}             the value of a variable; an error when it is unset
+//   {"op": "<op>", ...arguments}    the value of an op
+// out: a template. Each {"$": "<name>"} in it is replaced by the variable's value; arrays and other objects are
+//   copied with their members filled the same way. Every leaf of a template is such a reference: an expected value
+//   is never written in the input.
+//
+// Ops of the language (kind `harness`: they touch no cm6 value; `same`, `allSame` and `sameItems` are also kind
+// `identity`: they compare with ===, which for objects is JavaScript object identity). Result in brackets:
+//   same {a: expr, b: expr}           [a === b]
+//   allSame {of: expr}                [value.every(x => x === value[0])]
+//   sameItems {a: expr, b: expr}      [a.every((x, i) => x === b[i])]
+//   all {of: [expr]}                  [true when every expression's value is truthy (evaluated left to right,
+//                                      stopping at the first falsy one), else false]
+//   not {of: expr}                    [!value]
+//   count {of: expr}                  [value.length]
+//   slice {of: expr, start, end?}     [value.slice(start) or value.slice(start, end)]
+//   item {of: expr, index}            [value[index]]
+//   column {of: expr, index}          [value.map(x => x[index])]
+//   copy {of: expr}                   [value.slice()]
+//   lengths {of: expr}                [value.map(x => x.length)]
+//   jsonEqual {a: expr, b: expr}      [JSON.stringify(a) == JSON.stringify(b)]
+//   object {}                         [a new empty object {}]
+//   map {over: expr, as: name, do: expr}   [for each element of the list `over`, in order: the variable `as` is set
+//                                      to it and `do` is evaluated; the list of those values. Here `as` names the
+//                                      element's variable, not the step's result: a `map` used as a step stores
+//                                      nothing]
+//   try {steps: [step], mode, result?}    runs the steps (their variables stay set); r = the variable `result` after
+//       them (undefined when `result` is absent). On a throw, e is the thrown error. The op's value by mode:
+//         "okOrError":        "ok" | {error: e.constructor.name, message: e.message}
+//         "noErrorOrMessage": "no error" | {error: e.message}
+//         "okValueOrError":   {ok: r, or "returned undefined" when r is undefined} | {error: e.constructor.name,
+//                             message: e.message}
+//         "okOrMessage":      "ok" | e.message
+//
+// Kinds: what an op observes, so that the crate's design can say what its replayer does with each
+// (specification.md §5 item 3). Every op is registered with one or more of
+//   api        calls or reads a member cm6 exports and documents
+//   internal   reads, replaces or depends on a member cm6 marks @internal or does not export, or on its internal layout
+//   identity   its result depends on JavaScript object identity
+//   callbacks  observes how often or in which order cm6 calls a function the input supplies, beyond what the call returns
+//   harness    touches no cm6 value
+//
+// Reading every part of an input. Replay records each key that is read and fails on a key nothing read: such a key
+// says something about the run that the run does not do. So the evaluator reads what it skips, with `markRead`: a
+// step whose `if` is false, the steps and `out` after an uncaught throw, the steps and `result` of a `try` that
+// threw. An op that builds a callback from a spec calls `markRead(spec)` when it builds it: cm6 may never call it.
+import {encode, decode} from "@harness/lib"
+
+export type Kind = "api" | "internal" | "identity" | "callbacks" | "harness"
+export const KINDS: readonly Kind[] = ["api", "internal", "identity", "callbacks", "harness"]
+type OpFn = (a: any, p: Program) => any
+
+/** Read every key of x, at any depth (see "Reading every part of an input"). */
+export function markRead(x: any): void {
+  if (x && typeof x == "object") for (const k of Object.keys(x)) markRead(x[k])
+}
+
+/** One run of one input: its variables and what the chunk's setup built (`chunk`). */
+export class Program {
+  vars: Record<string, any> = Object.create(null)
+  /** What the chunk's setup returned for this input. */
+  chunk: any = undefined
+  constructor(readonly lang: Language) {}
+  /** The value of a variable. */
+  get(name: string): any {
+    if (!(name in this.vars)) throw new Error("interp: unset variable " + name)
+    return this.vars[name]
+  }
+  /** The value of an expression. */
+  ev(x: any): any {
+    if (x && typeof x == "object" && !Array.isArray(x)) {
+      if ("$" in x) return this.get(x.$)
+      if ("op" in x) return this.op(x)
+    }
+    throw new Error("interp: not an expression: " + JSON.stringify(x))
+  }
+  evs(xs: any[]): any[] { return xs.map(x => this.ev(x)) }
+  op(a: any): any {
+    const def = this.lang.ops.get(a.op)
+    if (!def) throw new Error("interp: unknown op " + a.op)
+    this.lang.ran.add(a.op)
+    return def.run(a, this)
+  }
+  steps(steps: any[]): void {
+    for (const s of steps) {
+      if ("if" in s && !this.ev(s.if)) { markRead(s); continue }
+      const r = this.op(s)
+      if (s.as !== undefined && s.op != "map") this.vars[s.as] = r
+    }
+  }
+  fill(t: any): any {
+    if (Array.isArray(t)) return t.map(x => this.fill(x))
+    if (t && typeof t == "object") {
+      if ("$" in t && Object.keys(t).length == 1) return this.get(t.$)
+      return Object.fromEntries(Object.entries(t).map(([k, v]) => [k, this.fill(v)]))
+    }
+    return t
+  }
+}
+
+/** A chunk's interpreter: the language's ops plus the ones the chunk registers. */
+export class Language {
+  ops = new Map<string, {kinds: Kind[], run: OpFn}>()
+  /** The ops the last `evaluate` ran. */
+  ran = new Set<string>()
+  /** `descriptive`: the top-level input keys no op reads. `setup`: builds, from the decoded input, what the chunk's
+   * ops need before the steps run (it becomes `p.chunk`); it runs inside the capture, so a throw in it is an output. */
+  constructor(readonly chunk: string, readonly descriptive: readonly string[], readonly setup?: (input: any, p: Program) => any) {
+    const o = (name: string, kinds: Kind[], run: OpFn) => this.op(name, kinds, run)
+    o("same", ["harness", "identity"], (a, p) => p.ev(a.a) === p.ev(a.b))
+    o("allSame", ["harness", "identity"], (a, p) => { const v = p.ev(a.of); return v.every((x: any) => x === v[0]) })
+    o("sameItems", ["harness", "identity"], (a, p) => { const x = p.ev(a.a), y = p.ev(a.b); return x.every((e: any, i: number) => e === y[i]) })
+    o("all", ["harness"], (a, p) => { for (const x of a.of) if (!p.ev(x)) { markRead(a.of); return false } return true })
+    o("not", ["harness"], (a, p) => !p.ev(a.of))
+    o("count", ["harness"], (a, p) => p.ev(a.of).length)
+    o("slice", ["harness"], (a, p) => "end" in a ? p.ev(a.of).slice(a.start, a.end) : p.ev(a.of).slice(a.start))
+    o("item", ["harness"], (a, p) => p.ev(a.of)[a.index])
+    o("column", ["harness"], (a, p) => p.ev(a.of).map((x: any) => x[a.index]))
+    o("copy", ["harness"], (a, p) => p.ev(a.of).slice())
+    o("lengths", ["harness"], (a, p) => p.ev(a.of).map((x: any) => x.length))
+    o("jsonEqual", ["harness"], (a, p) => JSON.stringify(p.ev(a.a)) == JSON.stringify(p.ev(a.b)))
+    o("object", ["harness"], () => ({}))
+    o("map", ["harness"], (a, p) => {
+      const over = p.ev(a.over)
+      if (!over.length) markRead(a.do)
+      return over.map((x: any) => { p.vars[a.as] = x; return p.ev(a.do) })
+    })
+    o("try", ["harness"], (a, p) => {
+      try {
+        p.steps(a.steps)
+        const r = a.result === undefined ? undefined : p.get(a.result)
+        switch (a.mode) {
+          case "okOrError": case "okOrMessage": return "ok"
+          case "noErrorOrMessage": return "no error"
+          case "okValueOrError": return {ok: r === undefined ? "returned undefined" : r}
+        }
+      } catch (e: any) {
+        markRead(a.steps); void a.result
+        switch (a.mode) {
+          case "okOrError": case "okValueOrError": return {error: e.constructor.name, message: e.message}
+          case "noErrorOrMessage": return {error: e.message}
+          case "okOrMessage": return e.message
+        }
+      }
+      throw new Error("interp: bad try mode " + a.mode)
+    })
+  }
+  /** Register an op of the chunk with its kinds (the list in this file's header). */
+  op(name: string, kinds: Kind[], run: OpFn): this {
+    if (this.ops.has(name)) throw new Error(`interp: op ${name} registered twice`)
+    for (const k of kinds) if (!KINDS.includes(k)) throw new Error(`interp: op ${name}: unknown kind ${k}`)
+    this.ops.set(name, {kinds, run})
+    return this
+  }
+  /** Run a decoded input (replay passes one that records what is read). */
+  evaluate(inp: any): {ok: any} | {error: {name: string, message: string}} {
+    this.ran = new Set()
+    const program = Array.isArray(inp?.steps)
+    try {
+      const p = new Program(this)
+      if (this.setup) p.chunk = this.setup(inp, p)
+      if (!program) return {ok: encode(p.ev(inp))}
+      p.steps(inp.steps)
+      return {ok: encode(p.fill(inp.out))}
+    } catch (e: any) {
+      if (program) { markRead(inp.steps); markRead(inp.out) } else markRead(inp)
+      return {error: {name: e?.name ?? "Error", message: String(e?.message ?? e)}}
+    }
+  }
+  /** Run one fixture input, as read from the fixture file or as a generator built it, and return its output. */
+  run = (input: any) => this.evaluate(decode(input))
+}
