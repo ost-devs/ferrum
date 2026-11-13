@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/decisions/ferrum-state.md` (commit `ae094f2`). O original em inglês é o que vale.
+> Tradução para leitura de `docs/decisions/ferrum-state.md` (commit `bd64bfd`). O original em inglês é o que vale.
 
 # Decisões: ferrum-state
 
@@ -245,3 +245,100 @@ aplicação.
 **Confiança.** Alta na codificação e na conversão; média nos orçamentos (nenhum passo assim rodou), que o piloto resolve.
 
 **Reabre.** O piloto mostrando que uma classe de chamadas (callbacks cujo corpo importa) não pode ser escrita como dado a um custo próximo do orçamento.
+
+## 2026-11-13 · Passo A depois do piloto: uma linguagem de programa para todo chunk, o replay como verificação, tipos de op para o S5, nova ordem e orçamentos
+
+*Decidido pelo consultor na revisão depois da unidade piloto ([`docs/workflow/README.md`](../workflow/README-ptbr.md) §7 item 2). Texto que obriga: `docs/parity/ferrum-state/plan.md` "Specification: what remains", passo A e passo C; a parte do método (a linguagem, o replay com rastreamento de leitura, os tipos de op) em [`docs/workflow/specification.md`](../workflow/specification-ptbr.md) §4, §5 item 3 e §8 item 1, registrada em [`docs/decisions/method.md`](method-ptbr.md) sob a mesma data. Ledger: E7, E8.*
+
+**Pergunta.** O piloto (chunk `rangeset`, 8cb893a) converteu 388 de 388 fixtures por 194.385 tokens contra um orçamento de 200.000 e passou na sua verificação na primeira execução. O que os outros chunks (`text`, `state`, `facet`, e `change`, cuja codificação mudou por baixo dele) devem fazer de diferente, e o que o piloto mostrou que o plano não previu?
+
+**O que li e verifiquei.** O interpretador do piloto (`oracle/cm6/rangeset/interp.ts`), suas fixtures, `oracle/cm6/change/interp.ts` e `oracle/cm6/facet/interp.ts`, o cartão, `tools/spec_check.py`, `tools/cm6/oracle-lib.ts`, o ledger. Contei as ops que cada fixture de `rangeset` roda, conferi que nenhum template `out` tem um literal (nenhum tem), conferi os tipos do interpretador com `tsc` 7.0.2 depois de remover `baseUrl` do `tsconfig.json` do harness (nenhum erro), e refiz o replay das 388 fixtures sob um wrapper de rastreamento de leitura (todas iguais; 20 grupos de chaves não lidas, cada um sendo um passo pulado por `if`, um passo depois de um throw, ou uma especificação de callback que o cm6 nunca chamou).
+
+**Decisões.**
+1. *Uma linguagem.* O piloto não escreveu uma op por fixture: uma entrada é um programa (ops, variáveis, um condicional, `try`, um template `out`), e foi isso que reduziu 94 textos de chamada a cerca de 75 ops. Deixado a cada worker, os quatro chunks restantes trariam mais quatro dialetos (`change` já tem suas próprias convenções, `facet` uma terceira), e o replayer do Ferrum implementaria cada um. A linguagem é tirada de `rangeset` para `tools/cm6/program.ts` pelo orquestrador (A1); uma op solta é um programa de um passo, então as entradas de `change` já são programas. `state` escreve extensões no vocabulário de `facet` e roda depois de `facet`.
+2. *O replay com rastreamento de leitura substitui a lista de chaves como verificação.* A contagem de entradas gravadas como texto lia seis chaves e deixou passar 27 fixtures de `rangeset` com prosa sob outras (o escape do ledger). Qualquer lista de chaves pode perder outra chave; o replay não: a entrada gravada de toda fixture é rodada e deve dar a sua saída gravada, e toda chave da entrada deve ser lida pelo interpretador ou pelo cm6, ou ser uma que o interpretador nomeia como descritiva. Uma chave não lida é ou prosa que o programa não executa, ou um argumento que a op ignora, e ambos tornam a fixture mais fraca do que a execução que ela grava, sem que nenhuma saída o mostre. A ferramenta também falha diante de um template `out` com literal e de uma fixture que não chama nenhuma op do cm6, as duas formas de uma saída coincidir sem o cm6 a produzir.
+3. *Tipos de op.* 177 das 388 fixtures de `rangeset` rodam uma op que lê o layout interno do cm6 ou identidade de JavaScript (`set.dump`, o layout dos chunks, em 139; `chunk.poison`, `chunk.countReads`, `same`). Essas fixtures passam contra o cm6 por construção e vão falhar contra um `RangeSet` do Ferrum com outro layout, qualquer que seja o seu comportamento observável. Quais delas o Ferrum deve reproduzir é uma pergunta de projeto do S5, e ela precisa da lista: cada op agora declara seus tipos, e a ferramenta escreve `raw/fixture-ops.jsonl`. O passo C pergunta isso por op.
+4. *Posições marcadas.* O replayer mapeia posições UTF-16 para a unidade de D1 ([`docs/workflow/implementation.md`](../workflow/implementation-ptbr.md) §5); cada cabeçalho marca com `(pos)` os argumentos e campos de saída que são posições num documento que a entrada contém, de modo que esse mapeamento seja escrito a partir do cabeçalho. Custa uma palavra por op agora e uma releitura de quatro interpretadores depois.
+5. *Orçamentos, a partir da taxa do piloto* (cerca de 2.000 tokens por texto de chamada distinto, incluindo um custo fixo que a linguagem compartilhada agora reduz): `text` 400.000 (234 textos, 1.656 fixtures); `state` 550.000 (365 textos); `facet` 200.000 (95 textos mais mover suas 392 entradas de dados para a linguagem e a codificação; o plano tinha 120.000, que ignorava isso); tipos de `rangeset` e `change` 100.000. O esforço continua `medium`: o piloto em `medium` passou na primeira execução, e a verificação agora é mais forte.
+6. *Ordem.* A1 (ferramenta) primeiro; depois A2, A3 e A4 juntos (três workers, abaixo do limite de quatro, sem compartilhar arquivo); A5 `state` depois de A4. A lista de textos de chamada continua como a lista do que resta para os workers e é removida, com a sua contagem, quando A termina.
+7. *Crescimento de arquivo aceito.* `fixtures/rangeset.jsonl` cresceu de 961.545 para 1.250.792 bytes porque conjuntos grandes são escritos como listas de ranges. Uma op geradora no lugar (uma semente e um tamanho) faria o replayer em Rust portar o PRNG exatamente para reproduzir a entrada: mais uma coisa que pode diferir e que nenhum comportamento do cm6 pede.
+
+**Alternativas e por que cada uma perdeu.**
+- *Manter o plano como escrito (cada chunk com o seu interpretador, lista de chaves como verificação)*: o piloto passou, mas a sua verificação não via 27 das suas fixtures, e quatro dialetos é trabalho empurrado para a implementação, onde uma leitura errada de um dialeto só aparece como uma falha sem explicação.
+- *Converter `rangeset` de volta a uma op por formato de fixture*: descarta um resultado que funciona e foi conferido, para ajustá-lo a um modelo que o piloto superou.
+- *Tirar as ops internas agora e gravar projeções públicas no lugar*: muda saídas, o que este passo não pode fazer, e decide a pergunta do S5 (o Ferrum mantém o layout de chunks do cm6?) antes de a sua evidência ser reunida.
+- *Fazer da verificação de tipos um gate*: os interpretadores usam `any` em toda parte, então ela mostra pouco; é feita para funcionar e oferecida, não exigida.
+
+**Confiança.** Alta no replay com rastreamento de leitura (experimentado nas 388 fixtures do piloto; ele acha exatamente a classe que a lista de chaves perdeu, e seus falsos positivos são removidos num só lugar, o avaliador). Alta numa só linguagem (a evidência é que o replayer é um consumidor único de cinco chunks). Média nos orçamentos: um só piloto, e `state` é o chunk com mais chamadas distintas e com o vocabulário de extensões a compartilhar.
+
+**Reabre.** A2–A5 acima de 1,5 vez os seus orçamentos (E7); a linguagem incapaz de expressar as chamadas de um chunk sem ops por fixture; o replayer na implementação precisando de avaliadores por chunk de qualquer modo (E8).
+
+## 2026-11-13 · Q58: as saídas da linguagem são sempre embrulhadas; um valor escrito na entrada só chega a uma saída como rótulo
+
+*Decidido pelo consultor quando o stop-loss da unidade A4 (`facet`) disparou. Texto que obriga: `docs/parity/ferrum-state/plan.md` passo A "For every unit"; [`docs/workflow/specification.md`](../workflow/specification-ptbr.md) §5 item 3 e §8 item 1; `tools/cm6/program.ts` (op `label`), `tools/spec_check.py` (a comparação com um commit anterior, a contagem de valores `data` em `out`).*
+
+**Pergunta.** A4 converteu todas as 527 fixtures de `facet`; o replay está limpo, mas a comparação com c2d1fca falha em 344 saídas que agora são `{"ok": <o valor antigo>}`. E 36 saídas contêm palavras que as sondas antigas escreveram ("built", "update"), que o worker manteve por uma op de chunk `data` que devolve um valor escrito na entrada.
+
+**O que verifiquei.** A comparação, rodada com a mudança abaixo no arquivo não commitado do worker: 527 fixtures, 0 diferem, 344 embrulhadas. Uma busca estática em toda fixture por um `out` que referencia uma variável ligada por um passo `data`: 37 em `facet` (os 36 rótulos e mais um), nenhuma em `rangeset` ou `change`. Um protótipo mais amplo (todo valor de `out` deve descender de uma op do cm6) deu falsos positivos em `rangeset`, onde uma op do cm6 preenche um objeto que recebe por nome; não é adotado.
+
+**Decisões.**
+1. *O embrulho é a forma certa, e o meu plano errou ao pedir as duas.* O passo A pedia que as entradas de cenário virassem expressões soltas da linguagem e que as saídas fossem iguais às de c2d1fca; a linguagem embrulha toda saída. Uma só forma de saída é o que o replayer deve ler (`{"ok"}` ou `{"error"}`), e 183 saídas de `facet` já a tinham. A verificação agora aceita uma saída que era solta e é exatamente `{"ok": <ela>}`, a conta, e não aceita nenhuma outra mudança. Os valores continuam comparados um a um.
+2. *Rótulos passam por `label`, nada mais escrito na entrada chega a uma saída.* Um rótulo não mostra nada sobre o cm6, mas descartá-lo mudaria 36 saídas de um modo que nenhuma comparação mecânica aceita, e toda a verificação deste passo é que as saídas não mudem. Então a linguagem tem `label {text}` (uma string), a ferramenta lista todo rótulo por chunk, e falha diante de um `out` que referencia uma variável `data`: aquilo era um jeito de um valor esperado passar sem o cm6 o produzir, que a contagem de folhas literais não via. `data` continua para aquilo a que serve: um valor que o programa entrega ao cm6. `list`, `set` e `isArray` recebem expressões e continuam.
+
+**Alternativas.** Uma segunda forma de saída, sem embrulho, na linguagem: duas formas para o replayer ler, para manter um acidente histórico. Tirar o `ok` no script do próprio worker: uma verificação fora da ferramenta, que é o que o método proíbe. Descartar os rótulos: muda saídas. Uma verificação geral de que todo valor de saída descende de uma op do cm6: certa em princípio, mas uma estática lê mal ops que preenchem um objeto por nome, e uma dinâmica não consegue marcar valores primitivos; a verificação estreita fecha o caminho que existe.
+
+**O que A4 faz.** Trocar cada rótulo escrito com `data` por `label`, reestruturar a outra fixture cujo `out` toma um valor de `data` para que o valor venha do cm6, regenerar, rodar a verificação. A5 (`state`) usa `label` do mesmo modo.
+
+**Confiança.** Alta em 1. Média-alta em 2: o caminho restante (um valor de `data` passado por uma op do harness até `out`) não é verificado; os rótulos são poucos e listados.
+
+**Reabre.** Um chunk que precise de um valor em `out` que nem o cm6 produz nem um rótulo pode ser; uma fixture achada cuja saída contém um valor da entrada por meio de uma op do harness.
+
+## 2026-11-13 · S5, primeira parte: 45 perguntas decididas, o projeto, os rascunhos de D1, D2, D5 e D6
+
+*Decidido pelo consultor (Q3, Q5–Q7, Q9–Q39, Q45–Q52, Q55–Q57). Texto que obriga: `docs/parity/ferrum-state/raw/decisions.jsonl` (uma linha por decisão sobre um item, 38 linhas), `docs/parity/ferrum-state/design.md`, [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) D11–D15 e [`.claude/rules/rust-naming-decisions.md`](../../claude/rules/rust-naming-decisions-ptbr.md) N6–N10 (o seu registro: [`docs/decisions/foundation.md`](foundation-ptbr.md), mesma data). A Q28 era sobre `@codemirror/view` e foi para `docs/parity/ferrum-view/questions.md`.*
+
+**Como as perguntas foram decididas.** Cada uma cai sob uma das decisões gerais, e a sua linha diz qual:
+- *Reproduzido* (D11): Q10, Q11, Q18, Q19, Q21–Q26, Q33 (o mapeamento), Q34–Q37, Q39, Q45, Q46, Q48, Q50–Q52, Q55. A consequência que importa: `RangeSet` mantém as camadas e os chunks do cm6 e `Text` a sua árvore, porque vários desses resultados dependem desse layout, e mantê-lo é o que deixa as fixtures e o oráculo compararem tudo.
+- *Excluído por tipo* (D12): as partes sem tipo de Q9, Q12, Q29, Q33, Q38, Q56, Q57.
+- *O Ferrum difere*, cada uma com a sua classe: Q27 (o cm6 trava; o Ferrum informa a divergência de comprimento); Q13, Q14, Q17, Q30, Q49 (identidade ou mutação depois da entrega); os resultados `NaN` de Q9, Q12 e Q31. Q14 e Q30 são as duas que um usuário do cm6 poderia notar: um estado antigo nunca muda, e uma transação cujo estado falhou ao ser construído o constrói de novo.
+- *Forma*: Q3 e Q6 (nomes), Q5 (D15), Q7 (dados Unicode da toolchain de Rust: contei 149.107 code points de palavra tanto no Rust 1.97 quanto no Node do harness, ambos Unicode 17.0), Q15 (o relógio), Q16 e Q32 (ordem de construção e reentrada, mantidas), Q20 (o limite de 1e9, mantido como um limite listado), Q31 (`combine_config` por campo), Q47 (D13).
+
+**O projeto.** Os módulos seguem os arquivos do cm6; nenhuma dependência além de `serde_json`; as estruturas de dados do cm6 mantidas; as assinaturas seguem D14 e estão escritas no esqueleto, que eu aprovo. As seções que dependem de D1, D2, D5 e D6 dizem isso e ainda não obrigam a nada.
+
+**Rascunhos.** D1: bytes UTF-8. D2: `Text` do cm6 e regras de cluster portados, sem `ropey`, sem UAX #29. D5: `StateCommand` como o contrato do cm6. D6: imutável, `Send + Sync`. Cada rascunho traz os seus motivos e o que abre mão.
+
+**Alternativas que perderam, além das do registro da fundação.** Um `RangeSet` com outro layout (os comportamentos que dependem de chunks não poderiam ser reproduzidos, e as 177 fixtures que leem o layout precisariam de projeções). `combine_config` sobre mapas dinâmicos (reproduz fixtures diretamente, inútil para uma config tipada). Subir o limite de 1e9 agora (muda o valor final visível dos cursores para nenhum consumidor que peça isso). Uma facet de relógio para `Transaction.time` (API que o cm6 não tem).
+
+**Confiança.** Alta nas linhas reproduzidas e nas excluídas. Média na forma de `combine_config` e no nome de `try_field`: ambos só encontram os seus chamadores reais no `ferrum-view` e no `ferrum-commands`.
+
+**Ainda devido, e quando.** No fim do passo A: o que o replayer faz com cada op que não é só `api`, e as listas de fixtures das 10 linhas marcadas `fixtures_to_list`. Depois do passo B: a seção "Implementation" do `plan.md` e a aprovação, com o risco residual que as amostras mediram.
+
+**Reabre.** Um rascunho mudado pelo mantenedor (as linhas que dependem dele são nomeadas em cada rascunho); a especificação do `ferrum-view` achando um valor de consumidor que uma classe excluída ou um desvio remove.
+
+## 2026-11-13 · A regra de cluster de D2: a do cm6 agora, a regra Unicode no delta de melhorias; o registro de melhorias; Q8, Q41–Q44 e Q54 fechadas
+
+*Decidido pelo consultor; a regra de cluster foi delegada pelo mantenedor em 2026-11-13, que aprovou de antemão qualquer das respostas (`dev/maintainer/instructions/2026-11-13-piso-e-teto.md`). Texto que obriga: [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) D2; `docs/parity/ferrum-state/raw/improvements.jsonl` (10 linhas); `raw/decisions.jsonl` `state.cm6.017.d1`; `design.md` §4, §9; `plan.md` "Improvement delta". A confirmação de D1, D2 (estrutura), D5 e D6, que fecha Q8 e Q41–Q44: [`docs/decisions/foundation.md`](foundation-ptbr.md), mesma data.*
+
+**A pergunta.** "Um caractere" para o cursor, para a exclusão e para colunas: a regra própria do cm6, ou a regra Unicode completa (UAX #29)? E se a regra Unicode, quando?
+
+**Os fatos.** O pacote do cm6 agrupa uma base com as suas marcas, emoji unidos por ZWJ e pares de bandeiras (`mirrors/marijn/find-cluster-break/src/index.js:45-66`, que li). Ele não agrupa: uma sílaba hangul escrita como letras separadas, um conjunto consonantal indico, um caractere Prepend, sequências de tag (a bandeira da Inglaterra), seletores de variação acima de U+E0100 (variantes de ideogramas), CR LF dentro de uma string (Q42 item 6, gravado por 181 fixtures e comparado ali com o `Intl.Segmenter` do Node). Nesses casos o cursor do cm6 para dentro do que a pessoa vê como um caractere, e uma exclusão pode deixar metade dele. O motivo do cm6 é a sua pilha: uma tabela pequena dentro de um bundle de JavaScript. Os sistemas de texto nativos e os shapers que as superfícies usarão seguem a UAX #29.
+
+**A decisão.** A regra Unicode é melhor e o Ferrum a terá: `state.imp.001`, agendada (scheduled), não uma possibilidade. Ela é feita no delta de melhorias do `ferrum-state`, logo depois do veredicto de conformidade e antes de começar a especificação do `ferrum-view`. Até lá o crate porta exatamente a regra do cm6, atrás de uma só função.
+
+**Por que não agora.** Pesei adotá-la no projeto:
+- *O que economizaria:* portar a tabela e o laço do cm6, cerca de sessenta linhas e uma tabela gerada, parte da qual a regra Unicode ainda precisa (o que "sem caracteres de extensão" significa para o backspace).
+- *O que custaria:* três coisas ainda não se sabem e pedem um pesquisador, não um palpite: a versão do Unicode da implementação em Rust contra a 17.0 do cm6 (uma mais antiga dividiria caracteres que o cm6 agrupa, o que está abaixo do piso); o que o `includeExtending = false` do cm6 deveria significar sob a regra completa (o cm6 o usa para que o backspace remova um acento, `commands.ts:581-585`; se ele deveria também remover uma letra hangul é uma pergunta sobre o que os usuários dessa escrita esperam, e nenhum padrão a responde); se alguma sequência que o cm6 agrupa se desfaria (um ZWJ antes de um caractere que não é pictográfico). Decidir isso às pressas é o tipo de melhoria que o mantenedor não quer.
+- *O que adiar custa:* nada que a pessoa que edita possa notar, já que nada é lançado antes de a fundação estar completa, e nada na API: a função mantém a sua assinatura. Os crates de cima são especificados depois do delta, então nenhum é construído sobre a regra do cm6.
+- *O que adiar dá:* o porte é primeiro mostrado igual ao cm6 nos 181 casos e em entradas novas sem filtro; o delta então muda uma função e uma tabela, e a experiência registrada em [`docs/decisions/method.md`](method-ptbr.md) mostra o que ele mudará: 126 fixtures do chunk `text`, nenhuma nos outros entre os quatro chunks reproduzidos.
+
+**Alternativas.** Adotar agora (acima). Manter a regra do cm6 para sempre (a resposta do meu rascunho: a poda que o mantenedor corrigiu). Adiar para o fim da fundação (a lógica de cursor da view e os seus testes seriam construídos sobre uma regra que o Ferrum não vai entregar).
+
+**O registro.** Reler toda decisão da primeira parte do S5 sob a intenção corrigida deu dez linhas: `state.imp.001` agendada; `state.imp.002` a `.008` candidatas avaliadas no mesmo delta (caracteres de palavra casados por caractere e não por unidade UTF-16, o que a própria documentação do cm6 apoia; extensores de transação acrescentando os seus efeitos duas vezes; entradas aceitas sem verificação; ranges descartados junto com um chunk coberto; o limite de 1.000.000.000 de posições; funções de coluna que não são inversas; a ida e volta em JSON de linhas que contêm um separador); `state.imp.009` (chamadas que falham sem um panic para posições vindas de fora), avaliada com o `ferrum-view` ou com o primeiro consumidor que precisar dela; `state.imp.010` (uma estrutura para linhas muito longas), avaliada num benchmark no gate G8. Para a maioria dos candidatos ainda não mostrei que o outro comportamento é melhor, só que pode ser; cada linha diz o que falta. Nenhuma muda a API pública se feita depois.
+
+**Q54.** Um estado guarda as suas linhas como dadas, então a ida e volta em JSON de um documento construído à mão a partir de linhas que contêm o separador o divide de novo, como no cm6 (`state.cm6.017.d1`); a ida e volta é `state.imp.008`.
+
+**Não decidido aqui.** Os cinco throws implícitos que o `design.md` não resolve (o tipo de `dir` em `Text::iter`, `create` e `update` obrigatórios de `StateFieldSpec`, a forma em Rust dos valores de dados de linguagem) são escolhas de projeto que não dependem desta diretiva; a última precisa dos fatos do chunk `state`, que o passo A5 ainda não produziu. Elas são decididas na segunda chamada do passo C, quando o passo A terminar.
+
+**Confiança.** Média-alta. Alta em que a regra Unicode é melhor para a pessoa que edita; média-alta em fazê-la depois do piso: apoia-se na experiência e no raciocínio sobre risco, não num delta que tenha rodado.
+
+**Reabre.** Os pesquisadores achando que o lado Rust não alcança o Unicode 17.0 sem um trabalho maior do que o porte da tabela do cm6 (então o custo do delta é reformulado antes de ele começar); a especificação do `ferrum-view` sendo desejada antes de o delta estar pronto.

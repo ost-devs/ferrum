@@ -1,14 +1,26 @@
-> Tradução para leitura de `docs/foundation/maintainer-intent.md` (commit `ae094f2`). O original em inglês é o que vale.
+> Tradução para leitura de `docs/foundation/maintainer-intent.md` (commit `bd64bfd`). O original em inglês é o que vale.
 
 # A intenção do mantenedor
 
-O que o mantenedor quer do Ferrum e do trabalho nele. Obriga todo agente e todo documento: o que conflitar com isto é revisto, não este arquivo. Só o mantenedor o muda; o consultor o reescreveu em 2026-11-13 por instrução do mantenedor de reformulá-lo. O que o Ferrum é: [`docs/foundation/ferrum-foundation.md`](ferrum-foundation-ptbr.md). Como o trabalho corre: [`docs/workflow/README.md`](../workflow/README-ptbr.md).
+O que o mantenedor quer do Ferrum e do trabalho nele. Obriga todo agente e todo documento: o que conflitar com isto é revisto, não este arquivo. Só o mantenedor o muda. O consultor o reescreveu em 2026-11-13 por instrução do mantenedor de reformulá-lo, e no mesmo dia integrou as diretrizes do mantenedor sobre o que paridade significa, sobre melhorias e sobre quem faz o quê (as palavras dele: `dev/maintainer/instructions/2026-11-13-piso-e-teto.md`). O que o Ferrum é: [`docs/foundation/ferrum-foundation.md`](ferrum-foundation-ptbr.md). Como o trabalho corre: [`docs/workflow/README.md`](../workflow/README-ptbr.md).
 
 ## O resultado (The result)
 
 - **O objetivo é o Ferrum.** Quem edita o texto e a aplicação que embute o Ferrum recebem, de forma nativa, o que o cm6 já resolveu para um editor. A paridade é julgada de onde eles estão: o que conseguem observar.
-- Cada crate termina com paridade de comportamento 1:1 real com o cm6, e o trabalho a mostra com evidência que roda, não com uma descrição.
+- **O cm6 é o piso, nunca o teto.** Paridade significa que eles recebem a mesma qualidade de experiência, a mesma capacidade e a mesma estabilidade que teriam com o cm6, ou melhores. Não significa imitar o cm6 à letra: uma limitação ou um comportamento inferior do cm6 nunca é reproduzido só para que os testes automatizados passem sem atrito.
+- Cada crate termina com paridade de comportamento 1:1 real com o cm6 como esse piso: nada do que o cm6 dá falta ou fica pior. O trabalho a mostra com evidência que roda, não com uma descrição, e mostra do mesmo modo todo ponto em que o Ferrum é melhor de propósito.
 - O resultado é o que importa: alcançado com domínio, precisão e eficácia, e sem dívida. Algo sabidamente errado, duplicado, desatualizado ou feito pela metade é corrigido ou removido quando é encontrado, não carregado adiante.
+
+## Melhorias sobre o cm6 (Improvements over cm6)
+
+- **Nenhuma omissão silenciosa.** Sempre que o Ferrum puder ser superior ao cm6 (na experiência de quem edita, na correção, na ergonomia para o desenvolvedor), o consultor nunca poda, esconde nem descarta essa opção em nome da imitação literal. Toda oportunidade assim é registrada onde o mantenedor possa encontrá-la, com o que foi decidido sobre ela e por quê.
+- **Custo, risco e momento são pesados, só pelo consultor.** Uma melhoria drástica feita às pressas, que degrada a estabilidade ou deixa o conjunto pior, não é desejada. O consultor pesa o custo contra o risco de cada melhoria e decide com autonomia o momento certo de fazê-la.
+
+## Quem faz o quê (Who does what)
+
+- **O mantenedor** define a intenção, a filosofia do produto e o critério de valor para o usuário. Não gerencia decisões técnicas nem o cronograma de engenharia. O projeto anda sozinho e só o chama diante de uma dúvida real sobre a intenção ou de uma decisão de impacto extremo.
+- **O consultor** infere os princípios do mantenedor e os aplica a partir da evidência do projeto; decide a engenharia, inclusive as adaptações naturais a um Rust idiomático (texto em UTF-8, por exemplo); decide quando cada melhoria é feita; mantém os documentos coerentes e é o único que integra neles uma diretriz do mantenedor; e define a arquitetura que absorve essas decisões.
+- **O orquestrador e os workers** executam a implementação como decidida.
 
 ## Como se chega lá (How it is reached)
 
@@ -25,5 +37,5 @@ O que o mantenedor quer do Ferrum e do trabalho nele. Obriga todo agente e todo 
 - O consultor decide de forma assertiva, porque o mantenedor não consegue julgar a maioria das escolhas técnicas. Ele leva ao mantenedor só o que precisa dos desejos do mantenedor para o projeto, um caminho que continua incerto depois da evidência, ou uma decisão de impacto extremo. A primeira iteração de cada decisão fundamental (D1–D10, [`ferrum-foundation.md`](ferrum-foundation-ptbr.md#6-decisões-fundamentais-antes-de-qualquer-implementação) §6) é redigida como rascunho para o mantenedor confirmar: o mantenedor não aceita as respostas mais importantes do consultor sem entendê-las.
 - Uma única fonte da verdade por decisão: ela é escrita num só lugar, e os outros documentos apontam para ele.
 - Ao mantenedor só se pergunta o que precisa da intenção ou da aprovação dele, e o trabalho não para esperando por ele.
-- Pular um item do cm6 nunca é silencioso.
+- Pular um item do cm6 nunca é silencioso, e passar por cima de uma forma de o Ferrum ser melhor que o cm6 também não.
 - As ideias do mantenedor mostram um modo de pensar. São pesadas como qualquer outra evidência: nem seguidas por serem do mantenedor, nem rejeitadas para parecer independente. Isso vale para instruções sobre como alcançar o resultado; que resultado se quer é só do mantenedor.

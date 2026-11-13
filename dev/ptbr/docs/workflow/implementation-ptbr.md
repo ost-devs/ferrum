@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/implementation.md` (commit `ae094f2`). O original em inglês é o que vale; as seções citadas (§3, §5…) seguem a numeração do original.
+> Tradução para leitura de `docs/workflow/implementation.md` (commit `bd64bfd`). O original em inglês é o que vale; as seções citadas (§3, §5…) seguem a numeração do original.
 
 # Etapa de implementação
 
@@ -21,9 +21,9 @@ O código de um crate só começa quando as três valem:
 Cada linha está aqui porque a paridade não poderia ser mostrada sem ela. O plano de um crate pode mudar qualquer outra coisa.
 
 1. **A especificação é a lista de trabalho.** Implemente os itens aprovados no escopo e nada mais. Um comportamento que a especificação deixou passar é acrescentado a `raw/behaviors.jsonl`, com seu `file:line` do cm6, uma fixture e a marca `added during implementation`, e é então coberto como todo outro comportamento (item 5).
-2. **Nada diverge em silêncio.** Um item com nome do cm6 ou se comporta como o cm6 ou carrega um desvio aprovado com sua anotação.
+2. **Nada diverge em silêncio, e nada é melhorado em silêncio.** Um item com nome do cm6 ou se comporta como o cm6 ou carrega um desvio aprovado ou uma melhoria adotada ([`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) D16) com sua anotação. Um worker que vê uma forma de fazer melhor que o cm6 a relata como pergunta e implementa o que o cm6 faz; o consultor a registra em `raw/improvements.jsonl` e decide o momento dela ([`docs/workflow/README.md`](README-ptbr.md#1-forma) §1).
 3. **Mesmo comportamento, meios de Rust.** Um mecanismo de que o cm6 precisa só por causa da sua pilha pode ser trocado quando isso serve a um objetivo do Ferrum. O projeto do crate lista essas oportunidades nativas. As verificações do item 5 mostram que o comportamento não mudou. Uma mudança de comportamento observável ou de API pública é uma pergunta para o consultor.
-4. **Os valores esperados vêm do cm6, e o autor do código não pode tocá-los.** Todo valor esperado é a saída de uma fixture ou o literal de um teste do cm6, nunca um valor tirado do código em Rust. Quem escreve o código de uma unidade não escreve nem edita seus testes, suas fixtures nem a comparação do replayer: [`.claude/hooks/guard.py`](../../../../.claude/hooks/guard.py) impede o `implementer` de escrever em `crates/*/tests/` e em `docs/parity/*/fixtures/`. Os testes são escritos a partir da especificação e do cm6 por um contexto que não viu o código, são commitados antes do código que conferem, e é mostrado que falham contra o esqueleto: uma verificação que passa sem implementação não confere nada.
+4. **Os valores esperados vêm do cm6, e o autor do código não pode tocá-los.** Todo valor esperado é a saída de uma fixture ou o literal de um teste do cm6, nunca um valor tirado do código em Rust. Onde uma melhoria adotada muda um, o valor é a saída do cm6 com o patch da melhoria aplicado (`fixtures/improved/<row id>.jsonl`, escrito pela ferramenta), ou os dados de teste do padrão que a linha nomeia. Quem escreve o código de uma unidade não escreve nem edita seus testes, suas fixtures nem a comparação do replayer: [`.claude/hooks/guard.py`](../../../../.claude/hooks/guard.py) impede o `implementer` de escrever em `crates/*/tests/` e em `docs/parity/*/fixtures/`. Os testes são escritos a partir da especificação e do cm6 por um contexto que não viu o código, são commitados antes do código que conferem, e é mostrado que falham contra o esqueleto: uma verificação que passa sem implementação não confere nada.
 5. **Todo comportamento é nomeado por uma verificação que roda.** Uma destas: uma fixture reproduzida contra o crate (o `behaviors` da fixture o nomeia; o replayer relata por comportamento); um teste do cm6 portado; um teste escrito com uma linha `// covers: <id>`. Um comportamento sem nenhuma é relatado, nunca deixado.
 6. **Uma pergunta só para o que depende dela.** Os workers relatam perguntas. O orquestrador as enfileira em `docs/parity/<crate>/questions.md` e continua com o resto.
 
@@ -54,7 +54,7 @@ Itens com disposição `CONTRACT` precisam de um trait antes do código: o contr
 - Nada de relógio real ou aleatoriedade sem uma semente registrada. Comportamento dependente de tempo (agrupamento do histórico, `Transaction.time`) usa tempos explícitos.
 - Valores esperados que diferem do cm6 por uma causa decidida (a unidade de D1, os separadores de D2, a gramática de D3) são calculados a partir do texto guardado na fixture, nunca digitados à mão. A causa é escrita ao lado da asserção.
 - Os helpers de teste espelham os do cm6, como `raw/tests.jsonl` os especifica, e têm testes próprios.
-- O replayer de fixtures lê `docs/parity/<crate>/fixtures/*.jsonl`, roda cada entrada gravada, converte as posições de UTF-16 para a unidade de D1 usando o texto guardado, compara a saída inteira exatamente, e relata seu resultado por fixture e por comportamento.
+- O replayer de fixtures lê `docs/parity/<crate>/fixtures/*.jsonl`, roda cada entrada gravada, converte as posições de UTF-16 para a unidade de D1 usando o texto guardado, compara a saída inteira exatamente, e relata seu resultado por fixture e por comportamento. Para uma fixture listada em `fixtures/improved/<row id>.jsonl` ele compara com a saída gravada ali, e relata essas fixtures à parte, por melhoria.
 
 ## 6. Documentação durante a etapa
 

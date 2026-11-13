@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/specification.md` (commit `ae094f2`). O original em inglês é o que vale; as seções citadas (§5, §9…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
+> Tradução para leitura de `docs/workflow/specification.md` (commit `bd64bfd`). O original em inglês é o que vale; as seções citadas (§5, §9…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
 
 # Etapa de especificação
 
@@ -65,8 +65,11 @@ raw/behaviors.jsonl        §5
 raw/tests.jsonl            §6: os casos de teste do próprio pacote
 raw/throws.jsonl           §7: todo throw que o cm6 alcança
 raw/names.jsonl            §7: nomes que a conversão mecânica pode não resolver
+raw/decisions.jsonl        as decisões do consultor sobre itens isolados (README.md §3); ninguém mais o escreve
+raw/improvements.jsonl     o registro do consultor de formas de ser melhor que o cm6 (README.md §1); ninguém mais o escreve
 raw/xc.jsonl               capacidades necessárias dos crates de baixo, e oferecidas aos de cima
 raw/coverage.jsonl         §8 item 1: linhas e ramos do cm6 que nenhuma execução registrada alcança (escrito pela ferramenta)
+raw/fixture-ops.jsonl      §8 item 1: por chunk e op, seus kinds e as fixtures e comportamentos que a rodam (escrito pela ferramenta)
 fixtures/<chunk>.jsonl     valores de referência produzidos pelo cm6
 oracle/cm6/<chunk>/        o interpretador do chunk e seus geradores (sem dados gerados)
 oracle/cm6/order.json      o pacote do cm6 e, por chunk, seus geradores na ordem de execução
@@ -83,6 +86,9 @@ Esquemas (um objeto JSON por linha; `[]` marca arrays):
 - `raw/tests.jsonl`: `id, file, line, describe, name, generated, scenario, expected, behaviors[], class, class_reason, port_notes`
 - `fixtures/<chunk>.jsonl`: `id, item_id, behaviors[], input, output, encoding`. Valores que o JSON não comporta são escritos numa só codificação, aplicada a entradas e saídas por [`tools/cm6/oracle-lib.ts`](../../../../tools/cm6/oracle-lib.ts) e por nada mais: uma string com um substituto solitário como `{"utf16": [todas as unidades de código]}`; `NaN`, `Infinity`, `-Infinity` e `-0` como `{"js_number": "NaN"}` e assim por diante; `undefined` como `{"js_undefined": true}`; um valor de função como `{"js_function": true}`; um valor que difere entre execuções (o relógio) como `{"js_unstable": "<o quê>"}`. `null` então sempre significa `null`, e uma string é sempre aquela string
 - `raw/xc.jsonl`: `capability, cm6, direction (needs|offers), crate, searched, exists`
+- `raw/decisions.jsonl` (o consultor o escreve): `id` (`<inventory id>.d<n>`, o que uma anotação cita por meio do seu id de inventário), `item_id`, `question`, `class` (`reproduce`: o resultado do cm6 é mantido embora pareça não intencional; `deviation-a`, `-b`, `-c`: o Ferrum difere, na classe de D11 nomeada; `form`: a forma em Rust do item), `decision` (o texto que obriga), `behaviors[]`, `fixtures_not_replayed[]` (`<chunk>:<id>`; o replayer roda toda outra fixture e não pode pular nenhuma por conta própria), `fixtures_to_list` (verdadeiro enquanto o consultor ainda deve a lista)
+- `raw/improvements.jsonl` (o consultor o escreve): `id` (`<crate prefix>.imp.<nnn>`, o que uma anotação cita), `title`, `items[]` (ids de inventário), `decisions[]` (as linhas de `raw/decisions.jsonl` que mantêm o resultado do cm6 enquanto isso), `behaviors[]` (os comportamentos que uma adoção pode mudar; a ferramenta falha numa mudança fora deles), `cm6` (o que o cm6 faz, com `file:line` ou ids de fixture), `better` (o que o Ferrum faria, e para quem é melhor), `basis` (a evidência de que é melhor: um padrão nomeado, a própria documentação ou um comentário do cm6, o que as plataformas nativas fazem; que um resultado pareça não intencional não é evidência), `kind` (`replaces` um comportamento do cm6, ou `adds` ao lado dele), `status` (`candidate`, `scheduled`, `adopted`, `declined`), `when` (o ponto em que um candidato é avaliado ou em que um agendado é feito), `reference` (como os valores esperados são produzidos: o patch, os dados do padrão), `note` (custo, risco, o que ainda não se sabe; para `declined`, o motivo, que nunca é fidelidade ao cm6)
+- `raw/fixture-ops.jsonl` (a ferramenta o escreve): `chunk, op, kinds[], fixtures, behaviors[]`
 
 Ids:
 - inventário: `<crate-curto>.cm6.<nnn>`, por exemplo `state.cm6.042`;
@@ -114,7 +120,8 @@ Para todo item no escopo (`CORE`, `CONTRACT`, a parte de `SURFACE` que pertence 
    - identidade: algum chamador compara resultados com `===`?
    - interação com outros pacotes.
 3. **Fixtures de referência (golden)** para todo comportamento que roda sem interface. Uma fixture é uma execução do cm6, escrita pelo `fixtureWriter`:
-   - nunca escrita à mão. A `input` registrada é um programa: o gerador a constrói como dado e produz a saída rodando esse mesmo valor pelo interpretador do chunk (`oracle/cm6/<chunk>/interp.ts`: uma op nomeada por tipo de chamada, seus argumentos como dado, a codificação de entradas e saídas documentada no topo dele), de modo que a entrada registrada é, por construção, a entrada usada, e o replayer de fixtures do crate roda as mesmas ops. Nenhuma chamada é registrada como prosa nem como uma expressão JavaScript para um leitor ([`docs/workflow/learnings.md`](learnings-ptbr.md) W39);
+   - nunca escrita à mão. A `input` registrada é um programa na única linguagem de [`tools/cm6/program.ts`](../../../../tools/cm6/program.ts) (ops, variáveis, um template `out`; uma op solta é um programa de um passo): o gerador a constrói como dado e produz a saída rodando esse mesmo valor pelo interpretador do chunk (`oracle/cm6/<chunk>/interp.ts`: as ops do chunk, seus argumentos como dado, cada uma registrada com seus kinds e documentada no topo dele, posições marcadas), de modo que a entrada registrada é, por construção, a entrada usada, e o replayer de fixtures do crate implementa um único avaliador e cada op uma vez. Nenhuma chamada é registrada como prosa nem como uma expressão JavaScript para um leitor ([`docs/workflow/learnings.md`](learnings-ptbr.md) W39). Toda saída é `{"ok": value}` ou `{"error": …}`. Nenhum valor esperado é escrito na entrada: toda folha de `out` é uma variável, e um valor que a entrada guarda como dado chega a uma saída só como um `label`, uma palavra que diz qual passo foi alcançado e não mostra nada sobre o cm6;
+   - os kinds de uma op dizem o que ela observa: `api`, `internal` (um membro `@internal` ou não exportado, ou o layout interno do cm6), `identity` (identidade de objeto do JavaScript), `callbacks` (como o cm6 chama uma função que a entrada fornece), `harness` (nenhum valor do cm6). O projeto decide, por op que não é só `api`, o que o replayer faz com ela;
    - posições em unidades de código UTF-16, como o cm6 as produz, com o texto guardado para que possam ser convertidas para a unidade de D1;
    - **classes de texto:** um comportamento cujo resultado é uma posição, um comprimento, um offset ou uma contagem medida sobre texto, ou depende de onde linhas ou clusters de grafemas se quebram, ganha, além da fixture ASCII, uma cujo texto tem um caractere astral antes ou dentro das posições envolvidas e uma para cada caso em que seu resultado se apoia: CRLF, CR solitário, U+2028 (com e sem `lineSeparator`), um cluster de grafemas de vários pontos de código. São os casos em que outra unidade de posição ou outro modelo de texto daria outra resposta, seja o que for que se decidiu sobre eles;
    - exceções são saídas (`capture`);
@@ -182,7 +189,8 @@ O orquestrador escreve, a partir das linhas juntadas:
 - `questions.md` ([`README.md`](README-ptbr.md#3-decisões) §3). Ele reúne:
   - toda pergunta que os workers levantaram;
   - toda decisão de que a especificação depende (D1–D10 com os itens e as fixtures que mostram suas consequências);
-  - toda peculiaridade ou bug aparente do cm6 cuja reprodução é uma escolha.
+  - toda peculiaridade ou bug aparente do cm6 cuja reprodução é uma escolha;
+  - todo lugar em que um padrão, a própria documentação do cm6, um comentário no código dele ou seu `CHANGELOG.md` mostra que um resultado do cm6 é uma limitação, declarado como fato com essa fonte. O consultor responde a cada um desses dois tipos com uma linha de decisão, uma linha de `raw/improvements.jsonl`, ou as duas: o resultado do cm6 é o piso, e se e quando o Ferrum vai acima dele é decidido caso a caso ([`README.md`](README-ptbr.md#1-forma) §1).
 
   Cada pergunta tem o formato de [`CLAUDE.md`](../../CLAUDE-ptbr.md) "Raising a question": sem opções, sem recomendação.
 - `raw/names.jsonl`: toda linha do inventário cujo nome a conversão mecânica de [`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md) Architecture 4 pode não resolver, com o que o membro faz e sua assinatura: um membro estático; um nome que é método ou convenção de trait da std (os nomes da tabela `should_implement_trait` do clippy, como `next`, `from_str`, `default`, `add`, `hash`; e `len`, `is_empty`, `to_string`, `iter`, `into_iter`, `from`, `as_ref`); serialização (`toJSON`, `fromJSON`); um nome que uma entrada de [`.claude/rules/rust-naming-decisions.md`](../../claude/rules/rust-naming-decisions-ptbr.md) cobre, para conferir se a categoria da entrada lhe serve. Só fatos: o consultor decide as entradas no S5.
@@ -212,7 +220,7 @@ O consultor escreve no S5 (§9), a partir desses fatos, `design.md`: o projeto e
 - **Posse e threads** (D6) e **dependências** com licença.
 - **As verificações que uma fixture não dá**: quais comportamentos precisam de um teste escrito (identidade, riscos, custo) e por quê, os fakes, os drivers do oráculo.
 - **Decisões óbvias**: uma linha cada, `OBVIOUS-<n>: <decisão>: <motivo>`, para escolhas com uma única resposta razoável.
-- **Oportunidades nativas**: onde um mecanismo que as notas de pilha registram existe só por causa da pilha do cm6 e outro serve melhor a um objetivo do Ferrum: o que o cm6 faz (`file:line`), o mecanismo escolhido, o objetivo, a medição que confirma o benefício, e o impacto no comportamento. Sem impacto observável, o implementador o adota com um teste de prova; um impacto observável o torna um desvio, registrado como acima.
+- **Oportunidades nativas**: onde um mecanismo que as notas de pilha registram existe só por causa da pilha do cm6 e outro serve melhor a um objetivo do Ferrum: o que o cm6 faz (`file:line`), o mecanismo escolhido, o objetivo, a medição que confirma o benefício, e o impacto no comportamento. Sem impacto observável, o implementador o adota com um teste de prova; um impacto observável o torna um desvio ou uma melhoria, registrado como acima ou em `raw/improvements.jsonl`.
 
 ## 8. Verificação
 
@@ -223,6 +231,7 @@ Cada tipo de erro é conferido pelo meio mais barato que o mostra, e as verifica
    - todo item no escopo tem comportamentos;
    - todo comportamento tem fixtures ou um `golden_note`;
    - todo gerador, rodado de novo na ordem que `oracle/cm6/order.json` registra, reproduz suas fixtures byte a byte;
+   - toda fixture é reproduzida: sua entrada registrada, rodada pelo interpretador do seu chunk com toda chave lida registrada, dá sua saída registrada; nenhuma chave fica sem leitura a não ser as descritivas que o interpretador nomeia; toda op tem seus kinds (`raw/fixture-ops.jsonl`); nenhum `out` referencia uma variável que um passo `data` ligou, e os labels são listados;
    - **cobertura do cm6:** os geradores rodam sob a cobertura do V8; toda linha e todo ramo do código-fonte do pacote que nenhuma execução alcançou é escrito em `raw/coverage.jsonl`. Cada um ganha uma fixture, ou um motivo em `verification.md` de por que nenhuma entrada o alcança ou por que está fora do escopo;
    - todo caso de teste está classificado;
    - [`tools/check_refs.py`](../../../../tools/check_refs.py) limpo.

@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/decisions/method.md` (commit `ae094f2`). O original em inglês é o que vale.
+> Tradução para leitura de `docs/decisions/method.md` (commit `bd64bfd`). O original em inglês é o que vale.
 
 # Decisões: method
 
@@ -586,3 +586,46 @@ redigidas em dev/maintainer/drafts/intencao-e-nuvem.md e não bloqueiam nada.
 **Confiança.** Alta em que a prova precisa ser o que roda, nos registros, no ledger e no stop-loss: cada um responde a uma falha medida. Média no plano por etapa e no ciclo como escritos: foram raciocinados a partir de uma etapa de um crate, e nenhuma implementação ou conformidade rodou. As expectativas E1–E6 no ledger dizem o que confirmará ou refutará cada uma.
 
 **Reabre.** Uma expectativa refutada no seu ponto de verificação; uma etapa cujo plano teve de ser abandonado no meio; o mantenedor achando que o que chega a ele (relatórios, rascunhos, registros em português) não o deixa acompanhar o trabalho.
+
+## 2026-11-13 · Programas de fixture numa só linguagem, replay com rastreamento de leitura como a conferência de completude, kinds das ops; passos não medidos registrados como tais
+
+*Decidido pelo consultor na revisão depois do piloto do passo A do `ferrum-state`. Texto que obriga: [`docs/workflow/specification.md`](../workflow/specification-ptbr.md) §4 (`raw/fixture-ops.jsonl`), §5 item 3, §8 item 1; [`tools/ledger.py`](../../../../tools/ledger.py). O raciocínio, com as medições: [`docs/decisions/ferrum-state.md`](ferrum-state-ptbr.md), "Step A after the pilot". Ledger: E7, E8.*
+
+**Decisões.**
+1. As entradas de fixture de todo crate são programas na única linguagem de [`tools/cm6/program.ts`](../../../../tools/cm6/program.ts); o interpretador de um chunk acrescenta suas ops. O replayer de um crate é um só avaliador, não um por chunk.
+2. [`tools/spec_check.py`](../../../../tools/spec_check.py) reproduz toda fixture a partir da sua entrada registrada com toda chave lida registrada, e falha numa saída que difere, numa chave não descritiva nunca lida, num literal num template `out`, numa fixture que não chama nenhuma op do cm6, numa op sem kinds. Uma lista de chaves que podem guardar texto não é uma conferência de completude: no piloto ela deixou passar 27 fixtures.
+3. Cada op declara o que observa (`api`, `internal`, `identity`, `callbacks`, `harness`), para que o projeto de um crate decida, por op, o que seu replayer faz com fixtures que observam mais que a API documentada do cm6.
+4. Um passo cujos tokens não foram medidos é registrado com `tokens=none`, nunca `0`, e o relatório diz quantas execuções não são medidas. Os passos do próprio orquestrador não são medidos hoje: a transcrição guarda o uso por mensagem, mas o formato dela é interno ao Claude Code e muda entre versões (`mirrors/claude-code-docs/en/sessions.md` "Where transcripts are stored").
+
+**Alternativas.** Interpretadores por chunk sem linguagem comum: um dialeto por chunk para o replayer implementar. Ampliar a lista de chaves: a prosa do próximo chunk pode ficar sob mais uma chave. Registrar passos não medidos como `0`: o relatório então os lê como gratuitos.
+
+**Confiança.** Alta em 2 e 4; alta em 1 para o `ferrum-state`, média para os crates seguintes, cujas chamadas (as perguntas de geometria de `view`) podem precisar de formas que a linguagem não tem; elas a estendem na ferramenta, não por chunk.
+
+**Reabre.** E7 ou E8 refutada.
+
+## 2026-11-13 · Como a prova carrega uma diferença de propósito: um piso, um registro e uma referência que roda para cada melhoria
+
+*Decidido pelo consultor, na pergunta que o mantenedor deixou com ele em 2026-11-13 ([`dev/maintainer/instructions/2026-11-13-piso-e-teto.md`](../../../maintainer/instructions/2026-11-13-piso-e-teto.md)): como a validação e a suíte de testes tratam os lugares em que o Ferrum é melhor que o cm6 de propósito, sem falsos erros. Texto que obriga: [`docs/workflow/README.md`](../workflow/README-ptbr.md#1-forma) §1 ("The floor and what goes above it", "When an improvement is made"), §2, §3; [`docs/workflow/specification.md`](../workflow/specification-ptbr.md) §4 (`raw/improvements.jsonl`), §7; [`docs/workflow/implementation.md`](../workflow/implementation-ptbr.md) §2 itens 2 e 4, §5; [`docs/workflow/conformance.md`](../workflow/conformance-ptbr.md) §0, G4, G5, G6, §4; [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) D16; [`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md) Tests 2, Annotations, Code 7. O princípio a que serve: [`docs/decisions/foundation.md`](foundation-ptbr.md), mesma data. Ledger: E10.*
+
+**O problema.** Toda conferência compara o Ferrum com valores produzidos rodando o cm6. Se o Ferrum é melhor em algum ponto, essas conferências falham ali. As duas saídas fáceis estão erradas: marcar os casos que falham como esperados deixa o comportamento do Ferrum ali conferido por nada (um erro se esconde como melhoria), e mudar à mão os valores esperados põe valores de uma pessoa ou do próprio código do Ferrum onde antes havia valores de uma execução.
+
+**A decisão.** Três coisas, mantidas separadas.
+1. *O piso nunca é editado.* Fixtures e testes portados ficam como o cm6 os produziu.
+2. *Um registro* por crate (`raw/improvements.jsonl`) guarda toda forma de ser melhor, com seu estado, seu momento e os comportamentos que uma adoção pode mudar.
+3. *Uma melhoria adotada tem uma referência própria que roda.* Ela é escrita uma vez como um patch do cm6 no harness. Uma ferramenta reproduz toda fixture e roda os testes do cm6 no cm6 com o patch; os casos cujo resultado muda recebem seu novo valor esperado dessa execução, e a ferramenta falha se muda um caso cujos comportamentos a linha não nomeia. O Ferrum é comparado com o cm6 onde as duas referências concordam e com o cm6 com o patch onde divergem; os relatórios contam as duas separadamente, por melhoria. Onde um padrão define o comportamento melhor, seus dados de teste publicados rodam contra o cm6 com o patch e contra o Ferrum, de modo que o próprio patch é conferido. Uma melhoria que só acrescenta tem testes escritos.
+
+Assim uma diferença de propósito nunca é uma falha (a referência a espera), um erro nunca é desculpado (fora dos casos mudados o Ferrum ainda precisa ser igual ao cm6, dentro deles precisa ser igual ao cm6 com o patch), e a lista do que difere do cm6 é calculada, não declarada.
+
+**O que tentei antes de contar com isso.** Com a ferramenta de replay existente, substituí `findClusterBreak` no harness por um construído sobre `Intl.Segmenter` do Node (UAX #29, Unicode 17.0) para as chamadas dentro do seu domínio, e reproduzi os quatro chunks que hoje são programas: 126 de 3.823 fixtures mudaram, todas no chunk `text`, nenhuma em `change`, `rangeset` ou `facet`; toda fixture mudada nomeia um comportamento da linha `state.imp.001`; 71 das 181 fixtures de `state.findClusterBreak.B9` mudaram, e as outras 110 registram casos em que as duas regras concordam ou chamadas fora do domínio do patch. A execução levou o tempo de um replay normal. O arquivo do harness foi restaurado depois e nada da tentativa está commitado: o patch e a ferramenta são escritos quando a melhoria é feita. Um fato achado no caminho, para o orquestrador: o harness carrega o arquivo construído do pacote (`dist/index.cjs`), não `src/index.js`.
+
+**Alternativas e por que cada uma perdeu.**
+- *Uma lista de fixtures a pular por melhoria.* O comportamento do Ferrum nelas fica então sem conferência, e a lista é escrita à mão.
+- *Valores esperados para os casos mudados escritos pelo test-writer a partir da descrição da melhoria.* Prosa como fonte de valores é o que a etapa de especificação mostrou ser a parte não confiável ([`docs/workflow/learnings.md`](../workflow/learnings-ptbr.md) W39–W42).
+- *Um interruptor no Ferrum (uma feature que restaura o comportamento do cm6) para que a suíte inalterada ainda rode.* Dois comportamentos para manter para sempre, e o que é entregue é o que não é comparado com o cm6.
+- *Comparar só em entradas fora de um predicado que descreve o domínio da melhoria.* O predicado é uma segunda descrição que pode estar errada; a execução com patch calcula o domínio.
+
+**Custo.** Um patch por melhoria que substitui um comportamento, uma ferramenta escrita uma vez (`tools/`), mais uma execução do cm6 por caso do oráculo. Os patches das melhorias adotadas de um crate de baixo são carregados quando os crates de cima gravam suas fixtures, de modo que seus casos mudados são achados da mesma forma.
+
+**Confiança.** Alta em que os valores precisam vir de uma execução e em que o piso fica intocado; média-alta no patch como forma geral: serve a uma melhoria local no código do cm6, e uma melhoria que precisasse de uma estrutura diferente no cm6 não tem patch pequeno. Uma assim é decidida com sua própria referência quando aparecer.
+
+**Reabre.** E10 refutada; uma melhoria cujo patch não pode ser escrito no cm6; um caso mudado que a ferramenta não atribui a nenhuma linha.

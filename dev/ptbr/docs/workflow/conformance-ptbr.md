@@ -1,8 +1,8 @@
-> Tradução para leitura de `docs/workflow/conformance.md` (commit `ae094f2`). O original em inglês é o que vale; as seções citadas (§2, G5…) seguem a numeração do original. O modelo de cartão (apêndice) também está traduzido; o orquestrador usa o do original, em inglês.
+> Tradução para leitura de `docs/workflow/conformance.md` (commit `bd64bfd`). O original em inglês é o que vale; as seções citadas (§2, G5…) seguem a numeração do original. O modelo de cartão (apêndice) também está traduzido; o orquestrador usa o do original, em inglês.
 
 # Etapa de conformidade
 
-Responde a uma pergunta sobre um crate implementado: **ele faz o que o cm6 faz, como sua especificação aprovada o registra, e nada além disso?** Se não, lista exatamente onde não, com reproduções. Esta etapa relata achados e nunca os corrige: a etapa de implementação os corrige e os portões que falharam rodam de novo. Papéis e decisões: [`docs/workflow/README.md`](README-ptbr.md).
+Responde a uma pergunta sobre um crate implementado: **ele faz o que o cm6 faz, como sua especificação aprovada o registra, e nada além disso a não ser as melhorias decididas para ele?** Se não, lista exatamente onde não, com reproduções. Esta etapa relata achados e nunca os corrige: a etapa de implementação os corrige e os portões que falharam rodam de novo. Papéis e decisões: [`docs/workflow/README.md`](README-ptbr.md).
 
 Este roteiro traz o que vale para todo crate. Como um crate é conferido (quais portões rodam como ferramentas, as sementes, as unidades lidas por um `verifier`, esforço e orçamento) é a seção "Conformance" de `docs/parity/<crate>/plan.md`, escrita pelo consultor quando a implementação é entregue.
 
@@ -10,7 +10,7 @@ Este roteiro traz o que vale para todo crate. Como um crate é conferido (quais 
 
 ## 0. O que um veredicto significa
 
-Um crate é `CONFORMANT` quando todo portão da §2 passa. Não há limiar percentual: uma diferença que nenhuma decisão explica o torna `NOT CONFORMANT`. Uma diferença explicada é uma que uma decisão permite ([`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md), ou a linha do item na especificação) e que o código anota ([`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md) "Annotations").
+Um crate é `CONFORMANT` quando todo portão da §2 passa. Não há limiar percentual: uma diferença que nenhuma decisão explica o torna `NOT CONFORMANT`. Uma diferença explicada é uma que uma decisão permite ([`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md), ou a linha do item na especificação) e que o código anota ([`.claude/rules/rust-crates.md`](../../claude/rules/rust-crates-ptbr.md) "Annotations"). Uma diferença que é uma melhoria adotada (`raw/improvements.jsonl`, [`docs/workflow/README.md`](README-ptbr.md#1-forma) §1) só é explicada onde a referência dela dá o valor que o Ferrum dá.
 
 **Veredictos de item:**
 
@@ -18,6 +18,7 @@ Um crate é `CONFORMANT` quando todo portão da §2 passa. Não há limiar perce
 |---|---|
 | `CONFORMANT` | Todo comportamento vale e é provado por um teste que passa; toda fixture é reproduzida exatamente |
 | `DECIDED DEVIATION` | Difere só como uma decisão permite (citada); todo o resto está em conformidade |
+| `IMPROVED` | Difere do cm6 só como uma melhoria adotada diz (sua linha citada), é igual à referência da melhoria ali e é igual ao cm6 em todo o resto |
 | `NONCONFORMANT` | Um comportamento falha ou não tem teste, ou uma fixture diverge; ids de comportamento e reproduções listados |
 | `BLOCKED: <capacidade>` | Precisa de uma capacidade de outro crate que ainda falta |
 | `UNVERIFIED` | Não pôde ser conferido (por quê); conta como não passando |
@@ -27,7 +28,7 @@ Um crate é `CONFORMANT` quando todo portão da §2 passa. Não há limiar perce
 - `CHANGED`: um valor esperado difere por uma causa decidida; passa;
 - `WEAKER`, `DIFFERENT`, `MISSING`: falham.
 
-**Todo veredicto lista os itens do cm6 que não foram portados** (`DROP`, ou excluídos por uma decisão), com a decisão que cobre cada um: "em conformidade; N itens não portados, listados".
+**Todo veredicto lista os itens do cm6 que não foram portados** (`DROP`, ou excluídos por uma decisão), com a decisão que cobre cada um, **e toda linha do registro de melhorias** com seu status e, para uma adotada, o número de fixtures e testes que ela muda: "em conformidade com `@codemirror/<pacote>@<versão>`; N itens não portados, listados; M melhorias adotadas, K agendadas ou em avaliação, listadas".
 
 ## 1. Entradas e saídas
 
@@ -70,15 +71,17 @@ Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador, 
 - Nenhum `#[ignore]`. `#[should_panic]` só onde o cm6 lança uma exceção e o contrato de erro decidido é um panic.
 - A semântica que cada caso `DOM-ONLY` fixa é coberta por algum outro teste.
 
-**G4. Fixtures de referência.** Toda fixture é reproduzida contra o crate, com as posições convertidas para a unidade de D1 e os separadores conforme D2. Exigido: 0 divergências.
+**G4. Fixtures de referência.** Toda fixture é reproduzida contra o crate, com as posições convertidas para a unidade de D1 e os separadores conforme D2. Uma fixture listada em `fixtures/improved/<row id>.jsonl` é comparada com a saída gravada ali. Exigido: 0 divergências; o relatório conta as fixtures iguais ao cm6 e, por melhoria, as que diferem dele. Antes do replay, a ferramenta regenera cada arquivo de `fixtures/improved/` a partir do patch, byte a byte, e confirma que toda fixture mudada nomeia um comportamento da sua linha.
 
 **G5. Oráculo diferencial.**
 - Todo gerador em `oracle/cm6/` roda de novo com sementes que a implementação nunca viu; o cm6 produz as saídas e o replayer do crate roda as mesmas entradas gravadas. Pelo menos 5.000 casos por grupo de itens. Exigido: 0 divergências depois da conversão de unidade decidida.
 - **Cobertura:** contar, por entrada da lista de formas ([`specification.md`](specification-ptbr.md#5-comportamentos-e-evidência) §5), quantos casos a tiveram. Um gerador que nunca produziu uma entrada não passa.
+- **Melhorias:** com melhorias adotadas, o cm6 roda cada caso duas vezes, como publicado e com os patches. O Ferrum precisa ser igual ao cm6 publicado onde as duas execuções concordam e ao cm6 com patch onde divergem; os casos que diferem são contados por melhoria, e uma melhoria cuja diferença nenhum gerador produziu não passa. Os dados de teste de um padrão que uma linha nomeia rodam contra o cm6 com patch e contra o Ferrum.
 - **Sensibilidade:** numa cópia de rascunho, introduzir um desvio deliberado por grupo de itens (inverter o sinal de um `assoc`, remover uma deduplicação) e confirmar que o oráculo o relata. Um oráculo que fica em 0 não passa.
 
 **G6. Desvios.**
-- Todo `/// cm6 deviation:` corresponde a uma decisão.
+- Todo `/// cm6 deviation:` corresponde a uma decisão ou a uma linha `adopted` de `raw/improvements.jsonl`; nenhuma linha com outro status tem código.
+- Toda linha `candidate` nomeia o ponto em que é avaliada, e nenhuma passou dele.
 - Toda decisão que exige um desvio é aplicada onde quer que se aplique, por exemplo as conversões de D1 em toda API que recebe posições.
 - Nenhuma outra diferença existe.
 
@@ -121,6 +124,7 @@ Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador, 
 - medições de custo;
 - toda linha `NONCONFORMANT` e `UNVERIFIED` com sua reprodução (entrada, saída do cm6, saída do Ferrum);
 - a lista de itens não portados;
+- o registro de melhorias: toda linha com seu status e momento, e por linha adotada as fixtures e os testes que diferem do cm6;
 - o resultado da verificação.
 
 O veredicto só é `CONFORMANT` se todo portão passa. `NOT CONFORMANT` devolve os achados à etapa de implementação.
@@ -129,9 +133,12 @@ Quando o relatório é `CONFORMANT`, o consultor revisa toda diferença explicad
 - o que o crate agora faz;
 - a evidência;
 - o que não foi portado e por quê;
+- onde o Ferrum agora é melhor que o cm6, onde será e quando, e o que foi recusado e por quê;
 - o que o consultor decidiu no caminho e onde ler.
 
 Isso vai em `dev/maintainer/reports/<crate>-conformance.md`. Depois da aceitação, o README do crate e `src/README.md` são escritos a partir do relatório.
+
+Então roda o delta de melhorias do crate ([`docs/workflow/README.md`](README-ptbr.md#1-forma) §1 "When an improvement is made"; o `plan.md` do crate). Quando ele termina, G4, G5 e G6 rodam de novo, o veredicto é redeclarado com as melhorias listadas, e o relatório e os READMEs são atualizados.
 
 ## 5. Não faça
 

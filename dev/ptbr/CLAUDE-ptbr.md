@@ -1,8 +1,8 @@
-> Tradução para leitura de `CLAUDE.md` (commit `ae094f2`). O original em inglês é o que vale. O Claude Code carrega o original em toda sessão e em todo subagente.
+> Tradução para leitura de `CLAUDE.md` (commit `bd64bfd`). O original em inglês é o que vale. O Claude Code carrega o original em toda sessão e em todo subagente.
 
 # Ferrum
 
-Um motor de editor Rust nativo que reproduz o comportamento observável do CodeMirror 6 (cm6): [`docs/foundation/ferrum-foundation.md`](docs/foundation/ferrum-foundation-ptbr.md). O que o mantenedor quer dele e do trabalho obriga tudo o mais: [`docs/foundation/maintainer-intent.md`](docs/foundation/maintainer-intent-ptbr.md). Como o trabalho corre: [`docs/workflow/README.md`](docs/workflow/README-ptbr.md).
+Um motor de editor Rust nativo que reproduz o comportamento observável do CodeMirror 6 (cm6), como seu piso e não como seu teto: [`docs/foundation/ferrum-foundation.md`](docs/foundation/ferrum-foundation-ptbr.md). O que o mantenedor quer dele e do trabalho obriga tudo o mais: [`docs/foundation/maintainer-intent.md`](docs/foundation/maintainer-intent-ptbr.md). Como o trabalho corre: [`docs/workflow/README.md`](docs/workflow/README-ptbr.md).
 
 `dev/ptbr/` guarda traduções para português para leitores humanos. Nunca leia, pesquise, cite nem edite; só o agente `translator` a mantém.
 
@@ -22,6 +22,7 @@ Só o agente `consultant` ([`.claude/agents/consultant.md`](claude/agents/consul
 - Sem opções e sem recomendação: o consultor constrói as alternativas a partir da evidência. Uma consequência que você encontrou é um fato ("o cm6 lança uma exceção em `state.ts:120` quando …; o teste em `test-state.ts:88` a espera"), não um cardápio.
 - Declare o problema, não um mecanismo: "quem chama não consegue distinguir X de Y", e não "X deveria retornar um `Result`?".
 - Uma pergunta já decidida ([`docs/decisions/`](docs/decisions/README-ptbr.md)) só é levantada de novo com a decisão anterior e a evidência nova.
+- Um jeito de o Ferrum fazer melhor do que o cm6 (um resultado que um padrão ou a própria documentação do cm6 mostra ser uma limitação, um erro mais preciso, uma chamada mais simples) é levantado da mesma forma, com sua fonte, e você implementa ou registra o que o cm6 faz: só o consultor adota uma melhoria e decide quando ela é feita (D16, [`.claude/rules/decisions.md`](claude/rules/decisions-ptbr.md)).
 
 ## Relatando a partir de um cartão (Reporting from a card)
 
