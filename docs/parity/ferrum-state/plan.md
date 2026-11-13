@@ -31,7 +31,7 @@ Units:
 For every unit:
 - Effort `medium`: every error of this step shows in the check before merge.
 - Check, run by the worker until it passes and by the orchestrator before merging: `python3 tools/spec_check.py ferrum-state --chunk <chunk> --same-outputs-as c2d1fca` passes (same ids, items, behaviors and outputs; regeneration byte for byte; every replay line at zero). The list of inputs recorded as text (`raw/fixture-calls.jsonl`) is the worker's list of what remains, not the check; when A ends, the orchestrator removes it and its count from the tool.
-- The interpreter's header marks `(pos)` each argument and output field that is a position, an offset or a length in UTF-16 code units of a document the input holds, so that the replayer maps them to the unit D1 decides without reading the generators (`docs/workflow/implementation.md` §5).
+- The interpreter's header marks `(pos)` each argument and output field that is a position, an offset or a length in UTF-16 code units of a document the input holds, so that the replayer maps them to the unit of D1 (UTF-8 bytes) without reading the generators (`docs/workflow/implementation.md` §5).
 - Card (`docs/parity/ferrum-state/cards/spec-auditor.md`): write only `oracle/cm6/<chunk>/` (A5 also the additions to `oracle/cm6/facet/interp.ts`), `fixtures/<chunk>.jsonl`, `.scratch/<chunk>/`. Give the worker `tools/cm6/program.ts` as the language and `oracle/cm6/rangeset/interp.ts` as the model of a chunk's ops; what each line of the check means, so that the worker does not read the tool; the kinds and what S5 does with them; the purpose: Ferrum's replayer runs the same input, op by op, from the header alone. A construct no chunk op can express and the language lacks is reported, not written into `tools/`.
 - Outputs keep their values, not their wrapping (Q58, `docs/decisions/ferrum-state.md`): the language writes every output as `{"ok": value}` or `{"error": …}`, so an output that c2d1fca held bare is now exactly `{"ok": <it>}`; the check counts these ("now wrapped in ok") and accepts nothing else. A value written in the input reaches an output only through the language's op `label {text}` (a word an old probe wrote to say which step was reached); a variable bound by a chunk's `data` step is never referenced by `out`, which the check counts and fails on. `data` is for values the program hands to cm6.
 - Stop-loss as `docs/workflow/README.md` §5: at 1.5 times the budget, or at a third failing run of the check on the same fixtures.
@@ -40,11 +40,11 @@ For every unit:
 
 **C. S5 Decision** (`docs/workflow/specification.md` §9), by the consultant, in three calls.
 
-Done at the first call (record: `docs/decisions/ferrum-state.md`, "S5, first part"): 45 questions decided (`raw/decisions.jsonl`, `.claude/rules/decisions.md` D11–D15); the naming entries N6–N10, which settle every row of `raw/names.jsonl`; `design.md`; the first iteration of D1, D2, D5 and D6 as drafts (`dev/maintainer/drafts/`), on which Q8, Q41–Q44 and Q54 and the marked sections of `design.md` wait. The input classes JavaScript's lack of types allows are excluded once, by D12.
+Done at the first call (record: `docs/decisions/ferrum-state.md`, "S5, first part"): 45 questions decided (`raw/decisions.jsonl`, `.claude/rules/decisions.md` D11–D15); the naming entries N6–N10, which settle every row of `raw/names.jsonl`; `design.md`; the first iteration of D1, D2, D5 and D6, confirmed by the maintainer on 2026-11-13 (`docs/decisions/foundation.md`), which closed Q8, Q41–Q44 and Q54. The input classes JavaScript's lack of types allows are excluded once, by D12.
 
 Second call, when step A ends (`raw/fixture-ops.jsonl` complete, every input a program): what the replayer does with each op that is not only `api` (run it against Ferrum's counterpart under the feature `__test`, compare a projection of its output, or leave its behaviors to a named check); the fixture lists of the rows of `raw/decisions.jsonl` whose `fixtures_to_list` is true. For it the orchestrator gathers, with a tool and not by reading: per chunk and op with a kind other than `api`, the output fields that hold an identity or a layout value; and for each row with `fixtures_to_list`, the fixtures whose input matches the row's condition (the row states it).
 
-Third call, when step B ends: the "Implementation" section of this plan, and the approval, which states the residual risk the samples measured (`docs/workflow/learnings.md` W42). The drafts do not hold this call back: what waits on them is listed in each.
+Third call, when step B ends: the "Implementation" section of this plan, and the approval, which states the residual risk the samples measured (`docs/workflow/learnings.md` W42). D1, D2, D5 and D6 are in force (`.claude/rules/decisions.md`).
 
 Then S6 (the end-of-stage review and the report for the maintainer).
 
@@ -55,3 +55,10 @@ Written at S5.
 ## Conformance
 
 Written when the implementation hands off.
+
+## Improvement delta
+
+Runs after the conformance verdict is accepted and before the S0 of `ferrum-view` (`docs/workflow/README.md` §1 "When an improvement is made"). Its procedure is written by the consultant when the verdict is accepted, from `raw/improvements.jsonl` as it then stands. What is fixed now:
+- `state.imp.001` (grapheme clusters by UAX #29) is made there, first, as the pilot of the mechanism: the patch in `oracle/improvements/state.imp.001/`, the tool that writes `fixtures/improved/state.imp.001.jsonl` and fails on a change outside the row's behaviors, tests from those values, then the code.
+- Every row whose `when` names this delta is settled there: adopted and made, scheduled for a later named point, or declined with its reason.
+- Before it starts, a `rust-researcher` and a `cm6-researcher` gather what each row's `note` says is not yet known.

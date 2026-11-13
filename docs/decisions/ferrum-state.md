@@ -312,3 +312,31 @@ which would make the rows' only consumer outside state an application.
 **Still owed, and when.** At the end of step A: what the replayer does with each op that is not only `api`, and the fixture lists of the 10 rows marked `fixtures_to_list`. After step B: the "Implementation" section of `plan.md` and the approval, with the residual risk the samples measured.
 
 **Reopens.** A draft changed by the maintainer (the rows that depend on it are named in each draft); `ferrum-view`'s specification finding a consumer value that an excluded class or a deviation removes.
+
+## 2026-11-13 · D2's cluster rule: cm6's now, the Unicode rule in the improvement delta; the improvement register; Q8, Q41–Q44 and Q54 closed
+
+*Decided by the consultant; the cluster rule was delegated by the maintainer on 2026-11-13, who approved in advance either answer (`dev/maintainer/instructions/2026-11-13-piso-e-teto.md`). Binding text: `.claude/rules/decisions.md` D2; `docs/parity/ferrum-state/raw/improvements.jsonl` (10 rows); `raw/decisions.jsonl` `state.cm6.017.d1`; `design.md` §4, §9; `plan.md` "Improvement delta". The confirmation of D1, D2 (structure), D5 and D6, which closes Q8 and Q41–Q44: `docs/decisions/foundation.md`, same date.*
+
+**The question.** "One character" for the cursor, for deletion and for columns: cm6's own rule, or the full Unicode rule (UAX #29)? And if the Unicode rule, when?
+
+**The facts.** cm6's package groups a base with its marks, emoji joined by ZWJ, and flag pairs (`mirrors/marijn/find-cluster-break/src/index.js:45-66`, which I read). It does not group: a Hangul syllable written as separate letters, an Indic conjunct, a Prepend character, tag sequences (the flag of England), variation selectors above U+E0100 (variants of ideographs), CR LF inside a string (Q42 item 6, recorded by 181 fixtures and compared there with Node's `Intl.Segmenter`). In those cases the cursor of cm6 stops inside what the person sees as one character, and a deletion can leave half of it. cm6's reason is its stack: a small table inside a JavaScript bundle. Native text systems and the shapers the surfaces will use follow UAX #29.
+
+**The decision.** The Unicode rule is better and Ferrum will have it: `state.imp.001`, scheduled, not a possibility. It is made in the improvement delta of `ferrum-state`, right after the conformance verdict and before the specification of `ferrum-view` starts. Until then the crate ports cm6's rule exactly, behind one function.
+
+**Why not now.** I weighed adopting it in the design:
+- *What it would save:* porting cm6's table and loop, about sixty lines and a generated table, part of which the Unicode rule still needs (what "without extending characters" means for backspace).
+- *What it would cost:* three things are not known yet and need a researcher, not a guess: the Unicode version of the Rust implementation against cm6's 17.0 (an older one would split characters cm6 groups, which is below the floor); what cm6's `includeExtending = false` should mean under the full rule (cm6 uses it so that backspace removes one accent, `commands.ts:581-585`; whether it should also remove one Hangul letter is a question about what users of that script expect, and no standard answers it); whether any sequence cm6 groups would come apart (a ZWJ before a character that is not a pictograph). Deciding those in a hurry is the kind of improvement the maintainer does not want.
+- *What deferring costs:* nothing the person editing can notice, since nothing ships before the foundation is complete, and nothing in the API: the function keeps its signature. The crates above are specified after the delta, so none is built on cm6's rule.
+- *What deferring gives:* the port is first shown equal to cm6 on all 181 cases and on fresh inputs with no filter; the delta then changes one function and one table, and the trial recorded in `docs/decisions/method.md` shows what it will change: 126 fixtures of chunk `text`, none elsewhere among the four chunks replayed.
+
+**Alternatives.** Adopt now (above). Keep cm6's rule for good (my draft's answer: the pruning the maintainer corrected). Defer to the end of the foundation (the view's cursor logic and its tests would be built on a rule Ferrum will not ship).
+
+**The register.** Reading every decision of the first part of S5 again under the corrected intent gave ten rows: `state.imp.001` scheduled; `state.imp.002` to `.008` candidates evaluated in the same delta (word characters matched by character and not by UTF-16 unit, which cm6's own documentation supports; transaction extenders adding their effects twice; inputs accepted unchecked; ranges dropped with a covered chunk; the bound of 1,000,000,000 positions; column functions that are not inverse; the JSON round trip of lines holding a separator); `state.imp.009` (calls that fail without a panic for positions from outside), evaluated with `ferrum-view` or the first consumer that needs it; `state.imp.010` (a structure for very long lines), evaluated on a benchmark at gate G8. For most candidates I have not yet shown that the other behavior is better, only that it may be; each row says what is missing. None changes the public API if made later.
+
+**Q54.** A state holds its lines as given, so the JSON round trip of a document built by hand from lines that contain the separator re-splits it, as in cm6 (`state.cm6.017.d1`); the round trip is `state.imp.008`.
+
+**Not decided here.** The five implicit throws that `design.md` does not settle (the type of `dir` in `Text::iter`, `StateFieldSpec`'s required `create` and `update`, the Rust form of language-data values) are design choices that do not depend on this directive; the last needs the facts of chunk `state`, which step A5 has not produced. They are decided at the second call of step C, when step A ends.
+
+**Confidence.** Medium-high. High that the Unicode rule is better for the person editing; medium-high on making it after the floor: it rests on the trial and on reasoning about risk, not on a delta that has run.
+
+**Reopens.** The researchers finding that the Rust side cannot reach Unicode 17.0 without work larger than the port of cm6's table (then the delta's cost is restated before it starts); the specification of `ferrum-view` being wanted before the delta is done.

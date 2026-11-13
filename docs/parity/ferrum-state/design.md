@@ -1,8 +1,6 @@
 # ferrum-state: design
 
-The Rust design of `ferrum-state`, the port of `@codemirror/state` 6.7.6 (`docs/workflow/specification.md` §7). Written by the consultant; the record of each choice is in `docs/decisions/ferrum-state.md` ("S5, first part") and `docs/decisions/foundation.md`. What binds beside this file: `.claude/rules/decisions.md` (D11–D15), `.claude/rules/rust-naming-decisions.md` (N1–N10), and the decisions about single items in `docs/parity/ferrum-state/raw/decisions.jsonl`, which this file does not repeat.
-
-**Not in force yet.** A section marked *(awaits D1)*, *(awaits D2)*, *(awaits D5)* or *(awaits D6)* rests on a foundational decision drafted for the maintainer (`dev/maintainer/drafts/`). It states the consultant's answer so that the design can be read whole; it binds only when that decision is in `.claude/rules/decisions.md`. Nothing is implemented from such a section before then (`docs/workflow/implementation.md` §1).
+The Rust design of `ferrum-state`, the port of `@codemirror/state` 6.7.6 (`docs/workflow/specification.md` §7). Written by the consultant; the record of each choice is in `docs/decisions/ferrum-state.md` ("S5, first part") and `docs/decisions/foundation.md`. What binds beside this file: `.claude/rules/decisions.md` (D1, D2, D5, D6, D11–D16), `.claude/rules/rust-naming-decisions.md` (N1–N10), and the decisions about single items in `docs/parity/ferrum-state/raw/decisions.jsonl`, which this file does not repeat. Where Ferrum can be better than cm6: `raw/improvements.jsonl` (section 9).
 
 **Not written yet.** What the fixture replayer does with each op that is not only `api`, and the list of fixtures it does not replay, are decided when step A of `plan.md` ends (`raw/fixture-ops.jsonl` complete). Every public signature is written in the skeleton, the first step of the implementation, from the rules here; the consultant approves the skeleton.
 
@@ -32,7 +30,7 @@ Dependencies: `serde_json` (MIT OR Apache-2.0) for the JSON values of N9. No oth
 ## 2. Positions and numbers
 
 - A position, a length, an offset, a line number, a count and an index are `usize` (D12). A signed distance is `isize` (`next(skip)`). Their unit is the unit of D1.
-- *(awaits D1)* The unit is the UTF-8 byte: a position is a byte offset into the document in which every line break counts one. A position must lie on a `char` boundary; one that does not is a violated precondition and panics (D13), as `str` slicing does. `Text::is_char_boundary(pos)` (`/// ferrum-only`) lets a caller test it. `code_point_at(s, pos) -> Option<char>`: `None` at or beyond the end, where cm6 gives `NaN`. `code_point_size(c: char) -> usize` is `c.len_utf8()`. `find_cluster_break`, `count_column` and `find_column` take and return byte offsets into the string they are given.
+- The unit is the UTF-8 byte (D1): a position is a byte offset into the document in which every line break counts one. A position must lie on a `char` boundary; one that does not is a violated precondition and panics (D13), as `str` slicing does. `Text::is_char_boundary(pos)` (`/// ferrum-only`) lets a caller test it. `code_point_at(s, pos) -> Option<char>`: `None` at or beyond the end, where cm6 gives `NaN`. `code_point_size(c: char) -> usize` is `c.len_utf8()`. `find_cluster_break`, `count_column` and `find_column` take and return byte offsets into the string they are given.
 - Range sides (`start_side`, `end_side`) are `i32`; their difference is computed in `i64`. `1_000_000_000` is cm6's `C.Far` and is used wherever cm6 uses it (`state.cm6.187.d1`).
 - `goal_column` is `Option<f64>`; `bidi_level` `Option<u8>`; `assoc` `i8`.
 - `Transaction::TIME` is `i64` milliseconds.
@@ -61,8 +59,8 @@ D14 gives the general forms. What this crate adds:
 
 ## 4. Core types and their invariants
 
-- **`Text`** *(awaits D2)*. cm6's tree, ported as it is: a leaf holds at most 32 lines, a node at most 32 children built by cm6's `TextNode.from` and split by its `decompose`; `children()` exposes it. A line is stored as given, without its break; a break counts one position. `Text::of` copies its input and panics on an empty list. Lines are immutable UTF-8 strings behind `Arc`; `Line::text()` returns `&str`. Edits share untouched children. Splitting a string into lines is `EditorState`'s and `ChangeSet::of`'s job, on `\r\n?|\n` or on the `LINE_SEPARATOR` facet's exact string; joining uses `"\n"` or the separator given.
-- **Grapheme clusters** *(awaits D2)*: the algorithm and the table of `@marijn/find-cluster-break` 1.0.4, ported, on `char`s.
+- **`Text`** (D2). cm6's tree, ported as it is: a leaf holds at most 32 lines, a node at most 32 children built by cm6's `TextNode.from` and split by its `decompose`; `children()` exposes it. A line is stored as given, without its break; a break counts one position. `Text::of` copies its input and panics on an empty list. Lines are immutable UTF-8 strings behind `Arc`; `Line::text()` returns `&str`. Edits share untouched children. Splitting a string into lines is `EditorState`'s and `ChangeSet::of`'s job, on `\r\n?|\n` or on the `LINE_SEPARATOR` facet's exact string; joining uses `"\n"` or the separator given.
+- **Grapheme clusters** (D2): the algorithm and the table of `@marijn/find-cluster-break` 1.0.4, ported, on `char`s. Every caller in the crate (`find_cluster_break`, `count_column`, `find_column`, `word_at`) reaches the rule through one private function, because `state.imp.001` replaces the rule in the crate's improvement delta and must change nothing else.
 - **`ChangeDesc` / `ChangeSet`**: cm6's `sections` array of (length, inserted length or -1) pairs, kept exactly as cm6 builds it (`add_section`'s merging), since `Debug`, `to_json` and the walks expose it. `ChangeSet` adds the inserted `Text`s. Immutable, `Arc` inside.
 - **`SelectionRange`**: `Copy`; `from`, `to`, the flags as cm6 packs them, `goal_column`. No invariant between `from` and `to` (`state.cm6.087.d1`). **`EditorSelection`**: at least one range; sorted and merged only by the paths that do so in cm6.
 - **`RangeSet<T>`**: cm6's layers of chunks (`state.cm6.184.d1`), chunks behind `Arc` and shared exactly where cm6 shares them (`state.RangeSet.map.B2`, `state.RangeSet.update.B6`, `state.RangeSet^join.B5`). `RangeSetBuilder::finish(self)`.
@@ -75,11 +73,11 @@ One enum, `Error`, `#[non_exhaustive]`, a variant per explicit throw of `raw/thr
 
 How a test checks a panic: `std::panic::catch_unwind`, comparing the payload's text with the fixture's `message` (numbers that are positions mapped to the unit of D1). The error's `name` in a fixture is not compared.
 
-## 6. Ownership and threading *(awaits D6)*
+## 6. Ownership and threading (D6)
 
 Every public value type is immutable, cheap to clone and `Send + Sync`; user callbacks are `Fn + Send + Sync + 'static` and user values `Send + Sync + 'static`. The crate starts no thread and holds no global mutable state but the id counter. A state under construction is visible only to the callbacks that build it, on the thread that builds it. Determinism in tests: ids follow definition order, so a test defines its facets and fields on one thread.
 
-## 7. `StateCommand` *(awaits D5)*
+## 7. `StateCommand` (D5)
 
 `pub struct StateCommandTarget<'a> { pub state: EditorState, pub dispatch: &'a mut dyn FnMut(Transaction) }` and `pub type StateCommand = dyn for<'a> Fn(StateCommandTarget<'a>) -> bool + Send + Sync`. A function item and a closure are both commands; a test builds the target as cm6's tests build their `{state, dispatch}` literal.
 
@@ -90,6 +88,8 @@ Every public value type is immutable, cheap to clone and `Send + Sync`; user cal
 - OBVIOUS-3: `Facet.tag`, `FacetReader.tag` and `fromCodePoint` have no Rust item (their rows are `DROP`).
 - OBVIOUS-4: `EditorState::field` and `try_field`: `state.cm6.008.d1`.
 
-## 9. Native opportunities
+## 9. Native opportunities and improvements
 
-None adopted. The stack notes of `raw/behaviors.jsonl` name mechanisms that exist for JavaScript (identity shortcuts, sentinels, the fixnum bound); each is either kept because fixtures and the oracle observe it, or replaced as section 3 says. A different `Text` or `RangeSet` structure is not proposed: no measurement shows cm6's structures missing a target of `docs/foundation/ferrum-foundation.md` §1, and the benchmarks of the conformance stage are where one would.
+No mechanism is replaced for a native one: the stack notes of `raw/behaviors.jsonl` name mechanisms that exist for JavaScript (identity shortcuts, sentinels, the fixnum bound), and each is either kept because fixtures and the oracle observe it, or replaced as section 3 says.
+
+Where Ferrum can be better than cm6 is `raw/improvements.jsonl` (`.claude/rules/decisions.md` D16), ten rows on 2026-11-13. None is part of this design: none would break the public API if made later, so each is made, or settled, after the floor is shown (`plan.md` "Improvement delta"). The position unit (D1) and the sharing rules (D6) are the two choices that had to be made here, because changing them later breaks every caller. `state.imp.001`, the Unicode cluster rule, is scheduled; the others are candidates with the point at which each is evaluated.

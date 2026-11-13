@@ -64,6 +64,7 @@ raw/tests.jsonl            §6: the package's own test cases
 raw/throws.jsonl           §7: every throw cm6 reaches
 raw/names.jsonl            §7: names the mechanical conversion may not settle
 raw/decisions.jsonl        the consultant's decisions about single items (README.md §3); nobody else writes it
+raw/improvements.jsonl     the consultant's register of ways to be better than cm6 (README.md §1); nobody else writes it
 raw/xc.jsonl               capabilities needed from lower crates, and offered to higher ones
 raw/coverage.jsonl         §8 item 1: lines and branches of cm6 no recorded run reaches (written by the tool)
 raw/fixture-ops.jsonl      §8 item 1: per chunk and op, its kinds and the fixtures and behaviors that run it (written by the tool)
@@ -84,6 +85,7 @@ Schemas (one JSON object per line; `[]` marks arrays):
 - `fixtures/<chunk>.jsonl`: `id, item_id, behaviors[], input, output, encoding`. Values JSON cannot hold are written in one encoding, applied to inputs and outputs by `tools/cm6/oracle-lib.ts` and by nothing else: a string with a lone surrogate as `{"utf16": [every code unit]}`; `NaN`, `Infinity`, `-Infinity` and `-0` as `{"js_number": "NaN"}` and so on; `undefined` as `{"js_undefined": true}`; a function value as `{"js_function": true}`; a value that differs between runs (the wall clock) as `{"js_unstable": "<what>"}`. `null` then always means `null`, and a string is always that string
 - `raw/xc.jsonl`: `capability, cm6, direction (needs|offers), crate, searched, exists`
 - `raw/decisions.jsonl` (the consultant writes it): `id` (`<inventory id>.d<n>`, what an annotation cites through its inventory id), `item_id`, `question`, `class` (`reproduce`: cm6's result is kept although it looks unintended; `deviation-a`, `-b`, `-c`: Ferrum differs, in the class of D11 named; `form`: the item's Rust form), `decision` (the binding text), `behaviors[]`, `fixtures_not_replayed[]` (`<chunk>:<id>`; the replayer runs every other fixture and may skip none of its own accord), `fixtures_to_list` (true while the consultant still owes the list)
+- `raw/improvements.jsonl` (the consultant writes it): `id` (`<crate prefix>.imp.<nnn>`, what an annotation cites), `title`, `items[]` (inventory ids), `decisions[]` (the rows of `raw/decisions.jsonl` that keep cm6's result meanwhile), `behaviors[]` (the behaviors an adoption may change; the tool fails on a change outside them), `cm6` (what cm6 does, with `file:line` or fixture ids), `better` (what Ferrum would do, and for whom it is better), `basis` (the evidence that it is better: a named standard, cm6's own documentation or comment, what native platforms do; that a result looks unintended is not evidence), `kind` (`replaces` a behavior of cm6, or `adds` beside it), `status` (`candidate`, `scheduled`, `adopted`, `declined`), `when` (the point at which a candidate is evaluated or a scheduled one is made), `reference` (how the expected values are produced: the patch, the standard's data), `note` (cost, risk, what is not yet known; for `declined`, the reason, which is never fidelity to cm6)
 - `raw/fixture-ops.jsonl` (the tool writes it): `chunk, op, kinds[], fixtures, behaviors[]`
 
 Ids:
@@ -185,7 +187,8 @@ The orchestrator writes, from the merged rows:
 - `questions.md` (`README.md` §3). It gathers:
   - every question the workers raised;
   - every decision the specification depends on (D1–D10 with the items and fixtures that show its consequences);
-  - every quirk or apparent bug of cm6 whose reproduction is a choice.
+  - every quirk or apparent bug of cm6 whose reproduction is a choice;
+  - every place where a standard, cm6's own documentation, a comment in its code or its `CHANGELOG.md` shows a result of cm6 to be a limitation, stated as a fact with that source. The consultant answers each of these two kinds with a decision row, a row of `raw/improvements.jsonl`, or both: cm6's result is the floor, and whether and when Ferrum goes above it is decided per case (`README.md` §1).
 
   Each question has the shape of `CLAUDE.md` "Raising a question": no options, no recommendation.
 - `raw/names.jsonl`: every inventory row whose name the mechanical conversion of `.claude/rules/rust-crates.md` Architecture 4 may not settle, with what the member does and its signature: a static member; a name that is a std trait method or convention (the names in clippy's `should_implement_trait` table, such as `next`, `from_str`, `default`, `add`, `hash`; and `len`, `is_empty`, `to_string`, `iter`, `into_iter`, `from`, `as_ref`); serialization (`toJSON`, `fromJSON`); a name an entry of `.claude/rules/rust-naming-decisions.md` covers, to check that the entry's category fits it. Facts only: the consultant decides the entries at S5.
@@ -215,7 +218,7 @@ The consultant writes at S5 (§9), from those facts, `design.md`: the crate's Ru
 - **Ownership and threading** (D6) and **dependencies** with license.
 - **The checks a fixture cannot give**: which behaviors need a written test (identity, hazards, cost) and why, the fakes, the oracle drivers.
 - **Obvious decisions**: one line each, `OBVIOUS-<n>: <decision>: <reason>`, for choices with a single reasonable answer.
-- **Native opportunities**: where a mechanism the stack notes record exists only because of cm6's stack and another serves a Ferrum goal better: what cm6 does (`file:line`), the mechanism chosen, the goal, the measurement that confirms the benefit, and the behavior impact. With no observable impact, the implementer adopts it with a proof test; an observable impact makes it a deviation, recorded as above.
+- **Native opportunities**: where a mechanism the stack notes record exists only because of cm6's stack and another serves a Ferrum goal better: what cm6 does (`file:line`), the mechanism chosen, the goal, the measurement that confirms the benefit, and the behavior impact. With no observable impact, the implementer adopts it with a proof test; an observable impact makes it a deviation or an improvement, recorded as above or in `raw/improvements.jsonl`.
 
 ## 8. Verification
 

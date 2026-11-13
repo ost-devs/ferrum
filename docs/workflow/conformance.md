@@ -1,6 +1,6 @@
 # Conformance stage
 
-Answers one question about an implemented crate: **does it do what cm6 does, as its approved specification records it, and nothing else?** If not, it lists exactly where not, with reproductions. This stage reports findings and never fixes them: the implementation stage fixes them and the failing gates run again. Roles and decisions: `docs/workflow/README.md`.
+Answers one question about an implemented crate: **does it do what cm6 does, as its approved specification records it, and nothing else but the improvements decided for it?** If not, it lists exactly where not, with reproductions. This stage reports findings and never fixes them: the implementation stage fixes them and the failing gates run again. Roles and decisions: `docs/workflow/README.md`.
 
 This brief holds what is true of every crate. How one crate is checked (which gates run as tools, the seeds, the units read by a `verifier`, effort and budget) is the "Conformance" section of `docs/parity/<crate>/plan.md`, written by the consultant when the implementation hands off.
 
@@ -8,7 +8,7 @@ This brief holds what is true of every crate. How one crate is checked (which ga
 
 ## 0. What a verdict means
 
-A crate is `CONFORMANT` when every gate of §2 passes. There is no percentage threshold: one difference that no decision explains makes it `NOT CONFORMANT`. An explained difference is one a decision allows (`.claude/rules/decisions.md`, or the item's row in the specification) and the code annotates (`.claude/rules/rust-crates.md` "Annotations").
+A crate is `CONFORMANT` when every gate of §2 passes. There is no percentage threshold: one difference that no decision explains makes it `NOT CONFORMANT`. An explained difference is one a decision allows (`.claude/rules/decisions.md`, or the item's row in the specification) and the code annotates (`.claude/rules/rust-crates.md` "Annotations"). A difference that is an adopted improvement (`raw/improvements.jsonl`, `docs/workflow/README.md` §1) is explained only where its reference gives the value Ferrum gives.
 
 **Item verdicts:**
 
@@ -16,6 +16,7 @@ A crate is `CONFORMANT` when every gate of §2 passes. There is no percentage th
 |---|---|
 | `CONFORMANT` | Every behavior holds and is proven by a passing test; every fixture replays exactly |
 | `DECIDED DEVIATION` | Differs only as a decision allows (cited); everything else conforms |
+| `IMPROVED` | Differs from cm6 only as an adopted improvement says (its row cited), equals the improvement's reference there, and equals cm6 everywhere else |
 | `NONCONFORMANT` | A behavior fails or is untested, or a fixture mismatches; behavior ids and reproductions listed |
 | `BLOCKED: <capability>` | Needs a capability of another crate that is still missing |
 | `UNVERIFIED` | Could not be checked (why); counts as not passing |
@@ -25,7 +26,7 @@ A crate is `CONFORMANT` when every gate of §2 passes. There is no percentage th
 - `CHANGED`: an expected value differs for a decided cause; passes;
 - `WEAKER`, `DIFFERENT`, `MISSING`: fail.
 
-**Every verdict lists the cm6 items that are not ported** (`DROP`, or excluded by a decision), with the decision that covers each: "conforming; N items not ported, listed".
+**Every verdict lists the cm6 items that are not ported** (`DROP`, or excluded by a decision), with the decision that covers each, **and every row of the improvement register** with its status, and for an adopted one the number of fixtures and tests it changes: "conforming to `@codemirror/<package>@<version>`; N items not ported, listed; M improvements adopted, K scheduled or under evaluation, listed".
 
 ## 1. Inputs and outputs
 
@@ -68,15 +69,17 @@ Mechanical gates run first, for the whole crate, by the orchestrator, each as a 
 - No `#[ignore]`. `#[should_panic]` only where cm6 throws and the decided error contract is a panic.
 - The semantic each `DOM-ONLY` case pins down is covered by some other test.
 
-**G4. Golden fixtures.** Every fixture replays against the crate, with positions mapped to the D1 unit and separators per D2. Required: 0 mismatches.
+**G4. Golden fixtures.** Every fixture replays against the crate, with positions mapped to the D1 unit and separators per D2. A fixture listed in `fixtures/improved/<row id>.jsonl` is compared with the output recorded there. Required: 0 mismatches; the report counts the fixtures equal to cm6 and, per improvement, those that differ from it. Before the replay, the tool regenerates each `fixtures/improved/` file from the patch byte for byte and confirms that every changed fixture names a behavior of its row.
 
 **G5. Differential oracle.**
 - Every generator in `oracle/cm6/` runs again with seeds the implementation never saw; cm6 produces the outputs and the crate's replayer runs the same recorded inputs. At least 5,000 cases per item group. Required: 0 mismatches after the decided unit mapping.
 - **Coverage:** count, per entry of the shape checklist (`specification.md` §5), how many cases had it. A generator that never produced an entry does not pass.
+- **Improvements:** with adopted improvements, cm6 runs each case twice, as published and with the patches. Ferrum must equal the published cm6 wherever the two runs agree and the patched cm6 where they differ; the differing cases are counted per improvement, and an improvement whose difference no generator produced does not pass. The test data of a standard a row names runs against the patched cm6 and against Ferrum.
 - **Sensitivity:** in a scratch copy, introduce one deliberate deviation per item group (flip an `assoc` sign, drop a deduplication) and confirm the oracle reports it. An oracle that stays at 0 does not pass.
 
 **G6. Deviations.**
-- Every `/// cm6 deviation:` maps to a decision.
+- Every `/// cm6 deviation:` maps to a decision or to an `adopted` row of `raw/improvements.jsonl`; no row with another status has code.
+- Every `candidate` row names the point at which it is evaluated, and none is past it.
 - Every decision that requires a deviation is applied wherever it applies, for example the D1 conversions at every position-taking API.
 - No other difference exists.
 
@@ -119,6 +122,7 @@ Mechanical gates run first, for the whole crate, by the orchestrator, each as a 
 - cost measurements;
 - every `NONCONFORMANT` and `UNVERIFIED` row with its reproduction (input, cm6 output, Ferrum output);
 - the list of items not ported;
+- the improvement register: every row with its status and moment, and per adopted row the fixtures and tests that differ from cm6;
 - the verification result.
 
 The verdict is `CONFORMANT` only if every gate passes. `NOT CONFORMANT` sends the findings back to the implementation stage.
@@ -127,9 +131,12 @@ Once the report is `CONFORMANT`, the consultant reviews every explained differen
 - what the crate now does;
 - the evidence;
 - what is not ported and why;
+- where Ferrum is now better than cm6, where it will be and when, and what was declined and why;
 - what the consultant decided along the way and where to read it.
 
 It goes in `dev/maintainer/reports/<crate>-conformance.md`. After acceptance, the crate's README and `src/README.md` are written from the report.
+
+Then the crate's improvement delta runs (`docs/workflow/README.md` §1 "When an improvement is made"; the crate's `plan.md`). When it ends, G4, G5 and G6 run again, the verdict is restated with the improvements listed, and the report and the READMEs are brought up to date.
 
 ## 5. Do not
 

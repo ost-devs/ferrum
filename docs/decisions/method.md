@@ -590,3 +590,30 @@ drafted in dev/maintainer/drafts/intencao-e-nuvem.md and block nothing.
 **Confidence.** High on 2 and 4; high on 1 for `ferrum-state`, medium for the crates that follow, whose calls (`view`'s geometry questions) may need forms the language lacks; they extend it in the tool, not per chunk.
 
 **Reopens.** E7 or E8 refuted.
+
+## 2026-11-13 · How the proof carries a difference that is on purpose: a floor, a register, and a reference that runs for every improvement
+
+*Decided by the consultant, on the question the maintainer left to it on 2026-11-13 (`dev/maintainer/instructions/2026-11-13-piso-e-teto.md`): how validation and the test suite handle places where Ferrum is better than cm6 on purpose, without false errors. Binding text: `docs/workflow/README.md` §1 ("The floor and what goes above it", "When an improvement is made"), §2, §3; `docs/workflow/specification.md` §4 (`raw/improvements.jsonl`), §7; `docs/workflow/implementation.md` §2 items 2 and 4, §5; `docs/workflow/conformance.md` §0, G4, G5, G6, §4; `.claude/rules/decisions.md` D16; `.claude/rules/rust-crates.md` Tests 2, Annotations, Code 7. The principle it serves: `docs/decisions/foundation.md`, same date. Ledger: E10.*
+
+**The problem.** Every check compares Ferrum with values produced by running cm6. If Ferrum is better somewhere, those checks fail there. The two easy ways out are both wrong: marking the failing cases as expected leaves Ferrum's behavior there checked by nothing (an error hides as an improvement), and changing the expected values by hand puts values from a person or from Ferrum's own code where values from a run used to be.
+
+**The decision.** Three things, kept apart.
+1. *The floor is never edited.* Fixtures and ported tests stay as cm6 produced them.
+2. *A register* per crate (`raw/improvements.jsonl`) holds every way to be better, with its state, its moment and the behaviors an adoption may change.
+3. *An adopted improvement has a reference of its own that runs.* It is written once as a patch to cm6 in the harness. A tool replays every fixture and runs cm6's tests on the patched cm6; the cases whose result changes get their new expected value from that run, and the tool fails if a case changes whose behaviors the row does not name. Ferrum is compared with cm6 where the two references agree and with the patched cm6 where they differ; reports count the two apart, per improvement. Where a standard defines the better behavior, its published test data runs against both the patched cm6 and Ferrum, so the patch is itself checked. An improvement that only adds has written tests.
+
+So a difference on purpose is never a failure (the reference expects it), an error is never excused (outside the changed cases Ferrum must still equal cm6, inside them it must equal the patched cm6), and the list of what differs from cm6 is computed, not declared.
+
+**What I tried before relying on it.** With the existing replay tool I replaced `findClusterBreak` in the harness by one built on Node's `Intl.Segmenter` (UAX #29, Unicode 17.0) for calls inside its domain, and replayed the four chunks that are programs today: 126 of 3,823 fixtures changed, all in chunk `text`, none in `change`, `rangeset` or `facet`; every changed fixture names a behavior of the row `state.imp.001`; 71 of the 181 fixtures of `state.findClusterBreak.B9` changed, the other 110 record cases where the two rules agree or calls outside the patch's domain. The run took the time of a normal replay. The harness file was restored afterwards and nothing of the trial is committed: the patch and the tool are written when the improvement is made. A fact found on the way, for the orchestrator: the harness loads the package's built file (`dist/index.cjs`), not `src/index.js`.
+
+**Alternatives and why each lost.**
+- *A list of fixtures to skip per improvement.* Ferrum's behavior on them is then unchecked, and the list is written by hand.
+- *Expected values for the changed cases written by the test-writer from the improvement's description.* Prose as the source of values is what the specification stage showed to be the unreliable part (`docs/workflow/learnings.md` W39–W42).
+- *A switch in Ferrum (a feature that restores cm6's behavior) so that the unchanged suite still runs.* Two behaviors to maintain forever, and the shipped one is the one not compared with cm6.
+- *Compare only on inputs outside a predicate that describes the improvement's domain.* The predicate is a second description that can be wrong; the patched run computes the domain.
+
+**Cost.** One patch per improvement that replaces a behavior, one tool written once (`tools/`), one more run of cm6 per oracle case. The patches of adopted improvements of a lower crate are loaded when the crates above record their fixtures, so their changed cases are found the same way.
+
+**Confidence.** High that values must come from a run and that the floor stays untouched; medium-high on the patch as the general form: it fits an improvement that is local in cm6's code, and an improvement that would need a different structure in cm6 has no small patch. Such a one is decided with its own reference when it appears.
+
+**Reopens.** E10 refuted; an improvement whose patch cannot be written in cm6; a changed case that the tool attributes to no row.

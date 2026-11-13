@@ -29,6 +29,12 @@
 - Many questions of one crate are a few questions asked many times: find the classes first, decide each once as a rule, then write only the per-item consequence. Same entry
 - A check that fails on form while the values are equal (Q58): fix the check to compare what it is for, count the accepted form, and close the hole the worker's workaround opened; try a broader check on the committed chunks before adopting it (the general one had false positives). `docs/decisions/ferrum-state.md` Q58
 - Design before the foundational drafts are confirmed: write it whole, mark the sections that rest on a draft as not in force, never copy a draft's answer into a rule.
+- cm6 result that looks worse than it could be: keeping it is the floor, never the end of the question. Open a row in the crate's `raw/improvements.jsonl` (adopted, scheduled, candidate with a date, declined for a reason that is not fidelity). Never write "no goal asks for it". `docs/decisions/foundation.md`, "cm6 is the floor"
+- When to make an improvement: in the design only if making it later breaks the API or stored data (D1, D6); otherwise as a delta right after the crate's conformance verdict, one at a time, before the crate above is specified. Reason: the delta on a proven floor shows exactly what changed. Same entry
+- A difference on purpose in a suite of recorded values: never a skip list or hand-written values; patch the reference (cm6 in the harness), let a tool compute which cases change and their new values, fail on a change outside the row's behaviors. Try the patch on the existing replay before relying on it (one file, 126 of 3,823 fixtures). `docs/decisions/method.md`, same date
+- A decision the maintainer delegates with "either answer is approved": still derive it, and say what is unknown; "better" in a draft followed by "but parity" is the pattern they corrected.
 
 ## Calibration
+- 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.
+- They confirm drafts readily when the draft states costs; what they push back on is a value judgment of mine presented as a technical one.
 - [Maintainer's suggestions](feedback-maintainer-suggestions.md) — weigh, don't obey or reject for show; they prize decider independence and nothing silent
