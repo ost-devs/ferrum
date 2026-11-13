@@ -122,7 +122,7 @@ For every item in scope (`CORE`, `CONTRACT`, the core-owned part of `SURFACE`, a
    - an op's kinds say what it observes: `api`, `internal` (an `@internal` or unexported member, or cm6's internal layout), `identity` (JavaScript object identity), `callbacks` (how cm6 calls a function the input supplies), `harness` (no cm6 value). The design decides, per op that is not only `api`, what the replayer does with it;
    - positions in UTF-16 code units, as cm6 produces them, with the text stored so they can be mapped to the unit of D1;
    - **text classes:** a behavior whose result is a position, a length, an offset or a count measured on text, or depends on where lines or grapheme clusters break, gets besides its ASCII fixture one whose text has an astral character before or inside the positions involved and one for each case its result turns on: CRLF, lone CR, U+2028 (with and without `lineSeparator`), a grapheme cluster of several code points. These are the cases where another position unit or text model would give another answer, whatever was decided about them;
-   - exceptions are outputs (`capture`);
+   - exceptions are outputs (`capture`): the error's name and message. An output never holds a place in cm6's source (a file and line, a stack): it is what Ferrum is compared with, Ferrum has no value for it, and it changes at every cm6 release that moves a line. Where an uncaught throw came from is kept beside the run by the language and compared with `raw/throws.jsonl` by the tool (§8 item 1);
    - lone surrogates are encoded (`encode`).
 
    A behavior that needs a DOM or a grammar gets `golden_note` with the reason, and its expected values are taken from cm6 test assertions.
@@ -229,7 +229,7 @@ Each kind of error is checked by the cheapest means that shows it, and the check
    - every in-scope item has behaviors;
    - every behavior has fixtures or a `golden_note`;
    - every generator, re-run in the order `oracle/cm6/order.json` records, reproduces its fixtures byte for byte;
-   - every fixture replays: its recorded input, run through its chunk's interpreter while every key read is recorded, gives its recorded output; no key is left unread but the descriptive ones the interpreter names; every op has its kinds (`raw/fixture-ops.jsonl`); no `out` references a variable that a `data` step bound, and the labels are listed;
+   - every fixture replays: its recorded input, run through its chunk's interpreter while every key read is recorded, gives its recorded output; no key is left unread but the descriptive ones the interpreter names; every op has its kinds (`raw/fixture-ops.jsonl`); no `out` references a variable that a `data` step bound, and the labels are listed; every fixture whose run ends in a throw nothing caught was thrown at a line that has a row of `raw/throws.jsonl` (the fixtures a row does not list are counted; `tools/spec_facts.py` writes which fixtures end at which row);
    - **cm6 coverage:** the generators run under V8 coverage; every line and branch of the package's source that no run reached is written to `raw/coverage.jsonl`. Each gets a fixture, or a reason in `verification.md` why no input reaches it or why it is out of scope;
    - every test case is classified;
    - `tools/check_refs.py` is clean.

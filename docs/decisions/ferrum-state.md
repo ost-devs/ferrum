@@ -340,3 +340,31 @@ which would make the rows' only consumer outside state an application.
 **Confidence.** Medium-high. High that the Unicode rule is better for the person editing; medium-high on making it after the floor: it rests on the trial and on reasoning about risk, not on a delta that has run.
 
 **Reopens.** The researchers finding that the Rust side cannot reach Unicode 17.0 without work larger than the port of cm6's table (then the delta's cost is restated before it starts); the specification of `ferrum-view` being wanted before the delta is done.
+
+## 2026-11-13 · Q59: an output never holds a line of cm6's source; where a throw came from is checked by the tool, for every uncaught throw
+
+*Decided by the consultant. Binding text: `docs/workflow/specification.md` §5 item 3 and §8 item 1; `docs/parity/ferrum-state/plan.md` step A "For every unit"; `tools/cm6/program.ts` (`throwSite`, `Language.thrownAt`), `tools/cm6/replay.ts` (`thrown`), `tools/spec_check.py` (the comparison with an earlier commit, the line "uncaught throws"), `tools/spec_facts.py` (`throw-fixtures.jsonl`). Ledger: E11.*
+
+**Question.** 26 fixtures of chunk `state` recorded, in a top-level error, the line of cm6's source that threw (`site`). The language writes an uncaught throw as `{name, message}`, so after A5 those 26 outputs lack the field and the check of step A fails on them. Two more fixtures (F7100, F7101) keep a `site` inside a value through a chunk op, `captureSite`.
+
+**What the field was for.** Not for Ferrum: a line of `transaction.ts` is a fact about cm6's source, Ferrum's replayer has nothing to compare with it, and it would change at every cm6 release that moves a line, with no change of behavior (the fixtures would be recorded again at each release delta for nothing). It was for the reader of the specification: 25 of the 26 are engine `TypeError`s whose message ("filter is not a function") does not say which line of cm6 failed, and the site tied the fixture to its row of `raw/throws.jsonl`. That link is what D12 and D13 are applied through (which fixtures end at a throw that Rust's types exclude, which at an explicit throw that becomes a panic).
+
+**What I verified.** Each of the 28 sites of c2d1fca is the line of exactly one row of `raw/throws.jsonl`, and that row already lists the fixture: the field repeated what the rows say. No file under `tools/` read it. Then I wrote the link as a tool and ran it on all five chunks: the evaluator keeps, beside the run and outside the output, the first frame of an uncaught error's stack inside the package's source; replay reports it; the check compares it with the rows. Result: 355 fixtures end in an uncaught throw (text 32, change 78, rangeset 5, facet 119, state 121; 257 at an explicit throw, 98 at an implicit one); every one was thrown at a line that has a row; 42 are at a row that does not list them (41 explicit, 1 implicit). So the tool gives for 355 fixtures what the field gave for 26, and shows that `raw/throws.jsonl` lacks no throw that a recorded run ends in.
+
+**Decisions.**
+1. *An output never holds a place in cm6's source.* An error in an output is its name and message. The comparison with c2d1fca accepts an error object that had `site` and now lacks it, counts it, and fails on an output that still holds one.
+2. *The same rule inside a value.* `captureSite` is removed; F7100 and F7101 use `capture`. One rule instead of two, one op of kind `internal` fewer for the replayer, and their two rows (`change.ts:208`, `:439`) already list them.
+3. *The link is the tool's.* The check prints per chunk "uncaught throws" and fails when one was thrown at a line with no row (a throw the facts lack, or an error of the interpreter or of a callback written as if cm6 gave it). `tools/spec_facts.py` writes, per row, the fixtures that end there, for the second call of step C.
+4. *A row's `fixtures` are the ones that show the throw, not every one that reaches it.* The 42 not listed are counted, not a failure, and the rows are not rewritten: what is complete is computed on demand, not kept by hand.
+
+**Alternatives and why each lost.**
+- *Add `site` to every error the language writes.* 355 outputs would carry a line number Ferrum cannot compare, every one a projection for the replayer to make and a change at each release.
+- *Have the 26 programs catch the throw with `captureSite`.* The output turns from `{"error"}` into `{"ok": {"error"}}`: a second form for an uncaught throw, an `internal` op in 26 more fixtures, and the link still verified only where someone thought to ask for it.
+- *Accept the loss and rely on the rows' lists.* Sound today (the 26 are listed), but the link would rest on lists written by hand, and nothing would show a throw with no row.
+- *Fail on a fixture its row does not list.* It would make a hand-kept list a second copy of what the tool computes.
+
+**What it does not cover.** A throw caught inside a program (`try`, `capture`, an op with its own catch) is not seen by the tool: those fixtures are tied to their rows by the rows' lists, as before. F7100 and F7101 are the only two that lose a machine-recorded site by this decision.
+
+**Confidence.** High: the rule follows from what an output is for, and the replacement was run on every fixture before I relied on it.
+
+**Reopens.** A crate whose fixtures must tell apart two throws with the same name and message by their place in the source, for a behavior Ferrum has to reproduce; a legitimate fixture whose uncaught error comes from a callback of the input (the check would fail on it and the rule for "no row" would be refined).

@@ -10,7 +10,9 @@
 //                       the output.
 // The input is read with `decode` (tools/cm6/oracle-lib.ts) first, so {"js_undefined": true} is undefined and so on.
 // The output is {"ok": value} or, when a step throws outside a `try`, {"error": {name, message}}, the value encoded
-// by `encode`.
+// by `encode`. An output holds what cm6 gives its caller and nothing about cm6's source: where an uncaught throw
+// came from (`throwSite`) is kept beside the run in `Language.thrownAt`, which tools/cm6/replay.ts reports and
+// tools/spec_check.py compares with raw/throws.jsonl.
 // - Setup keys: what the chunk builds before the steps run (the header of its interpreter names them).
 // - Descriptive keys: top-level keys no op reads (a seed, a case name, a note). The chunk's interpreter names them;
 //   every other key of an input must be read when the input runs.
@@ -121,11 +123,21 @@ export class Program {
   }
 }
 
+/** The first frame of an error's stack inside a cm6 package's source, as "mirrors/cm6/<package>/src/<file>:<line>";
+ * "" when the stack has none (the error was thrown by the interpreter, by a callback of the input, or by a
+ * dependency of the package). */
+export function throwSite(e: any): string {
+  const m = /\/cm6\/([\w-]+)\/src\/([\w./-]+\.ts):(\d+)/.exec(String(e?.stack ?? ""))
+  return m ? `mirrors/cm6/${m[1]}/src/${m[2]}:${m[3]}` : ""
+}
+
 /** A chunk's interpreter: the language's ops plus the ones the chunk registers. */
 export class Language {
   ops = new Map<string, {kinds: Kind[], run: OpFn}>()
   /** The ops the last `evaluate` ran. */
   ran = new Set<string>()
+  /** Where the last `evaluate` ended in an uncaught throw (`throwSite`), else null. It is not part of the output. */
+  thrownAt: string | null = null
   /** `descriptive`: the top-level input keys no op reads. `setup`: builds, from the decoded input, what the chunk's
    * ops need before the steps run (it becomes `p.chunk`); it runs inside the capture, so a throw in it is an output. */
   constructor(readonly chunk: string, readonly descriptive: readonly string[], readonly setup?: (input: any, p: Program) => any) {
@@ -178,7 +190,7 @@ export class Language {
   }
   /** Run a decoded input (replay passes one that records what is read). */
   evaluate(inp: any): {ok: any} | {error: {name: string, message: string}} {
-    this.ran = new Set()
+    this.ran = new Set(); this.thrownAt = null
     const program = Array.isArray(inp?.steps)
     try {
       const p = new Program(this)
@@ -188,6 +200,7 @@ export class Language {
       return {ok: encode(p.fill(inp.out))}
     } catch (e: any) {
       if (program) { markRead(inp.steps); markRead(inp.out) } else markRead(inp)
+      this.thrownAt = throwSite(e)
       return {error: {name: e?.name ?? "Error", message: String(e?.message ?? e)}}
     }
   }

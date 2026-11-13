@@ -3,7 +3,7 @@
 
     python3 tools/spec_facts.py <crate>
 
-Run from the repository root, after tools/spec_check.py has written raw/fixture-ops.jsonl. Writes two files under
+Run from the repository root, after tools/spec_check.py has written raw/fixture-ops.jsonl. Writes three files under
 .scratch/s5/<crate>/ (never committed) and prints their counts:
 
 decision-fixtures.jsonl   one line per row of raw/decisions.jsonl with `fixtures_to_list` true: {id, item_id,
@@ -15,6 +15,11 @@ op-outputs.jsonl          one line per chunk and op whose kinds are not only `ap
     output_keys: {key: count} every object key that occurs, at any depth, in the outputs of the `alone` fixtures
     (of all its fixtures when `alone` is 0, with "mixed": true)}. The keys are where an identity or layout value of
     the op can be; which keys are such values is read from the op's line in the header of the chunk's interp.ts.
+throw-fixtures.jsonl      one line per row of raw/throws.jsonl: {cm6, kind, uncaught: [<chunk>:<fixture id>] the
+    fixtures whose run ends in a throw nothing caught, thrown at the row's line (the first frame of the stack inside
+    the package's source), not_listed_by_row: those of them the row's `fixtures` lack, listed_not_uncaught: the
+    row's fixtures that are not among them (the throw is caught inside the program, or the fixture shows the
+    condition not met)}; then one line per site with no row (kind "no row").
 """
 import collections, json, os, subprocess, sys
 
@@ -74,6 +79,22 @@ def main():
                 if not alone: row["mixed"] = True
                 f.write(json.dumps(row) + "\n"); n += 1
     print(f"op-outputs.jsonl: {n} rows")
+
+    # which fixtures end in an uncaught throw at each row of raw/throws.jsonl
+    at = collections.defaultdict(list)
+    for c in fx:
+        for i, site in (ran.get(c) or {}).get("thrown", {}).items(): at[site].append(f"{c}:{i}")
+    n = m = 0
+    with open(os.path.join(out, "throw-fixtures.jsonl"), "w", encoding="utf-8") as f:
+        for t in rows(os.path.join(base, "raw", "throws.jsonl")):
+            ends = at.pop(t["cm6"].split(" ")[0], [])
+            f.write(json.dumps({"cm6": t["cm6"], "kind": t["kind"], "uncaught": ends,
+                                "not_listed_by_row": [i for i in ends if i not in t["fixtures"]],
+                                "listed_not_uncaught": [i for i in t["fixtures"] if i not in ends]}) + "\n")
+            n += 1; m += len(ends)
+        for site, ends in sorted(at.items()):
+            f.write(json.dumps({"cm6": site, "kind": "no row", "uncaught": ends}) + "\n")
+    print(f"throw-fixtures.jsonl: {n} rows, {m} fixtures end in an uncaught throw at one of them, {sum(map(len, at.values()))} at no row")
     return 0
 
 

@@ -22,6 +22,8 @@ unstable value), and a value the old JSON could not hold may now be exact: null 
 NaN, an infinity or a function; 0 where it now has -0; no property where it now has an undefined or function one.
 The count of such values is printed per chunk ("now exact"); any other difference fails.
 An output that was written bare and is now exactly {"ok": <it>} is the same output (counted, "now wrapped in ok").
+An error object that held `site` (the line of cm6's source that threw) beside name and message is the same without
+it (counted, "errors without the site they had"); an output that still holds one fails.
 Without a run it also prints, per chunk, the fixtures whose `out` references a variable bound by a `data` step (a
 value written in the input; any fails) and the labels of the op `label`, the one way such a value may reach an output.
 
@@ -40,6 +42,13 @@ One line per chunk; each count but the first must be zero:
   ops without kinds                        an op registered with no kind
   not named in the header                  an op the header of interp.ts does not name
   files with eval or Function              in the chunk's oracle directory
+A second line per chunk, "uncaught throws": the fixtures whose run ends in a throw nothing caught, and where cm6
+threw (the first frame of the error's stack inside the package's source; it is not part of the output, which holds
+what Ferrum is compared with):
+  thrown at no row of raw/throws.jsonl     must be zero: cm6 reached a throw the throw facts lack, or the error
+                                           came from the interpreter or a callback and not from cm6
+  at a row that does not list the fixture  a count, not a failure: a row's `fixtures` are the ones that show the
+                                           throw, not every one that reaches it (tools/spec_facts.py writes the map)
 A chunk with no interpreter in the language fails with "not run". It writes raw/fixture-ops.jsonl: per chunk and op
 that ran, its kinds, the number of fixtures that ran it and their behavior ids.
 
@@ -96,6 +105,15 @@ def same_value(was, now, exact):
     if isinstance(was, list) and isinstance(now, list):
         return len(was) == len(now) and all(same_value(a, b, exact) for a, b in zip(was, now))
     return type(was) is type(now) and was == now
+
+
+def dicts(v):
+    """Every object inside v, v included."""
+    if isinstance(v, dict):
+        yield v
+        for x in v.values(): yield from dicts(x)
+    elif isinstance(v, list):
+        for x in v: yield from dicts(x)
 
 
 def js_text(key, v):
@@ -168,6 +186,15 @@ def main():
             now = {r["id"]: r for r in fx[c]}
             exact, n = [0], collections.Counter()
             wrapped = [0]
+            sites = [0]
+            def no_site(v):
+                # Q59: an error object ({name, message, site}) no longer holds the line of cm6's source that threw.
+                if isinstance(v, list): return [no_site(x) for x in v]
+                if not isinstance(v, dict): return v
+                e = v.get("error")
+                if isinstance(e, dict) and set(e) == {"name", "message", "site"}:
+                    sites[0] += 1; v = {**v, "error": {k: x for k, x in e.items() if k != "site"}}
+                return {k: no_site(x) for k, x in v.items()}
             def same_output(w, v):
                 # The language writes every output as {"ok": value} or {"error": …}; an older output written bare
                 # is the same output when the new one is exactly {"ok": <it>} (counted).
@@ -177,9 +204,10 @@ def main():
                 return same_value(w, v, exact)
             diff = [i for i in sorted(set(was) | set(now)) if i not in was or i not in now
                     or any(was[i].get(k) != now[i].get(k) for k in ("item_id", "behaviors"))
-                    or not same_output(old_forms(was[i].get("output"), n), old_forms(now[i].get("output"), n))]
+                    or any(isinstance(d, dict) and "site" in d.get("error", ()) for d in dicts(now[i].get("output")))
+                    or not same_output(no_site(old_forms(was[i].get("output"), n)), old_forms(now[i].get("output"), n))]
             print(f"outputs of {c} against {ref}: {len(now)} fixtures, {len(diff)} differ, {exact[0]} values now exact, "
-                  f"{wrapped[0]} now wrapped in ok")
+                  f"{wrapped[0]} now wrapped in ok, {sites[0]} errors without the site they had")
             if diff: bad.append(f"fixtures/{c}.jsonl differs from {ref} in id, item, behaviors or output: {diff[:10]}")
 
     # A value written in the input may reach the output only through the op `label`: a variable a `data` step binds
@@ -226,6 +254,9 @@ def main():
         out = subprocess.run(["npx", "--yes", "tsx", "--tsconfig", os.path.join(".harness", pkg, "tsconfig.json"),
                               os.path.join("tools", "cm6", "replay.ts"), crate, *todo],
                              cwd=ROOT, capture_output=True, text=True, timeout=3600)
+        throw_rows = collections.defaultdict(set)   # "mirrors/…/file.ts:line" -> the fixtures its rows list
+        tp = os.path.join(base, "raw", "throws.jsonl")
+        for t in (rows(tp) if os.path.exists(tp) else []): throw_rows[t["cm6"].split(" ")[0]].update(t.get("fixtures", []))
         reps = {}
         for l in out.stdout.split("\n"):
             if l.startswith("{"): r = json.loads(l); reps[r["chunk"]] = r
@@ -243,6 +274,14 @@ def main():
                   + f"files with eval or Function {len(r['evalUse'])}")
             for k, t in counts:
                 if n[k]: bad.append(f"replay of {c}: {n[k]} fixtures {t}: {dict(sorted(r['unread'].items())[:20]) if k == 'unreadFixtures' else r[k][:10]}")
+            # Where each uncaught throw came from, against the throw facts: the site is not in the output (Q59).
+            th = r.get("thrown", {})
+            no_row = sorted(i for i, at in th.items() if at not in throw_rows)
+            unlisted = sorted(i for i, at in th.items() if at in throw_rows and f"{c}:{i}" not in throw_rows[at])
+            print(f"uncaught throws of {c}: {len(th)} fixtures; {len(no_row)} thrown at no row of raw/throws.jsonl; "
+                  f"{len(unlisted)} at a row that does not list the fixture")
+            if no_row: bad.append(f"replay of {c}: {len(no_row)} fixtures end in a throw at no row of raw/throws.jsonl: "
+                                  f"{[(i, th[i] or 'outside cm6') for i in no_row[:10]]}")
             for k, t in (("opsWithoutKinds", "ops without kinds"), ("opsNotInHeader", "ops not named in the header"), ("evalUse", "files with eval or Function")):
                 if r[k]: bad.append(f"replay of {c}: {len(r[k])} {t}: {r[k][:12]}")
             ops += [{"chunk": c, **o} for o in r["ops"]]
