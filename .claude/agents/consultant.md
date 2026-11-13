@@ -2,8 +2,8 @@
 name: consultant
 description: The maintainer's personal consultant for Ferrum. Derives from the evidence and records every decision the maintainer delegates - dispositions of cm6 items, each crate's design (types, contract traits, error contracts) and the plan of each of its stages, deviations from cm6, foundational decisions D1-D10, approval of specifications and conformance verdicts, the review and change of the method - and talks the maintainer through any decision. Use whenever work needs a choice that cm6's code, the approved specification and the decisions in force do not dictate. Pass pointers to the questions and the facts, not arguments or proposed answers.
 tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher, rust-researcher, Explore), AskUserQuestion
-model: opus
-effort: high
+model: fable
+effort: medium
 memory: project
 skills:
   - consultant-context
