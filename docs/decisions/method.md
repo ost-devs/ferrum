@@ -574,3 +574,19 @@ drafted in dev/maintainer/drafts/intencao-e-nuvem.md and block nothing.
 **Confidence.** High that proof must be what runs, on the records, the ledger and the stop-loss: each answers a measured failure. Medium on the per-stage plan and the loop as written: they are reasoned from one crate's one stage, and no implementation or conformance has run. The expectations E1–E6 in the ledger say what will confirm or refute each.
 
 **Reopens.** An expectation refuted at its checking point; a stage whose plan had to be abandoned mid-way; the maintainer finding that what reaches them (reports, drafts, records in Portuguese) does not let them follow the work.
+
+## 2026-11-13 · Fixture programs in one language, replay with read tracking as the check of completeness, op kinds; unmeasured steps recorded as such
+
+*Decided by the consultant at the review after the pilot of `ferrum-state` step A. Binding text: `docs/workflow/specification.md` §4 (`raw/fixture-ops.jsonl`), §5 item 3, §8 item 1; `tools/ledger.py`. The reasoning, with the measurements: `docs/decisions/ferrum-state.md`, "Step A after the pilot". Ledger: E7, E8.*
+
+**Decisions.**
+1. Fixture inputs of every crate are programs in the one language of `tools/cm6/program.ts`; a chunk's interpreter adds its ops. A crate's replayer is one evaluator, not one per chunk.
+2. `tools/spec_check.py` replays every fixture from its recorded input with every key read recorded, and fails on an output that differs, a non-descriptive key never read, a literal in an `out` template, a fixture that calls no cm6 op, an op without kinds. A list of keys that may hold text is not a check of completeness: it missed 27 fixtures in the pilot.
+3. Each op states what it observes (`api`, `internal`, `identity`, `callbacks`, `harness`), so that a crate's design decides per op what its replayer does with fixtures that observe more than cm6's documented API.
+4. A step whose tokens were not measured is recorded with `tokens=none`, never `0`, and the report says how many runs are not measured. The orchestrator's own steps are not measured today: the transcript holds usage per message, but its format is internal to Claude Code and changes between versions (`mirrors/claude-code-docs/en/sessions.md` "Where transcripts are stored").
+
+**Alternatives.** Per-chunk interpreters with no shared language: one dialect per chunk for the replayer to implement. Widening the key list: the next chunk's prose can sit under yet another key. Recording unmeasured steps as `0`: the report then reads them as free.
+
+**Confidence.** High on 2 and 4; high on 1 for `ferrum-state`, medium for the crates that follow, whose calls (`view`'s geometry questions) may need forms the language lacks; they extend it in the tool, not per chunk.
+
+**Reopens.** E7 or E8 refuted.
