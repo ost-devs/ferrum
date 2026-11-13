@@ -1,25 +1,17 @@
 // Probe for chunk `text`: countColumn (state.cm6.216), findColumn (state.cm6.217).
 // Fixture ids F0400-F0599 (see writer.ts). Run from the repository root:
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/text/probe-column.ts
-import {countColumn, findColumn} from "@codemirror/state"
-import {rangeWriter, cap} from "./writer"
+// Each fixture is a bare expression of interp.ts; arguments left out are not passed (the defaults apply).
+import {rangeWriter, op, bare} from "./writer"
 
 const w = rangeWriter(400, 599)
 const CC = "state.cm6.216", FC = "state.cm6.217"
 
 function cc(bs: number[], string: string, tabSize: number, to?: number, note?: string) {
-  let input: any = {string, tabSize}
-  if (to !== undefined) input.to = to
-  if (note) input.note = note
-  input.expr = to === undefined ? "countColumn(string, tabSize)" : "countColumn(string, tabSize, to)"
-  w(CC, bs.map(n => `state.countColumn.B${n}`), input, cap(() => to === undefined ? countColumn(string, tabSize) : countColumn(string, tabSize, to)))
+  w(CC, bs.map(n => `state.countColumn.B${n}`), bare(op("countColumn", {string, tabSize, to}), {note}))
 }
 function fc(bs: number[], string: string, col: number, tabSize: number, strict?: any, note?: string) {
-  let input: any = {string, col, tabSize}
-  if (strict !== undefined) input.strict = strict
-  if (note) input.note = note
-  input.expr = strict === undefined ? "findColumn(string, col, tabSize)" : "findColumn(string, col, tabSize, strict)"
-  w(FC, bs.map(n => `state.findColumn.B${n}`), input, cap(() => strict === undefined ? findColumn(string, col, tabSize) : findColumn(string, col, tabSize, strict)))
+  w(FC, bs.map(n => `state.findColumn.B${n}`), bare(op("findColumn", {string, col, tabSize, strict}), {note}))
 }
 
 // countColumn

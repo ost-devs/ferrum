@@ -27,9 +27,10 @@
 //   ASCII, BMP non-ASCII, astral, CRLF, lone CR, U+2028: line pools include each; CR and U+2028 are line content
 //     at the Text level (Text.of does not split, D2);
 //   100 times the typical size: the last case is a 3000-line document (typical case <= 30 lines).
+// Each fixture is a program of interp.ts; the checks above call cm6 directly, on the same values.
 import {Text} from "@codemirror/state"
 import {rng} from "@harness/lib"
-import {rangeWriter} from "./writer"
+import {rangeWriter, op, prog, step, $, lit, textOf, lineF, desc} from "./writer"
 
 const SEED = 20261109
 const R = rng(SEED)
@@ -75,6 +76,7 @@ function rawModel(s: string, dir: 1 | -1, skips: number[]) {
   }
   return out
 }
+/** The model-check form of a cursor run (the fixtures run iter.steps). */
 function steps(it: any, skips: number[]) { return skips.map(k => { it.next(k); return {value: it.value, done: it.done, lineBreak: it.lineBreak} }) }
 function pieces(s: string, from: number, to: number) {
   // forward pieces of [from, to): line parts and "\n"
@@ -89,7 +91,10 @@ function pieces(s: string, from: number, to: number) {
 
 const families = ["lineAt", "line", "replace", "slice", "sliceString", "eq", "iter", "iterRange", "iterLines", "edits"] as const
 let count = 0
-function emit(item: string, bs: string[], input: any, output: any) { w(item, bs, {seed: SEED, case: count, ...input}, {ok: output}); count++ }
+function emit(item: string, bs: string[], steps: any[], out: any, note?: string) { w(item, bs, prog(steps, out, {seed: SEED, case: count, note})); count++ }
+const d = $("d"), D = (lines: string[]) => step("d", textOf(lines))
+const FIELDS = ["value", "done", "lineBreak"]
+const each = (over: any[], as: string, body: any) => lit(op("map", {over: lit(over), as, do: body}))
 
 for (let c = 0; c < 300; c++) {
   let fam = families[c % families.length]
@@ -98,43 +103,50 @@ for (let c = 0; c < 300; c++) {
   check(JSON.stringify(doc.toJSON()) == JSON.stringify(lines), "toJSON", lines)
   if (fam == "lineAt") {
     let ps = Array.from({length: 6}, () => Math.max(0, Math.min(len, pos(len, s))))
-    let out = ps.map(p => { let l = doc.lineAt(p); let m = lineAtModel(s, p); check(l.from == m.from && l.to == m.to && l.number == m.number && l.text == m.text, "lineAt", {lines, p}); return {from: l.from, to: l.to, number: l.number, text: l.text} })
-    emit("state.cm6.232", ["state.Text.lineAt.B2", "state.Line.from.B1", "state.Line.to.B1", "state.Line.number.B1", "state.Line.text.B1"], {doc: lines, op: "lineAt", positions: ps}, out)
+    ps.forEach(p => { let l = doc.lineAt(p); let m = lineAtModel(s, p); check(l.from == m.from && l.to == m.to && l.number == m.number && l.text == m.text, "lineAt", {lines, p}) })
+    emit("state.cm6.232", ["state.Text.lineAt.B2", "state.Line.from.B1", "state.Line.to.B1", "state.Line.number.B1", "state.Line.text.B1"],
+      [D(lines), step("r", each(ps, "p", lineF(op("text.lineAt", {doc: d, pos: $("p")}), ["from", "to", "number", "text"])))], $("r"))
   } else if (fam == "line") {
     let ns = Array.from({length: 4}, () => 1 + R.int(doc.lines))
-    let out = ns.map(n => { let l = doc.line(n); let m = lineAtModel(s, l.from); check(m.number == n && l.to == m.to, "line", {lines, n}); return {from: l.from, to: l.to, number: l.number, text: l.text} })
-    emit("state.cm6.233", ["state.Text.line.B2", "state.Line.length.B1"], {doc: lines, op: "line", numbers: ns}, out)
+    ns.forEach(n => { let l = doc.line(n); let m = lineAtModel(s, l.from); check(m.number == n && l.to == m.to, "line", {lines, n}) })
+    emit("state.cm6.233", ["state.Text.line.B2", "state.Line.length.B1"],
+      [D(lines), step("r", each(ns, "n", lineF(op("text.line", {doc: d, n: $("n")}), ["from", "to", "number", "text"])))], $("r"))
   } else if (fam == "replace") {
     let from = pos(len, s), to = pos(len, s), ins = randomDoc(4)
     let r = doc.replace(from, to, Text.of(ins))
     let f = clipF(len, from), t = Math.max(f, clipF(len, to)), expect = s.slice(0, f) + join(ins) + s.slice(t)
     check(r.toString() == expect && r.length == expect.length && r.lines == expect.split("\n").length, "replace", {lines, from, to, ins})
-    emit("state.cm6.234", ["state.Text.replace.B1", "state.Text.replace.B2"], {doc: lines, op: "replace", from, to, insert: ins}, {json: r.toJSON(), length: r.length, lines: r.lines})
+    emit("state.cm6.234", ["state.Text.replace.B1", "state.Text.replace.B2"], [step("r", desc(op("text.replace", {doc: textOf(lines), from, to, insert: textOf(ins)})))], $("r"))
   } else if (fam == "slice") {
     let from = pos(len, s), to = pos(len, s), r = doc.slice(from, to)
     let f = clipF(len, from), t = Math.max(f, clipF(len, to))
     check(r.toString() == s.slice(f, t) && r.length == t - f, "slice", {lines, from, to})
-    emit("state.cm6.236", ["state.Text.slice.B1"], {doc: lines, op: "slice", from, to}, {json: r.toJSON(), length: r.length, lines: r.lines})
+    emit("state.cm6.236", ["state.Text.slice.B1"], [step("r", desc(op("text.slice", {doc: textOf(lines), from, to})))], $("r"))
   } else if (fam == "sliceString") {
-    let from = pos(len, s), to = pos(len, s), sep = R.pick(["\n", "\r\n", " ", ""]), r = doc.sliceString(from, to, sep)
+    let from = pos(len, s), to = pos(len, s), sep = R.pick(["\n", "\r\n", "\u2028", ""]), r = doc.sliceString(from, to, sep)
     let f = clipF(len, from), t = Math.max(f, clipF(len, to))
     check(r == s.slice(f, t).split("\n").join(sep), "sliceString", {lines, from, to, sep})
-    emit("state.cm6.237", ["state.Text.sliceString.B1", "state.Text.sliceString.B2", "state.Text.sliceString.B3"], {doc: lines, op: "sliceString", from, to, lineSep: sep}, r)
+    emit("state.cm6.237", ["state.Text.sliceString.B1", "state.Text.sliceString.B2", "state.Text.sliceString.B3"],
+      [step("r", op("text.sliceString", {doc: textOf(lines), from, to, lineSep: sep}))], $("r"))
   } else if (fam == "eq") {
-    let kind = R.pick(["self", "copy", "edited", "other"]), other: Text, otherLines: string[] | null = null
-    if (kind == "self") other = doc
-    else if (kind == "copy") other = Text.of(lines.slice())
-    else if (kind == "edited") { let p = R.int(len + 1); other = doc.replace(p, Math.min(len, p + R.int(2)), Text.of([R.pick(POOL)])); otherLines = other.toJSON() }
-    else { otherLines = randomDoc(30); other = Text.of(otherLines) }
+    let kind = R.pick(["self", "copy", "edited", "other"]), other: Text, otherExpr: any
+    if (kind == "self") { other = doc; otherExpr = d }
+    else if (kind == "copy") { other = Text.of(lines.slice()); otherExpr = textOf(lines.slice()) }
+    else if (kind == "edited") {
+      let p = R.int(len + 1), to = Math.min(len, p + R.int(2)), ins = [R.pick(POOL)]
+      other = doc.replace(p, to, Text.of(ins)); otherExpr = op("text.replace", {doc: d, from: p, to, insert: textOf(ins)})
+    }
+    else { let otherLines = randomDoc(30); other = Text.of(otherLines); otherExpr = textOf(otherLines) }
     let r = doc.eq(other)
     check(r == (s == other.toString()), "eq", {lines, kind})
-    emit("state.cm6.238", ["state.Text.eq.B3"], {doc: lines, op: "eq", kind, other: kind == "self" ? "the same object" : kind == "copy" ? "Text.of(copy of doc)" : otherLines}, r)
+    emit("state.cm6.238", ["state.Text.eq.B3"], [D(lines), step("r", op("text.eq", {doc: d, other: otherExpr}))], $("r"),
+      kind == "self" ? "the same object" : kind == "copy" ? "Text.of(copy of the lines)" : kind == "edited" ? "an edited copy" : "another document")
   } else if (fam == "iter") {
     let dir: 1 | -1 = R.chance(0.5) ? 1 : -1
     let skips = Array.from({length: 8}, () => R.chance(0.3) ? 0 : R.chance(0.1) ? R.pick([1000, -1000]) : R.int(9) - 3)
-    let out = steps(doc.iter(dir), skips)
-    check(JSON.stringify(out) == JSON.stringify(rawModel(s, dir, skips)), "iter", {lines, dir, skips})
-    emit("state.cm6.225", ["state.TextIterator.next.B3", "state.TextIterator.next.B4", "state.Text.iter.B1"], {doc: lines, op: "iter", dir, skips}, out)
+    check(JSON.stringify(steps(doc.iter(dir), skips)) == JSON.stringify(rawModel(s, dir, skips)), "iter", {lines, dir, skips})
+    emit("state.cm6.225", ["state.TextIterator.next.B3", "state.TextIterator.next.B4", "state.Text.iter.B1"],
+      [step("r", op("iter.steps", {it: op("text.iter", {doc: textOf(lines), dir}), skips, fields: FIELDS}))], $("r"))
   } else if (fam == "iterRange") {
     let from = R.int(len + 1), to = R.int(len + 1), it = doc.iterRange(from, to), vals: string[] = []
     for (let i = 0; i < 1000 && !it.next().done; i++) vals.push(it.value)
@@ -142,54 +154,65 @@ for (let c = 0; c < 300; c++) {
     if (from > to) exp.reverse()
     check(JSON.stringify(vals) == JSON.stringify(exp), "iterRange", {lines, from, to})
     // forward skips after the first step (positive and negative)
-    let skipOut: any = null
+    let st: any[] = [D(lines), step("values", op("iter.drain", {it: op("text.iterRange", {doc: d, from, to}), max: 1000}))]
     if (from < to) {
-      let it2 = doc.iterRange(from, to), skips = [0, ...Array.from({length: 4}, () => R.int(7) - 3)]
-      skipOut = {skips, steps: steps(it2, skips)}
+      let skips = [0, ...Array.from({length: 4}, () => R.int(7) - 3)]
+      st.push(step("skips", lit(skips)), step("steps", op("iter.steps", {it: op("text.iterRange", {doc: d, from, to}), skips: $("skips"), fields: FIELDS})))
+      emit("state.cm6.240", ["state.Text.iterRange.B1", "state.TextIterator.next.B6", "state.TextIterator.next.B7"], st,
+        {values: $("values"), withSkips: {skips: $("skips"), steps: $("steps")}}, "withSkips: a second iterRange(from, to) stepped with next(skip) for each skip")
+    } else {
+      st.push(step("none", lit(null)))
+      emit("state.cm6.240", ["state.Text.iterRange.B1", "state.TextIterator.next.B6", "state.TextIterator.next.B7"], st,
+        {values: $("values"), withSkips: $("none")}, "withSkips is null unless from < to")
     }
-    emit("state.cm6.240", ["state.Text.iterRange.B1", "state.TextIterator.next.B6", "state.TextIterator.next.B7"], {doc: lines, op: "iterRange", from, to, expr: "values: iterRange(from, to), next() until done; withSkips (null unless from < to): a second iterRange(from, to) stepped with next(skip) for each skip in withSkips.skips"}, {values: vals, withSkips: skipOut})
   } else if (fam == "iterLines") {
     let a = 1 + R.int(doc.lines), b = a + R.int(doc.lines - a + 2)
     let it = doc.iterLines(a, b), vals: string[] = []
     while (!it.next().done) vals.push(it.value)
     let exp = b > a ? lines.slice(a - 1, b - 1) : [""]
     check(JSON.stringify(vals) == JSON.stringify(exp), "iterLines", {lines, a, b})
-    emit("state.cm6.241", ["state.Text.iterLines.B3", "state.TextIterator.next.B9"], {doc: lines, op: "iterLines", from: a, to: b}, vals)
+    emit("state.cm6.241", ["state.Text.iterLines.B3", "state.TextIterator.next.B9"], [step("r", op("iter.drain", {it: op("text.iterLines", {doc: textOf(lines), from: a, to: b})}))], $("r"))
   } else {
     // edit sequence: adjacent and overlapping ranges, the same insert object reused
-    let d = doc, str = s, reused = Text.of(randomDoc(3)), ops: any[] = []
+    let dd = doc, str = s, reusedLines = randomDoc(3), reused = Text.of(reusedLines), ops: any[] = []
+    let st: any[] = [step("d0", textOf(lines)), step("reused", textOf(reusedLines))]
     for (let i = 0; i < 8; i++) {
       let L = str.length, prev = ops.length ? ops[ops.length - 1].from : R.int(L + 1)
       let from = Math.max(0, Math.min(L, prev + R.int(5) - 2)), to = Math.min(L, from + R.int(4))
       let useReused = R.chance(0.4), insLines = useReused ? reused.toJSON() : randomDoc(3)
-      d = d.replace(from, to, useReused ? reused : Text.of(insLines))
+      dd = dd.replace(from, to, useReused ? reused : Text.of(insLines))
       str = str.slice(0, from) + join(insLines) + str.slice(to)
-      ops.push({from, to, insert: insLines, reusedObject: useReused})
+      ops.push({from, to})
+      st.push(step("d" + (i + 1), op("text.replace", {doc: $("d" + i), from, to, insert: useReused ? $("reused") : textOf(insLines)})))
     }
-    check(d.toString() == str && d.length == str.length && d.lines == str.split("\n").length, "edits", {lines, ops})
-    check(d.eq(Text.of(str.split("\n"))), "edits eq", {lines, ops})
-    emit("state.cm6.234", ["state.Text.replace.B2", "state.Text.eq.B4"], {doc: lines, op: "replace sequence", edits: ops}, {json: d.toJSON(), length: d.length, lines: d.lines})
+    check(dd.toString() == str && dd.length == str.length && dd.lines == str.split("\n").length, "edits", {lines, ops})
+    check(dd.eq(Text.of(str.split("\n"))), "edits eq", {lines, ops})
+    st.push(step("r", desc($("d8"))))
+    emit("state.cm6.234", ["state.Text.replace.B2", "state.Text.eq.B4"], st, $("r"), "replace sequence; the inserted Text `reused` is the same object at each use")
   }
 }
 
 // Large case: 3000 lines (100 times the typical 30), built from the pool, then edited and queried.
 {
   let lines = Array.from({length: 3000}, () => R.pick(POOL)), doc = Text.of(lines), s = join(lines)
-  let edits: any[] = [], d = doc, str = s
+  let d1 = doc, str = s, st: any[] = [step("d0", textOf(lines))]
   for (let i = 0; i < 50; i++) {
     let L = str.length, from = R.int(L + 1), to = Math.min(L, from + R.int(300)), ins = randomDoc(40)
-    d = d.replace(from, to, Text.of(ins)); str = str.slice(0, from) + join(ins) + str.slice(to)
-    edits.push({from, to, insert: ins})
+    d1 = d1.replace(from, to, Text.of(ins)); str = str.slice(0, from) + join(ins) + str.slice(to)
+    st.push(step("d" + (i + 1), op("text.replace", {doc: $("d" + i), from, to, insert: textOf(ins)})))
   }
-  check(d.toString() == str, "large edits", {})
+  check(d1.toString() == str, "large edits", {})
   let qs = Array.from({length: 20}, () => R.int(str.length + 1))
-  let lineAts = qs.map(p => { let l = d.lineAt(p), m = lineAtModel(str, p); check(l.from == m.from && l.number == m.number, "large lineAt", {p}); return [l.from, l.to, l.number] })
+  qs.forEach(p => { let l = d1.lineAt(p), m = lineAtModel(str, p); check(l.from == m.from && l.number == m.number, "large lineAt", {p}) })
   let rawSkips = [5000, -2000, 70000, -100000, 100]
-  let raw = steps(d.iter(), rawSkips)
-  check(JSON.stringify(raw) == JSON.stringify(rawModel(str, 1, rawSkips)), "large iter", {})
+  check(JSON.stringify(steps(d1.iter(), rawSkips)) == JSON.stringify(rawModel(str, 1, rawSkips)), "large iter", {})
+  const e = $("d50"), get = (f: string) => op("line.get", {line: $("l"), field: f})
+  st.push(step("length", op("text.length", {doc: e})), step("lines", op("text.lines", {doc: e})), step("depth", op("text.depth", {doc: e})),
+    step("lineAt", each(qs, "p", op("block", {steps: [step("l", op("text.lineAt", {doc: e, pos: $("p")})), step("row", op("list", {of: [get("from"), get("to"), get("number")]}))], result: "row"}))),
+    step("iter", op("iter.steps", {it: op("text.iter", {doc: e}), skips: rawSkips, fields: FIELDS})),
+    step("eqRebuilt", op("text.eq", {doc: e, other: textOf(str.split("\n"))})))
   w("state.cm6.229", ["state.Text.replace.B5", "state.Text.lineAt.B6", "state.TextIterator.next.B3", "state.TextIterator.next.B4"],
-    {seed: SEED, case: count, doc: lines, op: "50 replace operations, then lineAt at positions and iter() with skips; eqRebuilt = d.eq(Text.of(str.split(\"\\n\"))), d being the edited document and str its content; d.length, d.lines; depth(d) (1 for a leaf, else 1 + the largest depth of its children)", edits, positions: qs, skips: rawSkips},
-    {ok: {length: d.length, lines: d.lines, depth: depth(d), lineAt: lineAts, iter: raw, eqRebuilt: d.eq(Text.of(str.split("\n")))}})
+    prog(st, {length: $("length"), lines: $("lines"), depth: $("depth"), lineAt: $("lineAt"), iter: $("iter"), eqRebuilt: $("eqRebuilt")},
+      {seed: SEED, case: count, note: "50 replace operations, then lineAt at positions and iter() with skips; eqRebuilt compares with Text.of of the edited content's lines (the generator's string model)"}))
 }
-function depth(t: Text): number { return t.children ? 1 + Math.max(...t.children.map(depth)) : 1 }
 console.log("gen-text: cases", count + 1, "all model checks passed")

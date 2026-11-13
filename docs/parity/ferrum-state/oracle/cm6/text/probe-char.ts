@@ -1,31 +1,20 @@
 // Probe for chunk `text`: findClusterBreak (state.cm6.212), codePointAt (state.cm6.213), codePointSize (state.cm6.215).
 // Fixture ids F0001-F0399 (see writer.ts). Run from the repository root:
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/text/probe-char.ts
-import {findClusterBreak, codePointAt, codePointSize} from "@codemirror/state"
-import {rangeWriter, cap as capture} from "./writer"
+// Each fixture is a bare expression of interp.ts; arguments left out are not passed (the defaults apply).
+import {rangeWriter, op, bare} from "./writer"
 
 const w = rangeWriter(1, 399)
 const FCB = "state.cm6.212", CPA = "state.cm6.213", CPS = "state.cm6.215"
 const B = (n: number) => `state.findClusterBreak.B${n}`
 
-// One fixture per call. `args` omitted ones are recorded as omitted (defaults apply).
+// One fixture per call.
 function fcb(bs: number[], str: string, pos: number, forward?: boolean, includeExtending?: boolean, note?: string) {
-  let input: any = {str, pos}
-  if (forward !== undefined) input.forward = forward
-  if (includeExtending !== undefined) input.includeExtending = includeExtending
-  if (note) input.note = note
-  input.expr = `findClusterBreak(str, pos${forward === undefined ? "" : ", forward"}${includeExtending === undefined ? "" : ", includeExtending"})`
-  let out = capture(() => forward === undefined ? findClusterBreak(str, pos)
-    : includeExtending === undefined ? findClusterBreak(str, pos, forward) : findClusterBreak(str, pos, forward, includeExtending))
-  w(FCB, bs.map(B), input, out)
+  w(FCB, bs.map(B), bare(op("findClusterBreak", {str, pos, forward, includeExtending: forward === undefined ? undefined : includeExtending}), {note: note || undefined}))
 }
 // Every break of a string, walking forward from 0 and backward from the end (as cm6's own package test walks).
-const WALK = "forward: i = 0; while i < str.length: n = findClusterBreak(str, i, true, includeExtending), record n, stop if n == i, i = n. backward: i = str.length; while i > 0: n = findClusterBreak(str, i, false, includeExtending), record n, stop if n == i, i = n"
 function walk(bs: number[], str: string, includeExtending = true, note?: string) {
-  let fwd: number[] = [], bwd: number[] = []
-  for (let i = 0; i < str.length;) { let n = findClusterBreak(str, i, true, includeExtending); fwd.push(n); if (n == i) break; i = n }
-  for (let i = str.length; i > 0;) { let n = findClusterBreak(str, i, false, includeExtending); bwd.push(n); if (n == i) break; i = n }
-  w(FCB, bs.map(B), {walk: true, str, includeExtending, note, expr: WALK}, {ok: {forward: fwd, backward: bwd}})
+  w(FCB, bs.map(B), bare(op("findClusterBreak.walk", {str, includeExtending}), {note}))
 }
 
 // B1: forward at the end of the string returns pos
@@ -153,10 +142,11 @@ fcb([16], "éx", 0)
 fcb([16], "éx", 0, true)
 fcb([16], "éx", 3, false)
 
+
 // codePointAt
 const C = (n: number) => `state.codePointAt.B${n}`
 function cpa(bs: number[], str: string, pos: number, note?: string) {
-  w(CPA, bs.map(C), note ? {str, pos, note, expr: "codePointAt(str, pos)"} : {str, pos, expr: "codePointAt(str, pos)"}, capture(() => codePointAt(str, pos)))
+  w(CPA, bs.map(C), bare(op("codePointAt", {str, pos}), {note}))
 }
 cpa([1], "a", 0); cpa([1], "é中", 1); cpa([1], "￿", 0); cpa([1], " ", 0)
 cpa([2], "😀", 0); cpa([2], "a𝐀", 1); cpa([2], "\u{10FFFF}", 0); cpa([2], "\u{10000}", 0)
@@ -166,17 +156,18 @@ cpa([5], "😀", 1, "pos between the halves of a pair: the low surrogate"); cpa(
 cpa([6], "a", 1, "pos = length"); cpa([6], "a", 5, "pos past the end"); cpa([6], "", 0, "empty string"); cpa([6], "a", -1, "negative pos")
 cpa([7], "abc", 1.5, "fractional pos"); cpa([7], "😀", 0.5, "fractional pos inside the pair"); cpa([7], "abc", NaN, "NaN pos")
 
+
 // codePointSize
 const S = (n: number) => `state.codePointSize.B${n}`
 function cps(bs: number[], code: number, note?: string) {
-  w(CPS, bs.map(S), note ? {code, note, expr: "codePointSize(code)"} : {code, expr: "codePointSize(code)"}, capture(() => codePointSize(code)))
+  w(CPS, bs.map(S), bare(op("codePointSize", {code}), {note}))
 }
 cps([1], 0x61); cps([1], 0); cps([1], 0xFFFF); cps([1], 0xD83D, "lone high surrogate value"); cps([1], 0xDE00, "low surrogate value, as codePointAt returns between halves")
 cps([2], 0x10000); cps([2], 0x1F600); cps([2], 0x10FFFF)
 cps([3], NaN, "NaN, as codePointAt returns at or past the end"); cps([3], 0x110000, "above U+10FFFF"); cps([3], -1, "negative"); cps([3], 65535.5, "fractional"); cps([3], Infinity)
 // codePointSize(codePointAt(s, p)): the composition consumers use (closebrackets.ts nextChar/prevChar, filter.ts, keymap.ts)
 function both(bs: string[], str: string, pos: number, note: string) {
-  w(CPS, bs, {str, pos, expr: "codePointSize(codePointAt(str, pos))", note}, capture(() => codePointSize(codePointAt(str, pos))))
+  w(CPS, bs, bare(op("codePointSize", {code: op("codePointAt", {str, pos})}), {note}))
 }
 both([S(4), C(5)], "😀", 1, "inside a character: between the halves of a pair")
 both([S(4), C(5)], "\uDE00b", 0, "closebrackets prevChar: sliceString(pos - 2, pos) starting with a low surrogate")

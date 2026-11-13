@@ -6,7 +6,7 @@
 // Each fixture records, for one string, findClusterBreak at every position 0..length in both directions with
 // includeExtending true and false, the forward and backward walks (as the package's own test walks), codePointAt at
 // every position 0..length and codePointSize of each result, and whether the forward and backward walks found the
-// same breaks (walksAgree, a recorded fact, not an assertion).
+// same breaks (walksAgree, a recorded fact, not an assertion). Each fixture is a program of interp.ts (`program` below).
 // Checklist (docs/workflow/specification.md §5.5):
 //   empty input: the empty string is case 0; single element: 1-code-point strings (probability 0.15);
 //   many elements: up to 24 code points, and the large cases;
@@ -24,9 +24,8 @@
 //     tag characters, lone high and low surrogates, tab;
 //   100 times the typical size: three strings of about 2400 code units (typical case about 24): 600 regional
 //     indicators, a base followed by 2399 combining marks, and a mixed string.
-import {findClusterBreak, codePointAt, codePointSize} from "@codemirror/state"
 import {rng} from "@harness/lib"
-import {rangeWriter} from "./writer"
+import {rangeWriter, op, prog, step, $, lit, sum} from "./writer"
 
 const SEED = 20261110
 const R = rng(SEED)
@@ -58,43 +57,43 @@ function randomString(): string {
   }
   return out
 }
-function walk(str: string, ie: boolean) {
-  let fwd: number[] = [], bwd: number[] = []
-  for (let i = 0; i < str.length;) { let n = findClusterBreak(str, i, true, ie); fwd.push(n); if (n == i) break; i = n }
-  for (let i = str.length; i > 0;) { let n = findClusterBreak(str, i, false, ie); bwd.push(n); if (n == i) break; i = n }
-  return {forward: fwd, backward: bwd}
-}
-function record(str: string, full: boolean, note?: string) {
-  let out: any = {}
-  for (let ie of [true, false]) {
-    let k = ie ? "includeExtending" : "noExtending"
-    let wk = walk(str, ie)
-    let agree = JSON.stringify(wk.forward.slice(0, -1)) == JSON.stringify(wk.backward.slice(0, -1).reverse()) || str.length == 0
-    out[k] = {walk: wk, walksAgree: agree}
+/** The program of one string: for includeExtending true (key includeExtending) and false (key noExtending) the walks
+ * and whether they agree (the forward breaks but the last equal the backward breaks but the last, reversed); with
+ * `full`, also findClusterBreak at every position in both directions, at -1 and length + 1, and codePointAt and
+ * codePointSize at every position. */
+function program(str: string, full: boolean, extra: any) {
+  const s = $("s"), steps: any[] = [step("s", lit(str))], out: any = {}
+  for (const ie of [true, false]) {
+    const k = ie ? "includeExtending" : "noExtending", v = (n: string) => k + "." + n
+    steps.push(step(v("walk"), op("findClusterBreak.walk", {str: s, includeExtending: ie})),
+      step(v("walksAgree"), op("jsonEqual", {a: op("slice", {of: op("item", {of: $(v("walk")), index: "forward"}), start: 0, end: -1}),
+        b: op("reverse", {of: op("slice", {of: op("item", {of: $(v("walk")), index: "backward"}), start: 0, end: -1})})})))
+    out[k] = {walk: $(v("walk")), walksAgree: $(v("walksAgree"))}
     if (full) {
-      out[k].forwardAt = Array.from({length: str.length + 1}, (_, i) => findClusterBreak(str, i, true, ie))
-      out[k].backwardAt = Array.from({length: str.length + 1}, (_, i) => findClusterBreak(str, i, false, ie))
-      out[k].outside = {fwdMinus1: findClusterBreak(str, -1, true, ie), fwdLenPlus1: findClusterBreak(str, str.length + 1, true, ie), bwdMinus1: findClusterBreak(str, -1, false, ie), bwdLenPlus1: findClusterBreak(str, str.length + 1, false, ie)}
+      steps.push(step(v("forwardAt"), op("findClusterBreak.every", {str: s, forward: true, includeExtending: ie})),
+        step(v("backwardAt"), op("findClusterBreak.every", {str: s, forward: false, includeExtending: ie})))
+      const end = sum(op("count", {of: s}), 1), outside: any = {}
+      for (const [name, pos, forward] of [["fwdMinus1", -1, true], ["fwdLenPlus1", end, true], ["bwdMinus1", -1, false], ["bwdLenPlus1", end, false]] as [string, any, boolean][]) {
+        steps.push(step(v(name), op("findClusterBreak", {str: s, pos, forward, includeExtending: ie})))
+        outside[name] = $(v(name))
+      }
+      Object.assign(out[k], {forwardAt: $(v("forwardAt")), backwardAt: $(v("backwardAt")), outside})
     }
   }
   if (full) {
-    out.codePointAt = Array.from({length: str.length + 1}, (_, i) => codePointAt(str, i))
-    out.codePointSize = out.codePointAt.map((c: number) => codePointSize(c))
+    steps.push(step("codePointAt", op("codePointAt.every", {str: s})),
+      step("codePointSize", lit(op("map", {over: $("codePointAt"), as: "c", do: op("codePointSize", {code: $("c")})}))))
+    out.codePointAt = $("codePointAt"); out.codePointSize = $("codePointSize")
   }
-  return out
+  return prog(steps, out, extra)
 }
 const BS = ["state.findClusterBreak.B2", "state.findClusterBreak.B3", "state.findClusterBreak.B4", "state.findClusterBreak.B5", "state.findClusterBreak.B6",
   "state.findClusterBreak.B7", "state.findClusterBreak.B8", "state.findClusterBreak.B9", "state.findClusterBreak.B10", "state.findClusterBreak.B11",
   "state.findClusterBreak.B13", "state.findClusterBreak.B14", "state.codePointAt.B1", "state.codePointAt.B2", "state.codePointAt.B5", "state.codePointAt.B6", "state.codePointSize.B4"]
 
-const WALK_EXPR = "for ie true (key includeExtending) and false (key noExtending): walk.forward = i = 0, then i = findClusterBreak(str, i, true, ie) until it returns i or reaches str.length; walk.backward = i = str.length, then i = findClusterBreak(str, i, false, ie) until it returns i or reaches 0; walksAgree = whether the two walks give the same breaks"
-const FULL_EXPR = WALK_EXPR + "; forwardAt[pos] = findClusterBreak(str, pos, true, ie) and backwardAt[pos] = findClusterBreak(str, pos, false, ie) for every pos 0..str.length; outside = findClusterBreak at -1 and str.length + 1, forward and backward; codePointAt[pos] = codePointAt(str, pos) for every pos 0..str.length; codePointSize[pos] = codePointSize(codePointAt[pos])"
-let disagree = 0
 for (let c = 0; c < 160; c++) {
   let str = c == 0 ? "" : randomString()
-  let out = record(str, true)
-  if (!out.includeExtending.walksAgree || !out.noExtending.walksAgree) disagree++
-  w("state.cm6.212", BS, {seed: SEED, case: c, str, expr: FULL_EXPR}, {ok: out})
+  w("state.cm6.212", BS, program(str, true, {seed: SEED, case: c}))
 }
 // Large cases (100 times the typical size): walks only.
 const big = [
@@ -102,9 +101,7 @@ const big = [
   ["a" + "́".repeat(2399), "one base and 2399 combining marks: one cluster"],
   [Array.from({length: 2400}, () => R.pick(CLASSES[R.pick(NAMES)])).join("").slice(0, 2400), "mixed classes, about 2400 code units"],
 ]
-for (let [str, note] of big) {
-  let out = record(str, false)
-  if (!out.includeExtending.walksAgree || !out.noExtending.walksAgree) disagree++
-  w("state.cm6.212", ["state.findClusterBreak.B8", "state.findClusterBreak.B13", "state.findClusterBreak.B5"], {seed: SEED, case: "large", str, note, expr: WALK_EXPR}, {ok: out})
-}
-console.log("gen-char: 163 cases;", disagree, "with forward and backward walks disagreeing")
+
+for (let [str, note] of big)
+  w("state.cm6.212", ["state.findClusterBreak.B8", "state.findClusterBreak.B13", "state.findClusterBreak.B5"], program(str, false, {seed: SEED, case: "large", note}))
+console.log("gen-char: 163 cases")
