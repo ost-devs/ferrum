@@ -216,7 +216,7 @@ def main():
         with open(ops_path, "w", encoding="utf-8") as f:
             for o in sorted(ops, key=lambda o: (order_of[o["chunk"]], o["op"])): f.write(json.dumps(o, ensure_ascii=False) + "\n")
 
-        work = os.path.join(ROOT, ".scratch", "spec-check")
+        work = os.path.join(ROOT, ".scratch", "spec-check" + "".join("-" + c for c in only))  # one per --chunk set: runs for different chunks may overlap
         shutil.rmtree(work, ignore_errors=True); os.makedirs(os.path.join(work, "docs", "parity"))
         shutil.copytree(base, os.path.join(work, "docs", "parity", crate))
         shutil.copytree(os.path.join(ROOT, "tools"), os.path.join(work, "tools"))
