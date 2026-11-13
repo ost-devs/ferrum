@@ -32,13 +32,13 @@
 // G7 change filter masks (EditorState^changeFilter B2, B3, B7). seed 0x5707, 30 cases + 1 large. One to three filters
 //    each returning a sorted mask of 0-3 pairs; empty masks; masks covering the whole doc; adjacent and overlapping masks
 //    across filters; insertions at mask boundaries; ASCII and astral docs. Large case: 50 filters on a 1000-char doc.
-import {EditorState, EditorSelection, Transaction} from "@codemirror/state"
+import {EditorState} from "@codemirror/state"
 import {rng} from "@harness/lib"
-import {writer, cap, sel, text, tr} from "./s2-lib"
+import {run} from "./interp"
+import {writer, $, op, R, set, rec, list, item, cond, block, fn, add, create, update, get, sliceDoc, cursor, range, jsel, jtext, chJSON, ann, T0, ofVar, of} from "./s2-lib"
 
 const fx = writer(900)
 const B = (item: string, n: number) => `state.${item}.B${n}`
-const T0 = Transaction.time.of(1000)
 
 // ---- G1 phrase
 {
@@ -50,10 +50,9 @@ const T0 = Transaction.time.of(1000)
     let n = i == 0 ? 0 : i == 40 ? 1200 : 1 + r.int(12)
     let tpl = Array.from({length: n}, () => r.pick(toks)).join("")
     let args = Array.from({length: i == 40 ? 3 : r.int(4)}, () => r.pick(argPool))
-    let res = s.phrase(tpl, ...args)
     let bs = [B("EditorState.phrase", args.length ? 3 : 4)]
     if (args.some(a => typeof a == "string" && a.includes("$"))) bs.push(B("EditorState.phrase", 7))
-    fx("state.cm6.027", bs, {generator: "G1", seed, case: i, call: "EditorState.create().phrase(phrase, ...args)", phrase: tpl, args}, res)
+    fx("state.cm6.027", bs, R([], op("state.phrase", {state: create(), phrase: tpl, args}), {generator: "G1", seed, case: i}))
   }
 }
 
@@ -65,15 +64,14 @@ const T0 = Transaction.time.of(1000)
   const s = EditorState.create()
   const mk = (k: number) => Array.from({length: k}, () => r.pick(segs)).join(".")
   for (let i = 0; i <= 40; i++) {
-    let ann: string, ev: string
-    if (i == 40) { ann = Array.from({length: 400}, () => r.pick(segs)).join("."); ev = ann.split(".").slice(0, 200).join(".") }
-    else if (r.chance(0.3)) { ann = r.pick(consumer); ev = r.pick(consumer) }
-    else if (r.chance(0.4)) { ann = mk(1 + r.int(4)); let parts = ann.split("."); ev = parts.slice(0, r.int(parts.length + 1)).join(".") }
-    else { ann = mk(r.int(4)); ev = mk(r.int(3)) }
-    if (i == 0) { ann = ""; ev = "" }
-    let res = s.update({annotations: Transaction.userEvent.of(ann)}).isUserEvent(ev)
-    let n = !ann ? 3 : ev == "" ? 4 : ann == ev ? 1 : 2
-    fx("state.cm6.104", [B("Transaction.isUserEvent", n)], {generator: "G2", seed, case: i, call: "s.update({annotations: Transaction.userEvent.of(ev)}).isUserEvent(event)", ev: ann, event: ev}, res)
+    let a: string, ev: string
+    if (i == 40) { a = Array.from({length: 400}, () => r.pick(segs)).join("."); ev = a.split(".").slice(0, 200).join(".") }
+    else if (r.chance(0.3)) { a = r.pick(consumer); ev = r.pick(consumer) }
+    else if (r.chance(0.4)) { a = mk(1 + r.int(4)); let parts = a.split("."); ev = parts.slice(0, r.int(parts.length + 1)).join(".") }
+    else { a = mk(r.int(4)); ev = mk(r.int(3)) }
+    if (i == 0) { a = ""; ev = "" }
+    let n = !a ? 3 : ev == "" ? 4 : a == ev ? 1 : 2
+    fx("state.cm6.104", [B("Transaction.isUserEvent", n)], R([], op("tr.isUserEvent", {tr: update(create(), {annotations: ann("Transaction.userEvent", a)}), event: ev}), {generator: "G2", seed, case: i}))
   }
 }
 
@@ -91,12 +89,13 @@ const T0 = Transaction.time.of(1000)
     let slices: any[] = []
     for (let k = 0; k < (i == 40 ? 20 : 4); k++) {
       let from = r.int(len + 7) - 3, to = r.int(len + 7) - 3
-      slices.push({from, to, result: st.sliceDoc(from, to)})
+      slices.push([from, to])
     }
     let bs = [B("EditorState.toText", sep ? 2 : 1), B("EditorState.toText", 4), B("EditorStateConfig.doc", sep ? 2 : 1), B("EditorState.sliceDoc", sep == "\r\n" ? 2 : 1), B("EditorState.sliceDoc", 3)]
     if (str.includes("\u{1F600}")) bs.push(B("EditorState.sliceDoc", 4))
-    fx("state.cm6.013", bs, {generator: "G3", seed, case: i, call: "s = create({doc: string, extensions: lineSeparator.of(sep)}); toText: s.toText(string); doc: s.doc; slices: s.sliceDoc(from, to) for each [from, to] of pairs, recorded as {from, to, result}", string: str, sep, pairs: slices.map(x => [x.from, x.to])},
-       {toText: text(st.toText(str)), doc: text(st.doc), slices})
+    fx("state.cm6.013", bs, R([set("s", create({doc: str, extensions: sep ? of("lineSeparator", sep) : []})), set("pairs", slices)],
+       rec({toText: jtext(op("state.toText", {state: $("s"), string: str})), doc: jtext(get($("s"), "doc")),
+            slices: op("map", {over: $("pairs"), as: "pr", do: rec({from: item($("pr"), 0), to: item($("pr"), 1), result: sliceDoc($("s"), item($("pr"), 0), item($("pr"), 1))})})}), {generator: "G3", seed, case: i}))
   }
 }
 
@@ -107,18 +106,14 @@ const T0 = Transaction.time.of(1000)
   for (let i = 0; i <= 30; i++) {
     let n = i == 0 ? 0 : i == 30 ? 600 : 1 + r.int(10)
     let doc = Array.from({length: n}, () => r.pick(pieces)).join("")
-    let st = EditorState.create({doc})
-    let results: any[] = []
-    for (let pos = 0; pos <= st.doc.length; pos += (i == 30 ? 7 : 1)) {
-      let w = st.wordAt(pos)
-      results.push(w ? [pos, w.from, w.to] : [pos, null])
-    }
     let bs = [B("EditorState.wordAt", 1), B("EditorState.wordAt", 2)]
     if (/\n/.test(doc)) bs.push(B("EditorState.wordAt", 3))
     if (/[^\x00-\x7f]/.test(doc)) bs.push(B("EditorState.wordAt", 4))
     if (/\u{1F600}|\u{1D400}/u.test(doc)) bs.push(B("EditorState.wordAt", 7))
-    fx("state.cm6.031", bs, {generator: "G4", seed, case: i, call: "s = EditorState.create({doc}); docLength: s.doc.length; results: s.wordAt(pos) for pos in 0..length (step 7 in the large case), as [pos, from, to] or [pos, null]", doc},
-       {docLength: st.doc.length, results})
+    const w = op("state.wordAt", {state: $("s"), pos: $("p")})
+    fx("state.cm6.031", bs, R([set("s", create({doc}))], rec({docLength: get(get($("s"), "doc"), "length"),
+       results: op("map", {over: op("ints", {from: 0, to: get(get($("s"), "doc"), "length"), step: i == 30 ? 7 : 1}), as: "p",
+         do: block([set("w", w), set("res", cond($("w"), list($("p"), get($("w"), "from"), get($("w"), "to")), list($("p"), null)))], "res")})}), {generator: "G4", seed, case: i}))
   }
 }
 
@@ -135,20 +130,18 @@ const T0 = Transaction.time.of(1000)
     let nr = i == 40 ? 120 : 1 + r.int(6)
     let raw = Array.from({length: nr}, () => { let a = r.int(len + 1), h = r.chance(0.5) ? a : r.int(len + 1); return [a, h] })
     let main = r.int(nr)
-    let selection = EditorSelection.create(raw.map(([a, h]) => EditorSelection.range(a, h)), main)
-    let st = EditorState.create({doc, selection, extensions: EditorState.allowMultipleSelections.of(true)})
     let ins = r.pick(inserts)
-    let ns = st.update(st.replaceSelection(ins)).state
+    const mk = [set("raw", raw), set("s", create({doc, selection: op("sel.create", {ranges: op("map", {over: $("raw"), as: "pr", do: range(item($("pr"), 0), item($("pr"), 1))}), main}),
+      extensions: of("allowMultipleSelections", true)}))]
     fx("state.cm6.010", [B("EditorState.replaceSelection", 1), B("EditorState.replaceSelection", 2), B("EditorState.replaceSelection", 3)],
-       {generator: "G5", seed, case: i, call: "s = EditorState.create({doc, selection: EditorSelection.create(ranges as [anchor, head], main), extensions: allowMultipleSelections.of(true)}); s.selection (normalizedSelection); s.update(s.replaceSelection(insert)).state", doc, ranges: raw, main, insert: ins},
-       {normalizedSelection: sel(st.selection), doc: text(ns.doc), selection: sel(ns.selection)})
-    let cbr = st.changeByRange(rg => rg.empty
-      ? {changes: {from: Math.max(0, rg.from - 1), to: rg.from}, range: EditorSelection.cursor(Math.max(0, rg.from - 1))}
-      : {changes: {from: rg.from, to: rg.to, insert: ins}, range: EditorSelection.range(rg.from, rg.from + st.toText(ins).length)})
-    let cs = st.update(cbr).state
+       R([...mk, set("ns", get(update($("s"), op("state.replaceSelection", {state: $("s"), text: ins})), "state"))],
+         rec({normalizedSelection: jsel(get($("s"), "selection")), doc: jtext(get($("ns"), "doc")), selection: jsel(get($("ns"), "selection"))}), {generator: "G5", seed, case: i}))
+    const from = get($("rg"), "from"), back = op("max", {of: [0, op("sub", {a: from, b: 1})]})
+    const f = fn(["rg"], cond(get($("rg"), "empty"), rec({changes: rec({from: back, to: from}), range: cursor(back)}),
+      rec({changes: rec({from, to: get($("rg"), "to"), insert: ins}), range: range(from, add(from, get(op("state.toText", {state: $("s"), string: ins}), "length")))})))
     fx("state.cm6.011", [B("EditorState.changeByRange", 2), B("EditorState.changeByRange", 5)],
-       {generator: "G5", seed, case: i, call: "s = EditorState.create({doc, selection: EditorSelection.create(ranges as [anchor, head], main), extensions: allowMultipleSelections.of(true)}); r = s.changeByRange(r => r.empty ? {changes: {from: max(0, r.from - 1), to: r.from}, range: cursor(max(0, r.from - 1))} : {changes: {from: r.from, to: r.to, insert}, range: range(r.from, r.from + s.toText(insert).length)}); r.changes; s.update(r).state", doc, ranges: raw, main, insert: ins},
-       {changes: cbr.changes.toJSON(), doc: text(cs.doc), selection: sel(cs.selection)})
+       R([...mk, set("cbr", op("state.changeByRange", {state: $("s"), f})), set("cs", get(update($("s"), $("cbr")), "state"))],
+         rec({changes: chJSON(item($("cbr"), "changes")), doc: jtext(get($("cs"), "doc")), selection: jsel(get($("cs"), "selection"))}), {generator: "G5", seed, case: i}))
   }
 }
 
@@ -175,12 +168,13 @@ const T0 = Transaction.time.of(1000)
       specs.push(spec)
       try { curLen = st.update(...specs).changes.newLength } catch (_) {}
     }
-    let res = cap(() => { let t = st.update(...specs, {annotations: T0}); return {changes: t.changes.toJSON(), doc: text(t.newDoc), selection: sel(t.selection)} })
+    const input = R([set("t", update(create({doc}), ...specs, {annotations: T0}))], rec({changes: chJSON(get($("t"), "changes")), doc: jtext(get($("t"), "newDoc")), selection: jsel(get($("t"), "selection"))}), {generator: "G6", seed, case: i})
+    let res: any = run(JSON.parse(JSON.stringify(input)))
     let bs = [B("EditorState.update", 4), B("TransactionSpec.changes", 6)]
     if (specs.some(s => s.sequential)) bs.push(B("TransactionSpec.sequential", 1))
     if (specs.some(s => s.selection)) bs.push(B("TransactionSpec.selection", 2), B("TransactionSpec.selection", 3))
     if ("error" in res) bs.push(/^Position/.test(res.error.message) ? B("TransactionSpec.selection", 4) : B("Transaction", 1))
-    fx("state.cm6.009", bs, {generator: "G6", seed, case: i, call: "s.update(...specs, {annotations: Transaction.time.of(1000)})", doc, specs}, res)
+    fx("state.cm6.009", bs, input)
   }
 }
 
@@ -197,11 +191,10 @@ const T0 = Transaction.time.of(1000)
       let pts = Array.from({length: 2 * r.int(4)}, () => r.int(len + 1)).sort((x, y) => x - y)
       masks.push(pts)
     }
-    let st = EditorState.create({doc, extensions: masks.map(m => EditorState.changeFilter.of(() => m))})
     let nc = i == 30 ? 60 : 1 + r.int(3)
     let changes = Array.from({length: nc}, () => { let a = r.int(len + 1), b = Math.min(len, a + r.int(4)); return {from: a, to: b, insert: r.pick(["", "X", "\u{1F601}"])} })
-    let res = cap(() => { let t = st.update({changes, annotations: T0}); return {changes: t.changes.toJSON(), doc: text(t.newDoc)} })
     fx("state.cm6.032", [B("EditorState^changeFilter", 2), B("EditorState^changeFilter", 3), B("EditorState^changeFilter", 7)],
-       {generator: "G7", seed, case: i, call: "create({doc, extensions: masks.map(m => changeFilter.of(() => m))}).update({changes, annotations: Transaction.time.of(1000)})", doc, masks, changes}, res)
+       R([...masks.map((m, k) => set("m" + k, fn([], op("let", {value: m})))), set("t", update(create({doc, extensions: masks.map((_, k) => ofVar("changeFilter", "m" + k))}), {changes, annotations: T0}))],
+         rec({changes: chJSON(get($("t"), "changes")), doc: jtext(get($("t"), "newDoc"))}), {generator: "G7", seed, case: i}))
   }
 }

@@ -1,93 +1,132 @@
-// S2 probe helpers for chunk `state` (docs/parity/ferrum-state/cards/spec-auditor.md).
-// Serializers used by every s2-*.ts probe so that fixture outputs share one shape:
-//   range  -> {anchor, head, from, to, assoc, bidiLevel, goalColumn}  (goalColumn: null when undefined)
-//   sel    -> {ranges: [range...], main}
-//   text   -> {lines: [line strings], length}   (Text.toJSON(): lines without their breaks)
-//   tr     -> {changes: ChangeSet.toJSON(), docChanged, selection: sel | null | "<undefined>",
-//              effects: [{type, value}], annotations: [{type, value}], scrollIntoView}
-// The automatic Transaction.time annotation holds Date.now() (Q15); its value is written as
-// "<wall-clock>" (a number > 1e12 read from the clock) so outputs are reproducible. Explicit
-// times in fixtures are small numbers and are written as given.
-// `undefined`, NaN and ±Infinity are written as "<undefined>", "<NaN>", "<Infinity>", "<-Infinity>" (norm()).
-import {fixtureWriter, encode} from "@harness/lib"
-import {EditorSelection, SelectionRange, Text, Transaction, EditorState, StateEffect, Annotation} from "@codemirror/state"
+// Shared helpers of the generators of chunk `state` (ferrum-state): they build fixture inputs as data for interp.ts
+// (its header documents the input program and every op) and write each fixture with the output of `run(input)`, run on
+// the input exactly as the file stores it. Run the generators from the repository root, in the order of
+// oracle/cm6/order.json (s2-run.ts first: it truncates the file).
+import {readFileSync, writeFileSync} from "node:fs"
+import {encode, fixtureWriter, runIsolated} from "@harness/lib"
+import {run} from "./interp"
 
 export const FIX = "docs/parity/ferrum-state/fixtures/state.jsonl"  // run from the repository root
 
-/** Writer with explicit ids starting at `base` (each probe owns an id range). */
+/** Drop the fixtures with ids in [first, last] from the file (a generator that owns that range rewrites it). */
+export function dropRange(first: number, last: number) {
+  writeFileSync(FIX, readFileSync(FIX, "utf8").split("\n").filter(l => {
+    if (!l) return false
+    let n = Number(JSON.parse(l).id.slice(1)); return n < first || n > last
+  }).map(l => l + "\n").join(""))
+}
+
+/** Writer with explicit ids starting at `base` (each generator owns an id range). The output is run(stored input);
+ * with `isolated`, it runs in a child process (interp-cli.ts) with a 5000 ms limit ({"timeout": 5000} when cut off). */
 export function writer(base: number) {
   const w = fixtureWriter(FIX, false)
   let n = base - 1
-  return (item_id: string, behaviors: string[], input: any, output: any) => {
+  return (item_id: string, behaviors: string[], input: any, isolated = false) => {
     n++
     const id = "F" + String(n).padStart(4, "0")
-    w(item_id, behaviors, norm(input), encode(norm(output)), id)
+    const stored = JSON.parse(JSON.stringify(encode(input)))
+    const output = isolated ? runIsolated("docs/parity/ferrum-state/oracle/cm6/state/interp-cli.ts", JSON.stringify(stored), 5000) : run(stored)
+    w(item_id, behaviors, stored, output, id)
     return id
   }
 }
 
-export const U = "<undefined>"
-/** JSON cannot hold undefined, NaN or ±Infinity (JSON.stringify drops undefined object keys, turns undefined array
- *  entries and NaN/±Infinity into null). Every fixture input and output is passed through norm() first, so they are
- *  written as the strings "<undefined>", "<NaN>", "<Infinity>", "<-Infinity>". */
-export function norm(v: any): any {
-  if (v === undefined) return U
-  if (typeof v == "number" && !Number.isFinite(v)) return Number.isNaN(v) ? "<NaN>" : v > 0 ? "<Infinity>" : "<-Infinity>"
-  if (Array.isArray(v)) return v.map(norm)
-  if (v && typeof v == "object" && Object.getPrototypeOf(v) === Object.prototype) return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, norm(x)]))
-  return v
-}
-export function u(v: any): any { return v === undefined ? U : v }
-
-export function range(r: SelectionRange) {
-  return {anchor: r.anchor, head: r.head, from: r.from, to: r.to, assoc: r.assoc, bidiLevel: r.bidiLevel,
-          goalColumn: r.goalColumn === undefined ? null : r.goalColumn}
-}
-export function sel(s: EditorSelection | undefined | null): any {
-  if (s === undefined) return U
-  if (s === null) return null
-  return {ranges: s.ranges.map(range), main: s.mainIndex}
-}
-export function text(t: Text) { return {lines: t.toJSON(), length: t.length} }
-export function st(s: EditorState) { return {doc: text(s.doc), selection: sel(s.selection)} }
-
-const names = new Map<any, string>()
-export function name(type: any, n: string) { names.set(type, n); return type }
-name(Transaction.time, "Transaction.time"); name(Transaction.userEvent, "Transaction.userEvent")
-name(Transaction.addToHistory, "Transaction.addToHistory"); name(Transaction.remote, "Transaction.remote")
-name(StateEffect.reconfigure, "StateEffect.reconfigure"); name(StateEffect.appendConfig, "StateEffect.appendConfig")
-export function typeName(t: any) { return names.get(t) ?? "<unnamed>" }
-
-function val(v: any): any {
-  if (v === undefined) return U
-  if (v && typeof v == "object" && "extension" in v) return "<extension>"
-  return v
-}
-export function eff(e: StateEffect<any>) { return {type: typeName(e.type), value: val(e.value)} }
-export function ann(a: Annotation<any>) {
-  let v = a.value
-  if (a.type === Transaction.time && typeof v == "number" && v > 1e12) v = "<wall-clock>"
-  return {type: typeName(a.type), value: val(v)}
-}
-export function tr(t: Transaction) {
-  return {changes: t.changes.toJSON(), docChanged: t.docChanged, selection: sel(t.selection),
-          effects: t.effects.map(eff), annotations: (t as any).annotations.map(ann), scrollIntoView: t.scrollIntoView}
+/** Behavior id -> item id, read from the behavior file; a writer taking behavior ids only. */
+export function behaviorWriter(base: number, log = true) {
+  const ITEM = new Map<string, string>()
+  for (let l of readFileSync("docs/parity/ferrum-state/raw/behaviors.jsonl", "utf8").split("\n"))
+    if (l) { let b = JSON.parse(l); ITEM.set(b.id, b.item_id) }
+  const fx0 = writer(base)
+  return (bs: string[], input: any, isolated = false) => {
+    let item = ITEM.get(bs[0]); if (!item) throw new Error("unknown behavior " + bs[0])
+    for (let b of bs) if (ITEM.get(b) !== item) throw new Error("behaviors of different items in one fixture: " + bs.join(", "))
+    let id = fx0(item, bs, input, isolated); if (log) console.log(id, bs.join(",")); return id
+  }
 }
 
-export function cap<T>(f: () => T): any {
-  try { return {ok: f()} } catch (e: any) { return {error: {name: e?.name ?? "Error", message: String(e?.message ?? e)}} }
-}
+// ---- program builders
+export const $ = (name: string) => ({$: name})
+/** An op expression; with `as`, a step that stores its result. */
+export const op = (name: string, args: any = {}, as?: string) => as === undefined ? {op: name, ...args} : {op: name, ...args, as}
+/** A program; `extra` holds descriptive keys. */
+export const P = (steps: any[], out: any, extra: any = {}) => ({...extra, steps, out})
+/** Store an expression's value: a step. */
+export const set = (as: string, x: any) => ({...(x && x.op && x.op != "map" && x.op != "filter" ? x : {op: "let", value: x}), as})
+export const let_ = (value: any, as?: string) => op("let", {value}, as)
+export const list = (...of: any[]) => op("list", {of})
+export const rec = (of: any) => op("record", {of})
+export const merge = (...of: any[]) => op("merge", {of})
+export const label = (text: string) => op("label", {text})
+export const same = (a: any, b: any) => op("same", {a, b})
+export const not = (x: any) => op("not", {of: x})
+export const item = (of: any, index: any) => op("item", {of, index})
+export const count = (of: any) => op("count", {of})
+export const map = (over: any, as: string, d: any) => op("map", {over, as, do: d})
+export const capture = (d: any) => op("capture", {do: d})
+export const cond = (i: any, t: any, e: any) => op("cond", {test: i, then: t, else: e})
+export const block = (steps: any[], result: string) => op("block", {steps, result})
+export const fn = (params: string[], d: any) => op("fn", {params, do: d})
+export const push = (of: any, value: any) => op("array.push", {of, value})
+export const add = (a: any, b: any) => op("add", {a, b})
+export const mul = (a: any, b: any) => op("mul", {a, b})
+export const concat = (...of: any[]) => op("concat", {of})
 
-// Effect types shaped like consumer effects (mirrors/cm6/language/src/fold.ts:69-82 mapRange;
-// mirrors/cm6/autocomplete/src/closebrackets.ts:31-36 closeBracketEffect).
-import {MapMode, ChangeDesc} from "@codemirror/state"
-export const foldLike = name(StateEffect.define<{from: number, to: number}>({map: (range, mapping: ChangeDesc) => {
-  let from = mapping.mapPos(range.from, 1), to = mapping.mapPos(range.to, -1)
-  return from >= to ? undefined : {from, to}
-}}), "foldLike(mapRange)")
-export const trackAfter = name(StateEffect.define<number>({map: (value, mapping: ChangeDesc) => {
-  let mapped = mapping.mapPos(value, -1, MapMode.TrackAfter)
-  return mapped == null ? undefined : mapped
-}}), "trackAfter(closeBracketEffect)")
-export const posEffect = name(StateEffect.define<number>({map: (v, m: ChangeDesc) => m.mapPos(v)}), "pos(mapPos)")
-export const plainEffect = name(StateEffect.define<any>(), "plain(no map)")
+// cm6
+/** EditorState.create(), or with a config {doc?, selection?, extensions?: Node}. */
+export const create = (config?: any) => config === undefined ? op("state.create") : op("state.create", {config})
+export const update = (state: any, ...specs: any[]) => op("state.update", {state, specs})
+export const get = (of: any, prop: string) => op("get", {of, prop})
+export const iget = (of: any, prop: string) => op("internal.get", {of, prop})
+export const field = (state: any, f: any, ...req: any[]) => req.length ? op("state.field", {state, field: f, require: req[0]}) : op("state.field", {state, field: f})
+export const facet = (state: any, f: any) => op("state.facet", {state, facet: f})
+export const sliceDoc = (state: any, ...args: any[]) => op("state.sliceDoc", args.length == 0 ? {state} : args.length == 1 ? {state, from: args[0]} : {state, from: args[0], to: args[1]})
+export const docStr = (state: any) => op("text.toString", {of: get(state, "doc")})
+export const toStr = (of: any) => op("text.toString", {of})
+export const toJSONText = (of: any) => op("text.toJSON", {of})
+export const chJSON = (of: any) => op("changes.toJSON", {of})
+export const chOf = (spec: any, length: number) => op("changes.of", {spec, length})
+export const cursor = (pos: any, assoc?: any, bidiLevel?: any, goalColumn?: any) => {
+  const a: any = {pos}
+  if (assoc !== undefined) a.assoc = assoc
+  if (bidiLevel !== undefined) a.bidiLevel = bidiLevel
+  if (goalColumn !== undefined) a.goalColumn = goalColumn
+  return op("sel.cursor", a)
+}
+export const range = (anchor: any, head: any) => op("sel.range", {anchor, head})
+export const selCreate = (ranges: any[], main?: any) => main === undefined ? op("sel.create", {ranges: list(...ranges)}) : op("sel.create", {ranges: list(...ranges), main})
+export const eff = (type: string, value: any) => op("effect.of", {type, value})
+export const ann = (type: string, value: any) => op("annotation.of", {type, value})
+export const T0 = ann("Transaction.time", 1000)
+export const jtr = (of: any) => op("json.tr", {of})
+export const jsel = (of: any) => op("json.sel", {of})
+export const jtext = (of: any) => op("json.text", {of})
+export const jst = (of: any) => op("json.state", {of})
+export const jrange = (of: any) => op("json.range", {of})
+export const jeff = (of: any) => op("json.eff", {of})
+export const jeffs = (of: any) => op("json.effs", {of})
+/** {...json.tr, doc: newDoc.toString()} */
+export const trDoc = (t: any) => merge(jtr(t), rec({doc: toStr(get(t, "newDoc"))}))
+/** {...json.tr, doc: json.text of newDoc} */
+export const trText = (t: any) => merge(jtr(t), rec({doc: jtext(get(t, "newDoc"))}))
+
+// Extension Nodes (oracle/cm6/facet/interp.ts vocabulary)
+export const of = (f: string, v: any) => ({of: [f, v]})
+export const ofVar = (f: string, v: string) => ({ofVar: [f, v]})
+export const prec = (level: string, n: any) => ({prec: [level, n]})
+export const V = (name: string) => ({var: name})
+
+// The consumer-shaped effect types of the probes (names as the serializers write them).
+export const FOLD = "foldLike(mapRange)", TRACK = "trackAfter(closeBracketEffect)", POS = "pos(mapPos)", PLAIN = "plain(no map)"
+export const defEffects = (...names: string[]) => names.map(n => n == PLAIN ? op("effect.define", {name: n})
+  : op("effect.define", {name: n, spec: {map: n == FOLD ? "foldLike" : n == TRACK ? "trackAfter" : "mapPos"}}))
+/** A step defining annotation type `name`. */
+export const defAnn = (name: string) => op("annotation.define", {name})
+
+/** A program whose output is the value of `expr` after `steps`. */
+export const R = (steps: any[], expr: any, extra: any = {}) => P([...steps, set("r", expr)], $("r"), extra)
+let tmp = 0
+/** Evaluate the expressions in order; the value of the last one (a block with fresh variable names). */
+export const seq = (...xs: any[]) => {
+  const names = xs.map(() => "t" + (tmp++))
+  return block(xs.map((x, i) => set(names[i], x)), names[names.length - 1])
+}

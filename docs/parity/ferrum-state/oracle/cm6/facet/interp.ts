@@ -65,6 +65,8 @@
 //   call; each call adds 1 to the counter) | {"set": G} (new Set(G's value)) | {"map": G} (new Map(G's value))
 //   | {"list": G} ([G's value]) | {"generator": [x...]} (a generator function yielding each x)
 //   | {"var": name} (the value of the program variable at each call)
+//   | {"callVar": name} (calls the function held in the program variable with the getter's arguments and returns its
+//   result; added for chunk `state`, whose functions are built by its `fn` op)
 //   | {"facet": f} | {"facetJoin": f} (.join()) | {"facetJoinLength": f} | {"facetLength": f}
 //   | {"facetString": f} (.toString()) | {"facetFirst": [f, default]} (facet[0] ?? default) | {"field": f}
 //   | {"fieldOpt": f} (state.field(f, false)) | {"docParity": [ifOdd, ifEven]} (a new copy of the one for the
@@ -221,6 +223,7 @@ export class Scope {
       if ("map" in g) { const inner = this.getter(g.map); return (s: EditorState) => new Map(inner(s)) }
       if ("list" in g) { const inner = this.getter(g.list); return (s: EditorState) => [inner(s)] }
       if ("var" in g) { const name = g.var; return () => this.vars(name) }
+      if ("callVar" in g) { const name = g.callVar; return (...args: any[]) => this.vars(name)(...args) }
       if ("generator" in g) { const xs = g.generator; return function* () { for (const x of xs) yield x } }
       const F = this.facets, L = this.fields
       if ("facet" in g) return (s: EditorState) => s.facet(F[g.facet])

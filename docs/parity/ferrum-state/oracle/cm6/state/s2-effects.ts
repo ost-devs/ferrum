@@ -1,131 +1,121 @@
-// S2 probe, chunk `state`: Annotation, AnnotationType, StateEffect, StateEffectType, reconfigure/appendConfig,
+// S2 fixtures, chunk `state`: Annotation, AnnotationType, StateEffect, StateEffectType, reconfigure/appendConfig,
 // StateEffectSpec.map (items state.cm6.118-133, 259). Fixture ids F0800-F0899.
-import {EditorState, Annotation, AnnotationType, StateEffect, StateEffectType, ChangeSet, Facet, Compartment, StateField, Transaction, MapMode} from "@codemirror/state"
-import {writer, cap, u, eff, name, foldLike, trackAfter, posEffect, plainEffect} from "./s2-lib"
+import {writer, $, op, R, set, rec, list, same, not, label, push, fn, seq, let_, cond, count,
+        create, update, get, iget, field, facet, chOf, eff, ann, of, defEffects, defAnn, jeffs, FOLD, TRACK, POS, PLAIN} from "./s2-lib"
 
 const fx = writer(800)
 const B = (item: string, n: number) => `state.${item}.B${n}`
+const EFFS = defEffects(FOLD, TRACK, POS, PLAIN)
+const ref = (kind: string, name: string) => op("ref", {[kind]: name})
+const isA = (of: any, cls: string) => op("isInstance", {of, class: cls})
+const undef = (x: any) => op("isType", {of: x, type: "undefined"})
+const emap = (effect: any, changes: any) => op("effect.map", {effect, changes})
+const st = (x: any, spec: any) => get(update(x, spec), "state")
 
 // ---- Annotation (118-123)
 {
-  let t = Annotation.define<number>(), t2 = Annotation.define<number>()
-  let a = t.of(5), b = t.of(5)
+  const defs = [defAnn("t"), defAnn("t2"), set("a", ann("t", 5)), set("b", ann("t", 5))]
   fx("state.cm6.118", [B("Annotation", 1), B("Annotation.type", 1), B("Annotation.value", 1), B("AnnotationType.of", 1)],
-     {call: "t = Annotation.define(); a = t.of(5); b = t.of(5)"},
-     {aTypeIsT: a.type === t, aValue: a.value, distinctObjects: a !== b, isAnnotation: a instanceof Annotation, ownKeys: Object.keys(a).sort()})
-  fx("state.cm6.121", [B("Annotation^define", 1), B("AnnotationType", 1)], {call: "t = Annotation.define(); t2 = Annotation.define(); distinctTypes: t !== t2; isAnnotationType: t instanceof AnnotationType; ownKeys: Object.keys(t); lookupOther: EditorState.create().update({annotations: t.of(1)}).annotation(t2); lookupSame: EditorState.create().update({annotations: t.of(1)}).annotation(t)"},
-     {distinctTypes: t !== t2, isAnnotationType: t instanceof AnnotationType, ownKeys: Object.keys(t),
-      lookupOther: u(EditorState.create().update({annotations: t.of(1)}).annotation(t2)), lookupSame: EditorState.create().update({annotations: t.of(1)}).annotation(t)})
+     R(defs, rec({aTypeIsT: same(get($("a"), "type"), ref("annotation", "t")), aValue: get($("a"), "value"), distinctObjects: not(same($("a"), $("b"))),
+                  isAnnotation: isA($("a"), "Annotation"), ownKeys: op("ownKeys", {of: $("a"), sort: true})})))
+  fx("state.cm6.121", [B("Annotation^define", 1), B("AnnotationType", 1)],
+     R(defs, rec({distinctTypes: not(same(ref("annotation", "t"), ref("annotation", "t2"))), isAnnotationType: isA(ref("annotation", "t"), "AnnotationType"),
+                  ownKeys: op("ownKeys", {of: ref("annotation", "t")}),
+                  lookupOther: op("tr.annotation", {tr: update(create(), {annotations: ann("t", 1)}), type: "t2"}),
+                  lookupSame: op("tr.annotation", {tr: update(create(), {annotations: ann("t", 1)}), type: "t"})})))
   for (let v of [undefined, null, 0, "", {k: 1}])
-    fx("state.cm6.120", [B("Annotation.value", 1)], {call: "t.of(v).value", v: u(v)}, u(t.of(v as any).value))
+    fx("state.cm6.120", [B("Annotation.value", 1)], R([defAnn("t")], get(ann("t", v), "value")))
 }
 
 // ---- StateEffect, StateEffectType (124, 125, 127, 128, 132, 133)
 {
-  let e = StateEffect.define<number>(), e2 = StateEffect.define<number>({map: (v, m) => m.mapPos(v)})
-  let x = e.of(3), y = e.of(3)
+  const defs = [op("effect.define", {name: "e"}), op("effect.define", {name: "e2", spec: {map: "mapPos"}}), set("x", eff("e", 3)), set("y", eff("e", 3))]
   fx("state.cm6.124", [B("StateEffect", 1), B("StateEffect.value", 1), B("StateEffectType.of", 1), B("StateEffectType", 1)],
-     {call: "e = StateEffect.define(); x = e.of(3); y = e.of(3)"},
-     {value: x.value, typeIsE: x.type === e, distinctObjects: x !== y, isStateEffect: x instanceof StateEffect, typeIsStateEffectType: e instanceof StateEffectType,
-      typeHasMapFunction: typeof (e as any).map == "function"})
-  fx("state.cm6.127", [B("StateEffect.is", 1)], {call: "e = StateEffect.define(); e2 = StateEffect.define({map: (v, m) => m.mapPos(v)}); x = e.of(3); x.is(e) (sameType), x.is(e2) (otherType), StateEffect.reconfigure.of([]).is(StateEffect.appendConfig) (reconfigureIsAppend)"},
-     {sameType: x.is(e), otherType: x.is(e2 as any), reconfigureIsAppend: StateEffect.reconfigure.of([]).is(StateEffect.appendConfig)})
-  let d1 = StateEffect.define(), d2 = StateEffect.define()
-  let ch = ChangeSet.of({from: 0, insert: "xx"}, 3)
-  let v = {pos: 1}, eo = d1.of(v as any)
-  fx("state.cm6.128", [B("StateEffect^define", 1)], {call: "d1 = StateEffect.define(), d2 = StateEffect.define(); d1.of(obj).map(insert \"xx\" at 0 in length 3)"},
-     {distinctTypes: d1 !== d2, mapReturnsSameEffect: eo.map(ch) === eo, valueSame: eo.map(ch)!.value === v})
+     R(defs, rec({value: get($("x"), "value"), typeIsE: same(iget($("x"), "type"), ref("effect", "e")), distinctObjects: not(same($("x"), $("y"))),
+                  isStateEffect: isA($("x"), "StateEffect"), typeIsStateEffectType: isA(ref("effect", "e"), "StateEffectType"),
+                  typeHasMapFunction: op("isType", {of: iget(ref("effect", "e"), "map"), type: "function"})})))
+  fx("state.cm6.127", [B("StateEffect.is", 1)],
+     R(defs, rec({sameType: op("effect.is", {effect: $("x"), type: "e"}), otherType: op("effect.is", {effect: $("x"), type: "e2"}),
+                  reconfigureIsAppend: op("effect.is", {effect: op("effect.reconfigure", {ext: []}), type: "StateEffect.appendConfig"})})))
+  const d = [op("effect.define", {name: "d1"}), op("effect.define", {name: "d2"})]
+  fx("state.cm6.128", [B("StateEffect^define", 1)],
+     R([...d, set("ch", chOf({from: 0, insert: "xx"}, 3)), set("v", let_({pos: 1})), set("eo", eff("d1", $("v")))],
+       rec({distinctTypes: not(same(ref("effect", "d1"), ref("effect", "d2"))), mapReturnsSameEffect: same(emap($("eo"), $("ch")), $("eo")),
+            valueSame: same(get(emap($("eo"), $("ch")), "value"), $("v"))})))
   for (let value of [undefined, null, 0])
-    fx("state.cm6.125", [B("StateEffect.value", 1)], {call: "StateEffect.define().of(v).value", v: u(value)}, u(d1.of(value as any).value))
+    fx("state.cm6.125", [B("StateEffect.value", 1)], R(d, get(eff("d1", value), "value")))
 }
 
 // ---- StateEffect.map (126), StateEffectSpec.map (259)
 {
-  let calls: any[] = []
-  let rec = name(StateEffect.define<any>({map: (v, m) => { calls.push({value: v, mappingLength: m.length, mappingNewLength: m.newLength, isChangeSet: m instanceof ChangeSet, mapPos1: m.mapPos(1)}); return v }}), "rec")
-  let ch = ChangeSet.of({from: 0, insert: "xx"}, 3)
-  let r = rec.of(1)
-  let same = r.map(ch) === r
+  const m_ = $("m")
+  const recDef = [set("calls", list()),
+    set("recMap", fn(["v", "m"], seq(push($("calls"), rec({value: $("v"), mappingLength: get(m_, "length"), mappingNewLength: get(m_, "newLength"),
+      isChangeSet: op("isInstance", {of: m_, class: "ChangeSet"}), mapPos1: op("desc.mapPos", {of: m_, pos: 1})})), $("v")))),
+    op("effect.define", {name: "rec", spec: {map: $("recMap")}})]
   fx("state.cm6.259", [B("StateEffect^define config StateEffectSpec.map", 1), B("StateEffect.map", 3)],
-     {call: "rec = StateEffect.define({map: (v, m) => { record {value: v, mappingLength: m.length, mappingNewLength: m.newLength, isChangeSet: m instanceof ChangeSet, mapPos1: m.mapPos(1)}; return v }}); r = rec.of(1); calls: the records of r.map(ChangeSet.of({from: 0, insert: \"xx\"}, 3)); sameEffectReturned: that map's result === r"},
-     {calls, sameEffectReturned: same})
-  let s = EditorState.create({doc: "abc"})
-  calls = []
-  s.update({effects: rec.of(2)}, {changes: {from: 0, insert: "Q"}})
-  fx("state.cm6.259", [B("StateEffect^define config StateEffectSpec.map", 1)], {call: "rec = StateEffect.define({map: (v, m) => { record {value: v, mappingLength: m.length, mappingNewLength: m.newLength, isChangeSet: m instanceof ChangeSet, mapPos1: m.mapPos(1)}; return v }}); calls: the records made during s.update({effects: rec.of(2)}, {changes: {from: 0, insert: \"Q\"}})", doc: "abc"}, {calls})
-  calls = []
-  s.update({effects: rec.of(2)})
-  fx("state.cm6.259", [B("StateEffect^define config StateEffectSpec.map", 1)], {call: "rec = StateEffect.define({map: (v, m) => { record {value: v, mappingLength: m.length, mappingNewLength: m.newLength, isChangeSet: m instanceof ChangeSet, mapPos1: m.mapPos(1)}; return v }}); calls: the records made during s.update({effects: rec.of(2)}) alone", doc: "abc"}, {calls})
-  let m = name(StateEffect.define<any>({map: (v) => v === "drop" ? undefined : v === "null" ? null : v === "num" ? "0" : v === "obj" ? {...{}} : v}), "m")
-  for (let [val, desc] of [["drop", "map returns undefined"], ["null", "map returns null"], [0, "value 0, map returns \"0\" (loose ==)"], ["obj", "map returns a new object"], ["keep", "map returns the value"]] as [any, string][]) {
-    let input = val === 0 ? m.of("num") : m.of(val)
-    if (val === 0) (input as any).value = 0
-    let mapped = input.map(ChangeSet.of({from: 0, insert: "x"}, 3))
-    fx("state.cm6.126", [B("StateEffect.map", val === "drop" ? 1 : val === "keep" || val === 0 ? 2 : 3)], {call: "effect.map(ChangeSet.of({from: 0, insert: \"x\"}, 3)) where " + desc, value: val},
-       {result: mapped === undefined ? "<undefined>" : {value: u(mapped.value), sameEffect: mapped === input, sameType: mapped.type === input.type}})
-  }
-  let p = plainEffect.of(5)
-  fx("state.cm6.126", [B("StateEffect.map", 2)], {call: "p = plain.of(5), a type defined without map; p.map(ChangeSet.of({from: 0, to: 2}, 3)) === p"}, {sameEffect: p.map(ChangeSet.of({from: 0, to: 2}, 3)) === p})
+     R([...recDef, set("r", eff("rec", 1)), set("same", same(emap($("r"), chOf({from: 0, insert: "xx"}, 3)), $("r")))],
+       rec({calls: $("calls"), sameEffectReturned: $("same")})))
+  fx("state.cm6.259", [B("StateEffect^define config StateEffectSpec.map", 1)],
+     R([...recDef, update(create({doc: "abc"}), {effects: eff("rec", 2)}, {changes: {from: 0, insert: "Q"}})], rec({calls: $("calls")})))
+  fx("state.cm6.259", [B("StateEffect^define config StateEffectSpec.map", 1)],
+     R([...recDef, update(create({doc: "abc"}), {effects: eff("rec", 2)})], rec({calls: $("calls")})))
+  const v = $("mv"), is = (x: string) => op("looseEq", {a: v, b: x})
+  const mDef = [set("mMap", fn(["mv"], cond(is("drop"), let_(undefined), cond(is("null"), let_(null), cond(is("num"), let_("0"), cond(is("obj"), rec({}), v)))))),
+    op("effect.define", {name: "m", spec: {map: $("mMap")}})]
+  for (let [val, desc] of [["drop", "map returns undefined"], ["null", "map returns null"], [0, "value 0, map returns \"0\" (loose ==)"], ["obj", "map returns a new object"], ["keep", "map returns the value"]] as [any, string][])
+    fx("state.cm6.126", [B("StateEffect.map", val === "drop" ? 1 : val === "keep" || val === 0 ? 2 : 3)],
+       R([...mDef, ...(val === 0 ? [set("input", eff("m", "num")), op("effect.set", {effect: $("input"), value: 0})] : [set("input", eff("m", val))]),
+          set("mapped", emap($("input"), chOf({from: 0, insert: "x"}, 3)))],
+         rec({result: cond(undef($("mapped")), $("mapped"), rec({value: get($("mapped"), "value"), sameEffect: same($("mapped"), $("input")),
+           sameType: same(iget($("mapped"), "type"), iget($("input"), "type"))}))}), {desc}))
+  fx("state.cm6.126", [B("StateEffect.map", 2)], R([...EFFS, set("p", eff(PLAIN, 5))], rec({sameEffect: same(emap($("p"), chOf({from: 0, to: 2}, 3)), $("p"))})))
+  const valueOrUndef = (e: any) => [set("r1", e), set("out", cond(undef($("r1")), $("r1"), rec({value: get($("r1"), "value")})))]
   let fold = [[{from: 1, to: 3}, {from: 0, to: 2}], [{from: 1, to: 3}, {from: 1, to: 3, insert: "Z"}], [{from: 1, to: 3}, {from: 3, insert: "Y"}], [{from: 1, to: 3}, {from: 1, insert: "Y"}]] as any[]
-  for (let [range, change] of fold) {
-    let r1 = foldLike.of(range).map(ChangeSet.of(change, 4))
-    fx("state.cm6.259", [B("StateEffect^define config StateEffectSpec.map", 2)], {call: "foldLike (mirrors/cm6/language/src/fold.ts:69-72 mapRange) effect.map(ChangeSet.of(change, 4))", range, change},
-       r1 ? {value: r1.value} : "<undefined>")
-  }
-  for (let [pos, change] of [[2, {from: 2, to: 3}], [2, {from: 1, to: 2}], [2, {from: 2, insert: "W"}], [2, {from: 0, to: 1}]] as any[]) {
-    let r1 = trackAfter.of(pos).map(ChangeSet.of(change, 4))
-    fx("state.cm6.259", [B("StateEffect^define config StateEffectSpec.map", 2)], {call: "trackAfter (mirrors/cm6/autocomplete/src/closebrackets.ts:31-36, MapMode.TrackAfter) effect.map(ChangeSet.of(change, 4))", pos, change},
-       r1 ? {value: r1.value} : "<undefined>")
-  }
+  for (let [range, change] of fold)
+    fx("state.cm6.259", [B("StateEffect^define config StateEffectSpec.map", 2)], R([...EFFS, ...valueOrUndef(emap(eff(FOLD, range), chOf(change, 4)))], $("out")))
+  for (let [pos, change] of [[2, {from: 2, to: 3}], [2, {from: 1, to: 2}], [2, {from: 2, insert: "W"}], [2, {from: 0, to: 1}]] as any[])
+    fx("state.cm6.259", [B("StateEffect^define config StateEffectSpec.map", 2)], R([...EFFS, ...valueOrUndef(emap(eff(TRACK, pos), chOf(change, 4)))], $("out")))
 }
 
 // ---- mapEffects (129)
 {
-  let empty: StateEffect<any>[] = []
-  let ch = ChangeSet.of({from: 0, to: 2}, 4)
-  fx("state.cm6.129", [B("StateEffect^mapEffects", 1)], {call: "StateEffect.mapEffects([], changes)"}, {sameArray: StateEffect.mapEffects(empty, ch) === empty})
-  let list = [plainEffect.of(1), plainEffect.of(2)]
-  let r = StateEffect.mapEffects(list, ch)
-  fx("state.cm6.129", [B("StateEffect^mapEffects", 2)], {call: "StateEffect.mapEffects([plain 1, plain 2], delete 0-2) (nothing changes)"},
-     {sameArray: r === list, sameElements: r.every((e, i) => e === list[i]), length: r.length})
-  let mixed = [foldLike.of({from: 0, to: 1}), posEffect.of(3), foldLike.of({from: 2, to: 4}), trackAfter.of(1), plainEffect.of("p")]
-  fx("state.cm6.129", [B("StateEffect^mapEffects", 2)], {call: "StateEffect.mapEffects([foldLike {0,1}, pos 3, foldLike {2,4}, trackAfter 1, plain p], delete 0-2 in length 4)"},
-     StateEffect.mapEffects(mixed, ch).map(eff))
-  let emptyChanges = ChangeSet.empty(4)
-  let r2 = StateEffect.mapEffects(list, emptyChanges)
-  fx("state.cm6.129", [B("StateEffect^mapEffects", 2)], {call: "StateEffect.mapEffects([plain 1, plain 2], ChangeSet.empty(4))"}, {sameArray: r2 === list, length: r2.length})
-  fx("state.cm6.129", [B("StateEffect^mapEffects", 3)], {call: "StateEffect.mapEffects([pos 9], ChangeSet.empty(4))"}, cap(() => StateEffect.mapEffects([posEffect.of(9)], emptyChanges).map(eff)))
+  const me = (effects: any, changes: any) => op("effect.mapEffects", {effects, changes})
+  const ch = set("ch", chOf({from: 0, to: 2}, 4))
+  fx("state.cm6.129", [B("StateEffect^mapEffects", 1)], R([ch, set("empty", list())], rec({sameArray: same(me($("empty"), $("ch")), $("empty"))})))
+  const lst = [...EFFS, ch, set("list", list(eff(PLAIN, 1), eff(PLAIN, 2)))]
+  fx("state.cm6.129", [B("StateEffect^mapEffects", 2)], R([...lst, set("r", me($("list"), $("ch")))],
+     rec({sameArray: same($("r"), $("list")), sameElements: op("sameItems", {a: $("r"), b: $("list")}), length: count($("r"))})))
+  fx("state.cm6.129", [B("StateEffect^mapEffects", 2)],
+     R([...EFFS, ch], jeffs(me(list(eff(FOLD, {from: 0, to: 1}), eff(POS, 3), eff(FOLD, {from: 2, to: 4}), eff(TRACK, 1), eff(PLAIN, "p")), $("ch")))))
+  fx("state.cm6.129", [B("StateEffect^mapEffects", 2)], R([...lst, set("r2", me($("list"), op("changes.empty", {length: 4})))],
+     rec({sameArray: same($("r2"), $("list")), length: count($("r2"))})))
+  fx("state.cm6.129", [B("StateEffect^mapEffects", 3)], R([...EFFS], jeffs(me(list(eff(POS, 9)), op("changes.empty", {length: 4})))))
 }
 
 // ---- reconfigure (130), appendConfig (131)
 {
-  let f = Facet.define<string>(), comp = new Compartment
-  let s0 = EditorState.create({extensions: [f.of("base"), comp.of(f.of("c0"))]})
-  let s1 = s0.update({effects: StateEffect.appendConfig.of(f.of("app"))}).state
-  let s2 = s1.update({effects: comp.reconfigure(f.of("c1"))}).state
-  let s3 = s2.update({effects: StateEffect.reconfigure.of([f.of("new"), comp.of(f.of("ignored"))])}).state
-  let s4 = s2.update({effects: StateEffect.reconfigure.of(f.of("new2"))}).state
-  let s5 = s4.update({effects: StateEffect.reconfigure.of([comp.of(f.of("fresh"))])}).state
+  const fc = [op("facet.define", {name: "f"}), op("define", {def: ["compartment", "comp"]})]
+  const re = (n: any) => op("effect.reconfigure", {ext: n}), ap = (n: any) => op("effect.appendConfig", {ext: n})
   fx("state.cm6.130", [B("StateEffect^reconfigure", 1), B("StateEffect^reconfigure", 2), B("StateEffect^appendConfig", 2)],
-     {call: "s0 = [f base, comp(f c0)]; s1 = appendConfig(f app); s2 = comp.reconfigure(f c1); s3 = s2 + reconfigure([f new, comp(f ignored)]); s4 = s2 + reconfigure(f new2); s5 = s4 + reconfigure([comp(f fresh)]); s0..s5: facet(f) of each; s4CompartmentAbsent: comp.get(s4) === undefined"},
-     {s0: s0.facet(f), s1: s1.facet(f), s2: s2.facet(f), s3: s3.facet(f), s4: s4.facet(f), s4CompartmentAbsent: comp.get(s4) === undefined, s5: s5.facet(f)})
-  let r = EditorState.create({extensions: f.of("base")})
-  let both1 = r.update({effects: [StateEffect.reconfigure.of(f.of("X")), StateEffect.appendConfig.of(f.of("Y"))]}).state
-  let both2 = r.update({effects: [StateEffect.appendConfig.of(f.of("Y")), StateEffect.reconfigure.of(f.of("X"))]}).state
-  let two = r.update({effects: [StateEffect.appendConfig.of(f.of("Y1")), StateEffect.appendConfig.of([f.of("Y2"), f.of("Y3")])]}).state
-  let rr = r.update({effects: [StateEffect.reconfigure.of(f.of("X1")), StateEffect.reconfigure.of(f.of("X2"))]}).state
+     R([...fc, set("s0", create({extensions: [of("f", "base"), {comp: ["comp", of("f", "c0")]}]})), set("s1", st($("s0"), {effects: ap(of("f", "app"))})),
+        set("s2", st($("s1"), {effects: op("compartment.reconfigure", {comp: "comp", ext: of("f", "c1")})})),
+        set("s3", st($("s2"), {effects: re([of("f", "new"), {comp: ["comp", of("f", "ignored")]}])})), set("s4", st($("s2"), {effects: re(of("f", "new2"))})),
+        set("s5", st($("s4"), {effects: re([{comp: ["comp", of("f", "fresh")]}])}))],
+       rec({s0: facet($("s0"), "f"), s1: facet($("s1"), "f"), s2: facet($("s2"), "f"), s3: facet($("s3"), "f"), s4: facet($("s4"), "f"),
+            s4CompartmentAbsent: undef(op("compartment.get", {comp: "comp", state: $("s4")})), s5: facet($("s5"), "f")})))
+  const r = [...fc, set("r", create({extensions: of("f", "base")}))]
   fx("state.cm6.131", [B("StateEffect^appendConfig", 1), B("StateEffect^reconfigure", 3)],
-     {call: "from [f base], one update each with effects: [reconfigure(X), appendConfig(Y)] (reconfigureThenAppend); [appendConfig(Y), reconfigure(X)] (appendThenReconfigure); [appendConfig(Y1), appendConfig([Y2, Y3])] (twoAppends); [reconfigure(X1), reconfigure(X2)] (twoReconfigures); facet(f) of each resulting state"},
-     {reconfigureThenAppend: both1.facet(f), appendThenReconfigure: both2.facet(f), twoAppends: two.facet(f), twoReconfigures: rr.facet(f)})
-  let ch = ChangeSet.of({from: 0, insert: "xx"}, 0)
-  let re = StateEffect.reconfigure.of(f.of("z")), ap = StateEffect.appendConfig.of(f.of("z"))
-  fx("state.cm6.130", [B("StateEffect^reconfigure", 4), B("StateEffect^appendConfig", 3)], {call: "ch = ChangeSet.of({from: 0, insert: \"xx\"}, 0); re = StateEffect.reconfigure.of(f.of(\"z\")); ap = StateEffect.appendConfig.of(f.of(\"z\")); re.map(ch) === re (reconfigureSame), ap.map(ch) === ap (appendSame)", f: "Facet.define<string>()"},
-     {reconfigureSame: re.map(ch) === re, appendSame: ap.map(ch) === ap})
-  let fld = StateField.define<number>({create: () => 0, update: v => v + 1})
-  let a0 = EditorState.create({extensions: f.of("base")})
-  let a1 = a0.update({effects: StateEffect.appendConfig.of([fld, f.of("app")])}).state
-  let a2 = a1.update({changes: {from: 0, insert: "x"}}).state
-  let a3 = a2.update({effects: StateEffect.appendConfig.of(f.of("app"))}).state
-  fx("state.cm6.131", [B("StateEffect^appendConfig", 2)], {call: "a0 = create([f base]); a1 = appendConfig([field, f app]); a2 = a plain transaction (insert \"x\" at 0); a3 = appendConfig(f app) again (a new provider object); [facet(f), field(field)] of a1, a2, a3", field: "create () => 0, update v => v + 1"},
-     {a1: [a1.facet(f), a1.field(fld)], a2: [a2.facet(f), a2.field(fld)], a3: [a3.facet(f), a3.field(fld)]})
+     R(r, rec({reconfigureThenAppend: facet(st($("r"), {effects: list(re(of("f", "X")), ap(of("f", "Y")))}), "f"),
+               appendThenReconfigure: facet(st($("r"), {effects: list(ap(of("f", "Y")), re(of("f", "X")))}), "f"),
+               twoAppends: facet(st($("r"), {effects: list(ap(of("f", "Y1")), ap([of("f", "Y2"), of("f", "Y3")]))}), "f"),
+               twoReconfigures: facet(st($("r"), {effects: list(re(of("f", "X1")), re(of("f", "X2")))}), "f")})))
+  fx("state.cm6.130", [B("StateEffect^reconfigure", 4), B("StateEffect^appendConfig", 3)],
+     R([...fc, set("ch", chOf({from: 0, insert: "xx"}, 0)), set("re", re(of("f", "z"))), set("ap", ap(of("f", "z")))],
+       rec({reconfigureSame: same(emap($("re"), $("ch")), $("re")), appendSame: same(emap($("ap"), $("ch")), $("ap"))})))
+  fx("state.cm6.131", [B("StateEffect^appendConfig", 2)],
+     R([...fc, op("field.define", {name: "fld", spec: {create: fn([], let_(0)), update: fn(["v"], op("add", {a: $("v"), b: 1}))}}),
+        set("a0", create({extensions: of("f", "base")})), set("a1", st($("a0"), {effects: ap([{field: "fld"}, of("f", "app")])})),
+        set("a2", st($("a1"), {changes: {from: 0, insert: "x"}})), set("a3", st($("a2"), {effects: ap(of("f", "app"))}))],
+       rec({a1: list(facet($("a1"), "f"), field($("a1"), "fld")), a2: list(facet($("a2"), "f"), field($("a2"), "fld")), a3: list(facet($("a3"), "f"), field($("a3"), "fld"))})))
 }

@@ -1,7 +1,7 @@
-// S2 probe, chunk `state`: state creation, doc/selection/field/facet reads, toText, sliceDoc, JSON.
+// S2 fixtures, chunk `state`: state creation, doc/selection/field/facet reads, toText, sliceDoc, JSON.
 // Items state.cm6.001-008, 013-018. Fixture ids F0001-F0199. Run through s2-run.ts.
-import {EditorState, EditorSelection, Text, StateField, Facet, Compartment, StateEffect, Prec} from "@codemirror/state"
-import {writer, st, sel, text, cap, u, range} from "./s2-lib"
+import {writer, $, op, R, set, rec, merge, list, same, label, push, fn, seq, add, mul, cond, item, count, capture, block,
+        create, update, get, iget, field, facet, sliceDoc, cursor, range, selCreate, jsel, jtext, jst, jrange, of, prec, V} from "./s2-lib"
 
 const fx = writer(1)
 const I = {
@@ -11,371 +11,276 @@ const I = {
   fromJSON: "state.cm6.017", create: "state.cm6.018"
 }
 const B = (item: string, n: number) => `state.${item}.B${n}`
+const s = $("s")
+const lines = (st: any) => get(get(st, "doc"), "lines")
+const docOf = (st: any) => get(st, "doc")
+const selOf = (st: any) => get(st, "selection")
+const fieldDef = (name: string, spec: any) => op("field.define", {name, spec})
+const constFn = (v: any) => fn([], op("let", {value: v}))
+const keep = fn(["v"], $("v"))
+const toTextOf = (st: any, string: any) => op("state.toText", {state: st, string})
 
 // ---- EditorStateConfig (001)
-{
-  let s = EditorState.create()
-  fx(I.config, [B("EditorStateConfig", 1), B("EditorStateConfig.doc", 5), B("EditorStateConfig.selection", 1), B("EditorStateConfig.extensions", 1)],
-     {call: "EditorState.create()"},
-     {...st(s), docIsTextEmpty: s.doc === Text.empty, tabSize: s.tabSize, lineSeparator: u(s.facet(EditorState.lineSeparator)),
-      allowMultipleSelections: s.facet(EditorState.allowMultipleSelections), readOnly: s.readOnly})
-  let s2 = EditorState.fromJSON({doc: "xy", selection: {ranges: [{anchor: 1, head: 2}], main: 0}},
-                                {doc: "ignored", selection: {anchor: 0}, extensions: EditorState.tabSize.of(3)} as any)
-  fx(I.config, [B("EditorStateConfig", 2), B("EditorState^fromJSON", 4)],
-     {call: "EditorState.fromJSON(json, config)", json: {doc: "xy", selection: {ranges: [{anchor: 1, head: 2}], main: 0}},
-      config: {doc: "ignored", selection: {anchor: 0}, extensions: "[EditorState.tabSize.of(3)]"}},
-     {...st(s2), tabSize: s2.tabSize})
-}
+fx(I.config, [B("EditorStateConfig", 1), B("EditorStateConfig.doc", 5), B("EditorStateConfig.selection", 1), B("EditorStateConfig.extensions", 1)],
+   R([set("s", create())], merge(jst(s), rec({docIsTextEmpty: same(docOf(s), op("text.empty")), tabSize: get(s, "tabSize"),
+     lineSeparator: facet(s, "lineSeparator"), allowMultipleSelections: facet(s, "allowMultipleSelections"), readOnly: get(s, "readOnly")}))))
+fx(I.config, [B("EditorStateConfig", 2), B("EditorState^fromJSON", 4)],
+   R([set("s", op("state.fromJSON", {json: {doc: "xy", selection: {ranges: [{anchor: 1, head: 2}], main: 0}},
+       config: {doc: "ignored", selection: {anchor: 0}, extensions: of("tabSize", 3)}}))], merge(jst(s), rec({tabSize: get(s, "tabSize")}))))
 
 // ---- EditorStateConfig.doc (002)
-for (let doc of ["ab\ncd", "a\r\nb\rc\nd", "a\n", "\r\n\r\n", "x y", "\u{1F600}\nb", "\r"]) {
-  let s = EditorState.create({doc})
-  fx(I.cdoc, [B("EditorStateConfig.doc", 1)], {call: "EditorState.create({doc})", doc}, {doc: text(s.doc), lines: s.doc.lines})
-}
-for (let [doc, sep] of [["a\nb\r\nc", "\r\n"], ["a\r\nb", "\n"], ["a|b\nc", "|"], ["x y\nz", " "], ["\u{1F600}\r\n\u{1F601}", "\r\n"]] as const) {
-  let s = EditorState.create({doc, extensions: EditorState.lineSeparator.of(sep)})
-  fx(I.cdoc, [B("EditorStateConfig.doc", 2)], {call: "EditorState.create({doc, extensions: lineSeparator.of(sep)})", doc, sep},
-     {doc: text(s.doc), lines: s.doc.lines, sliceDoc: s.sliceDoc()})
-}
-{
-  let s = EditorState.create({doc: "a\r\nb\nc", extensions: EditorState.lineSeparator.of("")})
-  fx(I.cdoc, [B("EditorStateConfig.doc", 3)], {call: "EditorState.create({doc, extensions: lineSeparator.of(\"\")})", doc: "a\r\nb\nc", sep: ""},
-     {doc: text(s.doc), lineBreak: s.lineBreak, sliceDoc: s.sliceDoc()})
-  let t = Text.of(["a", "b|c"])
-  let s2 = EditorState.create({doc: t, extensions: EditorState.lineSeparator.of("|")})
-  fx(I.cdoc, [B("EditorStateConfig.doc", 4)], {call: "EditorState.create({doc: Text.of([\"a\", \"b|c\"]), extensions: lineSeparator.of(\"|\")})"},
-     {sameObject: s2.doc === t, doc: text(s2.doc), sliceDoc: s2.sliceDoc()})
-  for (let doc of [undefined, "", null]) {
-    let s3 = EditorState.create({doc: doc as any})
-    fx(I.cdoc, [B("EditorStateConfig.doc", 5)], {call: "EditorState.create({doc})", doc: u(doc)},
-       {doc: text(s3.doc), lines: s3.doc.lines, isTextEmpty: s3.doc === Text.empty})
-  }
-}
+for (let doc of ["ab\ncd", "a\r\nb\rc\nd", "a\n", "\r\n\r\n", "x\u2028y", "\u{1F600}\nb", "\r"])
+  fx(I.cdoc, [B("EditorStateConfig.doc", 1)], R([set("s", create({doc}))], rec({doc: jtext(docOf(s)), lines: lines(s)})))
+for (let [doc, sep] of [["a\nb\r\nc", "\r\n"], ["a\r\nb", "\n"], ["a|b\nc", "|"], ["x\u2028y\nz", "\u2028"], ["\u{1F600}\r\n\u{1F601}", "\r\n"]] as const)
+  fx(I.cdoc, [B("EditorStateConfig.doc", 2)], R([set("s", create({doc, extensions: of("lineSeparator", sep)}))],
+     rec({doc: jtext(docOf(s)), lines: lines(s), sliceDoc: sliceDoc(s)})))
+fx(I.cdoc, [B("EditorStateConfig.doc", 3)], R([set("s", create({doc: "a\r\nb\nc", extensions: of("lineSeparator", "")}))],
+   rec({doc: jtext(docOf(s)), lineBreak: get(s, "lineBreak"), sliceDoc: sliceDoc(s)})))
+fx(I.cdoc, [B("EditorStateConfig.doc", 4)], R([set("t", op("text.of", {lines: ["a", "b|c"]})), set("s", create({doc: $("t"), extensions: of("lineSeparator", "|")}))],
+   rec({sameObject: same(docOf(s), $("t")), doc: jtext(docOf(s)), sliceDoc: sliceDoc(s)})))
+for (let doc of [undefined, "", null])
+  fx(I.cdoc, [B("EditorStateConfig.doc", 5)], R([set("s", create({doc}))],
+     rec({doc: jtext(docOf(s)), lines: lines(s), isTextEmpty: same(docOf(s), op("text.empty"))})))
 
 // ---- EditorStateConfig.selection (003)
-for (let selection of [undefined, null, 0]) {
-  let s = EditorState.create({doc: "abc", selection: selection as any})
-  fx(I.csel, [B("EditorStateConfig.selection", 1)], {call: "EditorState.create({doc, selection})", doc: "abc", selection: u(selection)}, {selection: sel(s.selection)})
-}
+for (let selection of [undefined, null, 0])
+  fx(I.csel, [B("EditorStateConfig.selection", 1)], R([set("s", create({doc: "abc", selection}))], rec({selection: jsel(selOf(s))})))
+fx(I.csel, [B("EditorStateConfig.selection", 2)], R([set("given", selCreate([cursor(2, 1, 1, 5)])), set("s", create({doc: "abc", selection: $("given")}))],
+   rec({sameObject: same(selOf(s), $("given")), selection: jsel(selOf(s))})))
+fx(I.csel, [B("EditorStateConfig.selection", 2), B("EditorStateConfig.selection", 7)],
+   R([set("given", selCreate([range(0, 1), range(2, 3)], 1)), set("s", create({doc: "abc", selection: $("given"), extensions: of("allowMultipleSelections", true)}))],
+     rec({sameObject: same(selOf(s), $("given")), selection: jsel(selOf(s))})))
+for (let selection of [{anchor: 2}, {anchor: 1, head: 3}, {anchor: 3, head: 1}, {anchor: 2, head: 2}, {anchor: 3}])
+  fx(I.csel, [B("EditorStateConfig.selection", 3)], R([set("s", create({doc: "abc", selection}))], rec({selection: jsel(selOf(s))})))
+for (let selection of [{anchor: 4}, {anchor: 0, head: 4}, {anchor: 1e8}])
+  fx(I.csel, [B("EditorStateConfig.selection", 4)], R([], jsel(selOf(create({doc: "abc", selection})))))
+fx(I.csel, [B("EditorStateConfig.selection", 5), B("EditorState^create", 1)],
+   R([set("multi", selCreate([cursor(1), cursor(9)], 0))], jsel(selOf(create({doc: "abc", selection: $("multi")})))))
+for (let selection of [{anchor: -1}, {anchor: 1.5, head: 0}, {anchor: -3, head: 2}])
+  fx(I.csel, [B("EditorStateConfig.selection", 6)], R([], jsel(selOf(create({doc: "abc", selection})))))
 {
-  let given = EditorSelection.create([EditorSelection.cursor(2, 1, 1, 5)])
-  let s = EditorState.create({doc: "abc", selection: given})
-  fx(I.csel, [B("EditorStateConfig.selection", 2)], {call: "EditorState.create({doc, selection: EditorSelection.create([EditorSelection.cursor(2, 1, 1, 5)])})", doc: "abc"},
-     {sameObject: s.selection === given, selection: sel(s.selection)})
-  let given2 = EditorSelection.create([EditorSelection.range(0, 1), EditorSelection.range(2, 3)], 1)
-  let s2 = EditorState.create({doc: "abc", selection: given2, extensions: EditorState.allowMultipleSelections.of(true)})
-  fx(I.csel, [B("EditorStateConfig.selection", 2), B("EditorStateConfig.selection", 7)],
-     {call: "EditorState.create({doc, selection: EditorSelection.create([range(0,1), range(2,3)], 1), extensions: allowMultipleSelections.of(true)})", doc: "abc"},
-     {sameObject: s2.selection === given2, selection: sel(s2.selection)})
+  const ranges = [set("r0", cursor(0)), set("r1", range(1, 2)), set("r2", cursor(3))]
+  const rs = op("list", {of: [$("r0"), $("r1"), $("r2")]})
+  fx(I.csel, [B("EditorStateConfig.selection", 7)], R([...ranges, set("one", create({doc: "abc", selection: op("sel.create", {ranges: rs, main: 1})}))],
+     rec({selection: jsel(selOf($("one"))), mainRangeKept: same(item(get(selOf($("one")), "ranges"), 0), $("r1"))})))
+  fx(I.csel, [B("EditorStateConfig.selection", 7)], R([...ranges, set("many", create({doc: "abc", selection: op("sel.create", {ranges: rs, main: 1}), extensions: of("allowMultipleSelections", true)}))],
+     rec({selection: jsel(selOf($("many")))})))
 }
-for (let selection of [{anchor: 2}, {anchor: 1, head: 3}, {anchor: 3, head: 1}, {anchor: 2, head: 2}, {anchor: 3}]) {
-  let s = EditorState.create({doc: "abc", selection})
-  fx(I.csel, [B("EditorStateConfig.selection", 3)], {call: "EditorState.create({doc, selection})", doc: "abc", selection}, {selection: sel(s.selection)})
-}
-for (let selection of [{anchor: 4}, {anchor: 0, head: 4}, {anchor: 1e8}]) {
-  fx(I.csel, [B("EditorStateConfig.selection", 4)], {call: "EditorState.create({doc, selection})", doc: "abc", selection},
-     cap(() => sel(EditorState.create({doc: "abc", selection}).selection)))
-}
-{
-  let multi = EditorSelection.create([EditorSelection.cursor(1), EditorSelection.cursor(9)], 0)
-  fx(I.csel, [B("EditorStateConfig.selection", 5), B("EditorState^create", 1)],
-     {call: "EditorState.create({doc, selection: EditorSelection.create([cursor(1), cursor(9)], 0)})", doc: "abc", allowMultipleSelections: false},
-     cap(() => sel(EditorState.create({doc: "abc", selection: multi}).selection)))
-}
-for (let selection of [{anchor: -1}, {anchor: 1.5, head: 0}, {anchor: -3, head: 2}]) {
-  fx(I.csel, [B("EditorStateConfig.selection", 6)], {call: "EditorState.create({doc, selection})", doc: "abc", selection},
-     cap(() => sel(EditorState.create({doc: "abc", selection}).selection)))
-}
-{
-  let ranges = [EditorSelection.cursor(0), EditorSelection.range(1, 2), EditorSelection.cursor(3)]
-  let one = EditorState.create({doc: "abc", selection: EditorSelection.create(ranges, 1)})
-  fx(I.csel, [B("EditorStateConfig.selection", 7)], {call: "EditorState.create({doc, selection: EditorSelection.create([cursor(0), range(1,2), cursor(3)], 1)})", doc: "abc", allowMultipleSelections: false},
-     {selection: sel(one.selection), mainRangeKept: one.selection.ranges[0] === ranges[1]})
-  let many = EditorState.create({doc: "abc", selection: EditorSelection.create(ranges, 1), extensions: EditorState.allowMultipleSelections.of(true)})
-  fx(I.csel, [B("EditorStateConfig.selection", 7)], {call: "EditorState.create({doc, selection: EditorSelection.create([cursor(0), range(1,2), cursor(3)], 1), extensions: allowMultipleSelections.of(true)})", doc: "abc", allowMultipleSelections: true},
-     {selection: sel(many.selection)})
-}
-for (let [doc, selection] of [["\u{1F600}", {anchor: 1}], ["\u{1F600}x", {anchor: 3, head: 0}], ["a\r\nb", {anchor: 3}], ["a\r\nb", {anchor: 4}]] as const) {
-  fx(I.csel, [B("EditorStateConfig.selection", 8)], {call: "docLength: EditorState.create({doc}).doc.length; selection: EditorState.create({doc, selection}).selection", doc, selection},
-     cap(() => ({docLength: EditorState.create({doc}).doc.length, selection: sel(EditorState.create({doc, selection}).selection)})))
-}
+for (let [doc, selection] of [["\u{1F600}", {anchor: 1}], ["\u{1F600}x", {anchor: 3, head: 0}], ["a\r\nb", {anchor: 3}], ["a\r\nb", {anchor: 4}]] as const)
+  fx(I.csel, [B("EditorStateConfig.selection", 8)], R([], rec({docLength: get(docOf(create({doc})), "length"), selection: jsel(selOf(create({doc, selection})))})))
 
 // ---- EditorStateConfig.extensions (004)
-for (let extensions of [undefined, null, []]) {
-  let s = EditorState.create({doc: "a", extensions: extensions as any})
-  fx(I.cext, [B("EditorStateConfig.extensions", 1)], {call: "EditorState.create({doc, extensions})", doc: "a", extensions: u(extensions)},
-     {tabSize: s.tabSize, readOnly: s.readOnly, lineSeparator: u(s.facet(EditorState.lineSeparator)), phrases: s.facet(EditorState.phrases)})
-}
+for (let extensions of [{raw: "undefined"}, {raw: "null"}, []])
+  fx(I.cext, [B("EditorStateConfig.extensions", 1)], R([set("s", create({doc: "a", extensions}))],
+     rec({tabSize: get(s, "tabSize"), readOnly: get(s, "readOnly"), lineSeparator: facet(s, "lineSeparator"), phrases: facet(s, "phrases")})))
 {
-  let comp = new Compartment, f = Facet.define<number>()
-  fx(I.cext, [B("EditorStateConfig.extensions", 2)], {call: "EditorState.create({extensions: [comp.of(f.of(1)), comp.of(f.of(2))]})"},
-     cap(() => EditorState.create({extensions: [comp.of(f.of(1)), comp.of(f.of(2))]}).doc.length))
-  fx(I.cext, [B("EditorStateConfig.extensions", 2)], {call: "EditorState.create({extensions: [{}]})"},
-     cap(() => EditorState.create({extensions: [{} as any]}).doc.length))
-  fx(I.cext, [B("EditorStateConfig.extensions", 2)], {call: "EditorState.create({extensions: [{extension: ext}]}) where ext.extension === ext (self-referential)"},
-     cap(() => { let o: any = {}; o.extension = o; return EditorState.create({extensions: [o]}).doc.length }))
+  const defs = [op("define", {def: ["compartment", "comp"]}), op("facet.define", {name: "f"})]
+  fx(I.cext, [B("EditorStateConfig.extensions", 2)], R(defs, get(docOf(create({extensions: [{comp: ["comp", of("f", 1)]}, {comp: ["comp", of("f", 2)]}]})), "length")))
+  fx(I.cext, [B("EditorStateConfig.extensions", 2)], R(defs, get(docOf(create({extensions: [{raw: "plainObject"}]})), "length")))
+  fx(I.cext, [B("EditorStateConfig.extensions", 2)], R(defs, get(docOf(create({extensions: [{raw: "selfExtension"}]})), "length")))
 }
-{
-  let field = StateField.define<number>({create: () => 0, update: v => v, toJSON: v => v, fromJSON: j => j * 10})
-  let s = EditorState.fromJSON({doc: "", selection: {ranges: [{anchor: 0, head: 0}], main: 0}, f: 4}, {extensions: [field.init(() => 99)]}, {f: field})
-  fx(I.cext, [B("EditorStateConfig.extensions", 3), B("EditorState^fromJSON", 3)],
-     {call: "EditorState.fromJSON(json, {extensions: [field.init(() => 99)]}, {f: field})", json: {doc: "", selection: {ranges: [{anchor: 0, head: 0}], main: 0}, f: 4},
-      field: "create () => 0, fromJSON j => j * 10"},
-     {field: s.field(field)})
-}
+fx(I.cext, [B("EditorStateConfig.extensions", 3), B("EditorState^fromJSON", 3)],
+   R([fieldDef("field", {create: constFn(0), update: keep, toJSON: keep, fromJSON: fn(["j"], mul($("j"), 10))}),
+      set("s", op("state.fromJSON", {json: {doc: "", selection: {ranges: [{anchor: 0, head: 0}], main: 0}, f: 4},
+        config: {extensions: [{init: ["field", {const: 99}]}]}, fields: {f: "field"}}))],
+     rec({field: field(s, "field")})))
 
 // ---- EditorState (005)
-{
-  let calls: string[] = []
-  let a = StateField.define<number>({create: () => { calls.push("A.create"); return 1 }, update: v => { calls.push("A.update"); return v }})
-  let f = Facet.define<number>()
-  let ext = [a, f.compute([a], s => { calls.push("f.get"); return s.field(a) + 1 })]
-  let s = EditorState.create({extensions: ext})
-  let afterCreate = calls.slice()
-  s.field(a); s.facet(f); s.field(a)
-  fx(I.state, [B("EditorState", 1)], {call: "EditorState.create; then read field(A), facet(f), field(A)", extensions: "[A: create () => 1, f.compute([A], s => s.field(A) + 1)]"},
-     {callsDuringCreate: afterCreate, callsAfterReads: calls, facet: s.facet(f)})
-}
-{
-  let b: StateField<number>
-  let a = StateField.define<number>({create: s => s.field(b) + 1, update: v => v})
-  b = StateField.define<number>({create: () => 10, update: v => v})
-  let s = EditorState.create({extensions: [a, b]})
-  fx(I.state, [B("EditorState", 2), B("EditorState.field", 5)], {call: "EditorState.create({extensions: [A, B]})", A: "create s => s.field(B) + 1", B: "create () => 10"},
-     {A: s.field(a), B: s.field(b)})
-  let c: StateField<number>
-  let d = StateField.define<number>({create: s => s.field(c), update: v => v})
-  c = StateField.define<number>({create: s => s.field(d), update: v => v})
-  fx(I.state, [B("EditorState", 3)], {call: "EditorState.create({extensions: [D, C]})", D: "create s => s.field(C)", C: "create s => s.field(D)"},
-     cap(() => EditorState.create({extensions: [d, c]}).field(d)))
-  let e2: StateField<number>
-  let e1 = StateField.define<number>({create: () => 0, update: (v, tr) => tr.state.field(e2)})
-  e2 = StateField.define<number>({create: () => 0, update: (v, tr) => tr.state.field(e1)})
-  let s3 = EditorState.create({extensions: [e1, e2]})
-  fx(I.state, [B("EditorState", 3)], {call: "s = EditorState.create({extensions: [E1, E2]}); s.update({}).state.field(E1)", E1: "create () => 0, update (v, tr) => tr.state.field(E2)", E2: "create () => 0, update (v, tr) => tr.state.field(E1)"},
-     cap(() => s3.update({}).state.field(e1)))
-}
-{
-  let f = StateField.define<number>({create: () => 0, update: v => v + 1})
-  let s = EditorState.create({doc: "abc", selection: {anchor: 1}, extensions: f})
-  let before = {doc: s.doc, selection: s.selection, field: s.field(f)}
-  let t = s.update({changes: {from: 0, to: 3, insert: "xyz!"}, selection: {anchor: 4}})
-  let ns = t.state
-  fx(I.state, [B("EditorState", 4)], {call: "s = EditorState.create({doc, selection, extensions: field}); read s.doc, s.selection; ns = s.update({changes: {from: 0, to: 3, insert: \"xyz!\"}, selection: {anchor: 4}}).state; startAfter: s's doc, selection and field read after the update; startDocSame, startSelectionSame: s.doc and s.selection are the objects read before the update; newState: ns's doc, selection and field", doc: "abc", selection: {anchor: 1}, field: "create 0, update v + 1"},
-     {startAfter: {...st(s), field: s.field(f)}, startDocSame: s.doc === before.doc, startSelectionSame: s.selection === before.selection,
-      newState: {...st(ns), field: ns.field(f)}})
-}
-{
-  let seen: any[] = []
-  let a = StateField.define<number>({create: () => 0, update: v => v + 1})
-  let b = StateField.define<number>({create: () => 0, update: (v, t) => { seen.push(t.state === undefined ? "?" : "state"); let x = t.state.field(a) * 10; seen.push(x); return x }})
-  let s = EditorState.create({extensions: [b, a]})
-  let t = s.update({})
-  let ns = t.state
-  fx(I.state, [B("EditorState", 5), B("Transaction.state", 8)], {call: "s = EditorState.create({extensions: [B, A]}); ns = s.update({}).state; ns.field(B) (B), ns.field(A) (A); seenInsideUpdate: what B's update logged", A: "create 0, update v + 1", B: "create 0, update (v, tr) => { log \"state\" (\"?\" if tr.state is undefined); x = tr.state.field(A) * 10; log x; return x }"},
-     {B: ns.field(b), A: ns.field(a), seenInsideUpdate: seen})
-  let captured: any = null
-  let c = StateField.define<number>({create: () => 0, update: (v, t) => { captured = t.state; return v }})
-  let s2 = EditorState.create({extensions: c})
-  let t2 = s2.update({})
-  fx(I.state, [B("EditorState", 5), B("Transaction.state", 8)], {call: "s.update({}).state with field C whose update stores tr.state"},
-     {trStateInsideUpdateIsFinalState: t2.state === captured})
-}
+fx(I.state, [B("EditorState", 1)],
+   R([set("calls", list()),
+      fieldDef("A", {create: fn([], seq(push($("calls"), label("A.create")), 1)), update: fn(["v"], seq(push($("calls"), label("A.update")), $("v")))}),
+      op("facet.define", {name: "f"}),
+      set("g", fn(["gs"], seq(push($("calls"), label("f.get")), add(field($("gs"), "A"), 1)))),
+      set("s", create({extensions: [{field: "A"}, {compute: ["f", [{field: "A"}], {callVar: "g"}]}]})),
+      set("afterCreate", op("copy", {of: $("calls")})),
+      field(s, "A"), facet(s, "f"), field(s, "A")],
+     rec({callsDuringCreate: $("afterCreate"), callsAfterReads: $("calls"), facet: facet(s, "f")})))
+fx(I.state, [B("EditorState", 2), B("EditorState.field", 5)],
+   R([fieldDef("A", {create: fn(["cs"], add(field($("cs"), "B"), 1)), update: keep}), fieldDef("B", {create: constFn(10), update: keep}),
+      set("s", create({extensions: [{field: "A"}, {field: "B"}]}))], rec({A: field(s, "A"), B: field(s, "B")})))
+fx(I.state, [B("EditorState", 3)],
+   R([fieldDef("D", {create: fn(["cs"], field($("cs"), "C")), update: keep}), fieldDef("C", {create: fn(["cs"], field($("cs"), "D")), update: keep})],
+     field(create({extensions: [{field: "D"}, {field: "C"}]}), "D")))
+fx(I.state, [B("EditorState", 3)],
+   R([fieldDef("E1", {create: constFn(0), update: fn(["v", "t"], field(get($("t"), "state"), "E2"))}),
+      fieldDef("E2", {create: constFn(0), update: fn(["v", "t"], field(get($("t"), "state"), "E1"))}),
+      set("s", create({extensions: [{field: "E1"}, {field: "E2"}]}))],
+     field(get(update(s, {}), "state"), "E1")))
+fx(I.state, [B("EditorState", 4)],
+   R([fieldDef("f", {create: constFn(0), update: fn(["v"], add($("v"), 1))}),
+      set("s", create({doc: "abc", selection: {anchor: 1}, extensions: {field: "f"}})),
+      set("d0", docOf(s)), set("s0", selOf(s)), field(s, "f"),
+      set("ns", get(update(s, {changes: {from: 0, to: 3, insert: "xyz!"}, selection: {anchor: 4}}), "state"))],
+     rec({startAfter: merge(jst(s), rec({field: field(s, "f")})), startDocSame: same(docOf(s), $("d0")), startSelectionSame: same(selOf(s), $("s0")),
+          newState: merge(jst($("ns")), rec({field: field($("ns"), "f")}))})))
+fx(I.state, [B("EditorState", 5), B("Transaction.state", 8)],
+   R([set("seen", list()),
+      fieldDef("A", {create: constFn(0), update: fn(["v"], add($("v"), 1))}),
+      fieldDef("B", {create: constFn(0), update: fn(["v", "t"], block([
+        push($("seen"), cond(op("isType", {of: get($("t"), "state"), type: "undefined"}), label("?"), label("state"))),
+        set("x", mul(field(get($("t"), "state"), "A"), 10)), push($("seen"), $("x"))], "x"))}),
+      set("s", create({extensions: [{field: "B"}, {field: "A"}]})), set("ns", get(update(s, {}), "state"))],
+     rec({B: field($("ns"), "B"), A: field($("ns"), "A"), seenInsideUpdate: $("seen")})))
+fx(I.state, [B("EditorState", 5), B("Transaction.state", 8)],
+   R([fieldDef("C", {create: constFn(0), update: fn(["v", "t"], block([set("captured", get($("t"), "state"))], "v"))}),
+      set("t2", update(create({extensions: {field: "C"}}), {}))],
+     rec({trStateInsideUpdateIsFinalState: same(get($("t2"), "state"), $("captured"))})))
 
 // ---- EditorState.doc (006)
 {
-  let s = EditorState.create({doc: "abc"})
-  let t = s.update({changes: {from: 1, insert: "X"}})
-  fx(I.doc, [B("EditorState.doc", 1)], {call: "t = s.update({changes: {from: 1, insert: \"X\"}}); t.state.doc", doc: "abc"},
-     {doc: text(t.state.doc), sameAsNewDoc: t.state.doc === t.newDoc})
-  let t2 = s.update({selection: {anchor: 2}})
-  fx(I.doc, [B("EditorState.doc", 2)], {call: "s.update({selection: {anchor: 2}}).state.doc", doc: "abc"}, {sameAsStartDoc: t2.state.doc === s.doc})
-  let t3 = s.update({changes: {from: 1, insert: ""}})
-  fx(I.doc, [B("EditorState.doc", 2)], {call: "s.update({changes: {from: 1, insert: \"\"}}).state.doc", doc: "abc"}, {sameAsStartDoc: t3.state.doc === s.doc, docChanged: t3.docChanged})
-  let crlf = EditorState.create({doc: "a\r\nb"})
-  let re = crlf.update({effects: StateEffect.reconfigure.of(EditorState.lineSeparator.of("\r\n"))}).state
+  const s0 = set("s", create({doc: "abc"}))
+  fx(I.doc, [B("EditorState.doc", 1)], R([s0, set("t", update(s, {changes: {from: 1, insert: "X"}}))],
+     rec({doc: jtext(docOf(get($("t"), "state"))), sameAsNewDoc: same(docOf(get($("t"), "state")), get($("t"), "newDoc"))})))
+  fx(I.doc, [B("EditorState.doc", 2)], R([s0], rec({sameAsStartDoc: same(docOf(get(update(s, {selection: {anchor: 2}}), "state")), docOf(s))})))
+  fx(I.doc, [B("EditorState.doc", 2)], R([s0, set("t", update(s, {changes: {from: 1, insert: ""}}))],
+     rec({sameAsStartDoc: same(docOf(get($("t"), "state")), docOf(s)), docChanged: get($("t"), "docChanged")})))
   fx(I.doc, [B("EditorState.doc", 3), B("EditorState^lineSeparator", 3)],
-     {call: "create({doc: \"a\\r\\nb\"}) then update({effects: StateEffect.reconfigure.of(lineSeparator.of(\"\\r\\n\"))}).state"},
-     {sameDoc: re.doc === crlf.doc, doc: text(re.doc), sliceDoc: re.sliceDoc(), lineBreak: re.lineBreak})
+     R([set("crlf", create({doc: "a\r\nb"})), set("re", get(update($("crlf"), {effects: op("effect.reconfigure", {ext: of("lineSeparator", "\r\n")})}), "state"))],
+       rec({sameDoc: same(docOf($("re")), docOf($("crlf"))), doc: jtext(docOf($("re"))), sliceDoc: sliceDoc($("re")), lineBreak: get($("re"), "lineBreak")})))
 }
 
 // ---- EditorState.selection (007)
 {
-  let s = EditorState.create({doc: "abc", selection: {anchor: 1}})
-  fx(I.sel, [B("EditorState.selection", 1)], {call: "s.update({}).state.selection", doc: "abc", selection: {anchor: 1}},
-     {same: s.update({}).state.selection === s.selection})
-  fx(I.sel, [B("EditorState.selection", 1)], {call: "s.update({changes: {from: 2, insert: \"\"}}).state.selection", doc: "abc", selection: {anchor: 1}},
-     {same: s.update({changes: {from: 2, insert: ""}}).state.selection === s.selection})
+  const s0 = set("s", create({doc: "abc", selection: {anchor: 1}}))
+  fx(I.sel, [B("EditorState.selection", 1)], R([s0], rec({same: same(selOf(get(update(s, {}), "state")), selOf(s))})))
+  fx(I.sel, [B("EditorState.selection", 1)], R([s0], rec({same: same(selOf(get(update(s, {changes: {from: 2, insert: ""}}), "state")), selOf(s))})))
   let cases: [string, any, any][] = [
-    ["abcd", EditorSelection.cursor(2, 1), {from: 2, insert: "X"}],
-    ["abcd", EditorSelection.cursor(2, -1), {from: 2, insert: "X"}],
-    ["abcd", EditorSelection.cursor(2), {from: 2, insert: "X"}],
-    ["abcd", EditorSelection.range(1, 3), [{from: 1, insert: "X"}, {from: 3, insert: "Y"}]],
-    ["abcd", EditorSelection.range(3, 1), [{from: 1, insert: "X"}, {from: 3, insert: "Y"}]],
-    ["abcd", EditorSelection.range(1, 3), {from: 0, to: 4}],
-    ["abcd", EditorSelection.cursor(3, 0, undefined, 7), {from: 0, insert: "Z"}],
-    ["a\u{1F600}b", EditorSelection.cursor(3), {from: 1, to: 3, insert: "\u{1F601}\u{1F602}"}],
-    ["a\r\nb", EditorSelection.cursor(2), {from: 1, insert: "\r\n"}],
+    ["abcd", cursor(2, 1), {from: 2, insert: "X"}],
+    ["abcd", cursor(2, -1), {from: 2, insert: "X"}],
+    ["abcd", cursor(2), {from: 2, insert: "X"}],
+    ["abcd", range(1, 3), [{from: 1, insert: "X"}, {from: 3, insert: "Y"}]],
+    ["abcd", range(3, 1), [{from: 1, insert: "X"}, {from: 3, insert: "Y"}]],
+    ["abcd", range(1, 3), {from: 0, to: 4}],
+    ["abcd", op("sel.cursor", {pos: 3, assoc: 0, bidiLevel: undefined, goalColumn: 7}), {from: 0, insert: "Z"}],
+    ["a\u{1F600}b", cursor(3), {from: 1, to: 3, insert: "\u{1F601}\u{1F602}"}],
+    ["a\r\nb", cursor(2), {from: 1, insert: "\r\n"}],
   ]
-  for (let [doc, r, changes] of cases) {
-    let s1 = EditorState.create({doc, selection: EditorSelection.create([r])})
-    let ns = s1.update({changes}).state
-    fx(I.sel, [B("EditorState.selection", 2)], {call: "s.update({changes}).state.selection", doc, selection: range(r), changes}, {selection: sel(ns.selection), doc: text(ns.doc)})
-  }
-  let two = EditorSelection.create([EditorSelection.cursor(0), EditorSelection.cursor(2)], 1)
-  let single = EditorState.create({doc: "abc"})
-  let t = single.update({selection: two, effects: StateEffect.appendConfig.of(EditorState.allowMultipleSelections.of(true))})
+  for (let [doc, r, changes] of cases)
+    fx(I.sel, [B("EditorState.selection", 2)], R([set("ns", get(update(create({doc, selection: selCreate([r])}), {changes}), "state"))],
+       rec({selection: jsel(selOf($("ns"))), doc: jtext(docOf($("ns")))})))
+  const two = set("two", selCreate([cursor(0), cursor(2)], 1))
   fx(I.sel, [B("EditorState.selection", 3), B("EditorState^allowMultipleSelections", 3)],
-     {call: "create({doc}) (multiple selections off); update({selection: create([cursor(0), cursor(2)], 1), effects: appendConfig.of(allowMultipleSelections.of(true))})", doc: "abc"},
-     {trSelection: sel(t.selection), stateSelection: sel(t.state.selection), newStateAllows: t.state.facet(EditorState.allowMultipleSelections)})
-  let multi = EditorState.create({doc: "abc", extensions: EditorState.allowMultipleSelections.of(true)})
-  let t2 = multi.update({selection: two, effects: StateEffect.reconfigure.of([])})
-  let t3 = t2.state.update({selection: two})
+     R([two, set("t", update(create({doc: "abc"}), {selection: $("two"), effects: op("effect.appendConfig", {ext: of("allowMultipleSelections", true)})}))],
+       rec({trSelection: jsel(get($("t"), "selection")), stateSelection: jsel(selOf(get($("t"), "state"))), newStateAllows: facet(get($("t"), "state"), "allowMultipleSelections")})))
   fx(I.sel, [B("EditorState.selection", 3), B("EditorState^allowMultipleSelections", 3)],
-     {call: "create with allowMultipleSelections.of(true); update({selection: create([cursor(0), cursor(2)], 1), effects: reconfigure.of([])}); then from that state update({selection: same})", doc: "abc"},
-     {stateSelection: sel(t2.state.selection), newStateAllows: t2.state.facet(EditorState.allowMultipleSelections), nextStateSelection: sel(t3.state.selection)})
-  let explicit = EditorSelection.create([EditorSelection.cursor(1, 1, 0, 4)])
-  let t4 = s.update({changes: {from: 0, insert: "Q"}, selection: explicit})
-  fx(I.sel, [B("EditorState.selection", 4)], {call: "s.update({changes: {from: 0, insert: \"Q\"}, selection: EditorSelection.create([cursor(1, 1, 0, 4)])}).state.selection", doc: "abc"},
-     {same: t4.state.selection === explicit, selection: sel(t4.state.selection)})
+     R([two, set("t2", update(create({doc: "abc", extensions: of("allowMultipleSelections", true)}), {selection: $("two"), effects: op("effect.reconfigure", {ext: []})})),
+        set("t3", update(get($("t2"), "state"), {selection: $("two")}))],
+       rec({stateSelection: jsel(selOf(get($("t2"), "state"))), newStateAllows: facet(get($("t2"), "state"), "allowMultipleSelections"), nextStateSelection: jsel(selOf(get($("t3"), "state")))})))
+  fx(I.sel, [B("EditorState.selection", 4)],
+     R([s0, set("explicit", selCreate([cursor(1, 1, 0, 4)])), set("t4", update(s, {changes: {from: 0, insert: "Q"}, selection: $("explicit")}))],
+       rec({same: same(selOf(get($("t4"), "state")), $("explicit")), selection: jsel(selOf(get($("t4"), "state")))})))
 }
 
 // ---- EditorState.field (008)
 {
-  let f = StateField.define<string>({create: () => "v", update: v => v})
-  let g = StateField.define<string>({create: () => "g", update: v => v})
-  let s = EditorState.create({extensions: f})
-  fx(I.field, [B("EditorState.field", 1)], {call: "s.field(F)", F: "create () => \"v\""}, cap(() => s.field(f)))
-  fx(I.field, [B("EditorState.field", 2)], {call: "s.field(G) (G not in the state)"}, cap(() => s.field(g)))
-  fx(I.field, [B("EditorState.field", 2)], {call: "s.field(G, undefined) (G not in the state)"}, cap(() => s.field(g, undefined as any)))
-  fx(I.field, [B("EditorState.field", 3)], {call: "s.field(G, false) (G not in the state)"}, cap(() => u(s.field(g, false))))
-  fx(I.field, [B("EditorState.field", 3)], {call: "s.field(G, 0) (G not in the state)"}, cap(() => u(s.field(g, 0 as any))))
-  fx(I.field, [B("EditorState.field", 4)], {call: "s.field(F, false)"}, cap(() => s.field(f, false)))
+  const defs = [fieldDef("F", {create: constFn("v"), update: keep}), fieldDef("G", {create: constFn("g"), update: keep}), set("s", create({extensions: {field: "F"}}))]
+  fx(I.field, [B("EditorState.field", 1)], R(defs, field(s, "F")))
+  fx(I.field, [B("EditorState.field", 2)], R(defs, field(s, "G")))
+  fx(I.field, [B("EditorState.field", 2)], R(defs, field(s, "G", undefined)))
+  fx(I.field, [B("EditorState.field", 3)], R(defs, field(s, "G", false)))
+  fx(I.field, [B("EditorState.field", 3)], R(defs, field(s, "G", 0)))
+  fx(I.field, [B("EditorState.field", 4)], R(defs, field(s, "F", false)))
 }
 
 // ---- toText (013)
-for (let str of ["a\nb", "a\r\nb\rc\nd", "x y", "\u{1F600}\r\né", "a\n", "\n\n"]) {
-  let t = EditorState.create().toText(str)
-  fx(I.toText, [B("EditorState.toText", 1), B("EditorState.toText", 4)], {call: "EditorState.create().toText(string)", string: str}, text(t))
-}
-for (let [str, sep] of [["a\nb", "\r\n"], ["a\r\nb\r\n", "\r\n"], ["a\rb\nc", "\r"], ["\u{1F600}|x", "|"]] as const) {
-  let t = EditorState.create({extensions: EditorState.lineSeparator.of(sep)}).toText(str)
-  fx(I.toText, [B("EditorState.toText", 2), B("EditorState.toText", 4)], {call: "EditorState.create({extensions: lineSeparator.of(sep)}).toText(string)", string: str, sep}, text(t))
-}
-{
-  let t = EditorState.create().toText("")
-  let t2 = EditorState.create({extensions: EditorState.lineSeparator.of("")}).toText("a\r\nb")
-  fx(I.toText, [B("EditorState.toText", 3)], {call: "EditorState.create().toText(\"\")"}, {...text(t), isTextEmpty: t === Text.empty})
-  fx(I.toText, [B("EditorState.toText", 3)], {call: "EditorState.create({extensions: lineSeparator.of(\"\")}).toText(\"a\\r\\nb\")"}, text(t2))
-}
+for (let str of ["a\nb", "a\r\nb\rc\nd", "x\u2028y", "\u{1F600}\r\n\u00e9", "a\n", "\n\n"])
+  fx(I.toText, [B("EditorState.toText", 1), B("EditorState.toText", 4)], R([], jtext(toTextOf(create(), str))))
+for (let [str, sep] of [["a\nb", "\r\n"], ["a\r\nb\r\n", "\r\n"], ["a\rb\nc", "\r"], ["\u{1F600}|x", "|"]] as const)
+  fx(I.toText, [B("EditorState.toText", 2), B("EditorState.toText", 4)], R([], jtext(toTextOf(create({extensions: of("lineSeparator", sep)}), str))))
+fx(I.toText, [B("EditorState.toText", 3)], R([set("t", toTextOf(create(), ""))], merge(jtext($("t")), rec({isTextEmpty: same($("t"), op("text.empty"))}))))
+fx(I.toText, [B("EditorState.toText", 3)], R([], jtext(toTextOf(create({extensions: of("lineSeparator", "")}), "a\r\nb"))))
 
 // ---- sliceDoc (014)
 {
-  let s = EditorState.create({doc: "ab\ncd\n\nef"})
+  const s1 = set("s", create({doc: "ab\ncd\n\nef"}))
   for (let args of [[], [1], [1, 4], [2, 3], [3, 3], [0, 9]] as number[][])
-    fx(I.slice, [B("EditorState.sliceDoc", 1)], {call: "s.sliceDoc(...args)", doc: "ab\ncd\n\nef", args}, (s.sliceDoc as any)(...args))
-  let c = EditorState.create({doc: "ab\r\ncd\r\n", extensions: EditorState.lineSeparator.of("\r\n")})
+    fx(I.slice, [B("EditorState.sliceDoc", 1)], R([s1], sliceDoc(s, ...args)))
   for (let args of [[], [1, 4], [2, 3], [3, 7]] as number[][])
-    fx(I.slice, [B("EditorState.sliceDoc", 2)], {call: "s.sliceDoc(...args)", doc: "ab\r\ncd\r\n", sep: "\r\n", args, docLength: c.doc.length}, (c.sliceDoc as any)(...args))
-  let d = EditorState.create({doc: "a\r\nb"})
-  fx(I.slice, [B("EditorState.sliceDoc", 1)], {call: "s.sliceDoc()", doc: "a\r\nb", sep: null}, d.sliceDoc())
+    fx(I.slice, [B("EditorState.sliceDoc", 2)], R([set("s", create({doc: "ab\r\ncd\r\n", extensions: of("lineSeparator", "\r\n")}))], sliceDoc(s, ...args)))
+  fx(I.slice, [B("EditorState.sliceDoc", 1)], R([set("s", create({doc: "a\r\nb"}))], sliceDoc(s)))
   for (let args of [[-5, 2], [2, 100], [5, 3], [100, 200], [-3, -1]] as number[][])
-    fx(I.slice, [B("EditorState.sliceDoc", 3)], {call: "s.sliceDoc(...args)", doc: "ab\ncd\n\nef", args}, cap(() => (s.sliceDoc as any)(...args)))
-  let e = EditorState.create({doc: "a\u{1F600}b"})
+    fx(I.slice, [B("EditorState.sliceDoc", 3)], R([s1], sliceDoc(s, ...args)))
   for (let args of [[0, 2], [2, 4], [1, 3], [0, 4]] as number[][])
-    fx(I.slice, [B("EditorState.sliceDoc", 4)], {call: "s.sliceDoc(...args)", doc: "a\u{1F600}b", args}, {result: (e.sliceDoc as any)(...args)})
+    fx(I.slice, [B("EditorState.sliceDoc", 4)], R([set("s", create({doc: "a\u{1F600}b"}))], rec({result: sliceDoc(s, ...args)})))
 }
 
 // ---- facet (015)
 {
-  let f = Facet.define<number>()
-  let g = Facet.define<number, number>({combine: v => v.reduce((a, b) => a + b, 100)})
-  let s1 = EditorState.create(), s2 = EditorState.create({doc: "x"})
-  fx(I.facet, [B("EditorState.facet", 1)], {call: "s1 = EditorState.create(); s2 = EditorState.create({doc: \"x\"}); s1.facet(F) (F), s1.facet(G) (G), s1.facet(F) === s2.facet(F) (defaultSameObjectAcrossStates); F and G are absent from both states", F: "Facet.define<number>()", G: "Facet.define<number, number>({combine: v => v.reduce((a, b) => a + b, 100)})"},
-     {F: s1.facet(f), G: s1.facet(g), defaultSameObjectAcrossStates: s1.facet(f) === s2.facet(f)})
-  let s3 = EditorState.create({extensions: [f.of(1), f.of(2), Prec.high(f.of(3)), g.of(5)]})
-  let s4 = s3.update({changes: {from: 0, insert: "z"}}).state
-  fx(I.facet, [B("EditorState.facet", 2)], {call: "s3 = EditorState.create({extensions: [F.of(1), F.of(2), Prec.high(F.of(3)), G.of(5)]}); s4 = s3.update({changes: {from: 0, insert: \"z\"}}).state; s3.facet(F) (F), s3.facet(G) (G), s3.facet(F) === s4.facet(F) (FSameObjectAfterUpdate)", F: "Facet.define<number>()", G: "Facet.define<number, number>({combine: v => v.reduce((a, b) => a + b, 100)})"},
-     {F: s3.facet(f), G: s3.facet(g), FSameObjectAfterUpdate: s3.facet(f) === s4.facet(f)})
-  let field = StateField.define<number>({create: () => 1, update: (v, t) => t.docChanged ? v + 1 : v})
-  let s5 = EditorState.create({extensions: [field, f.from(field), f.of(7)]})
-  let s6 = s5.update({}).state, s7 = s5.update({changes: {from: 0, insert: "a"}}).state
-  fx(I.facet, [B("EditorState.facet", 3)], {call: "s5 = EditorState.create({extensions: [field, F.from(field), F.of(7)]}); s6 = s5.update({}).state; s7 = s5.update({changes: {from: 0, insert: \"a\"}}).state; s5.facet(F) (initial), s6.facet(F) (afterEmpty), s6.facet(F) === s5.facet(F) (sameObjectAfterEmpty), s7.facet(F) (afterChange)", F: "Facet.define<number>()", field: "StateField.define({create: () => 1, update: (v, tr) => tr.docChanged ? v + 1 : v})"},
-     {initial: s5.facet(f), afterEmpty: s6.facet(f), sameObjectAfterEmpty: s6.facet(f) === s5.facet(f), afterChange: s7.facet(f)})
-  fx(I.facet, [B("EditorState.facet", 4)], {call: "s3 = EditorState.create({extensions: [F.of(1), F.of(2), Prec.high(F.of(3)), G.of(5)]}); s3.facet(F.reader) === s3.facet(F) (same), s3.facet(F.reader) (value)", F: "Facet.define<number>()", G: "Facet.define<number, number>({combine: v => v.reduce((a, b) => a + b, 100)})"}, {same: s3.facet(f.reader) === s3.facet(f), value: s3.facet(f.reader)})
+  // G's combine is v => v.reduce((a, b) => a + b, 100): the sum of the values plus 100
+  const G = [op("facet.define", {name: "F"}),
+    set("gc", fn(["vs"], op("sumOf", {of: $("vs"), init: 100}))),
+    op("facet.define", {name: "G", spec: {combine: $("gc")}})]
+  fx(I.facet, [B("EditorState.facet", 1)], R([...G, set("s1", create()), set("s2", create({doc: "x"}))],
+     rec({F: facet($("s1"), "F"), G: facet($("s1"), "G"), defaultSameObjectAcrossStates: same(facet($("s1"), "F"), facet($("s2"), "F"))})))
+  const s3 = set("s3", create({extensions: [of("F", 1), of("F", 2), prec("high", of("F", 3)), of("G", 5)]}))
+  fx(I.facet, [B("EditorState.facet", 2)], R([...G, s3, set("s4", get(update($("s3"), {changes: {from: 0, insert: "z"}}), "state"))],
+     rec({F: facet($("s3"), "F"), G: facet($("s3"), "G"), FSameObjectAfterUpdate: same(facet($("s3"), "F"), facet($("s4"), "F"))})))
+  fx(I.facet, [B("EditorState.facet", 3)],
+     R([...G, fieldDef("field", {create: constFn(1), update: fn(["v", "t"], cond(get($("t"), "docChanged"), add($("v"), 1), $("v")))}),
+        set("s5", create({extensions: [{field: "field"}, {from: ["F", "field"]}, of("F", 7)]})),
+        set("s6", get(update($("s5"), {}), "state")), set("s7", get(update($("s5"), {changes: {from: 0, insert: "a"}}), "state"))],
+       rec({initial: facet($("s5"), "F"), afterEmpty: facet($("s6"), "F"), sameObjectAfterEmpty: same(facet($("s6"), "F"), facet($("s5"), "F")), afterChange: facet($("s7"), "F")})))
+  fx(I.facet, [B("EditorState.facet", 4)], R([...G, s3, set("rd", op("facet.reader", {facet: "F"}))],
+     rec({same: same(facet($("s3"), $("rd")), facet($("s3"), "F")), value: facet($("s3"), $("rd"))})))
 }
 
 // ---- toJSON (016)
 {
-  let s = EditorState.create({doc: "ab\ncd", selection: EditorSelection.create([EditorSelection.cursor(1, 1, 0, 3), EditorSelection.range(4, 2)], 1),
-                              extensions: EditorState.allowMultipleSelections.of(true)})
-  fx(I.toJSON, [B("EditorState.toJSON", 1)], {call: "s.toJSON()", doc: "ab\ncd", selection: "create([cursor(1, 1, 0, 3), range(4, 2)], 1)"}, s.toJSON())
-  let c = EditorState.create({doc: "a\r\nb", extensions: EditorState.lineSeparator.of("\r\n"), selection: {anchor: 3}})
-  fx(I.toJSON, [B("EditorState.toJSON", 1)], {call: "s.toJSON()", doc: "a\r\nb", sep: "\r\n", selection: {anchor: 3}}, c.toJSON())
-  let e = EditorState.create({doc: "\u{1F600}", selection: {anchor: 2}})
-  fx(I.toJSON, [B("EditorState.toJSON", 1)], {call: "s.toJSON()", doc: "\u{1F600}", selection: {anchor: 2}}, e.toJSON())
-  let f1 = StateField.define<number>({create: () => 3, update: v => v, toJSON: (v, st) => ({n: v, len: st.doc.length})})
-  let f2 = StateField.define<number>({create: () => 4, update: v => v, toJSON: v => [v]})
-  let absent = StateField.define<number>({create: () => 5, update: v => v, toJSON: v => v})
-  let s2 = EditorState.create({doc: "xyz", extensions: [f1, f2]})
-  fx(I.toJSON, [B("EditorState.toJSON", 2), B("EditorState.toJSON", 3)],
-     {call: "s = EditorState.create({doc: \"xyz\", extensions: [f1, f2]}); s.toJSON({z: f2, a: f1, missing: absentField, notAField: 42})", doc: "xyz", f1: "create 3, toJSON (v, st) => ({n: v, len: st.doc.length})", f2: "create 4, toJSON v => [v]", absentField: "create 5, toJSON v => v; not in the state"},
-     s2.toJSON({z: f2, a: f1, missing: absent, notAField: 42 as any}))
-  let noJSON = StateField.define<number>({create: () => 1, update: v => v})
-  let s3 = EditorState.create({extensions: noJSON})
-  fx(I.toJSON, [B("EditorState.toJSON", 4)], {call: "EditorState.create({extensions: fieldWithoutToJSON}).toJSON({f: fieldWithoutToJSON})", fieldWithoutToJSON: "create () => 1, update v => v, no toJSON"}, cap(() => s3.toJSON({f: noJSON})))
-  fx(I.toJSON, [B("EditorState.toJSON", 5)], {call: "s = EditorState.create({doc: \"xyz\", extensions: [f1, f2]}); s.toJSON({doc: f1, selection: f2})", doc: "xyz", f1: "create 3, toJSON (v, st) => ({n: v, len: st.doc.length})", f2: "create 4, toJSON v => [v]"}, s2.toJSON({doc: f1, selection: f2}))
+  fx(I.toJSON, [B("EditorState.toJSON", 1)], R([set("s", create({doc: "ab\ncd", selection: selCreate([cursor(1, 1, 0, 3), range(4, 2)], 1), extensions: of("allowMultipleSelections", true)}))],
+     op("state.toJSON", {state: s})))
+  fx(I.toJSON, [B("EditorState.toJSON", 1)], R([set("s", create({doc: "a\r\nb", extensions: of("lineSeparator", "\r\n"), selection: {anchor: 3}}))], op("state.toJSON", {state: s})))
+  fx(I.toJSON, [B("EditorState.toJSON", 1)], R([set("s", create({doc: "\u{1F600}", selection: {anchor: 2}}))], op("state.toJSON", {state: s})))
+  const defs = [
+    fieldDef("f1", {create: constFn(3), update: keep, toJSON: fn(["v", "st"], rec({n: $("v"), len: get(get($("st"), "doc"), "length")}))}),
+    fieldDef("f2", {create: constFn(4), update: keep, toJSON: fn(["v"], list($("v")))}),
+    fieldDef("absent", {create: constFn(5), update: keep, toJSON: keep}),
+    set("s", create({doc: "xyz", extensions: [{field: "f1"}, {field: "f2"}]}))]
+  fx(I.toJSON, [B("EditorState.toJSON", 2), B("EditorState.toJSON", 3)], R(defs, op("state.toJSON", {state: s, fields: {z: "f2", a: "f1", missing: "absent", notAField: 42}})))
+  fx(I.toJSON, [B("EditorState.toJSON", 4)], R([fieldDef("noJSON", {create: constFn(1), update: keep}), set("s", create({extensions: {field: "noJSON"}}))],
+     op("state.toJSON", {state: s, fields: {f: "noJSON"}})))
+  fx(I.toJSON, [B("EditorState.toJSON", 5)], R(defs, op("state.toJSON", {state: s, fields: {doc: "f1", selection: "f2"}})))
 }
 
 // ---- fromJSON (017)
 {
   for (let json of [null, undefined, {}, {doc: 5}, {doc: ["a"]}, "abc"])
-    fx(I.fromJSON, [B("EditorState^fromJSON", 1)], {call: "EditorState.fromJSON(json)", json: u(json)}, cap(() => st(EditorState.fromJSON(json))))
+    fx(I.fromJSON, [B("EditorState^fromJSON", 1)], R([], jst(op("state.fromJSON", {json}))))
   for (let json of [{doc: "ab"}, {doc: "ab", selection: {ranges: [], main: 0}}, {doc: "ab", selection: {ranges: [{anchor: 0, head: 0}], main: 1}},
                     {doc: "ab", selection: {ranges: [{anchor: 0}], main: 0}}, {doc: "ab", selection: {ranges: [{anchor: "0", head: 0}], main: 0}}])
-    fx(I.fromJSON, [B("EditorState^fromJSON", 2)], {call: "EditorState.fromJSON(json)", json}, cap(() => st(EditorState.fromJSON(json))))
-  let field = StateField.define<{n: number}>({create: () => ({n: 0}), update: v => v, toJSON: v => v.n, fromJSON: (j, st) => ({n: j + st.doc.length})})
+    fx(I.fromJSON, [B("EditorState^fromJSON", 2)], R([], jst(op("state.fromJSON", {json}))))
+  const fdef = fieldDef("field", {create: fn([], op("record", {of: {n: 0}})), update: keep, toJSON: fn(["v"], item($("v"), "n")),
+    fromJSON: fn(["j", "st"], rec({n: add($("j"), get(get($("st"), "doc"), "length"))}))})
   let ok = {doc: "abc", selection: {ranges: [{anchor: 1, head: 1}], main: 0}}
-  fx(I.fromJSON, [B("EditorState^fromJSON", 3)], {call: "EditorState.fromJSON({...json, f: 7}, {}, {f: field})", json: {...ok, f: 7}, field: "create {n: 0}, fromJSON (j, st) => ({n: j + st.doc.length})"},
-     cap(() => EditorState.fromJSON({...ok, f: 7}, {}, {f: field}).field(field)))
-  fx(I.fromJSON, [B("EditorState^fromJSON", 3)], {call: "EditorState.fromJSON(json, {}, {f: field}).field(field, false) where json has no f", json: ok, field: "create {n: 0}, fromJSON (j, st) => ({n: j + st.doc.length})"},
-     cap(() => u(EditorState.fromJSON(ok, {}, {f: field}).field(field, false))))
-  fx(I.fromJSON, [B("EditorState^fromJSON", 3)], {call: "EditorState.fromJSON(json, {extensions: field}, {f: field}).field(field) where json has no f", json: ok, field: "create {n: 0}, fromJSON (j, st) => ({n: j + st.doc.length})"},
-     cap(() => EditorState.fromJSON(ok, {extensions: field}, {f: field}).field(field)))
+  fx(I.fromJSON, [B("EditorState^fromJSON", 3)], R([fdef], field(op("state.fromJSON", {json: {...ok, f: 7}, config: {}, fields: {f: "field"}}), "field")))
+  fx(I.fromJSON, [B("EditorState^fromJSON", 3)], R([fdef], field(op("state.fromJSON", {json: ok, config: {}, fields: {f: "field"}}), "field", false)))
+  fx(I.fromJSON, [B("EditorState^fromJSON", 3)], R([fdef], field(op("state.fromJSON", {json: ok, config: {extensions: {field: "field"}}, fields: {f: "field"}}), "field")))
   let j2 = {doc: "a\r\nb\nc", selection: {ranges: [{anchor: 5, head: 5}], main: 0}}
-  fx(I.fromJSON, [B("EditorState^fromJSON", 4)], {call: "EditorState.fromJSON(json, {extensions: lineSeparator.of(\"\\r\\n\")})", json: j2},
-     cap(() => { let s = EditorState.fromJSON(j2, {extensions: EditorState.lineSeparator.of("\r\n")}); return {...st(s), toJSON: s.toJSON()} }))
-  fx(I.fromJSON, [B("EditorState^fromJSON", 4)], {call: "EditorState.fromJSON(json)", json: j2},
-     cap(() => { let s = EditorState.fromJSON(j2); return {...st(s), toJSON: s.toJSON()} }))
+  fx(I.fromJSON, [B("EditorState^fromJSON", 4)], R([set("s", op("state.fromJSON", {json: j2, config: {extensions: of("lineSeparator", "\r\n")}}))],
+     merge(jst(s), rec({toJSON: op("state.toJSON", {state: s})}))))
+  fx(I.fromJSON, [B("EditorState^fromJSON", 4)], R([set("s", op("state.fromJSON", {json: j2}))], merge(jst(s), rec({toJSON: op("state.toJSON", {state: s})}))))
   let j3 = {doc: "abcdef", selection: {ranges: [{anchor: 5, head: 4}, {anchor: 0, head: 3}, {anchor: 2, head: 2}], main: 1}}
-  fx(I.fromJSON, [B("EditorState^fromJSON", 5)], {call: "EditorState.fromJSON(json, {extensions: allowMultipleSelections.of(true)})", json: j3},
-     cap(() => sel(EditorState.fromJSON(j3, {extensions: EditorState.allowMultipleSelections.of(true)}).selection)))
-  fx(I.fromJSON, [B("EditorState^fromJSON", 5)], {call: "EditorState.fromJSON(json)", json: j3}, cap(() => sel(EditorState.fromJSON(j3).selection)))
-  let j4 = {doc: "ab", selection: {ranges: [{anchor: 0, head: 3}], main: 0}}
-  fx(I.fromJSON, [B("EditorState^fromJSON", 6)], {call: "EditorState.fromJSON(json)", json: j4}, cap(() => st(EditorState.fromJSON(j4))))
-  let orig = EditorState.create({doc: "x\u{1F600}y\nz", selection: EditorSelection.create([EditorSelection.cursor(3, 1, 0, 2)])})
-  let back = EditorState.fromJSON(JSON.parse(JSON.stringify(orig.toJSON())))
-  fx(I.fromJSON, [B("EditorState^fromJSON", 7)], {call: "s = EditorState.create({doc, selection}); restored = EditorState.fromJSON(JSON.parse(JSON.stringify(s.toJSON()))); original: doc and selection of s; restored: doc and selection of restored", doc: "x\u{1F600}y\nz", selection: "create([cursor(3, 1, 0, 2)])"},
-     {original: st(orig), restored: st(back)})
+  fx(I.fromJSON, [B("EditorState^fromJSON", 5)], R([], jsel(selOf(op("state.fromJSON", {json: j3, config: {extensions: of("allowMultipleSelections", true)}})))))
+  fx(I.fromJSON, [B("EditorState^fromJSON", 5)], R([], jsel(selOf(op("state.fromJSON", {json: j3})))))
+  fx(I.fromJSON, [B("EditorState^fromJSON", 6)], R([], jst(op("state.fromJSON", {json: {doc: "ab", selection: {ranges: [{anchor: 0, head: 3}], main: 0}}}))))
+  fx(I.fromJSON, [B("EditorState^fromJSON", 7)],
+     R([set("orig", create({doc: "x\u{1F600}y\nz", selection: selCreate([cursor(3, 1, 0, 2)])})),
+        set("back", op("state.fromJSON", {json: op("jsonCopy", {of: op("state.toJSON", {state: $("orig")})})}))],
+       rec({original: jst($("orig")), restored: jst($("back"))})))
 }
 
 // ---- create (018)
 {
-  let comp = new Compartment, f = Facet.define<number>()
-  fx(I.create, [B("EditorState^create", 1)], {call: "EditorState.create({doc: \"ab\", selection: {anchor: 5}, extensions: [comp.of(f.of(1)), comp.of(f.of(2))]})"},
-     cap(() => EditorState.create({doc: "ab", selection: {anchor: 5}, extensions: [comp.of(f.of(1)), comp.of(f.of(2))]})))
-  let seen: any = null
-  let field = StateField.define<any>({create: s => (seen = {docLength: s.doc.length, ranges: s.selection.ranges.length, main: s.selection.main.head}), update: v => v})
-  EditorState.create({doc: "abcd", selection: EditorSelection.create([EditorSelection.cursor(1), EditorSelection.cursor(3)], 1), extensions: field})
-  fx(I.create, [B("EditorState^create", 2)], {call: "EditorState.create({doc: \"abcd\", selection: create([cursor(1), cursor(3)], 1), extensions: field}); field create records state", field: "create s => {docLength, ranges, main head}"},
-     {seenByCreate: seen})
+  fx(I.create, [B("EditorState^create", 1)], R([op("define", {def: ["compartment", "comp"]}), op("facet.define", {name: "f"})],
+     create({doc: "ab", selection: {anchor: 5}, extensions: [{comp: ["comp", of("f", 1)]}, {comp: ["comp", of("f", 2)]}]})))
+  fx(I.create, [B("EditorState^create", 2)],
+     R([set("seen", null),
+        fieldDef("field", {create: fn(["cs"], block([set("seen", rec({docLength: get(get($("cs"), "doc"), "length"),
+          ranges: count(get(get($("cs"), "selection"), "ranges")), main: get(get(get($("cs"), "selection"), "main"), "head")}))], "seen")), update: keep}),
+        create({doc: "abcd", selection: selCreate([cursor(1), cursor(3)], 1), extensions: {field: "field"}})],
+       rec({seenByCreate: $("seen")})))
 }
 
 // ---- test-state#17 scenario (EditorStateConfig.selection B7, EditorState.selection B3)
-{
-  let cursors = EditorSelection.create([EditorSelection.cursor(0), EditorSelection.cursor(1)])
-  let s = EditorState.create({selection: cursors, doc: "123"})
-  fx(I.csel, [B("EditorStateConfig.selection", 7), B("EditorState.selection", 3)],
-     {call: "cursors = EditorSelection.create([cursor(0), cursor(1)]); s = create({selection: cursors, doc: \"123\"}); s.update({selection: cursors}).state (test-state#17); cursors: the cursors selection itself; created: s.selection; updated: the updated state's selection", doc: "123"},
-     {cursors: sel(cursors), created: sel(s.selection), updated: sel(s.update({selection: cursors}).state.selection)})
-}
+fx(I.csel, [B("EditorStateConfig.selection", 7), B("EditorState.selection", 3)],
+   R([set("cursors", selCreate([cursor(0), cursor(1)])), set("s", create({selection: $("cursors"), doc: "123"}))],
+     rec({cursors: jsel($("cursors")), created: jsel(selOf(s)), updated: jsel(selOf(get(update(s, {selection: $("cursors")}), "state")))})))
