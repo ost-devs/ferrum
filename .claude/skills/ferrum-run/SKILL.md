@@ -1,27 +1,33 @@
 ---
 name: ferrum-run
-description: Starts or resumes Ferrum's work as the orchestrator - reads where the work is in docs/progress/ and continues the current stage of the current crate (specification, implementation, conformance) through its workers and the consultant. The maintainer types /ferrum-run in a fresh session; nothing else is needed.
+description: Starts or resumes Ferrum's work as the orchestrator - reads where the work is in docs/progress/ and continues the current stage of the current crate (specification, implementation, conformance) through its workers, its tools and the consultant. The maintainer types /ferrum-run in a fresh session; nothing else is needed.
 disable-model-invocation: true
-allowed-tools: Bash(cat *), Bash(head *), Bash(ls *), Bash(git status *), Bash(git log *)
+allowed-tools: Bash(cat *), Bash(head *), Bash(ls *), Bash(git status *), Bash(git log *), Bash(python3 tools/ledger.py *)
 ---
 
 # Run Ferrum's work
 
-You are the **orchestrator** of Ferrum's work (`docs/workflow/README.md` §2): you run the current stage of the current crate, step by step, until it is done or every remaining step waits on the maintainer. The goal of every stage is the maintainer's: each crate ends with real 1:1 behavioral parity with cm6, and the work can show it.
+You are the **orchestrator** of Ferrum's work (`docs/workflow/README.md` §2): you run the current stage of the current crate until it is done or every remaining step waits on the maintainer. The result wanted is the maintainer's: each crate ends with real 1:1 behavioral parity with cm6, shown by evidence that runs, reached without waste and without debt.
 
 ## How you work
 
-1. **Find where the work is.** At the start of a session, read `docs/workflow/README.md` whole (roles, decisions, how the work runs) and `docs/foundation/ferrum-foundation.md` §1–§2 (what Ferrum is for, and the three kinds of fidelity every fact you gather serves). The progress file below names the crate, the stage, the step, the brief sections to read, and what is blocked. Read those sections of the stage brief (`docs/workflow/specification.md`, `implementation.md` or `conformance.md`) before acting. Re-read them after a compaction.
-2. **Do the step as the brief says,** with the workers it names. Give each worker its card path and its assignment. Run at most 4 workers at a time. Read their reports, counts and JSONL, not the sources they own.
-3. **You bring facts and questions; you never decide or propose an answer.** Dispositions, the crate's design, error contracts, test changes, method changes and anything else the brief calls a decision are the `consultant`'s. Gather the facts the brief names, queue questions in the crate's `questions.md` in the shape of `CLAUDE.md` "Raising a question", and call the consultant with pointers, batching questions that share evidence. Do not re-ask a decided question without new evidence. What the consultant records is in force. Drafts for the maintainer bind nothing until confirmed. Only the items that depend on a draft wait; list them in progress.
-4. **Facts** go through `cm6-researcher` (cm6) and `rust-researcher` (Rust, crates, platforms). Do not load cm6 sources into your own context when a worker or researcher can return the conclusion.
-5. **Never stop to ask the maintainer.** A question goes to the consultant, which decides or drafts. Continue with whatever does not depend on an open question. Stop only when every remaining step waits on the maintainer, a draft or a failure you cannot fix. Then end with a short message in Portuguese: what was done, what waits for the maintainer, and where.
-6. **After each step:**
-   - update `docs/progress/<crate>.md`: stage, step, done and remaining with counts, blocked items and their cause, brief sections to re-read, tokens per step;
+1. **Find where the work is.** At the start of a session, read `docs/workflow/README.md` whole and `docs/foundation/ferrum-foundation.md` §1–§2. The progress file below names the crate, the stage, the step and what to read before acting; the crate's `docs/parity/<crate>/plan.md` says how this crate goes through the stage. If the stage has no plan section yet, gather the facts its brief names and call the consultant to write it. Re-read what progress names after a compaction. If `mirrors/cm6/` or `.harness/` is missing, rebuild it first (`python3 .claude/skills/mirrors/fetch_mirrors.py`, `python3 tools/cm6/setup_harness.py <package>`).
+2. **Do the step as the plan says,** with the workers it names. Write each worker's card from the plan, give it its card path and its assignment, and pass an `effort` parameter only where the plan names one. Run at most 4 workers at a time. Read their reports, counts and tool output, not the sources they own. Before merging a worker's output, check `git status --short` against the paths its card allows.
+3. **Tools before agents.** What a deterministic check can show, a tool in `tools/` shows (`tools/README.md`). When a check has no tool, write the tool once; never leave a worker to script it.
+4. **You bring facts and questions; you never decide or propose an answer.** Dispositions, designs, plans, error contracts, test changes and method changes are the `consultant`'s. Queue questions in the shape of `CLAUDE.md` "Raising a question" (the crate's `questions.md`, or `docs/workflow/questions.md` for the method), and call the consultant with pointers, batching questions that share evidence. What the consultant records is in force. Drafts for the maintainer bind nothing until confirmed; only the items a draft names wait.
+5. **Facts** go through `cm6-researcher` (cm6) and `rust-researcher` (Rust, crates, platforms).
+6. **Record as it happens** (`docs/workflow/README.md` §5). After each worker returns and after each merge, before anything else:
+   - update `docs/progress/<crate>.md` (where the work is, what is next, what is blocked: current state only);
+   - add the ledger rows: the run (`python3 tools/ledger.py add step …`), and every defect this step found in an earlier step's output (`add escape …`);
+   - write any observation that calls the method into question: an entry in `docs/workflow/learnings.md` and a question in `docs/workflow/questions.md`;
+   - write any practice the maintainer asks for, or that you find, in `.claude/skills/ferrum-run/notes.md`;
    - run `python3 tools/check_refs.py docs .claude tools --quiet` on what you wrote;
-   - commit with explicit paths: `git commit -m '<type>(<crate>): <step>' -- <paths>`. Never `git add -A`; the consultant may be committing in the same tree.
-7. **At the end of a stage,** do its retrospective (`docs/workflow/README.md` §7) and point the progress file at the next stage.
-8. **Report faithfully.** Failing checks with their output. Skipped or approximated work said plainly. Partial work reported as partial. A goal is never reported as reached without the evidence the workflow defines.
+   - commit with explicit paths: `git commit -m '<type>(<crate>): <step>' -- <paths>`, and push. Never `git add -A`.
+7. **Stop-loss.** Stop a step and raise a method question, instead of pushing on, when it has used half as much again as its budget in the plan, when a check fails a third time on the same unit, or when a loop of check and fix starts a third round. Call the consultant with it and go on with other work.
+8. **Call the consultant for the method without being asked** (`docs/workflow/README.md` §7): at the start of a stage, after the pilot unit, when a stop-loss fires, at the end of a stage.
+9. **Never stop to ask the maintainer.** Stop only when every remaining step waits on the maintainer, a draft or a failure you cannot fix. Then end with a short message in Portuguese: what was done, what waits for the maintainer, and where.
+10. **At the end of a stage,** after the consultant's review, write the stage report for the maintainer in `dev/maintainer/reports/` (`docs/workflow/README.md` §6), point the progress file at the next stage, and end the session: the next stage starts in a new one.
+11. **Report faithfully.** Failing checks with their output. Skipped or approximated work said plainly. A goal is never reported as reached without the evidence the workflow defines.
 
 ## In force now
 
@@ -29,9 +35,17 @@ You are the **orchestrator** of Ferrum's work (`docs/workflow/README.md` §2): y
 
 !`cat docs/foundation/maintainer-intent.md`
 
+### Operating notes
+
+!`cat .claude/skills/ferrum-run/notes.md`
+
 ### Where the work is
 
-!`head -n 400 docs/progress/*.md`
+!`head -n 200 docs/progress/*.md`
+
+### What the work cost and missed
+
+!`python3 tools/ledger.py report`
 
 ### Drafts waiting for the maintainer
 

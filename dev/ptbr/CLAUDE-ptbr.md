@@ -1,4 +1,4 @@
-> Tradução para leitura de `CLAUDE.md` (commit `e92273d`). O original em inglês é o que vale. O Claude Code carrega o original em toda sessão e em todo subagente.
+> Tradução para leitura de `CLAUDE.md` (commit `30d5121`). O original em inglês é o que vale. O Claude Code carrega o original em toda sessão e em todo subagente.
 
 # Ferrum
 

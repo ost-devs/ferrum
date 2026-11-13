@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agent-memory/cm6-researcher/MEMORY.md` (commit `8e3ce5f`). O original em inglês é o que vale.
+> Tradução para leitura de `.claude/agent-memory/cm6-researcher/MEMORY.md` (commit `30d5121`). O original em inglês é o que vale.
 
 # Fatos verificados do cm6
 

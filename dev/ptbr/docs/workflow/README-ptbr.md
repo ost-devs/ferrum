@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/README.md` (commit `8e3ce5f`). O original em inglês é o que vale; as seções citadas (§1, §3…) seguem a numeração do original.
+> Tradução para leitura de `docs/workflow/README.md` (commit `30d5121`). O original em inglês é o que vale; as seções citadas (§1, §3…) seguem a numeração do original.
 
 # Como o trabalho do Ferrum corre
 
@@ -31,7 +31,7 @@ Como um crate de fundação vai do cm6 a um crate Rust em conformidade, quem faz
 | `implementer` | subagente por módulo | implementa um módulo até seus testes passarem | edita um teste |
 | `conformance-checker` | subagente por módulo | confere o módulo implementado contra sua especificação e registra veredictos | corrige código |
 
-Cada worker recebe seu papel da sua definição ([`.claude/agents/`](../../claude/agents/)) e sua tarefa de um **cartão**: um arquivo curto que o orquestrador escreve por crate e papel a partir do modelo no roteiro da etapa (`docs/parity/<crate>/cards/<papel>.md`), mais sua atribuição no prompt de criação. Um worker lê seu cartão, não os roteiros.
+Cada worker recebe seu papel da sua definição ([`.claude/agents/`](../../../../.claude/agents/)) e sua tarefa de um **cartão**: um arquivo curto que o orquestrador escreve por crate e papel a partir do modelo no roteiro da etapa (`docs/parity/<crate>/cards/<papel>.md`), mais sua atribuição no prompt de criação. Um worker lê seu cartão, não os roteiros.
 
 ## 3. Decisões
 

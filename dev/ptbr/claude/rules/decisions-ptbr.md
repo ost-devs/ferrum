@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/rules/decisions.md` (commit `e92273d`). O original em inglês é o que vale. Carrega automaticamente quando o Claude toca em `crates/**` ou `Cargo.toml`.
+> Tradução para leitura de `.claude/rules/decisions.md` (commit `30d5121`). O original em inglês é o que vale. Carrega automaticamente quando o Claude toca em `crates/**` ou `Cargo.toml`.
 
 # Decisões em vigor para o código dos crates
 

@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/ferrum/SKILL.md` (commit `e92273d`). O original em inglês é o que vale. O Claude a carrega sozinho quando precisa (ou via `/ferrum`).
+> Tradução para leitura de `.claude/skills/ferrum/SKILL.md` (commit `30d5121`). O original em inglês é o que vale. O Claude a carrega sozinho quando precisa (ou via `/ferrum`).
 
 # Skill `/ferrum`
 

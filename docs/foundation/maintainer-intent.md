@@ -1,12 +1,27 @@
 # The maintainer's intent
 
-What the maintainer wants from the work on Ferrum and from how it is decided. Binding for every agent and every document: a method, a rule or a decision that conflicts with it is revised, not this file. It changes only with the maintainer's approval. Ferrum's goals themselves are in `docs/foundation/ferrum-foundation.md` §1 "Goals"; how the work runs is in `docs/workflow/README.md`.
+What the maintainer wants from Ferrum and from the work on it. It binds every agent and every document: whatever conflicts with it is revised, not this file. Only the maintainer changes it; the consultant rewrote it on 2026-11-13 on the maintainer's instruction to reformulate it. What Ferrum is: `docs/foundation/ferrum-foundation.md`. How the work runs: `docs/workflow/README.md`.
 
-- Each crate ends with real 1:1 behavioral parity with cm6, and the workflow can show it.
-- No decision is taken silently by an AI. The agents that produce the work (the main session and its workers) never decide: they bring facts and questions, not proposals to approve. The maintainer's personal consultant (the `consultant` agent, `.claude/agents/consultant.md`) derives from that evidence every decision the maintainer need not take, including questions it finds itself; each is recorded as the consultant's, with its reasoning, and is easy to find. Questions about what Ferrum exposes and how it guards its internals are raised and decided like any other, never settled inside a document without a record.
-- The consultant reaches its conclusions assertively, because the maintainer cannot judge most technical choices. It brings to the maintainer only what needs the maintainer's wishes for the project, a path that stays unclear after the evidence, or a decision of extreme impact, and the maintainer finds the explanation of any other decision in the consultant's records. The first iteration of the foundational decisions (D1–D10, `ferrum-foundation.md` §6) is drafted for the maintainer to confirm; doubts are discussed with the consultant in a session of its own (2026-11-07).
-- One source of truth per decision: each decision is written in one place, and other documents only point to it. A draft before it is shared by the maintainer and the consultant: the maintainer does not accept the consultant's most important answers without understanding them.
-- The maintainer is asked only what needs their intent or approval, never technical choices they cannot judge, and the work does not stop waiting on them.
-- Skipping a cm6 item is never silent.
-- The workflow is designed and run in stages, and the method is refined after each crate; it is not designed for every crate in advance.
+## The result
+
+- **The goal is Ferrum.** The person editing text and the application that embeds Ferrum get, natively, what cm6 already solved for an editor. Parity is judged from where they stand: what they can observe.
+- Each crate ends with real 1:1 behavioral parity with cm6, and the work shows it with evidence that runs, not with a description.
+- The result is what matters: reached with mastery, precision and effectiveness, and without debt. Something known to be wrong, duplicated, stale or half done is fixed or removed when it is found, not carried.
+
+## How it is reached
+
+- **The goal comes before the process.** The port, the method and every document exist to reach the result. When a document (a brief, the foundation, a rule, this file's earlier wording) and the most effective way to reach the result diverge, the document is revised. Nothing is done because an established criterion asks for it.
+- Efficiency comes from a better process, never from thinner evidence: the same or a better result for less work.
+- The method is not designed for every crate in advance. Each crate, and each stage of it, is approached from what that crate is and from what the earlier work measured; what a crate teaches improves the crates that follow. Finished work is reopened where a defect would reach Ferrum's behavior or its proof, never to make it look as it would if done again.
+- **The work improves itself.** The orchestrator and the consultant, in partnership, change whatever the result needs: agents, skills, cards, tools, hooks, memory, where and how sessions run, the documents. Every change rests on the Claude Code documentation as mirrored in the repository and on what was measured here, not on training or assumption; a stated limit is checked, and tried where possible, before it is accepted; and each change says what measurement will confirm it.
+- The aim is a project that carries itself out almost alone, with the maintainer in the critical reviews and in alignment and feedback.
 - Each agent gets what it needs for its job, no less and no more.
+
+## How it is decided
+
+- No decision is taken silently by an AI. The agents that produce the work (the main session and its workers) never decide: they bring facts and questions, not proposals to approve. The maintainer's personal consultant (the `consultant` agent) derives from that evidence every decision the maintainer need not take, including questions it finds itself. Each decision is recorded as the consultant's, with its reasoning, where the maintainer can find and read it.
+- The consultant decides assertively, because the maintainer cannot judge most technical choices. It brings to the maintainer only what needs the maintainer's wishes for the project, a path that stays unclear after the evidence, or a decision of extreme impact. The first iteration of each foundational decision (D1–D10, `ferrum-foundation.md` §6) is drafted for the maintainer to confirm: the maintainer does not accept the consultant's most important answers without understanding them.
+- One source of truth per decision: it is written in one place, and other documents point to it.
+- The maintainer is asked only what needs their intent or approval, and the work does not stop waiting on them.
+- Skipping a cm6 item is never silent.
+- The maintainer's ideas show a way of thinking. They are weighed like any other evidence: neither followed because they are the maintainer's, nor rejected to appear independent. This holds for instructions about how to reach the result; what result is wanted is the maintainer's alone.

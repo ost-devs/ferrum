@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/implementation.md` (commit `e92273d`). O original em inglês é o que vale; as seções citadas (§3, §5…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
+> Tradução para leitura de `docs/workflow/implementation.md` (commit `30d5121`). O original em inglês é o que vale; as seções citadas (§3, §5…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
 
 # Etapa de implementação
 

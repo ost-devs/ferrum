@@ -1,8 +1,8 @@
-> Tradução para leitura de `docs/foundation/ferrum-foundation.md` (commit `e92273d`). O original em inglês é o que vale; as seções citadas em outros documentos (§1 "Goals" etc.) seguem a numeração e os títulos em inglês do original.
+> Tradução para leitura de `docs/foundation/ferrum-foundation.md` (commit `30d5121`). O original em inglês é o que vale; as seções citadas em outros documentos (§1 "Goals" etc.) seguem a numeração e os títulos em inglês do original.
 
 # Ferrum: propósito, arquitetura e fundação
 
-O documento de referência para qualquer um (humano ou IA) que trabalhe no Ferrum: o que o Ferrum é e o que busca, como se relaciona com o CodeMirror 6 (cm6), como os quatro crates de fundação se relacionam entre si, quais decisões vêm antes da implementação e o que vem depois. Regras para mudanças: [`.claude/rules/`](../../claude/rules/) (código: `rust-crates.md`; escrita: `writing.md`; fontes externas: `mirrors.md`).
+O documento de referência para qualquer um (humano ou IA) que trabalhe no Ferrum: o que o Ferrum é e o que busca, como se relaciona com o CodeMirror 6 (cm6), como os quatro crates de fundação se relacionam entre si, quais decisões vêm antes da implementação e o que vem depois. Regras para mudanças: [`.claude/rules/`](../../../../.claude/rules/) (código: `rust-crates.md`; escrita: `writing.md`; fontes externas: `mirrors.md`).
 
 Tudo o que está marcado como *preliminar* vem de uma primeira leitura do cm6, não de uma especificação; a especificação de cada crate decide.
 

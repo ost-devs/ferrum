@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agent-memory/consultant/feedback-maintainer-suggestions.md` (commit `e92273d`). O original em inglês é o que vale. Frontmatter original: `name: maintainer-suggestions`, `type: feedback`.
+> Tradução para leitura de `.claude/agent-memory/consultant/feedback-maintainer-suggestions.md` (commit `30d5121`). O original em inglês é o que vale. Frontmatter original: `name: maintainer-suggestions`, `type: feedback`.
 
 # Sugestões do mantenedor
 

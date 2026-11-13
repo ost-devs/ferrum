@@ -1,8 +1,8 @@
 # Conformance stage
 
-Answers one question about an implemented crate: **does it do exactly what its approved specification says?** If not, it lists exactly where not, with reproductions. This stage reports findings and never fixes them: the implementation stage fixes them and the failing gates run again. Roles and decisions: `docs/workflow/README.md`.
+Answers one question about an implemented crate: **does it do what cm6 does, as its approved specification records it, and nothing else?** If not, it lists exactly where not, with reproductions. This stage reports findings and never fixes them: the implementation stage fixes them and the failing gates run again. Roles and decisions: `docs/workflow/README.md`.
 
-To be refined with what the earlier stages of the first crate teach (`README.md` §7).
+This brief holds what is true of every crate. How one crate is checked (which gates run as tools, the seeds, the units read by a `verifier`, effort and budget) is the "Conformance" section of `docs/parity/<crate>/plan.md`, written by the consultant when the implementation hands off.
 
 ---
 
@@ -44,7 +44,7 @@ A crate is `CONFORMANT` when every gate of §2 passes. There is no percentage th
 
 ## 2. Gates
 
-Mechanical gates run first, for the whole crate, by the orchestrator. Reading checks go to `conformance-checker` workers per module (card: Appendix A).
+Mechanical gates run first, for the whole crate, by the orchestrator, each as a tool. Reading checks go to `verifier` workers per unit (card: Appendix A), which did not write the tests or the code they read.
 
 **G1. Public surface.**
 - Every in-scope item has exactly one counterpart annotated `/// cm6: <name>` or `/// cm6 contract: <name>`, public in rustdoc JSON (`tools/ferrum_pub.py`).
@@ -55,11 +55,11 @@ Mechanical gates run first, for the whole crate, by the orchestrator. Reading ch
 - A not-ported item has no stand-in carrying its cm6 name.
 
 **G2. Behaviors.**
-- Every behavior id has a passing test in `crates/<crate>/tests/` that names it (`// covers:`).
-- Reading check: the test really asserts the behavior, on the right input class and on the whole observable result the behavior states; otherwise the test is `WEAKER`.
-- Every derived test exists with its fixture's expected value.
-- Test files are unchanged since their step-2 commit, except listed changes (`git log`).
-- Recommended: a mutation tool (`cargo-mutants`) on a sample of core functions. A surviving mutant that a behavior forbids is a missing or weak test.
+- Every behavior id is named by a check that passes (`docs/workflow/implementation.md` §2 item 5): a replayed fixture whose `behaviors` lists it, a ported cm6 test, or a test in `crates/<crate>/tests/` with `// covers:`.
+- Reading check, for written tests: the test really asserts the behavior, on the right input class and on the whole observable result the behavior states; otherwise the test is `WEAKER`. For the replayer, once: it runs the recorded input and compares the whole recorded output, with no field skipped.
+- Test files and the replayer are unchanged since the commit that preceded their unit's code, except listed changes (`git log`).
+- **Coverage of Ferrum's code by the checks:** every line and branch of the crate that no fixture replay and no test reaches is listed. Each is code no evidence speaks for: it gets a check, a reason, or is removed.
+- **Mutation** (`cargo-mutants`) on the functions the crate's plan names. A surviving mutant that a behavior forbids is a missing or weak check.
 
 **G3. Ported cm6 tests.**
 - Every `LOGIC-ONLY`, `NEEDS LAYOUT` and `NEEDS GRAMMAR` case has its `test_cm6_<file>_<nn>_<slug>` test.
@@ -71,7 +71,7 @@ Mechanical gates run first, for the whole crate, by the orchestrator. Reading ch
 **G4. Golden fixtures.** Every fixture replays against the crate, with positions mapped to the D1 unit and separators per D2. Required: 0 mismatches.
 
 **G5. Differential oracle.**
-- For every generator in `oracle/cm6/`, a Ferrum driver; cm6 and Ferrum run on the same seeded inputs, at least 5,000 cases per item group. Required: 0 mismatches after the decided unit mapping.
+- Every generator in `oracle/cm6/` runs again with seeds the implementation never saw; cm6 produces the outputs and the crate's replayer runs the same recorded inputs. At least 5,000 cases per item group. Required: 0 mismatches after the decided unit mapping.
 - **Coverage:** count, per entry of the shape checklist (`specification.md` §5), how many cases had it. A generator that never produced an entry does not pass.
 - **Sensitivity:** in a scratch copy, introduce one deliberate deviation per item group (flip an `assoc` sign, drop a deduplication) and confirm the oracle reports it. An oracle that stays at 0 does not pass.
 
@@ -80,7 +80,7 @@ Mechanical gates run first, for the whole crate, by the orchestrator. Reading ch
 - Every decision that requires a deviation is applied wherever it applies, for example the D1 conversions at every position-taking API.
 - No other difference exists.
 
-**G7. Hazards.** For every hazard in `hazards.md`, a test exercises it, plus a targeted check:
+**G7. Hazards.** For every hazard recorded on a behavior, a check exercises it, plus a targeted check:
 - identity kept where cm6 relies on it;
 - cached computations computed once, re-entrancy as in cm6;
 - consumer values pass through every API without truncation;
@@ -108,8 +108,8 @@ Mechanical gates run first, for the whole crate, by the orchestrator. Reading ch
   - every item with a hazard;
   - every `CONTRACT` item;
   - every item a deviation touches.
-- A `verifier` that ran no gate then re-checks at least 10% of the verdicts (minimum 20). It re-runs their reproductions and the gate scripts, and appends to `verification.md`.
-- Mismatches are corrected, and new samples are drawn until one comes back clean.
+- A `verifier` that ran no gate then re-checks at least 10% of the verdicts (minimum 20). It re-runs their reproductions, and appends to `verification.md` the mismatches and their rate. The gate scripts are tools the orchestrator runs; no worker rewrites them.
+- A wrong verdict is corrected as a class: the condition a correct verdict meets is tested on every verdict of that kind, not on the sampled ones. The sample is a measurement and is not repeated until clean; a second one is drawn only when the first found a verdict that passed a failing item, after the gate that let it pass is fixed for every item (`docs/workflow/specification.md` §8 items 4–5 give the reason).
 
 ## 4. Report and acceptance
 
@@ -123,7 +123,7 @@ Mechanical gates run first, for the whole crate, by the orchestrator. Reading ch
 
 The verdict is `CONFORMANT` only if every gate passes. `NOT CONFORMANT` sends the findings back to the implementation stage.
 
-Once the report is `CONFORMANT`, the consultant reviews every explained difference and accepts the verdict (`Decided-by: consultant`). The orchestrator then writes, in Portuguese for the maintainer:
+Once the report is `CONFORMANT`, the consultant reviews every explained difference and accepts the verdict (an entry in `docs/decisions/`). The orchestrator then writes, in Portuguese for the maintainer:
 - what the crate now does;
 - the evidence;
 - what is not ported and why;
@@ -140,14 +140,14 @@ It goes in `dev/maintainer/reports/<crate>-conformance.md`. After acceptance, th
 
 ---
 
-## Appendix A. Card template: `conformance-checker`
+## Appendix A. Card template: `verifier` (conformance)
 
 ```
-# conformance-checker card: [crate], module [module]
+# verifier card: [crate] conformance, unit [unit]
 
 Gates you check by reading: G2 (assertion quality), G3 (scenario and assertions), G7 (hazard tests) for items [ids].
-Inputs: docs/parity/[crate]/ rows of the module; crates/[crate]/ at commit [commit]; decisions [ids].
-Append one row per verdict to docs/parity/[crate]/raw/conformance-[module].jsonl
+Inputs: docs/parity/[crate]/ rows of the unit; crates/[crate]/ at commit [commit]; decisions [ids].
+Append one row per verdict to docs/parity/[crate]/raw/conformance-[unit].jsonl
 ({id, kind, verdict, evidence, repro}); evidence cites file:line on both sides.
 Never change code or tests. Final report: verdict counts, every failing id with a one-line reason, unchecked ids.
 ```

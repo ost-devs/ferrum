@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/ferrum-run/SKILL.md` (commit `e92273d`). O original em inglês é o que vale. Só roda quando o usuário digita `/ferrum-run` (`disable-model-invocation: true`). Frontmatter original: `allowed-tools: Bash(cat *), Bash(head *), Bash(ls *), Bash(git status *), Bash(git log *)`. As linhas `` !`comando` `` rodam quando a skill carrega, e a saída delas entra no lugar da linha.
+> Tradução para leitura de `.claude/skills/ferrum-run/SKILL.md` (commit `30d5121`). O original em inglês é o que vale. Só roda quando o usuário digita `/ferrum-run` (`disable-model-invocation: true`). Frontmatter original: `allowed-tools: Bash(cat *), Bash(head *), Bash(ls *), Bash(git status *), Bash(git log *)`. As linhas `` !`comando` `` rodam quando a skill carrega, e a saída delas entra no lugar da linha.
 
 # Skill `/ferrum-run`
 

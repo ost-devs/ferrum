@@ -1,6 +1,8 @@
 # Specification stage
 
-Turns one cm6 package into the specification of its Ferrum crate: what the crate must do, item by item and behavior by behavior, with values produced by running cm6, the cm6 tests to port, the questions Ferrum must answer, and the crate's design, which the consultant derives from those facts. It is the implementer's work list and the reference of the conformance stage. Roles and decisions: `docs/workflow/README.md`. Tools: `tools/README.md`.
+Turns one cm6 package into the specification of its Ferrum crate: what the crate must do, item by item and behavior by behavior, as runs of cm6 that anyone can repeat, the cm6 tests to port, the questions Ferrum must answer, and the crate's design, which the consultant derives from those facts. It is the implementer's work list and the reference of the conformance stage. Roles and decisions: `docs/workflow/README.md`. Tools: `tools/README.md`.
+
+This brief holds what is true of every crate. How one crate goes through the stage (its chunks, which decisions precede which step, what needs a browser or a grammar, effort and budget per step, the pilot chunk) is the section "Specification" of `docs/parity/<crate>/plan.md`, written by the consultant at S0 (`README.md` §1).
 
 ---
 
@@ -10,13 +12,12 @@ Turns one cm6 package into the specification of its Ferrum crate: what the crate
 - The scope from `docs/foundation/ferrum-foundation.md` §4.2: what the crate owns.
 - The crates below it: their approved specification (`docs/parity/<crate>/`) and their conformance report.
 - The decisions in force: `.claude/rules/decisions.md` and `.claude/rules/rust-naming-decisions.md`.
-- For `ferrum-state` only: the cm6 side of the earlier state audit on branch `bad-start` (`docs/parity/state/behaviors.md`, `fixtures/`, `oracle/cm6-probes/`, `decisions-evidence.md`). It is read only in verification (§8), after the rows are written, as a completeness cross-check, never as a source. Everything it says about Ferrum describes deleted code. This input ends when the `ferrum-state` specification is approved.
 
 ## 2. Ground rules
 
 1. **cm6's code is the specification.** Read the whole function and every helper it calls before stating a behavior. When a README or doc comment disagrees with the code, the code wins.
 2. **Purpose filter** (`ferrum-foundation.md` §2). A disposition says what the item does for a native editor, with a reason specific to that item. Nothing is kept only because cm6 has it. Nothing is dropped only because cm6 implements it with the DOM: native-relevant behavior becomes a contract or a surface job.
-3. **Decision-neutral.** The specification states questions, never Ferrum's answers. Rust shapes appear only in the consultant's design (§7).
+3. **Decision-neutral where a decision is open.** The rows state what cm6 does and which questions Ferrum must answer, never Ferrum's answers; Rust shapes appear only in the consultant's design (§7). A decision already in force (`.claude/rules/decisions.md`) is applied: the card lists it, and no row asks it again.
 4. **Facts with evidence.** Every row cites cm6 `file:line` with the symbol. What was deduced and not read or run is marked as deduction.
 5. **Facts and questions, never proposals.** The consultant derives the dispositions, the design and every answer from the facts the stage gathers (`README.md` §3; questions in the shape of `CLAUDE.md` "Raising a question").
 6. **Complete or explicit.**
@@ -49,34 +50,36 @@ There is no "later" disposition (D10, `ferrum-foundation.md` §6): every item of
 
 ## 4. Deliverables and schemas
 
-All in `docs/parity/<crate>/`. The JSON Lines files under `raw/` and `fixtures/` are the source of truth; the Markdown views are rendered from them with `tools/render.py`, never edited by hand.
+All in `docs/parity/<crate>/`. The JSON Lines files under `raw/` and `fixtures/` are the only copy of each fact. No rendered view of them is committed: `tools/render.py` and `tools/spec_synth.py` print a table when someone needs to read one.
 
 ```
-progress lives in docs/progress/<crate>.md
-cards/<role>.md            cards for spec-auditor and verifier (Appendices A, B)
-raw/inventory.jsonl        §3: every row with disposition and reason
-raw/behaviors.jsonl        §5
-raw/tests.jsonl            §6
-raw/xc.jsonl               capabilities needed from lower crates, and offered to higher ones
-fixtures/<chunk>.jsonl     golden values produced by cm6
-oracle/cm6/<chunk>/        probe and generator sources (no generated data)
-inventory.md, behaviors.md, tests.md      rendered views
-dispositions.md            per source file: disposition and reason; per-row dispositions rendered
-contracts.md               per CONTRACT item: the question, the logic around it, the smallest fake
-hazards.md                 JS→Rust hazards per item
-stack.md                   mechanisms that exist because of cm6's stack, per item (§5)
-names.md                   names the mechanical conversion may not settle (§7)
-implementation-plan.md     the crate's design, written by the consultant at S5 (§7)
+plan.md                    how this crate goes through each stage (consultant; README.md §1)
+design.md                  the crate's Rust design (consultant, at S5; §7)
 questions.md               open questions for the consultant (README.md §3)
-verification.md            §8
+cards/<role>.md            cards, written by the orchestrator from plan.md
+raw/inventory.jsonl        §3: every item with its facts, disposition and reason
+raw/files.jsonl            the same facts and disposition per source file
+raw/behaviors.jsonl        §5
+raw/tests.jsonl            §6: the package's own test cases
+raw/throws.jsonl           §7: every throw cm6 reaches
+raw/names.jsonl            §7: names the mechanical conversion may not settle
+raw/xc.jsonl               capabilities needed from lower crates, and offered to higher ones
+raw/coverage.jsonl         §8 item 1: lines and branches of cm6 no recorded run reaches (written by the tool)
+fixtures/<chunk>.jsonl     golden values produced by cm6
+oracle/cm6/<chunk>/        the chunk's interpreter and its generators (no generated data)
+oracle/cm6/order.json      the cm6 package and, per chunk, its generators in run order
+verification.md            §8: what was checked, the mismatches, the rates
 ```
 
 Schemas (one JSON object per line; `[]` marks arrays):
 
 - `raw/inventory.jsonl`: `id, item, kind, file, line, chunk, does, platform, used_by[], disposition, reason`. S1 writes the facts: `does` (what the item does, from its code), `platform` (what it takes from the DOM, CSS, the browser, Lezer or the TypeScript type system, with `file:line`, or `none`), `used_by` (the cm6 packages and items that call it). The consultant writes `disposition` and `reason`.
-- `raw/behaviors.jsonl`: `id, item_id, text, cm6, deps[], hazards[], stack[], consumer_values[], cost, cm6_tests[], fixtures[], golden_note`
+- `raw/behaviors.jsonl`: `id, item_id, text, cm6, hazards[], stack[], consumer_values[], cost, cm6_tests[], fixtures[], golden_note`
+- `raw/files.jsonl`: `file, chunk, does, platform, used_by[], disposition, reason`
+- `raw/throws.jsonl`: `cm6, kind, error, condition, protects, checkable, public_entry, behaviors[], fixtures[], tests[]`
+- `raw/names.jsonl`: `id, item, signature, does, case` (which kind of §7 `names` case it is)
 - `raw/tests.jsonl`: `id, file, line, describe, name, generated, scenario, expected, behaviors[], class, class_reason, port_notes`
-- `fixtures/<chunk>.jsonl`: `id, item_id, behaviors[], input, output, encoding`
+- `fixtures/<chunk>.jsonl`: `id, item_id, behaviors[], input, output, encoding`. Values JSON cannot hold are written in one encoding, applied to inputs and outputs by `tools/cm6/oracle-lib.ts` and by nothing else: a string with a lone surrogate as `{"utf16": [every code unit]}`; `NaN`, `Infinity`, `-Infinity` and `-0` as `{"js_number": "NaN"}` and so on; `undefined` as `{"js_undefined": true}`; a function value as `{"js_function": true}`; a value that differs between runs (the wall clock) as `{"js_unstable": "<what>"}`. `null` then always means `null`, and a string is always that string
 - `raw/xc.jsonl`: `capability, cm6, direction (needs|offers), crate, searched, exists`
 
 Ids:
@@ -86,11 +89,7 @@ Ids:
 - fixtures: `F<nnnn>` within their chunk file;
 - questions: `Q<n>` within the crate.
 
-Ids are stable once published. Every rendered file starts with a header stating:
-- what the file is;
-- the cm6 version and mirror commit;
-- the Ferrum commit its line numbers refer to;
-- the id schemes it uses.
+Ids are stable once published.
 
 ## 5. Behaviors and evidence
 
@@ -101,14 +100,7 @@ For every item in scope (`CORE`, `CONTRACT`, the core-owned part of `SURFACE`, a
    - the input class;
    - the observable result;
    - cm6 `file:line`;
-   - the decisions it depends on (`deps`: `D1`, `D2`, …), by the tests below;
    - the cm6 tests that cover it, or `none`.
-
-   **Decision tags.** A tag says that some answer to that decision changes what this behavior asserts. It decides which fixtures the behavior needs (item 3), when its item can be implemented (`docs/workflow/implementation.md` §1), and it is evidence for the decision. Apply each test to the behavior's own assertion, not to every value its input carries. When a test cannot be settled, tag: a missing tag leaves a conversion untested and nothing fails, an extra one costs a fixture.
-   - `D1` (position unit): put an astral character in the text the behavior reads, or that its inputs were built from (a document, a line, a string, an inserted text), before or inside the positions involved. Tag `D1` if a number the behavior asserts (a position, length, offset, column offset, count of code units) or its outcome (a range check, a throw, a split inside a character) would differ with positions counted in UTF-8 bytes or in chars instead of UTF-16 code units. Not `D1`: numbers the behavior only carries without relating them to any text (a `Range` triple, the order of given positions), and assertions about something else (identity of the result, order, emptiness), even when the values hold positions.
-   - `D2` (line breaks, the `Text` model, grapheme clusters): put a CRLF, a lone CR, a U+2028 (with and without `lineSeparator`) or a grapheme cluster of several code points in the text the behavior reads, before or inside the positions involved. That text is a string the behavior splits, measures or steps through itself (an inserted string it turns into a change, a string it reads by clusters), or a document, `Text` or line it reads, taken as the string cm6 split to build it. Tag `D2` if what the behavior asserts (a number, a line, a string, an outcome) depends on how cm6 splits text into lines (`\r\n?|\n`, or `lineSeparator`), counts a line break as one position, numbers lines or places line boundaries, reinserts the separator on output, or places grapheme cluster boundaries (`findClusterBreak`). Not `D2`, unlike `D1`: numbers the behavior receives already measured and relates to no text it reads, such as the section lengths of a change set built before the call, or positions in a selection, a range set or an effect mapped through one (`ChangeDesc.mapPos`, `RangeSet.map`). The behavior that measured them carries the tag, and among the answers to D2 only counting a break of two or more code units as more than one position would change them.
-   - `D6` (ownership and threading): tag `D6` if the behavior asserts identity, reuse or sharing a caller can observe (the same object returned, a value compared with `===` or used as a `Map` key, a cached value), a mutation visible to another holder, or state shared across instances (module-level counters, ids).
-   - `D5` (command type): the behavior is about a command's target or signature (`StateCommand`, `Command`). `D3`, `D4`, `D7`, `D8`: only when the code shows the behavior asking that decision's question (a syntax tree, geometry, a class or attribute, an input event).
 
    Dimensions to consider (add whatever the code shows):
    - the return value, including "did nothing";
@@ -120,9 +112,9 @@ For every item in scope (`CORE`, `CONTRACT`, the core-owned part of `SURFACE`, a
    - identity: does any caller compare results with `===`?
    - interaction with other packages.
 3. **Golden fixtures** for every behavior that runs headless. A fixture is one cm6 run, written by `fixtureWriter`:
-   - never written by hand; the recorded input is the input actually used;
+   - never written by hand. The recorded `input` is a program: the generator builds it as data and produces the output by running that same value through the chunk's interpreter (`oracle/cm6/<chunk>/interp.ts`: one named op per kind of call, its arguments as data, the encoding of inputs and outputs documented at its top), so the recorded input is the input used by construction, and the crate's fixture replayer runs the same ops. No call is recorded as prose or as a JavaScript expression for a reader (`docs/workflow/learnings.md` W39);
    - positions in UTF-16 code units, as cm6 produces them, with the text stored so they can be mapped to the unit of D1;
-   - every behavior tagged `D1` gets one ASCII fixture and one whose text has an astral character before or inside the positions involved; every behavior tagged `D2` gets, besides the ASCII one, one for each case its assertion turns on: CRLF, lone CR, U+2028 (with and without `lineSeparator`), a grapheme cluster of several code points;
+   - **text classes:** a behavior whose result is a position, a length, an offset or a count measured on text, or depends on where lines or grapheme clusters break, gets besides its ASCII fixture one whose text has an astral character before or inside the positions involved and one for each case its result turns on: CRLF, lone CR, U+2028 (with and without `lineSeparator`), a grapheme cluster of several code points. These are the cases where another position unit or text model would give another answer, whatever was decided about them;
    - exceptions are outputs (`capture`);
    - lone surrogates are encoded (`encode`).
 
@@ -137,7 +129,7 @@ For every item in scope (`CORE`, `CONTRACT`, the core-owned part of `SURFACE`, a
    - ASCII, BMP non-ASCII, astral characters, CRLF, lone CR, U+2028;
    - one case 100 times the typical size.
 6. **Cost class** as cm6 implements it: O(1), O(log n), local to a line, range or chunk, or linear in the document. Also what cm6 avoids, for example materializing the document as a string.
-7. **Hazards** the implementation relies on, with `file:line`. Each listed hazard becomes a test and a conformance check:
+7. **Hazards** the implementation relies on, with `file:line`. Each listed hazard becomes a check and a conformance gate. Once the crate below has a design, a hazard class its types exclude (a fractional or `NaN` position where positions are integers) is recorded once for the crate, not per behavior:
    - object identity (`===`, `indexOf`, `Map`/`WeakMap` keys) used for equality, deduplication or change detection;
    - lazily cached getters; re-entrant access during a computation;
    - mutation of shared objects; aliasing;
@@ -175,15 +167,13 @@ A cm6 test that looks wrong (for example a loop that overwrites its own random r
 
 **Helpers.** For every cm6 test helper (for example `mirrors/cm6/commands/test/state.ts` `mkState`: `|` marks a cursor, `<…>` a range), record its exact parsing and assertion rules, so the Ferrum helper can mirror it.
 
-**Derived tests.** Every behavior without a cm6 test gets a derived-test specification: the behavior id, and an input and expected value taken from a fixture.
+**Behaviors without a cm6 test** are covered by their fixtures: each fixture names the behaviors it shows (`behaviors`), and the crate's replayer reports its results per behavior. No row is written for them in `raw/tests.jsonl`: such a row only repeats the fixture, and the copy goes stale when a later pass adds fixtures (`docs/workflow/learnings.md` W40).
 
 ## 7. Synthesis
 
 The orchestrator writes, from the merged rows:
 
-- `contracts.md`, grouped by the question asked (input to D3, D4 and D8);
-- `hazards.md`;
-- `stack.md`;
+- `raw/contracts.jsonl` for a crate with `CONTRACT` items: per item the question asked of the platform, what the logic does with each answer, the smallest fake (input to D3, D4 and D8);
 - `raw/xc.jsonl`:
   - every capability this crate needs from a lower crate, checked against the lower crate's specification. A capability missing or different becomes a question in the lower crate's `questions.md`, with a fixture showing what is needed;
   - every capability higher cm6 packages use from this one, for the later stages.
@@ -193,10 +183,12 @@ The orchestrator writes, from the merged rows:
   - every quirk or apparent bug of cm6 whose reproduction is a choice.
 
   Each question has the shape of `CLAUDE.md` "Raising a question": no options, no recommendation.
-- `names.md`: every inventory row whose name the mechanical conversion of `.claude/rules/rust-crates.md` Architecture 4 may not settle, with what the member does and its signature: a static member; a name that is a std trait method or convention (the names in clippy's `should_implement_trait` table, such as `next`, `from_str`, `default`, `add`, `hash`; and `len`, `is_empty`, `to_string`, `iter`, `into_iter`, `from`, `as_ref`); serialization (`toJSON`, `fromJSON`); a name an entry of `.claude/rules/rust-naming-decisions.md` covers, to check that the entry's category fits it. Facts only: the consultant decides the entries at S5.
-- in `hazards.md`, for each cm6 throw: its condition (`file:line`), what it protects, and whether a caller can check the condition in advance.
+- `raw/names.jsonl`: every inventory row whose name the mechanical conversion of `.claude/rules/rust-crates.md` Architecture 4 may not settle, with what the member does and its signature: a static member; a name that is a std trait method or convention (the names in clippy's `should_implement_trait` table, such as `next`, `from_str`, `default`, `add`, `hash`; and `len`, `is_empty`, `to_string`, `iter`, `into_iter`, `from`, `as_ref`); serialization (`toJSON`, `fromJSON`); a name an entry of `.claude/rules/rust-naming-decisions.md` covers, to check that the entry's category fits it. Facts only: the consultant decides the entries at S5.
+- `raw/throws.jsonl`: for each cm6 throw, its condition (`file:line`), what it protects, and whether a caller can check the condition in advance.
 
-The consultant writes at S5 (§9), from those facts, `implementation-plan.md`: the crate's design. It records decisions, each with its reason. A choice in it that changes observable behavior or public API is a deviation: it is recorded in the item's row or in `.claude/rules/decisions.md`, where annotations can cite it, the plan points to it, and a first iteration of D1–D10 goes to a draft for the maintainer (`docs/workflow/README.md` §3). It contains:
+Hazards and stack notes stay on their behaviors; `tools/spec_synth.py` groups them per item when the consultant reads them.
+
+The consultant writes at S5 (§9), from those facts, `design.md`: the crate's Rust design. It records decisions, each with its reason and its entry in `docs/decisions/`. A choice in it that changes observable behavior or public API is a deviation: it is recorded in the item's row or in `.claude/rules/decisions.md`, where annotations can cite it, the design points to it, and a first iteration of D1–D10 goes to a draft for the maintainer (`docs/workflow/README.md` §3). It contains:
 - **Module map**: one Rust module per cm6 source file in scope, its public items, what stays `pub(crate)`.
 - **Core types and invariants**, and how each invariant is kept.
 - **The Rust form of each cm6 idiom the crate uses**, with what must hold whatever the form:
@@ -214,48 +206,47 @@ The consultant writes at S5 (§9), from those facts, `implementation-plan.md`: t
   | module-level counter, `Date.now()` | determinism in tests |
   | strings and UTF-16 offsets | positions in the unit of D1; no whole-document `String` |
 
-- **Error contract per precondition**, from the throw facts in `hazards.md`: what a Rust caller observes when the precondition fails where cm6 throws, and how a test checks it.
-- **Ownership and threading** (D6), **dependencies** with license, **order of implementation**, and the **test plan**: port order, fakes, the fixture replayer, oracle drivers.
+- **Error contract per precondition**, from `raw/throws.jsonl`: what a Rust caller observes when the precondition fails where cm6 throws, and how a test checks it.
+- **Ownership and threading** (D6) and **dependencies** with license.
+- **The checks a fixture cannot give**: which behaviors need a written test (identity, hazards, cost) and why, the fakes, the oracle drivers.
 - **Obvious decisions**: one line each, `OBVIOUS-<n>: <decision>: <reason>`, for choices with a single reasonable answer.
-- **Native opportunities**: where a mechanism in `stack.md` exists only because of cm6's stack and another serves a Ferrum goal better: what cm6 does (`file:line`), the mechanism chosen, the goal, the measurement that confirms the benefit, and the behavior impact. With no observable impact, the implementer adopts it with a proof test; an observable impact makes it a deviation, recorded as above.
+- **Native opportunities**: where a mechanism the stack notes record exists only because of cm6's stack and another serves a Ferrum goal better: what cm6 does (`file:line`), the mechanism chosen, the goal, the measurement that confirms the benefit, and the behavior impact. With no observable impact, the implementer adopts it with a proof test; an observable impact makes it a deviation, recorded as above.
 
 ## 8. Verification
 
-A `verifier` that wrote no rows runs this (card: Appendix B):
+Each kind of error is checked by the cheapest means that shows it, and the checks run in this order. What a deterministic tool can show is never left to an agent, and what only an independent reading can show is read for every item, not for a sample (`docs/workflow/learnings.md` W33, W35, W41, W42).
 
-1. **Mechanical checks:**
-   - totals recounted with the tools; no duplicate ids;
+1. **Mechanical checks**, run by the orchestrator with one command, `python3 tools/spec_check.py <crate>`, before any agent checks anything and again after every change to the rows. No worker writes its own script for them:
+   - totals recounted; no duplicate ids; every id a row cites exists;
    - every in-scope item has behaviors;
    - every behavior has fixtures or a `golden_note`;
-   - every behavior tagged `D1` cites a fixture whose input has an astral character or an encoded lone surrogate, and every behavior tagged `D2` one whose input has `\r`, U+2028 or a non-ASCII character, unless it has a `golden_note`; a script lists the exceptions, and each is checked by hand against §5 item 3;
-   - every generator, re-run with its seed, reproduces its fixtures exactly;
+   - every generator, re-run in the order `oracle/cm6/order.json` records, reproduces its fixtures byte for byte;
+   - **cm6 coverage:** the generators run under V8 coverage; every line and branch of the package's source that no run reached is written to `raw/coverage.jsonl`. Each gets a fixture, or a reason in `verification.md` why no input reaches it or why it is out of scope;
    - every test case is classified;
-   - every repeated reason text is listed and checked against each row that carries it;
    - `tools/check_refs.py` is clean.
-2. **Sample**, chosen with a recorded seed:
-   - at least 10% of the in-scope items (minimum 20);
-   - every `CONTRACT` item;
-   - every `DROP` row;
-   - a sample of dispositions.
 
-   For each sampled item, re-derive the behavior list from cm6's source and look for missing behaviors, re-run three fixtures, and check the test classifications, the stack notes and the decision tags by the tests of §5 item 2, both ways: a tag missing, and a tag the tests do not support.
-3. **For `ferrum-state`:** compare with the cm6 side of the earlier state audit (§1). Every cm6 behavior or fixture there that has no counterpart here is a finding. It is verified against cm6 before anyone acts on it.
-4. The orchestrator fixes every mismatch. A mismatch that comes from a rule applied to every row (a criterion, a field left empty across a chunk) is fixed on every row the rule covers, not on the sampled ones only: a sample measures the rows, and fixing only what it drew leaves the same error in the rest unseen. The verifier then draws a new sample with a new seed, until a sample comes back clean.
+   A check the tool lacks is added to the tool, not scripted by a worker (the text classes of §5 item 3 per behavior; the fields the consultant owns, `disposition` and `reason`, unchanged since their decision).
+2. **Completeness, every in-scope item.** A fresh `spec-auditor` per chunk, which has not seen the chunk's rows, writes from cm6's source only the list of behaviors of each item: input class, observable result, cm6 `file:line`. A second worker matches that list with `raw/behaviors.jsonl`. Every entry found on one side only, and every pair that states different results for the same input class, is settled by running cm6, and the rows and fixtures are corrected. This runs once. It is what finds a behavior the first reading missed or stated wrongly, which nothing later shows: the implementation would lack it and conformance would not ask for it.
+3. **Measured sample**, by a `verifier` that wrote no rows (card: Appendix B), with a recorded seed: at least 10% of the in-scope items (minimum 20), every `CONTRACT` item, every `DROP` row, a sample of dispositions. It checks what items 1 and 2 cannot show: the facts a disposition rests on (`used_by`, `platform`), test classifications, stack notes, consumer values with their citations, a reason text repeated across rows against every row that carries it, and three fixtures re-run per item. Each mismatch is recorded with its severity:
+   - **high**: Ferrum would behave differently or lack a behavior, or a decision would rest on a false fact (a missing or wrong behavior, a wrong value, a false fact under a disposition or a question);
+   - **low**: everything else (wording, a citation's line, a note, a link).
+4. **Fixes.** Every mismatch is fixed as a class: the fixer states the condition a correct row meets, tests it on every row with a script (never on one example per group), and fixes every row that fails it; the script and its count go in `verification.md`. A mismatch with no condition a script can test is fixed where it was found, and a worker re-reads the rows that share its cause.
+5. **End of the step.** The sample is a measurement, not a loop: it is not repeated until it comes back clean. `verification.md` states, per severity, the mismatches found, the items sampled and the rate. A second sample with a new seed is drawn only when the first found a high mismatch that item 2 should have caught, after that gap in item 2 is closed for every item. The consultant reads the rates when it approves the specification (§9 S5) and may ask for a sweep of one class; low mismatches never start another sample. (In `ferrum-state`, six samples drawn until clean cost about 7.9 million tokens against 1.7 million for S2, read at most 168 of 261 items, and still found high mismatches in the fourth and sixth: W33, W42.)
 
 ## 9. Steps
 
 | Step | Who | Work | Ends with (committed) |
 |---|---|---|---|
-| S0 Setup | orchestrator | Pin the package and the core packages it reads for consumer values at their latest release (`npm view @codemirror/<package> version`, then `/mirrors pin cm6/<package> @<version>`), re-resolve the dependency pins (`.claude/rules/mirrors.md` "Dependency pins"), and queue a release delta for every conforming crate whose package moved (`docs/workflow/README.md` §1 "The cm6 reference"). Commit `mirrors/mirrors.json`. Check the mirrors (`/mirrors check`) and build the harness (`tools/cm6/setup_harness.py`). Run the inventory and test tools; expand generated test cases. Declare the totals. List the scope: source files, test files, consumer packages. Split into chunks of about 40–80 inventory rows or up to 1,000 source lines. Write both cards and `docs/progress/<crate>.md` | raw rows, cards, progress |
+| S0 Setup | orchestrator | Pin the package and the core packages it reads for consumer values at their latest release (`npm view @codemirror/<package> version`, then `/mirrors pin cm6/<package> @<version>`), re-resolve the dependency pins (`.claude/rules/mirrors.md` "Dependency pins"), and queue a release delta for every conforming crate whose package moved (`docs/workflow/README.md` §1 "The cm6 reference"). Commit `mirrors/mirrors.json`. Check the mirrors (`/mirrors check`) and build the harness (`tools/cm6/setup_harness.py`). Run the inventory and test tools; expand generated test cases. Declare the totals. List the scope: source files, test files, consumer packages. Split into chunks of about 40–80 inventory rows or up to 1,000 source lines. Write `docs/progress/<crate>.md`. The consultant then writes the "Specification" section of `plan.md` from the package as the tools show it (rows per file, tests, what needs a browser or a grammar, the decisions in force and the open ones this crate must take, the ledger of the crates before), and the orchestrator writes the cards from it | raw rows, plan, cards, progress |
 | S1 Facts | orchestrator. For a package too large to read in one context, `spec-auditor`s per group of files | The facts of every row (`does`, `platform`, `used_by`, §4) and of every source file, no disposition. `used_by` starts from one reference list per package that a shared tool in `tools/cm6/` produces with the TypeScript checker over `mirrors/cm6/*/src` (written before the first S1 that lacks it); the worker cross-checks it with grep and judges each reference, rather than writing its own search. The checker does not report a read through an untyped receiver (`(x as any).member`, a value typed `any`), so the grep covers each member name on such receivers, and an empty `used_by` says it did (in `ferrum-state` a `DROP` rested on an empty `used_by` that missed such a read: `docs/parity/ferrum-state/verification.md` "Seed 4101" V1). Entries of `docs/parity/<crate>/early-decisions.md`, if it exists, are written into their rows as decided and the file is deleted (`docs/workflow/README.md` §3) | facts in `raw/inventory.jsonl` |
-| S1 Dispositions | `consultant` | Derives a disposition and an item-specific reason for every row and every file from the facts and cm6's code; verifies the premise of every `DROP` against cm6 | dispositions in the rows, `dispositions.md`, `Decided-by: consultant` |
+| S1 Dispositions | `consultant` | Derives a disposition and an item-specific reason for every row and every file from the facts and cm6's code; verifies the premise of every `DROP` against cm6 | dispositions in the rows, their entry in `docs/decisions/` |
 | S2 Chunks | `spec-auditor`, one per chunk, at most 4 at a time | §5, §6 for the chunk's items and test cases | rows, fixtures and probes per chunk; tokens per chunk in progress |
-| S3 Synthesis | orchestrator | §7; render the Markdown views; `tools/check_refs.py` | the remaining deliverables |
-| S4 Verification | `verifier` | §8 | `verification.md` |
-| S5 Decision | `consultant` | Decides `questions.md`; decides an entry of `.claude/rules/rust-naming-decisions.md` for every case in `names.md` that no entry settles; writes the crate's design (`implementation-plan.md`, §7); takes the decisions D1–D10 whose evidence this specification provides; approves the specification. Drafts for the maintainer per `README.md` §3 | decisions in their places; the questions file emptied of decided entries |
-| S6 Retrospective | orchestrator | `docs/workflow/learnings.md` entries; method questions; progress points to the implementation stage | learnings, progress |
+| S3 Synthesis | orchestrator | §7; `tools/check_refs.py` | the remaining deliverables |
+| S4 Verification | orchestrator (item 1), `spec-auditor`s in fresh contexts (item 2), `verifier` (item 3) | §8 | `verification.md`, with the rates per severity |
+| S5 Decision | `consultant` | Decides `questions.md`; decides an entry of `.claude/rules/rust-naming-decisions.md` for every case in `raw/names.jsonl` that no entry settles; writes the crate's design (`design.md`, §7) and the "Implementation" section of `plan.md` (`docs/workflow/implementation.md` §3); takes the decisions D1–D10 whose evidence this specification provides; approves the specification. Drafts for the maintainer per `README.md` §3 | decisions in their places with their entries in `docs/decisions/`; the questions file emptied of decided entries |
+| S6 Review | `consultant`, called by the orchestrator | the end-of-stage review of `README.md` §7: open method questions decided, expectations settled from the ledger. The orchestrator writes the stage report for the maintainer (`README.md` §6) and points progress at the implementation stage | decisions, report, progress |
 
-S2 starts only after the S1 dispositions, because chunks cover only the items in scope.
+S2 starts only after the S1 dispositions, because chunks cover only the items in scope. The first chunk of S2 is the pilot of the plan.
 
 ## 10. Cost and orchestration
 
@@ -266,14 +257,17 @@ Quality comes first. The steps that produce evidence are never shortened to save
 - the shape checklist;
 - verification.
 
+A step is changed when another way gives the same or better evidence for less work, with the measurement that shows it (`docs/workflow/README.md` §7).
+
 Cost is cut by not repeating work:
 - one harness for everyone;
 - one card per role and crate;
 - each fact written once (a row cites a fixture id instead of repeating its input and output);
+- deterministic work is a tool in `tools/`, run by the orchestrator, never a script each worker rewrites;
 - tools print counts and write results to files;
 - the orchestrator reads JSONL and reports, not the sources a worker owns;
 - chunk size follows the measured tokens per chunk;
-- workers append each finished item and keep `raw/<chunk>.progress` with `done`/`remaining`, so an interrupted worker resumes;
+- workers append each finished item and keep `raw/<chunk>.progress` with `done`/`remaining`, so an interrupted worker resumes (the file is removed when the chunk is merged);
 - a reason shared by several rows is one group entry, true for every member;
 - final reports are short: counts, unfinished ids, the five most important findings with ids.
 
@@ -301,14 +295,21 @@ Consumer packages to grep for values: [mirrors/cm6/... list].
 Write only: docs/parity/[crate]/raw/[chunk]-*.jsonl, fixtures/[chunk].jsonl, oracle/cm6/[chunk]/, raw/[chunk].progress.
 
 ## For every item you own (docs/workflow/specification.md §5)
-[the nine points of §5, condensed: read; behaviors with their fields, and the decision-tag tests of §5 item 2 verbatim; fixtures; consumer values;
- generators with the checklist; cost; hazards (list); stack notes; contract questions]
+[the nine points of §5, condensed: read; behaviors with their fields; fixtures as programs run by the chunk's interpreter,
+ with the text classes; consumer values; generators with the checklist; cost; hazards (list); stack notes; contract questions]
 
 ## For every test case you own (§6)
-[scenario, action, expected, behaviors, class with reason, port notes; helper specifications; derived tests]
+[scenario, action, expected, behaviors, class with reason, port notes; helper specifications; no row for a
+ behavior that only fixtures cover]
 
 ## Schemas (§4)
-[paste the schemas of the files this worker writes]
+[paste the schemas of the files this worker writes; for each field, one line: who reads it and what a wrong
+ or missing value causes later (a missing behavior is missing from Ferrum; a missing text class leaves a conversion
+ untested; a stack note is the evidence of a design decision)]
+
+## Decisions in force that bear on your rows
+[each decision id with its one-line text, from .claude/rules/decisions.md and the crate's rows; "none yet" for
+ a decision still open, with the question it asks]
 
 ## Questions
 Write each question you cannot settle from cm6's code into raw/[chunk]-questions.jsonl, in the shape of
@@ -324,10 +325,12 @@ Counts per file, unfinished ids (or "none"), questions raised, the five most imp
 ```
 # verifier card: [crate] specification
 
-Seed: [n]. Sample: [ids]. Earlier samples: [seeds and results].
-Checks: docs/workflow/specification.md §8, items 1–3 [3 only for ferrum-state].
-Run probes and generators with: npx tsx --tsconfig .harness/[package]/tsconfig.json <file>.ts
+Seed: [n]. Sample: [ids].
+Checks: docs/workflow/specification.md §8 item 3. Item 1 already ran (tools/spec_check.py, result: [counts]);
+do not repeat it or write scripts for it.
+Run a probe with: npx tsx --tsconfig .harness/[package]/tsconfig.json <file>.ts
 Write only docs/parity/[crate]/verification.md (append a section for this seed).
-Each mismatch: id, what the row says, what cm6 shows (file:line or fixture re-run), severity.
-Final report: counts checked, mismatches with ids, whether this sample is clean.
+Each mismatch: id, what the row says, what cm6 shows (file:line or fixture re-run), severity (high or low,
+as §8 item 3 defines them).
+Final report: items checked, mismatches with ids per severity, the rate per severity.
 ```

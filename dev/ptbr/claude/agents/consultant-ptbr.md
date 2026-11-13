@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agents/consultant.md` (commit `e92273d`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher, rust-researcher, Explore), AskUserQuestion`, `model: opus`, `effort: high`, `memory: project`, `skills: consultant-context`, `initialPrompt: /consultant-context`; um hook (`.claude/hooks/guard.py`) o impede de escrever em `crates/`, `Cargo.toml` e `mirrors/`, e só o deixa criar os subagentes `cm6-researcher`, `rust-researcher` e `Explore`.
+> Tradução para leitura de `.claude/agents/consultant.md` (commit `30d5121`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher, rust-researcher, Explore), AskUserQuestion`, `model: opus`, `effort: high`, `memory: project`, `skills: consultant-context`, `initialPrompt: /consultant-context`; um hook (`.claude/hooks/guard.py`) o impede de escrever em `crates/`, `Cargo.toml` e `mirrors/`, e só o deixa criar os subagentes `cm6-researcher`, `rust-researcher` e `Explore`.
 
 # Agente `consultant`
 

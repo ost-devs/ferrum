@@ -23,9 +23,9 @@ Ferrum is **not**:
 
 ### Goals
 
-These are what Ferrum is for. Code that does not reach them yet is unfinished, not a reason to lower them.
+These are what Ferrum is for: the person editing text, and the application that embeds Ferrum, get natively what cm6 already solved for an editor. Code that does not reach them yet is unfinished, not a reason to lower them.
 
-- **1:1 behavioral parity with cm6** for every item that is behavioral or contract parity (section 2): same results, same invariants, the same tests passing with the same expected values. Names stay recognizable to a developer who knows cm6, in idiomatic Rust (the **Names** rule under Architecture in `.claude/rules/rust-crates.md`).
+- **1:1 behavioral parity with cm6** for every item that is behavioral or contract parity (section 2), judged by what a user or an embedding application can observe: same results, same invariants, the same tests passing with the same expected values, and the same outputs as cm6 on the same inputs. Names stay recognizable to a developer who knows cm6, in idiomatic Rust (the **Names** rule under Architecture in `.claude/rules/rust-crates.md`).
 - **Native performance**: large documents without whole-document work, fast startup, low input latency, smooth rendering at high refresh rates. The maintainer's targets: the core (state update, viewport and decoration work) handles a typical keystroke in under 1 ms; the surface renders at the display's refresh rate, up to 120 FPS (8.3 ms per frame); an input is visible in the next frame the display shows. Each target becomes a reproducible benchmark.
 - **A stable public API** for applications, reached through the facade crate `ferrum` (section 4.1) once the foundation is complete.
 
@@ -48,7 +48,7 @@ Every cm6 item falls into one of three kinds of fidelity. This is the filter tha
 
 | Kind | Meaning | How parity is measured | Examples |
 |---|---|---|---|
-| **Behavioral parity** | The logic is platform-independent. Ferrum reproduces it exactly. | cm6 tests ported with identical scenarios and expected values; optional differential oracle against cm6 running in Node. | `Text`, `ChangeSet`, `EditorSelection`, `RangeSet`, facets, transactions, history, comment toggling, heightmap, bidi ordering, keymap resolution logic |
+| **Behavioral parity** | The logic is platform-independent. Ferrum reproduces it exactly. | Values recorded by running cm6 are replayed against Ferrum; cm6 tests are ported with identical scenarios and expected values; cm6 and Ferrum are run on the same generated inputs and compared. | `Text`, `ChangeSet`, `EditorSelection`, `RangeSet`, facets, transactions, history, comment toggling, heightmap, bidi ordering, keymap resolution logic |
 | **Contract parity** | In cm6 the logic asks the DOM (geometry) or Lezer (syntax). Ferrum defines a Rust trait for that question and reproduces the logic on top of it. | Tests run against a fake implementation of the trait (fixed-width layout, hand-built trees) and reproduce cm6's expected results where the scenario permits. | `moveVertically`, `moveToLineBoundary` (visual lines), `posAtCoords`, `coordsAtPos`, syntax-driven indentation, folding, bracket matching |
 | **Not ported** | Exists only because of the DOM, CSS or browsers. | One-line reason; note whether a surface crate must offer a native equivalent. | DOM reconciliation (`docview`, `tile`, `buildtile`), `MutationObserver` handling (`domobserver`, `domchange`, `domreader`), `style-mod` theming, `EditContext`, browser workarounds |
 
@@ -171,13 +171,13 @@ cm6 never lays out text; the browser does. In Ferrum:
 ## 5. Status and scope
 
 - **Scope: the four foundation crates only** (`ferrum-state`, `ferrum-view`, `ferrum-language`, `ferrum-commands`), built in dependency order. Nothing else (facade, surfaces, feature crates, applications) is started until those four are complete and stable.
-- **The workflow**: how a crate is specified, implemented and checked, by which agents, and how decisions are taken and recorded: `docs/workflow/README.md`. The maintainer's intent, which binds it: `docs/foundation/maintainer-intent.md`. Where the work is: `docs/progress/`.
+- **The workflow**: how a crate is specified, implemented and checked, by which agents, how decisions are taken and recorded, and how the work measures and improves itself: `docs/workflow/README.md`. The maintainer's intent, which binds it: `docs/foundation/maintainer-intent.md`. Where the work is: `docs/progress/`. Every decision with its reasoning: `docs/decisions/`.
 
 ---
 
 ## 6. Foundational decisions (before any implementation)
 
-These decisions shape the whole foundation; implementing before taking them risks doing the work twice. The `consultant` agent (`docs/workflow/README.md` §2) takes them with the evidence of each crate's specification, before the implementation that needs them; their first iteration is drafted for the maintainer to confirm (`docs/foundation/maintainer-intent.md`). A decision taken is written in `.claude/rules/decisions.md` under its id, and its entry below then points there instead of repeating it (`docs/workflow/README.md` §3). An open entry states the question and, where a first reading found them, facts that bear on it, preliminary until verified; it never states an answer.
+These decisions shape the whole foundation; implementing before taking them risks doing the work twice. The `consultant` agent (`docs/workflow/README.md` §2) takes each when its evidence exists and before the work that needs it; their first iteration is drafted for the maintainer to confirm (`docs/foundation/maintainer-intent.md`). A decision taken is written in `.claude/rules/decisions.md` under its id, its record with the reasoning in `docs/decisions/foundation.md`, and its entry below then points there instead of repeating it (`docs/workflow/README.md` §3). An open entry states the question and, where a first reading found them, facts that bear on it, preliminary until verified; it never states an answer.
 
 **D1. Position unit.** What does an integer position mean? Preliminary facts: cm6 counts UTF-16 code units, and so do its tests and the LSP default; Rust strings, `regex` and tree-sitter (which also uses row/column points) index UTF-8 bytes, as do the text systems the surfaces would use (`cosmic-text`, GPUI); `ropey` indexes chars and converts to bytes and UTF-16. For ASCII-only text every unit gives the same numbers, so the unit mostly affects non-ASCII tests and every boundary with those libraries.
 
