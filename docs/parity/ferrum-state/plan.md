@@ -10,7 +10,7 @@ Steps A (fixture inputs as programs), B (the sites no run reaches), C (S5, three
 
 ## Implementation (written 2026-11-14)
 
-<!-- refs:planned crates/ferrum-state Cargo.toml docs/parity/ferrum-state/implementation.md docs/parity/ferrum-state/fixtures/no-counterpart.jsonl docs/parity/ferrum-state/cards/test-writer.md docs/parity/ferrum-state/cards/implementer.md -->
+<!-- refs:planned crates/ferrum-state Cargo.toml docs/parity/ferrum-state/implementation.md docs/parity/ferrum-state/fixtures/no-counterpart.jsonl docs/parity/ferrum-state/cards/test-writer.md -->
 Derived from what the specification produced (record: `docs/decisions/ferrum-state.md`, "S5, third part"), and revised on 2026-11-14 for what in it is a tool's work and what an agent's (record: `docs/decisions/method.md`, "Each kind of work goes to what does it best"). What binds the code: `design.md`, `.claude/rules/decisions.md`, `.claude/rules/rust-naming-decisions.md`, `raw/decisions.jsonl`. What binds every crate: `docs/workflow/implementation.md` §2, §5, §7. Budgets are estimates until the pilot: no implementation step has been measured yet.
 
 ### What shows parity here, and what follows from it
