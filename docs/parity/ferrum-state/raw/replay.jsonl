@@ -90,7 +90,7 @@
 {"chunk": "state", "op": "facet.define", "how": "run", "parts": [], "note": ""}
 {"chunk": "state", "op": "field.define", "how": "run", "parts": [], "note": ""}
 {"chunk": "state", "op": "fn", "how": "run", "parts": [], "note": ""}
-{"chunk": "state", "op": "internal.get", "how": "test", "parts": ["prop `map`, `facet`, `value`"], "note": "`config`, `annotations` and `type` through `__test`; a function field and the fields of an extension object have no counterpart"}
+{"chunk": "state", "op": "internal.get", "how": "test", "parts": ["prop `map`, `facet`, `value`"], "note": "`config` and `annotations` through `__test`; `type` of an effect is the registry entry for which `effect.is(type)` holds; a function field and the fields of an extension object have no counterpart"}
 {"chunk": "state", "op": "isInstance", "how": "run", "parts": [], "note": "whether the replayer's value is of that Rust type"}
 {"chunk": "state", "op": "json.ann", "how": "test", "parts": [], "note": "the annotation list of a transaction through `__test`; an effect's type name is the registry entry for which `effect.is(type)` holds"}
 {"chunk": "state", "op": "json.eff", "how": "test", "parts": [], "note": "the annotation list of a transaction through `__test`; an effect's type name is the registry entry for which `effect.is(type)` holds"}
