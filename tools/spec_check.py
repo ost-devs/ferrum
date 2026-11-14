@@ -52,6 +52,13 @@ what Ferrum is compared with):
 A chunk with no interpreter in the language fails with "not run". It writes raw/fixture-ops.jsonl: per chunk and op
 that ran, its kinds, the number of fixtures that ran it and their behavior ids.
 
+With or without a run it reads the consultant's raw/decisions.jsonl and raw/replay.jsonl (specification.md §4):
+  ops not only api or harness without a row of raw/replay.jsonl   a count, not a failure: an op added after the
+                                           consultant wrote the file waits for the consultant; the specification is
+                                           approved at zero
+  a fixture a row of raw/decisions.jsonl lists that does not exist, a fixture listed twice in a row, a row of
+  raw/replay.jsonl with an unknown `how`   failures
+
 It also prints how many values of each chunk are still written in a form older than the one encoding.
 
 Needs the harness (python3 tools/cm6/setup_harness.py <package>) and npx (tsx, c8). Exit status 1 when a check
@@ -312,6 +319,21 @@ def main():
             with open(os.path.join(base, "raw", "coverage.jsonl"), "w", encoding="utf-8") as f:
                 for s in sites: f.write(json.dumps(s) + "\n")
             print(f"wrote raw/coverage.jsonl: {len(sites)} unreached sites")
+
+    dp, rp, op = (os.path.join(base, "raw", n) for n in ("decisions.jsonl", "replay.jsonl", "fixture-ops.jsonl"))
+    if os.path.exists(dp):
+        for d in rows(dp):
+            fl = d.get("fixtures") or []
+            gone = [f for f in fl if ":" not in f or f.split(":")[1] not in fx_ids.get(f.split(":")[0], ())]
+            if gone: bad.append(f"raw/decisions.jsonl {d['id']} lists fixtures that do not exist: {gone[:10]}")
+            if len(set(fl)) != len(fl): bad.append(f"raw/decisions.jsonl {d['id']} lists a fixture twice")
+    if os.path.exists(rp) and os.path.exists(op):
+        how = {(r["chunk"], r["op"]): r.get("how") for r in rows(rp)}
+        unknown = sorted(f"{c}/{o}" for (c, o), h in how.items() if h not in ("run", "test", "part", "identity", "none", "skip"))
+        if unknown: bad.append(f"raw/replay.jsonl: unknown `how` for {unknown[:10]}")
+        plain = lambda k: set(k) <= {"api"} or set(k) <= {"harness"}
+        waiting = sorted(f"{o['chunk']}/{o['op']}" for o in rows(op) if not plain(o["kinds"]) and (o["chunk"], o["op"]) not in how)
+        print(f"ops not only api or harness without a row of raw/replay.jsonl: {len(waiting)}" + (f" {waiting}" if waiting else ""))
 
     for b in bad: print("FAIL", b)
     print("checks failed:" if bad else "checks passed", len(bad) if bad else "")

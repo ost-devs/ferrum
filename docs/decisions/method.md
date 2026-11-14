@@ -617,3 +617,22 @@ So a difference on purpose is never a failure (the reference expects it), an err
 **Confidence.** High that values must come from a run and that the floor stays untouched; medium-high on the patch as the general form: it fits an improvement that is local in cm6's code, and an improvement that would need a different structure in cm6 has no small patch. Such a one is decided with its own reference when it appears.
 
 **Reopens.** E10 refuted; an improvement whose patch cannot be written in cm6; a changed case that the tool attributes to no row.
+
+## 2026-11-14 · What a replayer leaves out is decided before it is written; a deviation's fixtures are computed on a patched cm6; outcome of E7
+
+*Decided by the consultant at the end of step A of `ferrum-state`. Binding text: `docs/workflow/specification.md` §4 (`raw/decisions.jsonl` field `fixtures`, `raw/replay.jsonl`); `docs/workflow/implementation.md` §5; `tools/spec_check.py`; `tools/spec_facts.py`. The crate's side, with the measurements: `docs/decisions/ferrum-state.md`, "S5, second part". Ledger: E7 revised, E9 replaced by E12.*
+
+**Decisions.**
+1. *A fixture is not the unit of what Ferrum cannot reproduce; a call is.* The replayer leaves out the calls that have no counterpart and compares the rest of the fixture. A whole fixture is left out only when nothing remains.
+2. *The fixtures of a deviation are computed.* The deviation is written into the harness copy of cm6, every fixture is replayed, and the fixtures whose output changes are the row's list. It is the mechanism already decided for improvements, used for the cases where Ferrum differs without being better. The replayer finds the same condition from its side, and the two lists must be equal.
+3. *One row per op that observes more than the documented API* (`raw/replay.jsonl`), written by the consultant at S5. `tools/spec_check.py` counts the ops that have none; the count is not a failure, so that a worker who adds an op is not blocked by a file it may not write, and the specification is approved at zero.
+4. *What only the signatures decide is frozen after the first run.* Inputs that Rust's types exclude cannot be listed before the skeleton exists. The replayer writes each one with its argument and value, the consultant approves the file, and the replayer then fails on any difference.
+5. *`fixtures_to_list` and the part of `tools/spec_facts.py` that served it are removed*: no row owes a list, and a row's list is now computed by the run of item 2.
+
+**E7** (step A after its pilot: budgets and runs of the check). Cost is confirmed: each of A2 to A5 stayed under 1.5 times its budget (1.37, 0.69, 1.17, 0.74) and the four cost 1,055,718 tokens against 1,250,000. Runs: A2 two, A3 three, A5 two; A4 four, of which two failed only because the check compared the form of an output and not its value (Q58), a defect of the tool that the worker could not fix. Recorded as revised, not confirmed: the expectation counted every run, and what measures a worker is the runs that fail on its own output. A later plan states it that way. Where the tokens went, per fixture: `change` 109, `text` 168, `state` 361, `facet` 446; `state` wrote its extensions in the vocabulary `facet` had built and cost less per fixture than `facet` did. Each chunk still wrote harness ops of its own (`list` twice, the arithmetic ops in `text` and in `state`); whether the language of `tools/cm6/program.ts` takes them is decided at the end-of-stage review (S6), before another crate writes fixtures.
+
+**Alternatives.** A failing check for an op without a row: it blocks step B's worker on a file only the consultant writes. Hand-written lists: 170 fixtures for one row, found by a run in two minutes and by reading not at all. Recording E7 as confirmed: the fourth run happened.
+
+**Confidence.** High on 1, 2 and 5. Medium-high on 4: it rests on a reading of a file by reason, which the first full run of the replayer will size.
+
+**Reopens.** E12 refuted.

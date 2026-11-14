@@ -1,0 +1,102 @@
+{"chunk": "text", "op": "allSame", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "text", "op": "changes.inserted", "how": "test", "parts": [], "note": "`ChangeSet`'s inserted texts, read through `__test`"}
+{"chunk": "text", "op": "changes.iterChangesTexts", "how": "run", "parts": [], "note": ""}
+{"chunk": "text", "op": "charCategory.keys", "how": "none", "parts": [], "note": "the own keys of a TypeScript enum object; `CharCategory` is a Rust enum (design.md OBVIOUS-1)"}
+{"chunk": "text", "op": "desc.iterChangedRangesArg", "how": "part", "parts": ["an `index` of 4 or more"], "note": "the callback of `ChangeDesc::iter_changed_ranges` has four arguments; cm6 passes a fifth its type does not declare (D12)"}
+{"chunk": "text", "op": "line.set", "how": "skip", "parts": [], "note": "writes a field of a `Line`; a `Line` is immutable (state.cm6.229.d1)"}
+{"chunk": "text", "op": "ownKeys", "how": "none", "parts": [], "note": "the own property names of a JavaScript object"}
+{"chunk": "text", "op": "same", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "text", "op": "sameItems", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "text", "op": "text.childrenFrozen", "how": "none", "parts": [], "note": "`Object.isFrozen` of the children array; `children` returns data the caller cannot change (state.cm6.229.d1)"}
+{"chunk": "text", "op": "text.childrenPush", "how": "skip", "parts": [], "note": "mutates the children array cm6 holds (state.cm6.229.d1)"}
+{"chunk": "text", "op": "text.className", "how": "run", "parts": [], "note": "\"TextLeaf\" when `children()` is `None`, else \"TextNode\""}
+{"chunk": "text", "op": "text.sharedChildren", "how": "test", "parts": [], "note": "identity of `Text` nodes (design.md §10 identity table)"}
+{"chunk": "change", "op": "allSame", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "change", "op": "desc.composeDesc", "how": "part", "parts": ["identity"], "note": "which operand object cm6 returned; a `ChangeDesc` or `ChangeSet` has no identity in Ferrum"}
+{"chunk": "change", "op": "desc.fromJSON", "how": "part", "parts": ["keepsInputArray"], "note": "the reader copies its input (state.cm6.229.d1)"}
+{"chunk": "change", "op": "desc.invertedDesc", "how": "part", "parts": ["sameTwice"], "note": "object identity of a `ChangeDesc`"}
+{"chunk": "change", "op": "desc.iterChangedRanges", "how": "part", "parts": ["x"], "note": "the fifth argument cm6 passes beyond the declared four (D12)"}
+{"chunk": "change", "op": "desc.iterGaps", "how": "run", "parts": [], "note": ""}
+{"chunk": "change", "op": "desc.mapDesc", "how": "part", "parts": ["identity"], "note": "which operand object cm6 returned; a `ChangeDesc` or `ChangeSet` has no identity in Ferrum"}
+{"chunk": "change", "op": "desc.toJSON", "how": "part", "parts": ["sameAsInputArray", "sameTwice"], "note": "identity of JSON arrays (state.cm6.229.d1)"}
+{"chunk": "change", "op": "desc.toString", "how": "run", "parts": [], "note": "the `Debug` implementation of `ChangeDesc` (D15)"}
+{"chunk": "change", "op": "range.extend", "how": "part", "parts": ["src"], "note": "which input range object a result is; `SelectionRange` is `Copy`"}
+{"chunk": "change", "op": "range.fromJSON", "how": "part", "parts": ["src"], "note": "which input range object a result is; `SelectionRange` is `Copy`"}
+{"chunk": "change", "op": "range.make", "how": "part", "parts": ["src"], "note": "which input range object a result is; `SelectionRange` is `Copy`"}
+{"chunk": "change", "op": "range.map", "how": "part", "parts": ["src", "same"], "note": "object identity of a `SelectionRange`"}
+{"chunk": "change", "op": "same", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "change", "op": "sameItems", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "change", "op": "sel.addRange", "how": "part", "parts": ["src"], "note": "which input range object a result is; `SelectionRange` is `Copy`"}
+{"chunk": "change", "op": "sel.asSingle", "how": "part", "parts": ["src", "same", "mainSame"], "note": "object identity of a selection and of its ranges"}
+{"chunk": "change", "op": "sel.fromJSON", "how": "part", "parts": ["src"], "note": "which input range object a result is; `SelectionRange` is `Copy`"}
+{"chunk": "change", "op": "sel.main", "how": "part", "parts": ["src"], "note": "which input range object a result is; `SelectionRange` is `Copy`"}
+{"chunk": "change", "op": "sel.make", "how": "part", "parts": ["src", "sameArray"], "note": "object identity of ranges and of the array given to `create`"}
+{"chunk": "change", "op": "sel.map", "how": "part", "parts": ["src", "same", "sameArray"], "note": "object identity of a selection, its ranges and its array"}
+{"chunk": "change", "op": "sel.replaceRange", "how": "part", "parts": ["src", "same", "sameArray"], "note": "object identity of a selection, its ranges and its array"}
+{"chunk": "change", "op": "set.apply", "how": "test", "parts": [], "note": "`same` is identity of `Text` (design.md §10 identity table)"}
+{"chunk": "change", "op": "set.compose", "how": "part", "parts": ["identity"], "note": "which operand object cm6 returned; a `ChangeDesc` or `ChangeSet` has no identity in Ferrum"}
+{"chunk": "change", "op": "set.desc", "how": "part", "parts": ["sameTwice", "sharesSections"], "note": "object identity of a `ChangeDesc` and of the sections array"}
+{"chunk": "change", "op": "set.iterChanges", "how": "run", "parts": [], "note": ""}
+{"chunk": "change", "op": "set.map", "how": "part", "parts": ["identity"], "note": "which operand object cm6 returned; a `ChangeDesc` or `ChangeSet` has no identity in Ferrum"}
+{"chunk": "change", "op": "set.mapDesc", "how": "part", "parts": ["identity"], "note": "which operand object cm6 returned; a `ChangeDesc` or `ChangeSet` has no identity in Ferrum"}
+{"chunk": "change", "op": "set.ofIdentity", "how": "part", "parts": ["same"], "note": "object identity of a `ChangeSet`"}
+{"chunk": "rangeset", "op": "allSame", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "rangeset", "op": "chunk.countReads", "how": "test", "parts": ["the numbers in `hits`: compared as zero or not zero (a label present or absent)"], "note": "a `__test` mark on a chunk that records whether a cursor read one of its values; how many times cm6's code reads an array index is not a behavior"}
+{"chunk": "rangeset", "op": "chunk.maxPoint", "how": "test", "parts": [], "note": "cm6's layers and chunks, kept by state.cm6.184.d1 and read through `__test`"}
+{"chunk": "rangeset", "op": "chunk.poison", "how": "test", "parts": [], "note": "a `__test` mark on a chunk that panics with \"NO TOUCH\" when a cursor reads one of its values"}
+{"chunk": "rangeset", "op": "compare", "how": "part", "parts": ["the variable `kept` of a `cmpKeep` comparator"], "note": "the `active` slices are borrowed for the call and cannot be kept (state.cm6.229.d1); `seen` is compared"}
+{"chunk": "rangeset", "op": "cursor.read", "how": "run", "parts": [], "note": "a value's index is the index the replayer's value type carries (design.md §10)"}
+{"chunk": "rangeset", "op": "eqlog.count", "how": "run", "parts": [], "note": "the replayer's value type logs in its `PartialEq` as design.md §10 says"}
+{"chunk": "rangeset", "op": "eqlog.take", "how": "run", "parts": [], "note": "the replayer's value type logs in its `PartialEq` as design.md §10 says"}
+{"chunk": "rangeset", "op": "same", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "rangeset", "op": "sameItems", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "rangeset", "op": "set.between", "how": "run", "parts": [], "note": ""}
+{"chunk": "rangeset", "op": "set.chunk", "how": "test", "parts": [], "note": "cm6's layers and chunks, kept by state.cm6.184.d1 and read through `__test`"}
+{"chunk": "rangeset", "op": "set.chunkCount", "how": "test", "parts": [], "note": "cm6's layers and chunks, kept by state.cm6.184.d1 and read through `__test`"}
+{"chunk": "rangeset", "op": "set.chunkSizes", "how": "test", "parts": [], "note": "cm6's layers and chunks, kept by state.cm6.184.d1 and read through `__test`"}
+{"chunk": "rangeset", "op": "set.chunkSources", "how": "test", "parts": [], "note": "identity of chunks (design.md §10 identity table)"}
+{"chunk": "rangeset", "op": "set.chunkStats", "how": "test", "parts": [], "note": "cm6's layers and chunks, kept by state.cm6.184.d1 and read through `__test`"}
+{"chunk": "rangeset", "op": "set.dump", "how": "test", "parts": [], "note": "cm6's layers and chunks, kept by state.cm6.184.d1 and read through `__test`"}
+{"chunk": "rangeset", "op": "set.dumpSummary", "how": "test", "parts": [], "note": "cm6's layers and chunks, kept by state.cm6.184.d1 and read through `__test`"}
+{"chunk": "rangeset", "op": "set.layerSources", "how": "test", "parts": [], "note": "identity of chunks (design.md §10 identity table)"}
+{"chunk": "rangeset", "op": "set.nextLayer", "how": "test", "parts": [], "note": "cm6's layers and chunks, kept by state.cm6.184.d1 and read through `__test`"}
+{"chunk": "rangeset", "op": "set.prop", "how": "test", "parts": [], "note": "`size` is public; `length`, `maxPoint`, `chunkPos`, `isEmpty` through `__test`"}
+{"chunk": "rangeset", "op": "set.update", "how": "run", "parts": [], "note": ""}
+{"chunk": "rangeset", "op": "spans", "how": "part", "parts": ["the variable `kept` of a `spansKeep` iterator"], "note": "as for `compare`"}
+{"chunk": "rangeset", "op": "value.fields", "how": "part", "parts": ["ownKeys"], "note": "which fields are own properties of a JavaScript object"}
+{"chunk": "facet", "op": "allSame", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "facet", "op": "compartment.effectValue", "how": "none", "parts": [], "note": "internals of the reconfiguration effect"}
+{"chunk": "facet", "op": "compartment.reconfigureType", "how": "none", "parts": [], "note": "internals of the reconfiguration effect"}
+{"chunk": "facet", "op": "counter", "how": "run", "parts": [], "note": "`same` of a read: design.md §10; the log is compared whole (D14)"}
+{"chunk": "facet", "op": "extension", "how": "run", "parts": [], "note": "the conversion to `Extension` (`StateField::extension()` for a field)"}
+{"chunk": "facet", "op": "extension.shape", "how": "none", "parts": [], "note": "the shape of a JavaScript extension object; `Extension` is opaque (design.md §3)"}
+{"chunk": "facet", "op": "field.shadowExtension", "how": "skip", "parts": [], "note": "redefines a property of a field object"}
+{"chunk": "facet", "op": "isArray", "how": "part", "parts": ["an operand that is an `Extension`"], "note": "`Extension` is opaque"}
+{"chunk": "facet", "op": "isFieldInstance", "how": "none", "parts": [], "note": "`instanceof` against a second copy of the package"}
+{"chunk": "facet", "op": "prec.level", "how": "none", "parts": [], "note": "the shape of a JavaScript extension object; `Extension` is opaque (design.md §3)"}
+{"chunk": "facet", "op": "same", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "facet", "op": "sameItems", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "facet", "op": "scenario", "how": "run", "parts": [], "note": "`same` of a read: design.md §10; the log is compared whole (D14)"}
+{"chunk": "facet", "op": "secondCopy.create", "how": "skip", "parts": [], "note": "a second copy of the package loaded beside the first; a Rust type is one type"}
+{"chunk": "facet", "op": "secondCopy.field", "how": "skip", "parts": [], "note": "a second copy of the package loaded beside the first; a Rust type is one type"}
+{"chunk": "facet", "op": "secondCopy.sameClass", "how": "skip", "parts": [], "note": "a second copy of the package loaded beside the first; a Rust type is one type"}
+{"chunk": "facet", "op": "state.facetDuck", "how": "none", "parts": [], "note": "an object shaped like a `FacetReader` (D12)"}
+{"chunk": "state", "op": "allSame", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "state", "op": "effect.define", "how": "run", "parts": [], "note": ""}
+{"chunk": "state", "op": "effect.map", "how": "run", "parts": [], "note": ""}
+{"chunk": "state", "op": "effect.mapEffects", "how": "run", "parts": [], "note": ""}
+{"chunk": "state", "op": "effect.set", "how": "skip", "parts": [], "note": "overwrites the value of an effect (state.cm6.229.d1)"}
+{"chunk": "state", "op": "facet.define", "how": "run", "parts": [], "note": ""}
+{"chunk": "state", "op": "field.define", "how": "run", "parts": [], "note": ""}
+{"chunk": "state", "op": "fn", "how": "run", "parts": [], "note": ""}
+{"chunk": "state", "op": "internal.get", "how": "test", "parts": ["prop `map`, `facet`, `value`"], "note": "`config`, `annotations` and `type` through `__test`; a function field and the fields of an extension object have no counterpart"}
+{"chunk": "state", "op": "isInstance", "how": "run", "parts": [], "note": "whether the replayer's value is of that Rust type"}
+{"chunk": "state", "op": "json.ann", "how": "test", "parts": [], "note": "the annotation list of a transaction through `__test`; an effect's type name is the registry entry for which `effect.is(type)` holds"}
+{"chunk": "state", "op": "json.eff", "how": "test", "parts": [], "note": "the annotation list of a transaction through `__test`; an effect's type name is the registry entry for which `effect.is(type)` holds"}
+{"chunk": "state", "op": "json.effs", "how": "test", "parts": [], "note": "the annotation list of a transaction through `__test`; an effect's type name is the registry entry for which `effect.is(type)` holds"}
+{"chunk": "state", "op": "json.tr", "how": "test", "parts": [], "note": "the annotation list of a transaction through `__test`; an effect's type name is the registry entry for which `effect.is(type)` holds"}
+{"chunk": "state", "op": "ownKeys", "how": "none", "parts": [], "note": "the own property names of a JavaScript object"}
+{"chunk": "state", "op": "same", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "state", "op": "sameItems", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "state", "op": "scope.log", "how": "run", "parts": [], "note": ""}
+{"chunk": "state", "op": "state.changeByRange", "how": "run", "parts": [], "note": ""}

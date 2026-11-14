@@ -3,13 +3,9 @@
 
     python3 tools/spec_facts.py <crate>
 
-Run from the repository root, after tools/spec_check.py has written raw/fixture-ops.jsonl. Writes three files under
+Run from the repository root, after tools/spec_check.py has written raw/fixture-ops.jsonl. Writes two files under
 .scratch/s5/<crate>/ (never committed) and prints their counts:
 
-decision-fixtures.jsonl   one line per row of raw/decisions.jsonl with `fixtures_to_list` true: {id, item_id,
-    behaviors, by_behavior: [<chunk>:<fixture id>] the fixtures that name one of the row's behaviors,
-    by_item: [...] the other fixtures of the row's item}. Which of them meet the row's condition is not something
-    this tool knows: the row states its condition in prose.
 op-outputs.jsonl          one line per chunk and op whose kinds are not only `api`: {chunk, op, kinds, fixtures,
     alone: the fixtures in which it is the only op that is not only `api` or `harness`,
     output_keys: {key: count} every object key that occurs, at any depth, in the outputs of the `alone` fixtures
@@ -45,16 +41,6 @@ def main():
     out = os.path.join(ROOT, ".scratch", "s5", crate); os.makedirs(out, exist_ok=True)
     order = json.load(open(os.path.join(base, "oracle", "cm6", "order.json"), encoding="utf-8"))
     fx = {c: rows(os.path.join(base, "fixtures", c + ".jsonl")) for c in order["chunks"]}
-
-    n = 0
-    with open(os.path.join(out, "decision-fixtures.jsonl"), "w", encoding="utf-8") as f:
-        for d in rows(os.path.join(base, "raw", "decisions.jsonl")):
-            if not d.get("fixtures_to_list"): continue
-            want = set(d.get("behaviors") or [])
-            by_b = [f"{c}:{r['id']}" for c, v in fx.items() for r in v if want & set(r["behaviors"])]
-            by_i = [f"{c}:{r['id']}" for c, v in fx.items() for r in v if r["item_id"] == d["item_id"] and f"{c}:{r['id']}" not in by_b]
-            f.write(json.dumps({"id": d["id"], "item_id": d["item_id"], "behaviors": sorted(want), "by_behavior": by_b, "by_item": by_i}) + "\n"); n += 1
-    print(f"decision-fixtures.jsonl: {n} rows")
 
     # which ops each fixture ran: replay again, per fixture (raw/fixture-ops.jsonl has only the totals)
     p = subprocess.run(["npx", "--yes", "tsx", "--tsconfig", os.path.join(".harness", order["package"], "tsconfig.json"),
