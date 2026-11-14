@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/README.md` (commit `9efcc73`). O original em inglês é o que vale; as seções citadas (§1, §3…) seguem a numeração do original.
+> Tradução para leitura de `docs/workflow/README.md` (commit `d82c454`). O original em inglês é o que vale; as seções citadas (§1, §3…) seguem a numeração do original.
 
 # Como o trabalho do Ferrum corre
 
@@ -161,7 +161,7 @@ Verificados no Claude Code 2.1.319 e no mirror, 2026-11-07:
 - Só uma sessão interativa continua sozinha depois que um limite de uso é renovado (`interactive-mode.md`). Um worker interrompido por um limite é retomado com `SendMessage` e mantém seu contexto.
 - `isolation: worktree` cria o branch a partir do branch padrão, não do HEAD; os workers daqui não o usam.
 
-Verificados no Claude Code 2.1.323 e no mirror, 2026-11-13, numa sessão na nuvem:
+Verificados no Claude Code 2.1.323 e no mirror, 2026-11-13, numa sessão na nuvem; todo fato desta seção que a documentação afirma foi lido de novo no mirror na 2.1.325 em 2026-11-14 e nenhum havia mudado (os fatos que se apoiam num teste ou numa execução feita aqui não foram executados de novo):
 - Um parâmetro `effort` pode ser passado para uma invocação de um subagente; ele sobrepõe o `effort` da definição e permanece quando o subagente é retomado (`sub-agents.md` "Choose an effort level"; 2.1.292 ou posterior).
 - A memória automática é local à máquina e não é compartilhada com ambientes na nuvem (`memory.md` "Storage location"). `autoMemoryDirectory` precisa ser um caminho absoluto ou começar com `~/`, então não pode nomear um caminho dentro do repositório que valha em toda máquina. O que toda sessão recebe é um arquivo no repositório que a sessão é instruída a carregar: o diretório `memory: project` de um agente (`.claude/agent-memory/<nome>/`) e um arquivo que uma skill injeta.
 - A primeira requisição de um subagente não lê o cache de prompt do pai; um subagente retomado lê o cache que sua primeira execução aqueceu (`prompt-caching.md` "Subagents and the cache").
