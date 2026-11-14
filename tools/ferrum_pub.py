@@ -1,7 +1,9 @@
 # Public items of a Ferrum crate from rustdoc JSON, as JSON Lines (docs/workflow/conformance.md G1).
 #   RUSTC_BOOTSTRAP=1 cargo rustdoc -p <crate> -- -Z unstable-options --output-format json
 #   python3 tools/ferrum_pub.py target/doc/<crate_name>.json <crate dir, e.g. crates/ferrum-view> > pub.jsonl
-# Enumerate every public item of a crate from rustdoc JSON (format 61):
+# Each row carries `mapping`: the mapping lines of the item's doc comment (.claude/rules/rust-crates.md "Annotations"),
+# which tools/impl_check.py joins with raw/inventory.jsonl.
+# Enumerate every public item of a crate from rustdoc JSON (written for format 61; it also reads format 57, rustc 1.97):
 # modules, structs (+pub fields), enums (+variants), traits (+methods), functions,
 # consts, statics, type aliases, inherent impl methods/assoc items, crate-trait impls,
 # and record std-trait impls (non-derived and derived) per type.
@@ -15,7 +17,9 @@ def tname(t):
     if 'resolved_path' in t: return t['resolved_path']['path']
     if 'generic' in t: return t['generic']
     return '?'
-def add(path, kind, it): rows.append((path, kind, sp(it)))
+MAPPING = ('cm6:', 'cm6 contract:', 'ferrum-only:')
+def mapping(it): return [l.strip() for l in (it.get('docs') or '').split('\n') if l.strip().startswith(MAPPING)]
+def add(path, kind, it): rows.append((path, kind, sp(it), mapping(it)))
 def walk_impl(owner, impl_id):
     imp = idx[str(impl_id)]['inner']['impl']
     tr = imp.get('trait')
@@ -43,7 +47,7 @@ def walk(item_id, prefix):
     if it['visibility'] != 'public' and k != 'module': return
     name = it.get('name'); path = f"{prefix}::{name}" if prefix else name
     if k == 'use':
-        rows.append((f"{prefix}::{inner['name']}", "re-export of " + inner['source'], sp(it))); return
+        rows.append((f"{prefix}::{inner['name']}", "re-export of " + inner['source'], sp(it), [])); return
     if item_id in seen: return
     seen.add(item_id)
     if k == 'module':
@@ -67,5 +71,5 @@ def walk(item_id, prefix):
         for i in inner['items']:
             ti = idx[str(i)]; add(f"{path}::{ti['name']}", 'trait method' + (' (provided)' if ti['inner'].get('function', {}).get('has_body') else ''), ti)
 walk(d['root'], '')
-for i, r in enumerate(rows, 1): print(json.dumps({"id": f"{CRATE.split('/')[-1]}.fe.{i:03d}", "item": r[0], "kind": r[1], "loc": r[2]}))
+for i, r in enumerate(rows, 1): print(json.dumps({"id": f"{CRATE.split('/')[-1]}.fe.{i:03d}", "item": r[0], "kind": r[1], "loc": r[2], "mapping": r[3]}))
 for t, l in impls_by_type.items(): print(json.dumps({"type": t, "impls": sorted(set(l))}), file=sys.stderr)

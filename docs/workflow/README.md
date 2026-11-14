@@ -159,7 +159,7 @@ Verified against Claude Code 2.1.319 and the mirror, 2026-11-07:
 - Only an interactive session continues by itself after a usage-limit reset (`interactive-mode.md`). A worker interrupted by a limit is resumed with `SendMessage` and keeps its context.
 - `isolation: worktree` branches from the default branch, not from HEAD; the workers here do not use it.
 
-Verified against Claude Code 2.1.323 and the mirror, 2026-11-13, in a cloud session:
+Verified against Claude Code 2.1.323 and the mirror, 2026-11-13, in a cloud session; every fact of this section that the documentation states was read again in the mirror at 2.1.325 on 2026-11-14 and none had changed (the facts that rest on a probe or a run here were not run again):
 - An `effort` parameter can be passed for one invocation of a subagent; it overrides the definition's `effort` and stays when the subagent is resumed (`sub-agents.md` "Choose an effort level"; 2.1.292 or later).
 - Auto memory is machine-local and is not shared with cloud environments (`memory.md` "Storage location"). `autoMemoryDirectory` must be an absolute path or start with `~/`, so it cannot name a path inside the repository that holds on every machine. What every session does get is a file in the repository that the session is told to load: an agent's `memory: project` directory (`.claude/agent-memory/<name>/`) and a file a skill injects.
 - A subagent's first request does not read its parent's prompt cache; a resumed subagent reads the cache its first run warmed (`prompt-caching.md` "Subagents and the cache").

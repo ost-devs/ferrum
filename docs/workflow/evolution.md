@@ -4,7 +4,6 @@ For the orchestrator and the consultant: the agents that change how Ferrum's wor
 
 Read it at the start of a stage, at a review of the method, when a stop-loss fires, and before writing a card for a step no crate has run yet. The evidence is elsewhere and is not repeated: observations in `docs/workflow/learnings.md` (`W<n>`), decisions with their alternatives in `docs/decisions/method.md` and `docs/decisions/<crate>.md`, costs and expectations in `python3 tools/ledger.py report` (`E<n>`). The tools named here: `tools/README.md`.
 
-<!-- refs:planned tools/impl_check.py -->
 ## 1. The levels so far
 
 A level is named by what does the work and by how an error is found. Each was left because of a measurement, not because a better idea existed.
