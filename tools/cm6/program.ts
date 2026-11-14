@@ -10,7 +10,11 @@
 //                       the output.
 // The input is read with `decode` (tools/cm6/oracle-lib.ts) first, so {"js_undefined": true} is undefined and so on.
 // The output is {"ok": value} or, when a step throws outside a `try`, {"error": {name, message}}, the value encoded
-// by `encode`.
+// by `encode`. A message is cm6's text: where cm6 writes a position, offset or length into it, the number counts
+// UTF-16 code units like every other position of an output (the crate's plan says which messages hold one and on
+// which text each number is measured). An output holds what cm6 gives its caller and nothing about cm6's source: where an uncaught throw
+// came from (`throwSite`) is kept beside the run in `Language.thrownAt`, which tools/cm6/replay.ts reports and
+// tools/spec_check.py compares with raw/throws.jsonl.
 // - Setup keys: what the chunk builds before the steps run (the header of its interpreter names them).
 // - Descriptive keys: top-level keys no op reads (a seed, a case name, a note). The chunk's interpreter names them;
 //   every other key of an input must be read when the input runs.
@@ -54,6 +58,25 @@
 //         "okValueOrError":   {ok: r, or "returned undefined" when r is undefined} | {error: e.constructor.name,
 //                             message: e.message}
 //         "okOrMessage":      "ok" | e.message
+// Values the program builds (kind `harness`; each was registered by more than one chunk, with one implementation that
+// replays every fixture of those chunks, and moved here). An argument written `arg` is an <expr> (evaluated) or data
+// (used as it is and read whole with `markRead`); the members of data are not evaluated.
+//   let {value: arg}                  [the value]
+//   list {of: [arg]}                  [a new array of the members' values, in order]
+//   record {of: {key: arg}}           [a new object with the same keys, in the same order, holding the values]
+//   merge {of: [expr]}                [Object.assign({}, ...values)]
+//   block {steps: [step], result}     [runs the steps (their variables stay set); the variable `result` after them]
+//   capture {do: expr}                [{ok: value} or, when evaluating `do` throws e, {error: {name: e.name ("Error"
+//                                      when absent), message: String(e.message), String(e) when e has none}}; on a
+//                                      throw, the rest of `do` counts as read]
+//   ints {from: arg, to?: arg, below?: arg, step?: arg}   [the numbers from, from + step, ... (step default 1) while
+//                                      <= to when `to` is present, else while < below; evaluated in the order from,
+//                                      step, to or below]
+//   floor {of: arg}                   [Math.floor(value)]
+//   div {a: arg, b: arg}              [a / b]
+//   concat {of: [arg]}                [the concatenation of String(value) of each value]
+//   countOf {of: expr, value: arg}    [the number of members of the array that are === value]
+//   array.push {of: expr, value: arg} [of.push(value); undefined]
 //
 // Kinds: what an op observes, so that the crate's design can say what its replayer does with each
 // (specification.md §5 item 3). Every op is registered with one or more of
@@ -77,6 +100,10 @@ type OpFn = (a: any, p: Program) => any
 export function markRead(x: any): void {
   if (x && typeof x == "object") for (const k of Object.keys(x)) markRead(x[k])
 }
+
+const isExpr = (x: any) => !!x && typeof x == "object" && !Array.isArray(x) && ("$" in x || "op" in x)
+/** An `arg`: an expression's value, or the data as it is (read whole). */
+function arg(p: Program, x: any): any { if (isExpr(x)) return p.ev(x); markRead(x); return x }
 
 /** One run of one input: its variables and what the chunk's setup built (`chunk`). */
 export class Program {
@@ -121,11 +148,21 @@ export class Program {
   }
 }
 
+/** The first frame of an error's stack inside a cm6 package's source, as "mirrors/cm6/<package>/src/<file>:<line>";
+ * "" when the stack has none (the error was thrown by the interpreter, by a callback of the input, or by a
+ * dependency of the package). */
+export function throwSite(e: any): string {
+  const m = /\/cm6\/([\w-]+)\/src\/([\w./-]+\.ts):(\d+)/.exec(String(e?.stack ?? ""))
+  return m ? `mirrors/cm6/${m[1]}/src/${m[2]}:${m[3]}` : ""
+}
+
 /** A chunk's interpreter: the language's ops plus the ones the chunk registers. */
 export class Language {
   ops = new Map<string, {kinds: Kind[], run: OpFn}>()
   /** The ops the last `evaluate` ran. */
   ran = new Set<string>()
+  /** Where the last `evaluate` ended in an uncaught throw (`throwSite`), else null. It is not part of the output. */
+  thrownAt: string | null = null
   /** `descriptive`: the top-level input keys no op reads. `setup`: builds, from the decoded input, what the chunk's
    * ops need before the steps run (it becomes `p.chunk`); it runs inside the capture, so a throw in it is an output. */
   constructor(readonly chunk: string, readonly descriptive: readonly string[], readonly setup?: (input: any, p: Program) => any) {
@@ -168,6 +205,26 @@ export class Language {
       }
       throw new Error("interp: bad try mode " + a.mode)
     })
+    // values the program builds
+    o("let", ["harness"], (a, p) => arg(p, a.value))
+    o("list", ["harness"], (a, p) => a.of.map((x: any) => arg(p, x)))
+    o("record", ["harness"], (a, p) => Object.fromEntries(Object.keys(a.of).map(k => [k, arg(p, a.of[k])])))
+    o("merge", ["harness"], (a, p) => Object.assign({}, ...p.evs(a.of)))
+    o("block", ["harness"], (a, p) => { p.steps(a.steps); return p.get(a.result) })
+    o("capture", ["harness"], (a, p) => {
+      try { return {ok: p.ev(a.do)} } catch (e: any) { markRead(a.do); return {error: {name: e?.name ?? "Error", message: String(e?.message ?? e)}} }
+    })
+    o("ints", ["harness"], (a, p) => {
+      const from = arg(p, a.from), step = "step" in a ? arg(p, a.step) : 1, out: number[] = []
+      if ("to" in a) { const to = arg(p, a.to); for (let i = from; i <= to; i += step) out.push(i) }
+      else { const below = arg(p, a.below); for (let i = from; i < below; i += step) out.push(i) }
+      return out
+    })
+    o("floor", ["harness"], (a, p) => Math.floor(arg(p, a.of)))
+    o("div", ["harness"], (a, p) => arg(p, a.a) / arg(p, a.b))
+    o("concat", ["harness"], (a, p) => a.of.map((x: any) => String(arg(p, x))).join(""))
+    o("countOf", ["harness"], (a, p) => { const v = arg(p, a.value); return p.ev(a.of).filter((x: any) => x === v).length })
+    o("array.push", ["harness"], (a, p) => { p.ev(a.of).push(arg(p, a.value)); return undefined })
   }
   /** Register an op of the chunk with its kinds (the list in this file's header). */
   op(name: string, kinds: Kind[], run: OpFn): this {
@@ -178,7 +235,7 @@ export class Language {
   }
   /** Run a decoded input (replay passes one that records what is read). */
   evaluate(inp: any): {ok: any} | {error: {name: string, message: string}} {
-    this.ran = new Set()
+    this.ran = new Set(); this.thrownAt = null
     const program = Array.isArray(inp?.steps)
     try {
       const p = new Program(this)
@@ -188,6 +245,7 @@ export class Language {
       return {ok: encode(p.fill(inp.out))}
     } catch (e: any) {
       if (program) { markRead(inp.steps); markRead(inp.out) } else markRead(inp)
+      this.thrownAt = throwSite(e)
       return {error: {name: e?.name ?? "Error", message: String(e?.message ?? e)}}
     }
   }

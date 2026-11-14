@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agent-memory/consultant/MEMORY.md` (commit `ae094f2`). O original em inglês é o que vale.
+> Tradução para leitura de `.claude/agent-memory/consultant/MEMORY.md` (commit `bd64bfd`). O original em inglês é o que vale.
 
 # Memória do consultor
 
@@ -25,6 +25,18 @@
 - Um registro que precisa ser encontrado depois é um arquivo, nunca uma mensagem de commit (clones rasos, sem tradução, não citável). Mesma entrada
 - Antes de projetar uma verificação, escrever a ferramenta e rodá-la: 84 segundos de ferramenta substituíram a metade mecânica de seis execuções do verifier e deram um fato (cobertura) que nenhum agente havia produzido. Mesma entrada
 - Manter agentes fora de arquivos: uma negação de permissão (que também filtra buscas), mais uma linha de texto só para o que ela não enxerga. `4483420`
+- Completude de uma entrada registrada: reproduzi-la com rastreamento de leitura (toda chave consumida), nunca com uma lista de chaves que podem conter texto; e todo consumidor de fixtures recebe uma só linguagem, não um dialeto por chunk. Antes de confiar no desenho de uma verificação, prototipá-lo sobre a saída do piloto. `docs/decisions/ferrum-state.md`, "Step A after the pilot"
+- Resultado do cm6 que parece um bug: reproduzi-lo, a menos que o cm6 trave, que o resultado precise de identidade de objeto ou de mutação depois da entrega, ou que seja aritmética com NaN; o "isto parece não intencional" de ninguém é evidência, e o oráculo paga por cada exceção. `docs/decisions/foundation.md` D11
+- Panic ou `Result`: perguntar primeiro quem pode verificar a condição e o que os chamadores acima retornam; preferir a escolha que pode ser estendida depois sem quebrar nada (panic agora, variantes falíveis depois). D13
+- Muitas perguntas de um crate são poucas perguntas feitas muitas vezes: achar as classes primeiro, decidir cada uma uma só vez como regra, e então escrever só a consequência por item. Mesma entrada
+- Uma verificação que falha na forma enquanto os valores são iguais (Q58): corrigir a verificação para comparar aquilo a que ela se destina, contar a forma aceita e fechar o buraco que o contorno do worker abriu; experimentar uma verificação mais ampla nos chunks já commitados antes de adotá-la (a geral teve falsos positivos). `docs/decisions/ferrum-state.md` Q58
+- Projeto feito antes de os rascunhos fundacionais serem confirmados: escrevê-lo inteiro, marcar como não vigentes as seções que dependem de um rascunho, nunca copiar a resposta de um rascunho para uma regra.
+- Resultado do cm6 que parece pior do que poderia ser: mantê-lo é o piso, nunca o fim da pergunta. Abrir uma linha no `raw/improvements.jsonl` do crate (adopted, scheduled, candidate com data, declined por um motivo que não seja fidelidade). Nunca escrever "nenhum objetivo pede isso". `docs/decisions/foundation.md`, "cm6 is the floor"
+- Quando fazer uma melhoria: no projeto, só se fazê-la depois quebrar a API ou dados armazenados (D1, D6); caso contrário, como um delta logo após o veredicto de conformidade do crate, uma por vez, antes de o crate acima ser especificado. Motivo: o delta sobre um piso provado mostra exatamente o que mudou. Mesma entrada
+- Uma diferença proposital numa suíte de valores gravados: nunca uma lista de skip nem valores escritos à mão; corrigir a referência (o cm6 no harness), deixar uma ferramenta calcular quais casos mudam e seus novos valores, falhar diante de mudança fora dos comportamentos da linha. Experimentar o patch sobre o replay existente antes de confiar nele (um arquivo, 126 de 3.823 fixtures). `docs/decisions/method.md`, mesma data
+- Uma decisão que o mantenedor delega com "qualquer resposta está aprovada": derivá-la mesmo assim, e dizer o que não se sabe; "melhor" num rascunho seguido de "mas paridade" é o padrão que eles corrigiram.
 
 ## Calibração
+- 2026-11-13: Li paridade como imitação (rascunho de D2: "a regra Unicode seria melhor, mas nenhum objetivo pede isso"). O mantenedor: paridade é a qualidade, a capacidade e a estabilidade do cm6 ou melhor; o cm6 é o piso. Ele quer toda melhoria visível e o momento dela decidido por mim, não por ele; não quer mudanças drásticas feitas às pressas. Ele pesa a estabilidade do todo acima de um ganho antecipado.
+- Ele confirma rascunhos com facilidade quando o rascunho declara os custos; o que ele rebate é um juízo de valor meu apresentado como técnico.
 - [Sugestões do mantenedor](feedback-maintainer-suggestions-ptbr.md) — pesar, não obedecer nem rejeitar para fazer cena; ele preza a independência de quem decide e nada silencioso

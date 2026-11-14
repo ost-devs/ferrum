@@ -25,10 +25,12 @@
 // Eq log: a list of [thisName, otherName], appended by every eq call of a "V" or "W" value.
 //
 // An argument written <expr> below is an expression of the language; other arguments are data.
-// Positions: an argument or result field marked (pos) is a document position, offset or length in UTF-16 code units
+// Positions. An argument or result field marked (pos) is a document position, offset or length in UTF-16 code units
 // (the replayer converts these and nothing else). Every from, to, pos, length, filterFrom, filterTo of an op below
 // and of a range triple is one; a change spec (`spec` of changes.of) holds positions as ChangeSet.of reads them
-// (from, to, and the length of `insert` text).
+// (from, to, and the length of the string `insert`, derived from that string, not a field of the input). Harness ops
+// (the language's ops of tools/cm6/program.ts and this chunk's `eqlog.clear` and `indexes`) compute in UTF-16 code
+// units on the numbers they are given.
 // Range list (argument `ranges`, update `add`): an array of triples [from (pos), to (pos), value reference], each built
 // as value.range(from, to) at that point (fresh Range objects), or an <expr> whose value is an array of Range objects.
 // Value indexes in results are found with values.indexOf (===): they report which input value object cm6 handed back.
@@ -59,13 +61,14 @@
 //   set.update {set: expr, spec}  {api, callbacks}   [set.update(u)]: u has exactly the keys of `spec`, with the same
 //       values (filterFrom, filterTo (pos)) except `add` (a range list, built into an array of Range objects) and a
 //       `filter` that is a function spec
-//       {"fn": "filter", "keep": predicate, "log"?: name}: a function (from, to, value) that, when `log` is given,
-//       appends [from (pos), to (pos)] to the array in that variable (set to [] when the function is built), then
-//       returns:
+//       {"fn": "filter", "keep": predicate, "log"?: name}: a function (from (pos), to (pos), value) that, when `log` is
+//       given, appends [from (pos), to (pos)] to the array in that variable (set to [] when the function is built),
+//       then returns the predicate computed on the from and to cm6 passed (UTF-16 code units):
 //         {"const": x}: x  |  {"seq": [x0, x1, ...]}: x0 at the first call, x1 at the second, ...
 //         {"fromEq": n (pos)}: from == n  |  {"fromNe": n (pos)}: from != n
 //         {"notSpan": [f (pos), t (pos)]}: !(from == f && to == t)
-//         {"mod": m, "rem": r}: (from + 2 * to) % m != r  (m and r are not positions: they act on the raw numbers)
+//         {"mod": m, "rem": r}: (from + 2 * to) % m != r  (m and r are numbers of the program, not positions; the
+//         predicate computes on from and to as cm6 passes them)
 //       A `filter` that is not such an object (null, undefined) is passed as it is.
 //   set.nextLayer {set: expr}  {internal}   [set.nextLayer (@internal)]
 //   set.prop {set: expr, prop}  {api, internal}   [set[prop]; prop one of size (api), length (@internal getter, pos),
@@ -130,10 +133,17 @@
 //   builder.new {}  {api}             [new RangeSetBuilder()]
 //   builder.add {builder: expr, from (pos), to (pos), v}  {api}   [builder.add(from, to, value); undefined]
 //   builder.finish {builder: expr}  {api}   [builder.finish()]
+//   builder.addValue {builder: expr, from (pos), to (pos), value}  {api}   [builder.add(from, to, value) with `value`, data,
+//                                      passed as it is in place of a RangeValue (0, a string, null: a value of the wrong
+//                                      type, D12); undefined. Added by step B (docs/parity/ferrum-state/plan.md)]
 // internals made observable
 //   chunk.maxPoint {chunk: expr}  {internal}   [chunk.maxPoint (pos)]
 //   chunk.poison {chunk: expr}  {internal}   [replaces the chunk's `value` property by a getter that throws
 //                                      Error("NO TOUCH"); undefined]
+//   layer.fake {maxPoint (pos), mapResult}  {internal}   [a plain object {maxPoint, map}, not a RangeSet, whose map(changes)
+//                                      returns `mapResult` (data) and reads nothing: placed as a layer of a set by
+//                                      RangeSet.join([set, fake]) (join keeps the last element as the bottom layer as it
+//                                      is), it stands where cm6 expects the @internal `nextLayer` RangeSet. Added by step B]
 //   chunk.countReads {chunk: expr, label, hits: name}  {internal}   [replaces the chunk's `value` array by a Proxy of
 //                                      it that, on each read of an index property (a key of decimal digits), adds 1 to
 //                                      hits[label] (starting from 0 when the key is absent) of the object held by the
@@ -363,6 +373,8 @@ class Prog {
       case "builder.new": return new RangeSetBuilder<any>()
       case "builder.add": this.p.ev(a.builder).add(a.from, a.to, this.val(a.v)); return undefined
       case "builder.finish": return this.p.ev(a.builder).finish()
+      case "builder.addValue": this.p.ev(a.builder).add(a.from, a.to, a.value); return undefined
+      case "layer.fake": { let r = a.mapResult; return {maxPoint: a.maxPoint, map: () => r} }
       case "chunk.maxPoint": return this.p.ev(a.chunk).maxPoint
       case "chunk.poison": Object.defineProperty(this.p.ev(a.chunk), "value", {get() { throw new Error("NO TOUCH") }}); return undefined
       case "chunk.countReads": {
@@ -398,7 +410,8 @@ const KINDS_OF: Record<string, Kind[]> = {
   "set.between": ["api", "callbacks"], "set.eq": ["api"], "set.iter": ["api"], "set.iterMany": ["api"],
   "cursor.next": ["api"], "cursor.goto": ["api"], "cursor.read": ["api", "identity"], "cursor.walk": ["api"],
   "spans": ["api", "callbacks"], "compare": ["api", "callbacks"],
-  "builder.new": ["api"], "builder.add": ["api"], "builder.finish": ["api"],
+  "builder.new": ["api"], "builder.add": ["api"], "builder.finish": ["api"], "builder.addValue": ["api"],
+  "layer.fake": ["internal"],
   "chunk.maxPoint": ["internal"], "chunk.poison": ["internal"], "chunk.countReads": ["internal"],
   "eqlog.take": ["callbacks"], "eqlog.clear": ["harness"], "eqlog.count": ["callbacks"],
   "indexes": ["harness"],

@@ -10,8 +10,13 @@ Without --no-run it also re-runs every generator, in a scratch copy under .scrat
 tracked file changes, compares each regenerated fixtures/<chunk>.jsonl with the committed one byte for byte, and
 measures which lines and branches of the cm6 package's source the generators reach (V8 coverage, reported by c8).
 The unreached ones are written to docs/parity/<crate>/raw/coverage.jsonl, one row per site. A site reported on the
-first line of a file is dropped, and one on the line of a function declaration or of a closing brace comes from mapping
-the compiled code back to the source: read the function before treating it as a branch.
+first line of a file is dropped. So is the unmapped end of each compiled module (the export annotation the build
+appends, which never runs): a zero-count range of V8's raw data that starts after the last mapping of the module's
+source map is reported by c8 at the place of that last mapping, and a branch at exactly that line and column is
+dropped and counted. Any other site on the line of a function declaration or of a closing brace may still come from
+mapping the compiled code back to the source: read the function before treating it as a branch.
+Once verification.md has a `## Coverage` section, every site still unreached must be named there as
+`<file>:<line>` in backticks (its fixture was not added, so its reason is owed: specification.md §8 item 1).
 
 With --same-outputs-as <git ref>, every fixture file is also compared with its version at that commit: the same ids,
 and for each id the same item, behaviors and output. It is the check of a change that may rewrite inputs only.
@@ -22,8 +27,13 @@ unstable value), and a value the old JSON could not hold may now be exact: null 
 NaN, an infinity or a function; 0 where it now has -0; no property where it now has an undefined or function one.
 The count of such values is printed per chunk ("now exact"); any other difference fails.
 An output that was written bare and is now exactly {"ok": <it>} is the same output (counted, "now wrapped in ok").
+An error object that held `site` (the line of cm6's source that threw) beside name and message is the same without
+it (counted, "errors without the site they had"); an output that still holds one fails.
 Without a run it also prints, per chunk, the fixtures whose `out` references a variable bound by a `data` step (a
 value written in the input; any fails) and the labels of the op `label`, the one way such a value may reach an output.
+
+Without --no-run it also runs the language's own cases again (tools/cm6/lang-cases.ts --check): the committed
+tools/cm6/lang-cases.jsonl must be what the run gives, and every op of tools/cm6/program.ts must be run by a case.
 
 Without --no-run it also replays every fixture (tools/cm6/replay.ts): the recorded input, decoded and run through
 the `lang` its chunk's oracle/cm6/<chunk>/interp.ts exports (tools/cm6/program.ts) while every key read is recorded.
@@ -40,18 +50,29 @@ One line per chunk; each count but the first must be zero:
   ops without kinds                        an op registered with no kind
   not named in the header                  an op the header of interp.ts does not name
   files with eval or Function              in the chunk's oracle directory
+A second line per chunk, "uncaught throws": the fixtures whose run ends in a throw nothing caught, and where cm6
+threw (the first frame of the error's stack inside the package's source; it is not part of the output, which holds
+what Ferrum is compared with):
+  thrown at no row of raw/throws.jsonl     must be zero: cm6 reached a throw the throw facts lack, or the error
+                                           came from the interpreter or a callback and not from cm6
+  at a row that does not list the fixture  a count, not a failure: a row's `fixtures` are the ones that show the
+                                           throw, not every one that reaches it (tools/spec_facts.py writes the map)
 A chunk with no interpreter in the language fails with "not run". It writes raw/fixture-ops.jsonl: per chunk and op
 that ran, its kinds, the number of fixtures that ran it and their behavior ids.
 
-It also writes raw/fixture-calls.jsonl: the fixture inputs that still record their call as JavaScript text for a
-reader instead of data for the chunk's interpreter (§5 item 3), grouped by text with digits replaced by N. Such an
-input has a string under `expr`, `call` or `code`, or a string with a parenthesis, a space or `=` under `op`, `ops`
-or `calls`. And it prints how many values of each chunk are still written in a form older than the one encoding.
+With or without a run it reads the consultant's raw/decisions.jsonl and raw/replay.jsonl (specification.md §4):
+  ops not only api or harness without a row of raw/replay.jsonl   a count, not a failure: an op added after the
+                                           consultant wrote the file waits for the consultant; the specification is
+                                           approved at zero
+  a fixture a row of raw/decisions.jsonl lists that does not exist, a fixture listed twice in a row, a row of
+  raw/replay.jsonl with an unknown `how`   failures
+
+It also prints how many values of each chunk are still written in a form older than the one encoding.
 
 Needs the harness (python3 tools/cm6/setup_harness.py <package>) and npx (tsx, c8). Exit status 1 when a check
 fails; an unreached branch is a fact to judge, not a failure.
 """
-import collections, json, os, re, shutil, subprocess, sys
+import collections, glob, json, os, re, shutil, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OLD_STRINGS = {"<undefined>": {"js_undefined": True}, "<NaN>": {"js_number": "NaN"}, "<wall-clock>": {"js_unstable": "wall-clock"},
@@ -98,9 +119,57 @@ def same_value(was, now, exact):
     return type(was) is type(now) and was == now
 
 
-def js_text(key, v):
-    if isinstance(v, list): return any(js_text(key, x) for x in v)
-    return isinstance(v, str) and (key in ("expr", "call", "code") or bool(re.search(r"[(\s=]", v)))
+def dicts(v):
+    """Every object inside v, v included."""
+    if isinstance(v, dict):
+        yield v
+        for x in v.values(): yield from dicts(x)
+    elif isinstance(v, list):
+        for x in v: yield from dicts(x)
+
+
+B64 = {c: i for i, c in enumerate("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")}
+
+
+def last_mapping(mappings):
+    """The last segment of a source map: (generated line, generated column, original line, original column), 0-based."""
+    last, src_line, src_col = None, 0, 0
+    for gl, line in enumerate(mappings.split(";")):
+        gc = 0
+        for seg in line.split(","):
+            if not seg: continue
+            vals, v, shift = [], 0, 0
+            for ch in seg:
+                d = B64[ch]; v |= (d & 31) << shift; shift += 5
+                if not d & 32:
+                    vals.append(-(v >> 1) if v & 1 else v >> 1); v, shift = 0, 0
+            gc += vals[0]
+            if len(vals) >= 4:
+                src_line += vals[2]; src_col += vals[3]
+                last = (gl, gc, src_line, src_col)
+    return last
+
+
+def module_end_artifacts(v8_dir, marker):
+    """{source file path: (line, column)} of the place each compiled module's unmapped tail is reported at."""
+    found = {}
+    for f in glob.glob(os.path.join(v8_dir, "*.json")):
+        d = json.load(open(f, encoding="utf-8"))
+        cache = d.get("source-map-cache") or {}
+        for r in d["result"]:
+            e = cache.get(r["url"])
+            if marker not in r["url"] or not e or not e.get("lineLengths"): continue
+            lm = last_mapping(e["data"]["mappings"])
+            if not lm: continue
+            starts, o = [], 0
+            for n in e["lineLengths"]: starts.append(o); o += n + 1
+            for fn in r["functions"]:
+                for x in fn["ranges"]:
+                    if x["count"]: continue
+                    line = max(i for i, s in enumerate(starts) if s <= x["startOffset"])
+                    if (line, x["startOffset"] - starts[line]) > lm[:2]:
+                        found[r["url"].replace("file://", "")] = (lm[2] + 1, lm[3])
+    return found
 
 
 def rows(path):
@@ -168,6 +237,15 @@ def main():
             now = {r["id"]: r for r in fx[c]}
             exact, n = [0], collections.Counter()
             wrapped = [0]
+            sites = [0]
+            def no_site(v):
+                # Q59: an error object ({name, message, site}) no longer holds the line of cm6's source that threw.
+                if isinstance(v, list): return [no_site(x) for x in v]
+                if not isinstance(v, dict): return v
+                e = v.get("error")
+                if isinstance(e, dict) and set(e) == {"name", "message", "site"}:
+                    sites[0] += 1; v = {**v, "error": {k: x for k, x in e.items() if k != "site"}}
+                return {k: no_site(x) for k, x in v.items()}
             def same_output(w, v):
                 # The language writes every output as {"ok": value} or {"error": …}; an older output written bare
                 # is the same output when the new one is exactly {"ok": <it>} (counted).
@@ -177,9 +255,10 @@ def main():
                 return same_value(w, v, exact)
             diff = [i for i in sorted(set(was) | set(now)) if i not in was or i not in now
                     or any(was[i].get(k) != now[i].get(k) for k in ("item_id", "behaviors"))
-                    or not same_output(old_forms(was[i].get("output"), n), old_forms(now[i].get("output"), n))]
+                    or any(isinstance(d, dict) and "site" in d.get("error", ()) for d in dicts(now[i].get("output")))
+                    or not same_output(no_site(old_forms(was[i].get("output"), n)), old_forms(now[i].get("output"), n))]
             print(f"outputs of {c} against {ref}: {len(now)} fixtures, {len(diff)} differ, {exact[0]} values now exact, "
-                  f"{wrapped[0]} now wrapped in ok")
+                  f"{wrapped[0]} now wrapped in ok, {sites[0]} errors without the site they had")
             if diff: bad.append(f"fixtures/{c}.jsonl differs from {ref} in id, item, behaviors or output: {diff[:10]}")
 
     # A value written in the input may reach the output only through the op `label`: a variable a `data` step binds
@@ -204,28 +283,19 @@ def main():
               f"labels: {dict(labels) or 'none'}")
         if data_out: bad.append(f"fixtures/{c}.jsonl: {len(data_out)} fixtures give `out` a value of a `data` step: {data_out[:10]}")
 
-    calls = []
     for c, v in fx.items():
-        groups, n = collections.OrderedDict(), collections.Counter()
-        for r in v:
-            old_forms([r["input"], r["output"]], n)
-            i = r["input"] if isinstance(r["input"], dict) else {}
-            for k in ("expr", "call", "code", "op", "ops", "calls"):
-                if k in i and js_text(k, i[k]):
-                    text = re.sub(r"\d+", "N", json.dumps(i[k], ensure_ascii=False))
-                    groups.setdefault((k, text, tuple(sorted(x for x in i if x != k))), []).append(r["id"])
-        calls += [{"chunk": c, "key": k, "text": t, "other_input_keys": list(o), "fixtures": len(ids), "first": ids[0]}
-                  for (k, t, o), ids in groups.items()]
-        left = len({i for ids in groups.values() for i in ids})
-        print(f"inputs of {c}: {left} fixtures record their call as JavaScript text; older encodings: {dict(n) or 'none'}")
-    with open(os.path.join(base, "raw", "fixture-calls.jsonl"), "w", encoding="utf-8") as f:
-        for r in calls: f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        n = collections.Counter()
+        for r in v: old_forms([r["input"], r["output"]], n)
+        print(f"older encodings of {c}: {dict(n) or 'none'}")
 
     if run:
         todo = [c for c in chunks if not only or c in only]
         out = subprocess.run(["npx", "--yes", "tsx", "--tsconfig", os.path.join(".harness", pkg, "tsconfig.json"),
                               os.path.join("tools", "cm6", "replay.ts"), crate, *todo],
                              cwd=ROOT, capture_output=True, text=True, timeout=3600)
+        throw_rows = collections.defaultdict(set)   # "mirrors/…/file.ts:line" -> the fixtures its rows list
+        tp = os.path.join(base, "raw", "throws.jsonl")
+        for t in (rows(tp) if os.path.exists(tp) else []): throw_rows[t["cm6"].split(" ")[0]].update(t.get("fixtures", []))
         reps = {}
         for l in out.stdout.split("\n"):
             if l.startswith("{"): r = json.loads(l); reps[r["chunk"]] = r
@@ -243,6 +313,14 @@ def main():
                   + f"files with eval or Function {len(r['evalUse'])}")
             for k, t in counts:
                 if n[k]: bad.append(f"replay of {c}: {n[k]} fixtures {t}: {dict(sorted(r['unread'].items())[:20]) if k == 'unreadFixtures' else r[k][:10]}")
+            # Where each uncaught throw came from, against the throw facts: the site is not in the output (Q59).
+            th = r.get("thrown", {})
+            no_row = sorted(i for i, at in th.items() if at not in throw_rows)
+            unlisted = sorted(i for i, at in th.items() if at in throw_rows and f"{c}:{i}" not in throw_rows[at])
+            print(f"uncaught throws of {c}: {len(th)} fixtures; {len(no_row)} thrown at no row of raw/throws.jsonl; "
+                  f"{len(unlisted)} at a row that does not list the fixture")
+            if no_row: bad.append(f"replay of {c}: {len(no_row)} fixtures end in a throw at no row of raw/throws.jsonl: "
+                                  f"{[(i, th[i] or 'outside cm6') for i in no_row[:10]]}")
             for k, t in (("opsWithoutKinds", "ops without kinds"), ("opsNotInHeader", "ops not named in the header"), ("evalUse", "files with eval or Function")):
                 if r[k]: bad.append(f"replay of {c}: {len(r[k])} {t}: {r[k][:12]}")
             ops += [{"chunk": c, **o} for o in r["ops"]]
@@ -275,7 +353,8 @@ def main():
                         "--exclude-after-remap=false", "--allowExternal", "--include", f"**/cm6/{pkg}/src/**"],
                        cwd=work, capture_output=True, text=True, timeout=900)
         report = json.load(open(os.path.join(out, "coverage-final.json"), encoding="utf-8"))
-        sites = []
+        sites, dropped = [], 0
+        artifacts = module_end_artifacts(cov, f"/cm6/{pkg}/src/")
         for path, d in sorted(report.items()):
             name = os.path.relpath(path, src)
             mirror = f"mirrors/cm6/{pkg}/src/{name}"
@@ -286,13 +365,50 @@ def main():
                     if not n:
                         miss_b += 1
                         loc = d["branchMap"][k]["locations"][i]["start"]
-                        if loc.get("line", 0) > 1: sites.append({"file": mirror, "kind": "branch", "line": loc["line"]})
+                        if (loc.get("line"), loc.get("column")) == artifacts.get(path): dropped += 1
+                        elif loc.get("line", 0) > 1: sites.append({"file": mirror, "kind": "branch", "line": loc["line"]})
             for line in unreached: sites.append({"file": mirror, "kind": "line", "line": line})
             print(f"coverage {name}: lines unreached {len(unreached)} of {len(d['s'])}, branches unreached {miss_b} of {total_b}")
         if not only:
             with open(os.path.join(base, "raw", "coverage.jsonl"), "w", encoding="utf-8") as f:
                 for s in sites: f.write(json.dumps(s) + "\n")
-            print(f"wrote raw/coverage.jsonl: {len(sites)} unreached sites")
+            print(f"wrote raw/coverage.jsonl: {len(sites)} unreached sites; {dropped} dropped as the unmapped end of a compiled module")
+            vp = os.path.join(base, "verification.md")
+            vt = open(vp, encoding="utf-8").read() if os.path.exists(vp) else ""
+            m = re.search(r"^## Coverage\s*$(.*?)(?=^## |\Z)", vt, re.M | re.S)
+            if m:
+                missing = sorted({f"{s['file']}:{s['line']}" for s in sites
+                                  if not re.search(re.escape(f"`{s['file']}:{s['line']}`"), m.group(1))})
+                print(f"coverage sites without an entry in verification.md: {len(missing)}")
+                if missing: bad.append(f"verification.md: no `## Coverage` entry for {missing[:10]}")
+            else:
+                print("coverage sites without an entry in verification.md: not checked, verification.md has no `## Coverage` section")
+
+    dp, rp, op = (os.path.join(base, "raw", n) for n in ("decisions.jsonl", "replay.jsonl", "fixture-ops.jsonl"))
+    if os.path.exists(dp):
+        for d in rows(dp):
+            fl = d.get("fixtures") or []
+            gone = [f for f in fl if ":" not in f or f.split(":")[1] not in fx_ids.get(f.split(":")[0], ())]
+            if gone: bad.append(f"raw/decisions.jsonl {d['id']} lists fixtures that do not exist: {gone[:10]}")
+            if len(set(fl)) != len(fl): bad.append(f"raw/decisions.jsonl {d['id']} lists a fixture twice")
+    if os.path.exists(rp) and os.path.exists(op):
+        how = {(r["chunk"], r["op"]): r.get("how") for r in rows(rp)}
+        unknown = sorted(f"{c}/{o}" for (c, o), h in how.items() if h not in ("run", "test", "part", "identity", "none", "skip"))
+        if unknown: bad.append(f"raw/replay.jsonl: unknown `how` for {unknown[:10]}")
+        plain = lambda k: set(k) <= {"api"} or set(k) <= {"harness"}
+        waiting = sorted(f"{o['chunk']}/{o['op']}" for o in rows(op) if not plain(o["kinds"]) and (o["chunk"], o["op"]) not in how)
+        print(f"ops not only api or harness without a row of raw/replay.jsonl: {len(waiting)}" + (f" {waiting}" if waiting else ""))
+
+        # the language's own cases (tools/cm6/lang-cases.ts): the reference of a replayer's evaluator
+        lc = subprocess.run(["npx", "--yes", "tsx", "--tsconfig", os.path.join(".harness", pkg, "tsconfig.json"),
+                             os.path.join("tools", "cm6", "lang-cases.ts"), "--check"], cwd=ROOT, capture_output=True, text=True, timeout=600)
+        try: lr = json.loads(lc.stdout.strip().split("\n")[-1])
+        except ValueError: lr = None
+        if lr is None: bad.append(f"tools/cm6/lang-cases.ts did not run: {lc.stderr[-300:]}")
+        else:
+            print(f"language cases (tools/cm6/lang-cases.jsonl): {lr['cases']}, reproduced: {lr['same']}, ops of the language no case runs: {lr['unrun'] or 'none'}")
+            if not lr["same"]: bad.append("tools/cm6/lang-cases.jsonl is not what tools/cm6/lang-cases.ts gives: run it without --check and commit the file")
+            if lr["unrun"]: bad.append(f"ops of tools/cm6/program.ts that no case of tools/cm6/lang-cases.ts runs: {lr['unrun']}")
 
     for b in bad: print("FAIL", b)
     print("checks failed:" if bad else "checks passed", len(bad) if bad else "")

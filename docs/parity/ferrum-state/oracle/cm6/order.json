@@ -1,10 +1,10 @@
 {
   "package": "state",
   "chunks": {
-    "text": ["probe-char.ts", "probe-column.ts", "probe-category.ts", "probe-text.ts", "probe-text2.ts", "gen-char.ts", "gen-column.ts", "gen-category.ts", "gen-text.ts", "probe-tests.ts", "probe-gapfill.ts", "s4-tags.ts", "s4-fix5.ts", "s4-fix6.ts"],
-    "change": ["s2-fixtures.ts", "s2-generator.ts", "gapfill-mapset.ts", "s4-fix.ts", "s4-tags.ts", "s4-m7.ts", "s4-fix5.ts"],
+    "text": ["probe-char.ts", "probe-column.ts", "probe-category.ts", "probe-text.ts", "probe-text2.ts", "gen-char.ts", "gen-column.ts", "gen-category.ts", "gen-text.ts", "probe-tests.ts", "probe-gapfill.ts", "s4-tags.ts", "s4-fix5.ts", "s4-fix6.ts", "b-coverage.ts"],
+    "change": ["s2-fixtures.ts", "s2-generator.ts", "gapfill-mapset.ts", "s4-fix.ts", "s4-tags.ts", "s4-m7.ts", "s4-fix5.ts", "b-coverage.ts"],
     "facet": ["s2-fixtures.ts", "s2-generator.ts", "gapfill-field-require.ts", "s4-tags.ts", "s4-fix5.ts", "s4-fix6.ts"],
     "state": ["s2-run.ts", "s4-fix.ts", "s4-tags.ts", "s4-m7.ts", "s4-fix4.ts", "s4-fix5.ts", "s4-fix6.ts", "s4-fix7.ts"],
-    "rangeset": ["fixtures.ts", "random.ts", "s4-tags.ts", "s4-fix5.ts"]
+    "rangeset": ["fixtures.ts", "random.ts", "s4-tags.ts", "s4-fix5.ts", "b-coverage.ts"]
   }
 }

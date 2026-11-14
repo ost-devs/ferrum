@@ -8,10 +8,19 @@
 // steps run, a fresh Scope (below) is created for the run, and every op names facets, fields, compartments, effects
 // and shared nodes of that Scope. Descriptive keys that no op reads: `large` (marks the 100x case of a family),
 // `case`, `note`.
-// Positions: the only positions in inputs are inside TrSpec `changes` and `selection` (data passed to
-// EditorState.update / EditorState.create as they are) and the scenario `selection`; marked (pos) below. No result
-// field of an op is a position except the values a getter "docLength" / "mainHead" produces and the read "lines"
-// (a line count, not a position), which are data the scenario reports: docLength (pos), mainHead (pos).
+// Positions. (pos) marks a position, offset or length in UTF-16 code units of a document the input holds that passes
+// between the program and cm6. Data handed to cm6 whole holds positions as cm6 reads them: a change spec (TrSpec
+// `changes`, the `spec` of state.changes) from (pos), to (pos) and the length of its `insert` string (derived from
+// that string, not a field of the input); a selection (TrSpec `selection`, the `selection` of scenario and create)
+// anchor (pos), head (pos); selection JSON (the `selection` of the json of state.fromJSON and of a scenario
+// {"fromJSON"} update) ranges[*].anchor (pos), ranges[*].head (pos). Positions cm6 gives back: the values of the getters
+// "docLength" and "mainHead" and of the updater "newDocLength", the doc.length the getter "docParity" reads (it
+// chooses by the parity of that UTF-16 length), and the selection of the JSON state.toJSON returns (the op and the
+// Read {"toJSON"}): ranges[*].anchor (pos), ranges[*].head (pos). The read "lines" is a line count, not a position.
+// Harness ops (the language's ops of tools/cm6/program.ts and this chunk's `data`, `set`, `isArray`) compute in
+// UTF-16 code units on the numbers they are given. So do the vocabulary's computations on values the program gave:
+// the getter "len" and {"facetJoinLength"}, the CMP "length", the getter {"facetLength"} and the combine "length"
+// read `.length` of the value (UTF-16 code units for a string, the member count for an array); they are not marked.
 //
 // ---------------------------------------------------------------- the extension vocabulary (Scope)
 // Shared with other chunks: `Scope` and `buildExtension` are exported, so that an interpreter of another chunk
@@ -65,14 +74,17 @@
 //   call; each call adds 1 to the counter) | {"set": G} (new Set(G's value)) | {"map": G} (new Map(G's value))
 //   | {"list": G} ([G's value]) | {"generator": [x...]} (a generator function yielding each x)
 //   | {"var": name} (the value of the program variable at each call)
+//   | {"callVar": name} (calls the function held in the program variable with the getter's arguments and returns its
+//   result; added for chunk `state`, whose functions are built by its `fn` op)
 //   | {"facet": f} | {"facetJoin": f} (.join()) | {"facetJoinLength": f} | {"facetLength": f}
 //   | {"facetString": f} (.toString()) | {"facetFirst": [f, default]} (facet[0] ?? default) | {"field": f}
 //   | {"fieldOpt": f} (state.field(f, false)) | {"docParity": [ifOdd, ifEven]} (a new copy of the one for the
-//   parity of doc.length) | {"objV": G} (a new {v: G's value}) | {"throw": message} | {"value": x} (x, not a function)
+//   parity of state.doc.length (pos)) | {"objV": G} (a new {v: G's value}) | {"throw": message} | {"value": x} (x,
+//   not a function)
 // U (field update, (value, tr) => value): "keep" | "inc" (v + 1) | "incV" ({v: v.v + 1}) | "copy" (a new
 //   array/object with the same content) | {"effectSum": effect} (v plus the values of the transaction's effects of
 //   that type) | {"trField": [field, factor]} (tr.state.field(field) * factor) | "newDocLength" (tr.newDoc.length)
-//   | {"trFacet": f} (tr.state.facet(f)) | {"startFacet": f} (tr.startState.facet(f))
+//   (pos) | {"trFacet": f} (tr.state.facet(f)) | {"startFacet": f} (tr.startState.facet(f))
 //   | {"throwOnce": counter} (throws Error("update failed") while the counter is 0 and sets it to 1, then returns v)
 // C (combine): "sum" | "length" | "countObj" (a new {count: values.length}) | {"first": default} (values[0], or
 //   default when empty) | "some" | "joinSpace" | "concat" | "copy" (values.slice()) | "throwEmpty" (throws
@@ -81,7 +93,9 @@
 //   | "json" (JSON.stringify equal) | "keys" (the EditorState.phrases compare body) | {"returns": r} (returns r)
 //   | {"value": x}
 // J (toJSON / fromJSON): "id" | "x2" (value * 2) | {"value": x}
-// TrSpec: {changes? (pos), selection? (pos), effects?: [Effect]}; Effect: {"reconfigure": Node}
+// TrSpec: {changes? (pos), selection? (pos), effects?: [Effect]}, built into a new spec object: `changes` and
+//   `selection` are put in it, as they are, only when their value is truthy (an absent, null, false, 0 or "" value
+//   is left out); `effects`, when truthy, becomes the list of the built Effects. Effect: {"reconfigure": Node}
 //   (StateEffect.reconfigure.of) | {"append": Node} (StateEffect.appendConfig.of) | {"comp": [c, Node]}
 //   (c.reconfigure) | {"eff": [effect, data]} (effect.of(data)).
 // Log text of a value (in "combine", "compare", "update" lines): JSON.stringify of the value with undefined written
@@ -101,14 +115,15 @@
 //     {"tr": TrSpec, "from"?: k, "retryState": true} : reads tr.state twice; retry = {first, second}, each "<state>"
 //       or {error: {name, message}}; when second is "<state>", secondReads: one {"ok": v} or {"error"} per Read on it
 //       (no state is added)
-//     {"fromJSON": [json, Node | null, {prop: field}]} : EditorState.fromJSON(json, {extensions: Node} or {}, fields);
-//       its reads recorded with same null
+//     {"fromJSON": [json, Node | null, {prop: field}]} : EditorState.fromJSON(json, {extensions: Node} or {}, fields)
+//       (json.selection: ranges[*].anchor (pos), ranges[*].head (pos) in json.doc); its reads recorded with same null
 //   `v` is the read value (encoded when read); `same` is v === the same read on the state the update started from
 //   (null for a created or fromJSON state, or when that read threw); a read that throws gives {error: {name,
 //   message}}. log: the Scope's log.
 //   Read: {"facet": f} | {"reader": f} | {"field": f} | {"fieldOpt": f} | {"comp": c} (c.get(state): the label of the
 //   built node it returns, "<unlabeled>" for an unlabeled one, undefined) | {"toJSON": {prop: field}}
-//   (state.toJSON(fields)) | "doc" (doc.toString()) | "lines" (doc.lines) | "sliceDoc" (state.sliceDoc()).
+//   (state.toJSON(fields): its selection's ranges[*].anchor (pos), ranges[*].head (pos)) | "doc" (doc.toString())
+//   | "lines" (doc.lines) | "sliceDoc" (state.sliceDoc()).
 // combineConfig.entries {configs: [object], defaults?: object, defaultsProto?: object, combine?: {key: name}}
 //   [{entries: [[key, value]...]} in Object.keys order of the result; a throw of combineConfig is the output].
 //   In configs, defaults and defaultsProto a value {"obj": k} is the k-th shared object of the run ({obj: k},
@@ -129,11 +144,14 @@
 //                                      state.field(field, require) when the key is present, also with undefined;
 //                                      fieldOf: a field held in a variable]
 // state.update {state: <expr>, spec: TrSpec}   [the Transaction]
-// state.changes {state: <expr>, spec: data}     [state.changes(spec)]
+// state.changes {state: <expr>, spec: data (pos)}   [state.changes(spec)]: spec is a change spec, positions in the
+//                                      document of `state`
 // state.tabSize {state: <expr>}      [state.tabSize]
-// state.toJSON {state: <expr>, fields: {prop: field}}   [state.toJSON(fields)]
+// state.toJSON {state: <expr>, fields: {prop: field}}   [state.toJSON(fields): {doc, selection: selection JSON
+//                                      {ranges: [{anchor (pos), head (pos)}], main}, ...field props}]
 // state.fromJSON {json: data, ext?: Node, fields: {prop: field}}   [EditorState.fromJSON(json, {extensions} or {},
-//                                      fields)]
+//                                      fields)]; json.selection is selection JSON, ranges[*].anchor (pos),
+//                                      ranges[*].head (pos) in json.doc
 // tr.state {tr: <expr>}              [tr.state]
 // tr.reconfigured {tr: <expr>}       [tr.reconfigured]
 // facet.reader {facet: name}         [facet.reader]
@@ -165,9 +183,11 @@
 // counter {name}                     [the Scope counter's value (0 when never set)]
 // data {value}                       [value: data the program hands to cm6 as a value (an argument object); a word
 //                                      the output carries is written with the language's `label`, not with data]
-// list {of: [<expr>]}                [a new array of the values]
+// list: the language's op (tools/cm6/program.ts, "Values the program builds"); this chunk does not register it. Its
+//                                      members may be data there; every facet fixture writes them as <expr>
 // set {of: <expr>, key, to: <expr>}  [of[key] = to; undefined]
-// isArray {of: <expr>}               [Array.isArray(value)]
+// isArray {of: <expr>}               [Array.isArray(value)]: the same code as the text chunk's isArray, which that
+//                                      chunk registers with the kind harness only; here harness and internal
 import {EditorState, Facet, StateField, StateEffect, Prec, Compartment, Transaction, combineConfig} from "@codemirror/state"
 import {capture, encode} from "@harness/lib"
 import {Language, Program, markRead} from "@harness/program"
@@ -221,6 +241,7 @@ export class Scope {
       if ("map" in g) { const inner = this.getter(g.map); return (s: EditorState) => new Map(inner(s)) }
       if ("list" in g) { const inner = this.getter(g.list); return (s: EditorState) => [inner(s)] }
       if ("var" in g) { const name = g.var; return () => this.vars(name) }
+      if ("callVar" in g) { const name = g.callVar; return (...args: any[]) => this.vars(name)(...args) }
       if ("generator" in g) { const xs = g.generator; return function* () { for (const x of xs) yield x } }
       const F = this.facets, L = this.fields
       if ("facet" in g) return (s: EditorState) => s.facet(F[g.facet])
@@ -545,7 +566,6 @@ o("lspKeep", ["api"], (a, p) => {
 })
 o("counter", ["callbacks"], (a, p) => sc(p).counters[a.name] ?? 0)
 o("data", ["harness"], a => { markRead(a); return a.value })
-o("list", ["harness"], (a, p) => p.evs(a.of))
 o("set", ["harness"], (a, p) => { p.ev(a.of)[a.key] = p.ev(a.to) })
 o("isArray", ["harness", "internal"], (a, p) => Array.isArray(p.ev(a.of)))
 export const run = lang.run

@@ -1,8 +1,10 @@
-// S2 probe, chunk `state`: EditorState.update, replaceSelection, changeByRange, changes; Transaction and its
+// S2 fixtures, chunk `state`: EditorState.update, replaceSelection, changeByRange, changes; Transaction and its
 // getters; TransactionSpec fields. Items state.cm6.009-012, 092-117. Fixture ids F0400-F0699.
-// Transactions are serialized by tr() in s2-lib.ts; the automatic Transaction.time value is "<wall-clock>" (Q15).
-import {EditorState, EditorSelection, Text, StateField, Facet, Compartment, StateEffect, Annotation, Transaction, ChangeSet} from "@codemirror/state"
-import {writer, cap, u, range, sel, text, st, tr, eff, name, typeName, foldLike, trackAfter, posEffect, plainEffect} from "./s2-lib"
+// Transactions are serialized by json.tr (interp.ts); the automatic Transaction.time value is the unstable value
+// "wall-clock" (Q15).
+import {writer, $, op, R, set, rec, merge, list, same, not, label, push, fn, seq, let_, add, cond, item, count, block,
+        create, update, get, iget, field, facet, sliceDoc, cursor, range, selCreate, jsel, jtext, jst, jrange, jeff, jeffs, jtr,
+        trDoc, toStr, chJSON, chOf, eff, ann, T0, of, ofVar, prec, defEffects, defAnn, FOLD, TRACK, POS, PLAIN} from "./s2-lib"
 
 const fx = writer(400)
 const B = (item: string, n: number) => `state.${item}.B${n}`
@@ -15,321 +17,293 @@ const I = {
   specEffects: "state.cm6.112", specAnnotations: "state.cm6.113", specUserEvent: "state.cm6.114", specScroll: "state.cm6.115", specFilter: "state.cm6.116",
   specSequential: "state.cm6.117"
 }
-const ann1 = name(Annotation.define<any>(), "ann1"), ann2 = name(Annotation.define<any>(), "ann2")
-const T0 = Transaction.time.of(1000)
+const s = $("s"), t = $("t")
+const EFFS = defEffects(FOLD, TRACK, POS, PLAIN)
+const ANNS = [defAnn("ann1"), defAnn("ann2")]
+const fieldDef = (name: string, spec: any) => op("field.define", {name, spec})
+const constFn = (v: any) => fn([], let_(v))
+const keep = fn(["v"], $("v"))
+const st = (x: any) => get(x, "state")
+const selOf = (x: any) => get(x, "selection")
+const docOf = (x: any) => get(x, "doc")
+const ann_ = (tr: any, type: string) => op("tr.annotation", {tr, type})
+const lens = (x: any) => rec({json: chJSON(x), length: get(x, "length"), newLength: get(x, "newLength")})
+/** A step defining a function of the program (variable `name`). */
+const defFn = (name: string, params: string[], body: any) => set(name, fn(params, body))
+const filters = (...pairs: [string, string][]) => pairs.map(([f, v]) => ofVar(f, v))
+const isUE = (tr: any, event: string) => op("tr.isUserEvent", {tr, event})
 
 // ---- update (009)
+fx(I.update, [B("EditorState.update", 1), B("Transaction", 2), B("Transaction.selection", 1)],
+   R([set("s", create({doc: "abc", selection: {anchor: 1}})), set("t", update(s))],
+     merge(jtr(t), rec({timeIsNumber: op("isType", {of: ann_(t, "Transaction.time"), type: "number"}), timeIsInteger: op("isInteger", {of: ann_(t, "Transaction.time")})}))))
+fx(I.update, [B("EditorState.update", 1), B("TransactionSpec", 1)], R([set("s", create({doc: "abc", selection: {anchor: 1}}))], jtr(update(s, {}))))
+fx(I.spec, [B("TransactionSpec", 1)], R([set("s", create({doc: "abc", selection: {anchor: 1}}))],
+   jtr(update(s, {changes: {from: 0, insert: "x"}, annotations: T0, foo: 1, reconfigure: true}))))
+fx(I.update, [B("EditorState.update", 2), B("TransactionSpec.filter", 2)],
+   R([set("log", list()),
+      defFn("cf", [], seq(push($("log"), label("changeFilter")), true)),
+      defFn("tf", ["tr1"], seq(push($("log"), label("transactionFilter")), $("tr1"))),
+      defFn("te", [], seq(push($("log"), label("transactionExtender")), null)),
+      set("s", create({doc: "abc", extensions: filters(["changeFilter", "cf"], ["transactionFilter", "tf"], ["transactionExtender", "te"])})),
+      update(s, {changes: {from: 0, insert: "x"}}), set("l1", $("log")), set("log", list()),
+      update(s, {changes: {from: 0, insert: "x"}, filter: false})],
+     rec({filtered: $("l1"), unfiltered: $("log")})))
+fx(I.update, [B("EditorState.update", 3), B("Transaction.state", 1)],
+   R([set("calls", 0),
+      fieldDef("F", {create: constFn(0), update: fn(["v"], block([set("calls", add($("calls"), 1)), set("rv", add($("v"), 1))], "rv"))}),
+      set("s", create({extensions: {field: "F"}})), set("t", update(s, {changes: {from: 0, insert: "a"}})),
+      set("afterUpdate", $("calls")), set("st1", st(t)), set("afterState", $("calls")), set("st2", st(t))],
+     rec({afterUpdate: $("afterUpdate"), afterFirstState: $("afterState"), afterSecondState: $("calls"), sameState: same($("st1"), $("st2"))})))
 {
-  let s = EditorState.create({doc: "abc", selection: {anchor: 1}})
-  let t = s.update()
-  fx(I.update, [B("EditorState.update", 1), B("Transaction", 2), B("Transaction.selection", 1)], {call: "s.update()", doc: "abc", selection: {anchor: 1}},
-     {...tr(t), timeIsNumber: typeof t.annotation(Transaction.time) == "number", timeIsInteger: Number.isInteger(t.annotation(Transaction.time))})
-  let t2 = s.update({})
-  fx(I.update, [B("EditorState.update", 1), B("TransactionSpec", 1)], {call: "s.update({})", doc: "abc"}, tr(t2))
-  let t3 = s.update({changes: {from: 0, insert: "x"}, annotations: T0, foo: 1, reconfigure: true} as any)
-  fx(I.spec, [B("TransactionSpec", 1)], {call: "s.update({changes: {from: 0, insert: \"x\"}, annotations: Transaction.time.of(1000), foo: 1, reconfigure: true})", doc: "abc"}, tr(t3))
-}
-{
-  let log: string[] = []
-  let s = EditorState.create({doc: "abc", extensions: [
-    EditorState.changeFilter.of(() => { log.push("changeFilter"); return true }),
-    EditorState.transactionFilter.of(t => { log.push("transactionFilter"); return t }),
-    EditorState.transactionExtender.of(() => { log.push("transactionExtender"); return null })]})
-  s.update({changes: {from: 0, insert: "x"}})
-  let l1 = log.slice(); log.length = 0
-  s.update({changes: {from: 0, insert: "x"}, filter: false})
-  fx(I.update, [B("EditorState.update", 2), B("TransactionSpec.filter", 2)], {call: "s = EditorState.create({doc: \"abc\", extensions: [changeFilter (logs, returns true), transactionFilter (logs, returns tr), transactionExtender (logs, returns null)]}); log of s.update({changes: {from: 0, insert: \"x\"}}) (filtered); log of s.update({changes: {from: 0, insert: \"x\"}, filter: false}) (unfiltered)"},
-     {filtered: l1, unfiltered: log})
-}
-{
-  let calls = 0
-  let f = StateField.define<number>({create: () => 0, update: v => { calls++; return v + 1 }})
-  let s = EditorState.create({extensions: f})
-  let t = s.update({changes: {from: 0, insert: "a"}})
-  let afterUpdate = calls
-  let st1 = t.state, afterState = calls, st2 = t.state
-  fx(I.update, [B("EditorState.update", 3), B("Transaction.state", 1)], {call: "s = EditorState.create({extensions: F}); t = s.update({changes: {from: 0, insert: \"a\"}}); count F.update calls after update (afterUpdate), after t.state (afterFirstState), after a second t.state (afterSecondState); first t.state === second t.state (sameState)", F: "create () => 0, update v => v + 1 (calls counted)"},
-     {afterUpdate, afterFirstState: afterState, afterSecondState: calls, sameState: st1 === st2})
-}
-{
-  let s = EditorState.create({doc: "x"})
   let cases: [string, any[]][] = [
     ["two inserts at 0 in two specs", [{changes: {from: 0, insert: "A"}}, {changes: {from: 0, insert: "B"}}]],
     ["inserts at 1 in two specs", [{changes: {from: 1, insert: "A"}}, {changes: {from: 1, insert: "B"}}]],
   ]
   for (let [desc, specs] of cases)
-    fx(I.update, [B("EditorState.update", 4), B("TransactionSpec.changes", 6)], {call: "s.update(...specs)", doc: "x", desc, specs}, (() => { let t = s.update(...specs); return {...tr(t), doc: t.newDoc.toString()} })())
-  let s2 = EditorState.create({doc: "abcd"})
+    fx(I.update, [B("EditorState.update", 4), B("TransactionSpec.changes", 6)], R([set("s", create({doc: "x"}))], trDoc(update(s, ...specs)), {desc}))
   for (let specs of [[{changes: {from: 0, to: 2}}, {changes: {from: 1, to: 3}}], [{changes: {from: 1, to: 3, insert: "X"}}, {changes: {from: 2, insert: "Y"}}],
                      [{changes: {from: 0, to: 4, insert: "Z"}}, {changes: {from: 4, insert: "!"}}], [{changes: [{from: 1, insert: "a"}, {from: 1, insert: "b"}]}]])
-    fx(I.update, [B("EditorState.update", 4), B("TransactionSpec.changes", 6)], {call: "s.update(...specs)", doc: "abcd", specs}, (() => { let t = s2.update(...specs); return {...tr(t), doc: t.newDoc.toString()} })())
-}
-{
-  let s = EditorState.create({doc: "1234"})
+    fx(I.update, [B("EditorState.update", 4), B("TransactionSpec.changes", 6)], R([set("s", create({doc: "abcd"}))], trDoc(update(s, ...specs))))
   for (let changes of [{from: -1, to: 1}, {from: 2, to: 1}, {from: 2, to: 10, insert: "x"}, {from: 5}, {from: 4, insert: "end"}])
-    fx(I.update, [B("EditorState.update", 5), B("TransactionSpec.changes", 4)], {call: "s.update({changes})", doc: "1234", changes}, cap(() => tr(s.update({changes}))))
+    fx(I.update, [B("EditorState.update", 5), B("TransactionSpec.changes", 4)], R([set("s", create({doc: "1234"}))], jtr(update(s, {changes}))))
   for (let spec of [{selection: {anchor: 5}}, {changes: {from: 0, insert: "ab"}, selection: {anchor: 6}}, {changes: {from: 0, insert: "ab"}, selection: {anchor: 7}}])
-    fx(I.update, [B("EditorState.update", 5), B("Transaction", 1)], {call: "s.update(spec)", doc: "1234", spec}, cap(() => sel(s.update(spec).selection)))
+    fx(I.update, [B("EditorState.update", 5), B("Transaction", 1)], R([set("s", create({doc: "1234"}))], jsel(selOf(update(s, spec)))))
 }
 
 // ---- replaceSelection (010)
 {
-  let s = EditorState.create({doc: "abcd", selection: {anchor: 1}})
-  for (let [doc, selection, insert, ext, n] of [
-      ["abcd", {anchor: 1}, "XY", [], 1],
-      ["ab", {anchor: 1}, "\u{1F600}\r\nz", [], 1],
-      ["abcd", {anchor: 1, head: 3}, "Q", [], 2],
-      ["abcd", {anchor: 3, head: 1}, "", [], 2],
-      ["abcd", {anchor: 0, head: 4}, "x\ny", [], 2],
-      ["ab", {anchor: 1}, "a\r\nb", [EditorState.lineSeparator.of("\r\n")], 5],
-      ["ab", {anchor: 1}, "a\nb", [EditorState.lineSeparator.of("\r\n")], 5],
-    ] as [string, any, string, any, number][]) {
-    let s1 = EditorState.create({doc, selection, extensions: ext})
-    let spec = s1.replaceSelection(insert)
-    let ns = s1.update(spec).state
+  const specRead = (x: any) => rec({changes: chJSON(item(x, "changes")), selection: jsel(item(x, "selection")), effects: jeffs(item(x, "effects"))})
+  for (let [doc, selection, insert, sep, n] of [
+      ["abcd", {anchor: 1}, "XY", null, 1],
+      ["ab", {anchor: 1}, "\u{1F600}\r\nz", null, 1],
+      ["abcd", {anchor: 1, head: 3}, "Q", null, 2],
+      ["abcd", {anchor: 3, head: 1}, "", null, 2],
+      ["abcd", {anchor: 0, head: 4}, "x\ny", null, 2],
+      ["ab", {anchor: 1}, "a\r\nb", "\r\n", 5],
+      ["ab", {anchor: 1}, "a\nb", "\r\n", 5],
+    ] as [string, any, string, string | null, number][])
     fx(I.replaceSelection, [B("EditorState.replaceSelection", n), B("EditorState.replaceSelection", 6)],
-       {call: "s.update(s.replaceSelection(insert)).state", doc, selection, insert, sep: ext.length ? "\r\n" : null},
-       {spec: {changes: spec.changes.toJSON(), selection: sel(spec.selection), effects: spec.effects.map(eff)}, ...st(ns), sliceDoc: ns.sliceDoc()})
-  }
-  let m = EditorState.create({doc: "abcdefgh", extensions: EditorState.allowMultipleSelections.of(true),
-                              selection: EditorSelection.create([0, 4, 8].map(n => EditorSelection.cursor(n)))})
-  let mn = m.update(m.replaceSelection("Q")).state
-  fx(I.replaceSelection, [B("EditorState.replaceSelection", 3)], {call: "s.update(s.replaceSelection(\"Q\")).state (test-state#03)", doc: "abcdefgh", selection: "cursors 0, 4, 8, main 0", allowMultipleSelections: true},
-     st(mn))
-  let m2 = EditorState.create({doc: "abcdef", extensions: EditorState.allowMultipleSelections.of(true),
-                               selection: EditorSelection.create([EditorSelection.range(0, 2), EditorSelection.range(4, 3), EditorSelection.cursor(6)], 1)})
-  let mn2 = m2.update(m2.replaceSelection("\u{1F600}")).state
-  fx(I.replaceSelection, [B("EditorState.replaceSelection", 3)], {call: "s.update(s.replaceSelection(\"\\u{1F600}\")).state", doc: "abcdef", selection: "range(0,2), range(4,3), cursor(6), main 1", allowMultipleSelections: true},
-     st(mn2))
-  let t = Text.of(["x", "y"])
-  let p = EditorState.create({doc: "ab", selection: {anchor: 1}, extensions: EditorState.lineSeparator.of("|")})
-  let spec = p.replaceSelection(t)
-  let insertedSame: boolean[] = []
-  spec.changes.iterChanges((_a, _b, _c, _d, ins) => insertedSame.push(ins === t))
-  let pn = p.update(spec).state
-  fx(I.replaceSelection, [B("EditorState.replaceSelection", 4)], {call: "t = Text.of([\"x\", \"y\"]); spec = s.replaceSelection(t) with lineSeparator \"|\"; insertedSameTextObject: for each change of spec.changes (iterChanges), whether its inserted Text is t; then s.update(spec).state: doc, selection, sliceDoc()", doc: "ab", selection: {anchor: 1}},
-     {insertedSameTextObject: insertedSame, ...st(pn), sliceDoc: pn.sliceDoc()})
+       R([...EFFS, set("s1", create({doc, selection, extensions: sep ? [of("lineSeparator", sep)] : []})), set("spec", op("state.replaceSelection", {state: $("s1"), text: insert})),
+          set("ns", st(update($("s1"), $("spec"))))],
+         merge(rec({spec: specRead($("spec"))}), jst($("ns")), rec({sliceDoc: sliceDoc($("ns"))}))))
+  fx(I.replaceSelection, [B("EditorState.replaceSelection", 3)],
+     R([set("m", create({doc: "abcdefgh", extensions: of("allowMultipleSelections", true), selection: selCreate([cursor(0), cursor(4), cursor(8)])}))],
+       jst(st(update($("m"), op("state.replaceSelection", {state: $("m"), text: "Q"}))))))
+  fx(I.replaceSelection, [B("EditorState.replaceSelection", 3)],
+     R([set("m", create({doc: "abcdef", extensions: of("allowMultipleSelections", true), selection: selCreate([range(0, 2), range(4, 3), cursor(6)], 1)}))],
+       jst(st(update($("m"), op("state.replaceSelection", {state: $("m"), text: "\u{1F600}"}))))))
+  fx(I.replaceSelection, [B("EditorState.replaceSelection", 4)],
+     R([set("tx", op("text.of", {lines: ["x", "y"]})), set("p", create({doc: "ab", selection: {anchor: 1}, extensions: of("lineSeparator", "|")})),
+        set("spec", op("state.replaceSelection", {state: $("p"), text: $("tx")})), set("pn", st(update($("p"), $("spec"))))],
+       merge(rec({insertedSameTextObject: op("map", {over: op("changes.insertedTexts", {of: item($("spec"), "changes")}), as: "ins", do: same($("ins"), $("tx"))})}),
+             jst($("pn")), rec({sliceDoc: sliceDoc($("pn"))}))))
 }
 
 // ---- changeByRange (011)
 {
-  let s = EditorState.create({doc: "hi"})
-  let seen: any[] = []
-  let r = s.changeByRange(rg => { seen.push({same: rg === s.selection.main, ...range(rg)}); return {changes: {from: rg.from, to: rg.from + 1, insert: "q"}, range: EditorSelection.cursor(rg.from + 1)} })
-  let ns = s.update(r).state
-  fx(I.changeByRange, [B("EditorState.changeByRange", 1)], {call: "r = s.changeByRange(r => ({changes: {from: r.from, to: r.from + 1, insert: \"q\"}, range: cursor(r.from + 1)})) (test-state#18); calls: for each callback call, whether its range is s.selection.main (same) and the range; result: r.changes, r.selection, r.effects; then s.update(r).state: doc, selection", doc: "hi"},
-     {calls: seen, result: {changes: r.changes.toJSON(), selection: sel(r.selection), effects: r.effects.map(eff)}, ...st(ns)})
-  let m = EditorState.create({doc: "1 2 3 4", extensions: EditorState.allowMultipleSelections.of(true),
-    selection: EditorSelection.create([EditorSelection.range(0, 1), EditorSelection.range(2, 3), EditorSelection.range(4, 5), EditorSelection.range(6, 7)])})
-  let order: number[] = []
-  let r2 = m.changeByRange(rg => { order.push(rg.from); return {changes: {from: rg.from, to: rg.to, insert: "-".repeat((rg.from >> 1) + 1)}, range: EditorSelection.range(rg.from, rg.from + 1 + (rg.from >> 1))} })
-  let mn = m.update(r2).state
-  fx(I.changeByRange, [B("EditorState.changeByRange", 2)], {call: "r = s.changeByRange(r => ({changes: {from: r.from, to: r.to, insert: \"-\".repeat((r.from >> 1) + 1)}, range: EditorSelection.range(r.from, r.from + 1 + (r.from >> 1))})), recording r.from in call order (callOrder); r.changes; s.update(r).state (test-state#19)", doc: "1 2 3 4", selection: "ranges 0-1, 2-3, 4-5, 6-7", allowMultipleSelections: true},
-     {callOrder: order, changes: r2.changes.toJSON(), ...st(mn)})
-  let r3 = m.changeByRange(rg => ({range: EditorSelection.cursor(rg.to)}))
-  fx(I.changeByRange, [B("EditorState.changeByRange", 3)], {call: "changeByRange(r => ({range: cursor(r.to)})) (no changes)", doc: "1 2 3 4", selection: "ranges 0-1, 2-3, 4-5, 6-7", allowMultipleSelections: true},
-     {changes: r3.changes.toJSON(), empty: r3.changes.empty, selection: sel(r3.selection), effects: r3.effects.map(eff)})
-  let e = EditorState.create({doc: "abcdef", extensions: EditorState.allowMultipleSelections.of(true),
-    selection: EditorSelection.create([EditorSelection.cursor(1), EditorSelection.cursor(4)])})
-  let r4 = e.changeByRange(rg => rg.from == 1
-    ? {changes: {from: 0, to: 2, insert: "XYZ"}, range: EditorSelection.cursor(3), effects: [foldLike.of({from: 0, to: 3}), posEffect.of(4)]}
-    : {changes: {from: 3, to: 6}, range: EditorSelection.cursor(3), effects: [foldLike.of({from: 3, to: 3}), trackAfter.of(3), plainEffect.of("p")]})
+  const multi = of("allowMultipleSelections", true)
+  const from = get($("rg"), "from"), to = get($("rg"), "to")
+  const cbr = (state: any, body: any) => op("state.changeByRange", {state, f: fn(["rg"], body)})
+  const result = (r: any) => rec({changes: chJSON(item(r, "changes")), selection: jsel(item(r, "selection")), effects: jeffs(item(r, "effects"))})
+  fx(I.changeByRange, [B("EditorState.changeByRange", 1)],
+     R([...EFFS, set("seen", list()), set("s", create({doc: "hi"})),
+        set("r", cbr(s, seq(push($("seen"), merge(rec({same: same($("rg"), get(selOf(s), "main"))}), jrange($("rg")))),
+          rec({changes: rec({from, to: add(from, 1), insert: "q"}), range: cursor(add(from, 1))})))),
+        set("ns", st(update(s, $("r"))))],
+       merge(rec({calls: $("seen"), result: result($("r"))}), jst($("ns")))))
+  const m = set("m", create({doc: "1 2 3 4", extensions: multi, selection: selCreate([range(0, 1), range(2, 3), range(4, 5), range(6, 7)])}))
+  const half = op("floor", {of: op("div", {a: from, b: 2})})
+  fx(I.changeByRange, [B("EditorState.changeByRange", 2)],
+     R([m, set("order", list()),
+        set("r2", cbr($("m"), seq(push($("order"), from), rec({changes: rec({from, to, insert: op("repeat", {of: "-", count: add(half, 1)})}), range: range(from, add(add(from, 1), half))})))),
+        set("mn", st(update($("m"), $("r2"))))],
+       merge(rec({callOrder: $("order"), changes: chJSON(item($("r2"), "changes"))}), jst($("mn")))))
+  fx(I.changeByRange, [B("EditorState.changeByRange", 3)],
+     R([...EFFS, m, set("r3", cbr($("m"), rec({range: cursor(to)})))],
+       rec({changes: chJSON(item($("r3"), "changes")), empty: get(item($("r3"), "changes"), "empty"), selection: jsel(item($("r3"), "selection")), effects: jeffs(item($("r3"), "effects"))})))
   fx(I.changeByRange, [B("EditorState.changeByRange", 4)],
-     {call: "cursors 1 and 4; range 1: changes 0-2 -> \"XYZ\", range cursor(3), effects [foldLike {0,3}, pos 4]; range 4: changes delete 3-6, range cursor(3), effects [foldLike {3,3}, trackAfter 3, plain \"p\"]", doc: "abcdef", allowMultipleSelections: true},
-     {changes: r4.changes.toJSON(), selection: sel(r4.selection), effects: r4.effects.map(eff)})
-  let o = EditorState.create({doc: "abcdef", extensions: EditorState.allowMultipleSelections.of(true),
-    selection: EditorSelection.create([EditorSelection.cursor(1), EditorSelection.cursor(3), EditorSelection.cursor(5)], 2)})
-  let r5 = o.changeByRange(rg => ({range: EditorSelection.range(Math.max(0, rg.from - 2), Math.min(6, rg.from + 2))}))
-  fx(I.changeByRange, [B("EditorState.changeByRange", 5)], {call: "cursors 1, 3, 5 (main 2); changeByRange(r => ({range: range(r.from - 2, r.from + 2) clamped to 0..6}))", doc: "abcdef", allowMultipleSelections: true},
-     {selection: sel(r5.selection)})
-  let a = EditorState.create({doc: "abc", extensions: EditorState.allowMultipleSelections.of(true),
-    selection: EditorSelection.create([EditorSelection.range(0, 1), EditorSelection.range(1, 2)])})
-  let r6 = a.changeByRange(rg => ({changes: {from: rg.from, to: rg.to, insert: "XX"}, range: EditorSelection.cursor(rg.from + 2)}))
-  let an = a.update(r6).state
-  fx(I.changeByRange, [B("EditorState.changeByRange", 6)], {call: "ranges 0-1 and 1-2; r = s.changeByRange(r => ({changes: {from: r.from, to: r.to, insert: \"XX\"}, range: cursor(r.from + 2)})); r.changes; s.update(r).state", doc: "abc", allowMultipleSelections: true},
-     {changes: r6.changes.toJSON(), ...st(an)})
-  let c = EditorState.create({doc: "ab", extensions: EditorState.allowMultipleSelections.of(true),
-    selection: EditorSelection.create([EditorSelection.cursor(0), EditorSelection.cursor(2)])})
-  let r7 = c.changeByRange(rg => ({changes: {from: 1, insert: rg.from == 0 ? "L" : "R"}, range: EditorSelection.cursor(2, rg.from == 0 ? -1 : 1)}))
-  let cn = c.update(r7).state
+     R([...EFFS, set("e", create({doc: "abcdef", extensions: multi, selection: selCreate([cursor(1), cursor(4)])})),
+        set("r4", cbr($("e"), cond(op("looseEq", {a: from, b: 1}),
+          rec({changes: {from: 0, to: 2, insert: "XYZ"}, range: cursor(3), effects: list(eff(FOLD, {from: 0, to: 3}), eff(POS, 4))}),
+          rec({changes: {from: 3, to: 6}, range: cursor(3), effects: list(eff(FOLD, {from: 3, to: 3}), eff(TRACK, 3), eff(PLAIN, "p"))}))))],
+       result($("r4"))))
+  fx(I.changeByRange, [B("EditorState.changeByRange", 5)],
+     R([set("o", create({doc: "abcdef", extensions: multi, selection: selCreate([cursor(1), cursor(3), cursor(5)], 2)})),
+        set("r5", cbr($("o"), rec({range: range(op("max", {of: [0, op("sub", {a: from, b: 2})]}), op("min", {of: [6, add(from, 2)]}))})))],
+       rec({selection: jsel(item($("r5"), "selection"))})))
   fx(I.changeByRange, [B("EditorState.changeByRange", 6)],
-     {call: "cursors 0 and 2; both insert at 1 (\"L\" for the first, \"R\" for the second); ranges cursor(2, -1) and cursor(2, 1) (after their own insertion); r.changes; s.update(r).state", doc: "ab", allowMultipleSelections: true},
-     {changes: r7.changes.toJSON(), ...st(cn)})
-  let u1 = EditorState.create({doc: "a\u{1F600}b\r\nc", extensions: EditorState.allowMultipleSelections.of(true),
-    selection: EditorSelection.create([EditorSelection.range(1, 3), EditorSelection.cursor(5)])})
-  let r8 = u1.changeByRange(rg => ({changes: {from: rg.from, to: rg.to, insert: "\u{1F601}\r\n"}, range: EditorSelection.cursor(rg.from + 3)}))
-  let un = u1.update(r8).state
-  fx(I.changeByRange, [B("EditorState.changeByRange", 2)], {call: "ranges 1-3 (the emoji) and cursor 5, each replaced by \"\\u{1F601}\\r\\n\" with cursor at from + 3; r.changes; s.update(r).state", doc: "a\u{1F600}b\r\nc", allowMultipleSelections: true},
-     {changes: r8.changes.toJSON(), ...st(un)})
+     R([set("a", create({doc: "abc", extensions: multi, selection: selCreate([range(0, 1), range(1, 2)])})),
+        set("r6", cbr($("a"), rec({changes: rec({from, to, insert: "XX"}), range: cursor(add(from, 2))}))), set("an", st(update($("a"), $("r6"))))],
+       merge(rec({changes: chJSON(item($("r6"), "changes"))}), jst($("an")))))
+  const first = op("looseEq", {a: from, b: 0})
+  fx(I.changeByRange, [B("EditorState.changeByRange", 6)],
+     R([set("c", create({doc: "ab", extensions: multi, selection: selCreate([cursor(0), cursor(2)])})),
+        set("r7", cbr($("c"), rec({changes: rec({from: 1, insert: cond(first, "L", "R")}), range: cursor(2, cond(first, -1, 1))}))), set("cn", st(update($("c"), $("r7"))))],
+       merge(rec({changes: chJSON(item($("r7"), "changes"))}), jst($("cn")))))
+  fx(I.changeByRange, [B("EditorState.changeByRange", 2)],
+     R([set("u1", create({doc: "a\u{1F600}b\r\nc", extensions: multi, selection: selCreate([range(1, 3), cursor(5)])})),
+        set("r8", cbr($("u1"), rec({changes: rec({from, to, insert: "\u{1F601}\r\n"}), range: cursor(add(from, 3))}))), set("un", st(update($("u1"), $("r8"))))],
+       merge(rec({changes: chJSON(item($("r8"), "changes"))}), jst($("un")))))
 }
 
 // ---- changes (012)
 {
-  let s = EditorState.create({doc: "abcd"})
-  let cs = ChangeSet.of([], 6)
-  fx(I.changes, [B("EditorState.changes", 1)], {call: "s.changes(ChangeSet.of([], 6)) on a doc of length 4", doc: "abcd"}, {same: s.changes(cs) === cs, length: s.changes(cs).length})
-  for (let [doc, spec, sep] of [["abcd", {from: 1, insert: "x\r\ny"}, null], ["abcd", {from: 1, insert: "x\ny"}, "\r\n"], ["a\u{1F600}", {from: 3, insert: "\u{1F601}\u2028z"}, null]] as [string, any, string | null][]) {
-    let s1 = EditorState.create({doc, extensions: sep ? EditorState.lineSeparator.of(sep) : []})
-    let c = s1.changes(spec)
-    fx(I.changes, [B("EditorState.changes", 2)], {call: "s.changes(spec)", doc, spec, sep}, {json: c.toJSON(), length: c.length, newLength: c.newLength})
-  }
-  fx(I.changes, [B("EditorState.changes", 3)], {call: "s.changes()", doc: "abcd"}, {json: s.changes().toJSON(), empty: s.changes().empty})
-  for (let spec of [{from: 2, to: 1}, {from: 0, to: 5}, [{from: 1}, ChangeSet.of([], 3)]])
-    fx(I.changes, [B("EditorState.changes", 4)], {call: "s.changes(spec)", doc: "abcd", spec: JSON.parse(JSON.stringify(spec))}, cap(() => s.changes(spec as any).toJSON()))
+  const s0 = set("s", create({doc: "abcd"}))
+  const ch = (state: any, spec?: any) => spec === undefined ? op("state.changes", {state}) : op("state.changes", {state, spec})
+  fx(I.changes, [B("EditorState.changes", 1)], R([s0, set("cs", chOf([], 6))], rec({same: same(ch(s, $("cs")), $("cs")), length: get(ch(s, $("cs")), "length")})))
+  for (let [doc, spec, sep] of [["abcd", {from: 1, insert: "x\r\ny"}, null], ["abcd", {from: 1, insert: "x\ny"}, "\r\n"], ["a\u{1F600}", {from: 3, insert: "\u{1F601}\u2028z"}, null]] as [string, any, string | null][])
+    fx(I.changes, [B("EditorState.changes", 2)], R([set("s1", create({doc, extensions: sep ? of("lineSeparator", sep) : []}))], lens(ch($("s1"), spec))))
+  fx(I.changes, [B("EditorState.changes", 3)], R([s0], rec({json: chJSON(ch(s)), empty: get(ch(s), "empty")})))
+  for (let spec of [{from: 2, to: 1}, {from: 0, to: 5}, list({from: 1}, chOf([], 3))])
+    fx(I.changes, [B("EditorState.changes", 4)], R([s0], chJSON(ch(s, spec))))
   for (let spec of [[{from: 3, insert: "b"}, {from: 1, insert: "a"}], [[{from: 0, to: 1}], [{from: 2, to: 3, insert: "Z"}, [{from: 4, insert: "!"}]]], [{from: 0, to: 2}, {from: 1, to: 3}]])
-    fx(I.changes, [B("EditorState.changes", 5)], {call: "c = s.changes(spec): json: c.toJSON(); doc: c.apply(s.doc).toString()", doc: "abcd", spec}, cap(() => { let c = s.changes(spec); return {json: c.toJSON(), doc: c.apply(s.doc).toString()} }))
+    fx(I.changes, [B("EditorState.changes", 5)], R([s0, set("c", ch(s, spec))], rec({json: chJSON($("c")), doc: toStr(op("changes.apply", {of: $("c"), doc: docOf(s)}))})))
 }
 
 // ---- Transaction (092)
 {
-  let s = EditorState.create({doc: "abc"})
-  let t = s.update({userEvent: "input", annotations: ann1.of(1)})
-  fx(I.tr, [B("Transaction", 2), B("Transaction^time", 2)], {call: "t = s.update({userEvent: \"input\", annotations: ann1.of(1)}): each annotation type and typeof value (annotations), Number.isInteger(t.annotation(Transaction.time)) (timeIsInteger); x = s.update({}).annotation(Transaction.time) read between a = Date.now() and b = Date.now(): a <= x <= b (timeWithinCallWindow)", doc: "abc"},
-     {annotations: (t as any).annotations.map((a: any) => ({type: a.type === Transaction.time ? "Transaction.time" : a.type === Transaction.userEvent ? "Transaction.userEvent" : "ann1",
-                                                           valueType: typeof a.value})), timeIsInteger: Number.isInteger(t.annotation(Transaction.time)),
-      timeWithinCallWindow: (() => { let a = Date.now(); let x = s.update({}).annotation(Transaction.time)!; let b = Date.now(); return x >= a && x <= b })()})
-  let t2 = s.update({annotations: [ann1.of(1), Transaction.time.of(42), ann2.of(2)]})
-  fx(I.tr, [B("Transaction", 3), B("Transaction^time", 1)], {call: "s.update({annotations: [ann1.of(1), Transaction.time.of(42), ann2.of(2)]})", doc: "abc"}, tr(t2))
-  let f = EditorState.create({doc: "abc", extensions: [EditorState.changeFilter.of(() => false), EditorState.transactionExtender.of(() => ({annotations: ann2.of(9)})),
-                                                       EditorState.transactionFilter.of(t => [t, {}])]})
-  let t3 = f.update({changes: {from: 0, insert: "x"}})
-  fx(I.tr, [B("Transaction", 4)], {call: "t = update({changes: {from: 0, insert: \"x\"}}) with changeFilter () => false, transactionFilter returning [tr, {}], transactionExtender returning {annotations: ann2.of(9)}; timeAnnotationCount: number of Transaction.time annotations of t; annotations: the type of each annotation of t, in order", doc: "abc"},
-     {timeAnnotationCount: (t3 as any).annotations.filter((a: any) => a.type === Transaction.time).length, annotations: (t3 as any).annotations.map((a: any) => a.type === Transaction.time ? "Transaction.time" : a.type === ann2 ? "ann2" : "?")})
+  const s0 = set("s", create({doc: "abc"}))
+  fx(I.tr, [B("Transaction", 2), B("Transaction^time", 2)],
+     R([...ANNS, s0, set("t", update(s, {userEvent: "input", annotations: ann("ann1", 1)})),
+        set("ta", $("t")), set("a0", op("now")), set("x", ann_(update(s, {}), "Transaction.time")), set("b0", op("now"))],
+       rec({annotations: op("map", {over: iget(t, "annotations"), as: "an", do: rec({type: item(op("json.ann", {of: $("an")}), "type"), valueType: op("typeOf", {of: get($("an"), "value")})})}),
+            timeIsInteger: op("isInteger", {of: ann_(t, "Transaction.time")}),
+            timeWithinCallWindow: op("all", {of: [op("ge", {a: $("x"), b: $("a0")}), op("le", {a: $("x"), b: $("b0")})]})})))
+  fx(I.tr, [B("Transaction", 3), B("Transaction^time", 1)], R([...ANNS, s0], jtr(update(s, {annotations: list(ann("ann1", 1), ann("Transaction.time", 42), ann("ann2", 2))}))))
+  const names = (x: any) => op("map", {over: iget(x, "annotations"), as: "an", do: item(op("json.ann", {of: $("an")}), "type")})
+  fx(I.tr, [B("Transaction", 4)],
+     R([...ANNS, defFn("cf", [], let_(false)), defFn("te", [], rec({annotations: ann("ann2", 9)})), defFn("tf", ["tr1"], list($("tr1"), rec({}))),
+        set("f", create({doc: "abc", extensions: filters(["changeFilter", "cf"], ["transactionExtender", "te"], ["transactionFilter", "tf"])})),
+        set("t3", update($("f"), {changes: {from: 0, insert: "x"}})), set("names", names($("t3")))],
+       rec({timeAnnotationCount: op("countOf", {of: $("names"), value: "Transaction.time"}), annotations: $("names")})))
   for (let selection of [{anchor: 3}, {anchor: -1}, {anchor: -5, head: 2}])
-    fx(I.tr, [B("Transaction", 1), B("Transaction", 5)], {call: "s.update({selection})", doc: "abc", selection}, cap(() => sel(s.update({selection}).selection)))
+    fx(I.tr, [B("Transaction", 1), B("Transaction", 5)], R([s0], jsel(selOf(update(s, {selection})))))
 }
 
 // ---- startState (093), changes (094), selection (095), effects (096), scrollIntoView (097)
 {
-  let s = EditorState.create({doc: "abc", extensions: [EditorState.changeFilter.of(() => [0, 1]), EditorState.transactionFilter.of(t => [t, {scrollIntoView: true}]),
-                                                       EditorState.transactionExtender.of(() => ({effects: plainEffect.of(1)}))]})
-  let t = s.update({changes: [{from: 0, to: 1, insert: "Z"}, {from: 2, insert: "Y"}]})
   fx(I.startState, [B("Transaction.startState", 1), B("Transaction.changes", 2)],
-     {call: "update with changeFilter [0, 1], transactionFilter [tr, {scrollIntoView: true}], extender adding an effect; changes 0-1 \"Z\" and insert \"Y\" at 2", doc: "abc"},
-     {startStateIsState: t.startState === s, ...tr(t)})
-  let p = EditorState.create({doc: "abcd"})
-  let t2 = p.update({changes: [{from: 3, to: 4}, {from: 0, insert: "xy"}]})
-  fx(I.trChanges, [B("Transaction.changes", 1)], {call: "s.update({changes: [{from: 3, to: 4}, {from: 0, insert: \"xy\"}]})", doc: "abcd"},
-     {json: t2.changes.toJSON(), length: t2.changes.length, newLength: t2.changes.newLength})
-  let multi = EditorSelection.create([EditorSelection.cursor(0), EditorSelection.cursor(3)], 1)
-  let t3 = p.update({selection: multi})
-  fx(I.trSelection, [B("Transaction.selection", 2)], {call: "s.update({selection: create([cursor(0), cursor(3)], 1)}) with multiple selections off", doc: "abcd"},
-     {trSelectionSame: t3.selection === multi, trSelection: sel(t3.selection), stateSelection: sel(t3.state.selection)})
-  let t4 = p.update({selection: null as any})
-  fx(I.trSelection, [B("Transaction.selection", 2), B("TransactionSpec.selection", 1)], {call: "s.update({selection: null})", doc: "abcd"},
-     {selection: sel(t4.selection), newSelection: sel(t4.newSelection)})
-  let ext = EditorState.create({doc: "abcd", extensions: [EditorState.transactionExtender.of(() => ({effects: posEffect.of(5)})), EditorState.transactionExtender.of(() => ({effects: posEffect.of(6)}))]})
-  let t5 = ext.update({effects: [posEffect.of(1), plainEffect.of("a")]}, {changes: {from: 0, insert: "XX"}, effects: posEffect.of(2)})
-  fx(I.trEffects, [B("Transaction.effects", 1)], {call: "two extenders adding pos 5 and pos 6; update({effects: [pos 1, plain \"a\"]}, {changes: insert \"XX\" at 0, effects: pos 2})", doc: "abcd"},
-     {effects: t5.effects.map(eff)})
+     R([...EFFS, defFn("cf", [], let_([0, 1])), defFn("tf", ["tr1"], list($("tr1"), rec({scrollIntoView: true}))), defFn("te", [], rec({effects: eff(PLAIN, 1)})),
+        set("s", create({doc: "abc", extensions: filters(["changeFilter", "cf"], ["transactionFilter", "tf"], ["transactionExtender", "te"])})),
+        set("t", update(s, {changes: [{from: 0, to: 1, insert: "Z"}, {from: 2, insert: "Y"}]}))],
+       merge(rec({startStateIsState: same(get(t, "startState"), s)}), jtr(t))))
+  const p0 = set("p", create({doc: "abcd"})), p = $("p")
+  fx(I.trChanges, [B("Transaction.changes", 1)], R([p0], lens(get(update(p, {changes: [{from: 3, to: 4}, {from: 0, insert: "xy"}]}), "changes"))))
+  fx(I.trSelection, [B("Transaction.selection", 2)], R([p0, set("multi", selCreate([cursor(0), cursor(3)], 1)), set("t3", update(p, {selection: $("multi")}))],
+     rec({trSelectionSame: same(selOf($("t3")), $("multi")), trSelection: jsel(selOf($("t3"))), stateSelection: jsel(selOf(st($("t3"))))})))
+  fx(I.trSelection, [B("Transaction.selection", 2), B("TransactionSpec.selection", 1)], R([p0, set("t4", update(p, {selection: null}))],
+     rec({selection: jsel(selOf($("t4"))), newSelection: jsel(get($("t4"), "newSelection"))})))
+  fx(I.trEffects, [B("Transaction.effects", 1)],
+     R([...EFFS, defFn("e5", [], rec({effects: eff(POS, 5)})), defFn("e6", [], rec({effects: eff(POS, 6)})),
+        set("ext", create({doc: "abcd", extensions: filters(["transactionExtender", "e5"], ["transactionExtender", "e6"])})),
+        set("t5", update($("ext"), {effects: list(eff(POS, 1), eff(PLAIN, "a"))}, {changes: {from: 0, insert: "XX"}, effects: eff(POS, 2)}))],
+       rec({effects: jeffs(get($("t5"), "effects"))})))
   for (let specs of [[{}], [{scrollIntoView: true}], [{scrollIntoView: false}, {scrollIntoView: true}], [{scrollIntoView: 1}], [{scrollIntoView: "yes"}], [{scrollIntoView: 0}]])
-    fx(I.trScroll, [B("Transaction.scrollIntoView", 1), B("TransactionSpec.scrollIntoView", 1)], {call: "s.update(...specs).scrollIntoView", doc: "abcd", specs},
-       p.update(...(specs as any)).scrollIntoView)
-  let f = EditorState.create({doc: "ab", extensions: [EditorState.changeFilter.of(() => false), EditorState.transactionExtender.of(() => ({annotations: ann1.of(1)}))]})
-  fx(I.trScroll, [B("Transaction.scrollIntoView", 1)], {call: "update({changes: {from: 0, insert: \"x\"}, scrollIntoView: true}).scrollIntoView with changeFilter () => false and transactionExtender returning {annotations: ann1.of(1)}", doc: "ab"},
-     f.update({changes: {from: 0, insert: "x"}, scrollIntoView: true}).scrollIntoView)
-  let x = EditorState.create({doc: "ab", extensions: EditorState.transactionExtender.of(() => ({scrollIntoView: true} as any))})
-  fx(I.trScroll, [B("Transaction.scrollIntoView", 1)], {call: "extender returning {scrollIntoView: true}; update({})", doc: "ab"}, x.update({}).scrollIntoView)
+    fx(I.trScroll, [B("Transaction.scrollIntoView", 1), B("TransactionSpec.scrollIntoView", 1)], R([p0], get(update(p, ...specs), "scrollIntoView")))
+  fx(I.trScroll, [B("Transaction.scrollIntoView", 1)],
+     R([...ANNS, defFn("cf", [], let_(false)), defFn("te", [], rec({annotations: ann("ann1", 1)})),
+        set("f", create({doc: "ab", extensions: filters(["changeFilter", "cf"], ["transactionExtender", "te"])}))],
+       get(update($("f"), {changes: {from: 0, insert: "x"}, scrollIntoView: true}), "scrollIntoView")))
+  fx(I.trScroll, [B("Transaction.scrollIntoView", 1)],
+     R([defFn("te", [], rec({scrollIntoView: true})), set("x", create({doc: "ab", extensions: filters(["transactionExtender", "te"])}))],
+       get(update($("x"), {}), "scrollIntoView")))
 }
 
 // ---- newDoc (098), newSelection (099)
 {
-  let s = EditorState.create({doc: "abc", selection: {anchor: 2}})
-  let t = s.update({changes: {from: 1, insert: "X"}})
-  let d1 = t.newDoc, d2 = t.newDoc
-  fx(I.newDoc, [B("Transaction.newDoc", 1)], {call: "t = s.update({changes: {from: 1, insert: \"X\"}}); t.newDoc twice; t.state.doc", doc: "abc"},
-     {doc: text(d1), cached: d1 === d2, sameAsStateDoc: t.state.doc === d1})
-  let t2 = s.update({selection: {anchor: 0}})
-  fx(I.newDoc, [B("Transaction.newDoc", 2)], {call: "s.update({selection: {anchor: 0}}).newDoc", doc: "abc"}, {sameAsStartDoc: t2.newDoc === s.doc})
-  let bad = ChangeSet.of({from: 0, insert: "z"}, 5)
-  let t3 = cap(() => { let x = s.update({changes: bad}); return {created: true, changesLength: x.changes.length, newDoc: cap(() => x.newDoc.toString()), state: cap(() => x.state.doc.toString())} })
-  fx(I.newDoc, [B("Transaction.newDoc", 3), B("TransactionSpec.changes", 2)], {call: "s.update({changes: ChangeSet.of({from: 0, insert: \"z\"}, 5)}) on a doc of length 3; then newDoc, then state", doc: "abc"}, t3)
-  let sel1 = EditorSelection.single(1)
-  let t4 = s.update({selection: sel1, changes: {from: 0, insert: "y"}})
-  fx(I.newSelection, [B("Transaction.newSelection", 1)], {call: "sel1 = EditorSelection.single(1); s.update({selection: sel1, changes: {from: 0, insert: \"y\"}}).newSelection === sel1", doc: "abc", selection: {anchor: 2}}, {same: t4.newSelection === sel1})
-  let t5 = s.update({}), t6 = s.update({changes: {from: 0, insert: "y"}})
-  fx(I.newSelection, [B("Transaction.newSelection", 2)], {call: "s.update({}).newSelection; s.update({changes: insert \"y\" at 0}).newSelection read twice", doc: "abc", selection: {anchor: 2}},
-     {emptyChangesSameAsStart: t5.newSelection === s.selection, mapped: sel(t6.newSelection), sameObjectOnSecondRead: t6.newSelection === t6.newSelection})
-  let m = EditorState.create({doc: "abc"})
-  let multi = EditorSelection.create([EditorSelection.cursor(0), EditorSelection.cursor(3)])
-  let t7 = m.update({selection: multi})
-  fx(I.newSelection, [B("Transaction.newSelection", 3)], {call: "s.update({selection: create([cursor(0), cursor(3)])}) with multiple selections off", doc: "abc"},
-     {newSelection: sel(t7.newSelection), stateSelection: sel(t7.state.selection)})
+  const s0 = set("s", create({doc: "abc", selection: {anchor: 2}}))
+  fx(I.newDoc, [B("Transaction.newDoc", 1)], R([s0, set("t", update(s, {changes: {from: 1, insert: "X"}})), set("d1", get(t, "newDoc")), set("d2", get(t, "newDoc"))],
+     rec({doc: jtext($("d1")), cached: same($("d1"), $("d2")), sameAsStateDoc: same(docOf(st(t)), $("d1"))})))
+  fx(I.newDoc, [B("Transaction.newDoc", 2)], R([s0], rec({sameAsStartDoc: same(get(update(s, {selection: {anchor: 0}}), "newDoc"), docOf(s))})))
+  fx(I.newDoc, [B("Transaction.newDoc", 3), B("TransactionSpec.changes", 2)],
+     R([s0, set("x", update(s, {changes: chOf({from: 0, insert: "z"}, 5)}))],
+       rec({created: op("isInstance", {of: $("x"), class: "Transaction"}), changesLength: get(get($("x"), "changes"), "length"),
+            newDoc: op("capture", {do: toStr(get($("x"), "newDoc"))}), state: op("capture", {do: toStr(docOf(st($("x"))))})})))
+  fx(I.newSelection, [B("Transaction.newSelection", 1)],
+     R([s0, set("sel1", op("sel.single", {anchor: 1}))], rec({same: same(get(update(s, {selection: $("sel1"), changes: {from: 0, insert: "y"}}), "newSelection"), $("sel1"))})))
+  fx(I.newSelection, [B("Transaction.newSelection", 2)],
+     R([s0, set("t5", update(s, {})), set("t6", update(s, {changes: {from: 0, insert: "y"}}))],
+       rec({emptyChangesSameAsStart: same(get($("t5"), "newSelection"), selOf(s)), mapped: jsel(get($("t6"), "newSelection")),
+            sameObjectOnSecondRead: same(get($("t6"), "newSelection"), get($("t6"), "newSelection"))})))
+  fx(I.newSelection, [B("Transaction.newSelection", 3)],
+     R([set("t7", update(create({doc: "abc"}), {selection: selCreate([cursor(0), cursor(3)])}))],
+       rec({newSelection: jsel(get($("t7"), "newSelection")), stateSelection: jsel(selOf(st($("t7"))))})))
 }
 
 // ---- state (100)
 {
-  let log: string[] = []
-  let a = StateField.define<number>({create: () => { log.push("A.create"); return 0 }, update: v => { log.push("A.update"); return v + 1 }})
-  let b = StateField.define<number>({create: () => { log.push("B.create"); return 0 }, update: v => { log.push("B.update"); return v }})
-  let s = EditorState.create({extensions: [a, b]})
-  log.length = 0
-  let ns = s.update({}).state
-  fx(I.trState, [B("Transaction.state", 2)], {call: "s = EditorState.create({extensions: [A, B]}); log cleared; ns = s.update({}).state; the create/update log (log), ns.field(A), ns.field(B), ns.config === s.config (sameConfig)", fields: ["A", "B"], A: "create () => 0, update v => v + 1 (both logged)", B: "create () => 0, update v => v (both logged)"}, {log, A: ns.field(a), B: ns.field(b), sameConfig: ns.config === s.config})
-  let s2 = EditorState.create({extensions: [a]}).update({}).state
-  fx(I.trState, [B("Transaction.state", 4), B("Transaction.state", 6), B("StateEffect^reconfigure", 1)], {call: "start = create([A]).update({}).state; start.update({effects: reconfigure.of(A)}); start.update({effects: reconfigure.of([])}) (test-state#11); read field(A) in each (start, keep), field(A, false) in the last (drop)", A: "create () => 0, update v => v + 1"},
-     {start: s2.field(a), keep: s2.update({effects: StateEffect.reconfigure.of(a)}).state.field(a), drop: u(s2.update({effects: StateEffect.reconfigure.of([])}).state.field(a, false))})
-  let seen: any[] = []
-  let marker = name(StateEffect.define<string>(), "marker")
-  let n = StateField.define<string>({create: st => { seen.push(["create", st.doc.length, st.selection.main.head]); return "c" + st.doc.length },
-                                     update: (v, t) => { seen.push(["update", v, t.docChanged, t.effects.filter(e => e.is(marker)).map(e => e.value)]); return v + "|u" + t.state.doc.length }})
-  let s3 = EditorState.create({doc: "abc", selection: {anchor: 3}})
-  let s4 = s3.update({changes: {from: 3, insert: "def"}, selection: {anchor: 6}, effects: [StateEffect.appendConfig.of(n), marker.of("m")]}).state
+  const AB = [set("log", list()),
+    fieldDef("A", {create: fn([], seq(push($("log"), label("A.create")), 0)), update: fn(["v"], seq(push($("log"), label("A.update")), add($("v"), 1)))}),
+    fieldDef("B", {create: fn([], seq(push($("log"), label("B.create")), 0)), update: fn(["v"], seq(push($("log"), label("B.update")), $("v")))})]
+  fx(I.trState, [B("Transaction.state", 2)],
+     R([...AB, set("s", create({extensions: [{field: "A"}, {field: "B"}]})), set("log", list()), set("ns", st(update(s, {})))],
+       rec({log: $("log"), A: field($("ns"), "A"), B: field($("ns"), "B"), sameConfig: same(iget($("ns"), "config"), iget(s, "config"))})))
+  fx(I.trState, [B("Transaction.state", 4), B("Transaction.state", 6), B("StateEffect^reconfigure", 1)],
+     R([...AB, set("s2", st(update(create({extensions: [{field: "A"}]}), {})))],
+       rec({start: field($("s2"), "A"), keep: field(st(update($("s2"), {effects: op("effect.reconfigure", {ext: {field: "A"}})})), "A"),
+            drop: field(st(update($("s2"), {effects: op("effect.reconfigure", {ext: []})})), "A", false)})))
+  const tt = $("tn")
   fx(I.trState, [B("Transaction.state", 5), B("StateEffect^appendConfig", 1)],
-     {call: "create({doc: \"abc\", selection: {anchor: 3}}).update({changes: insert \"def\" at 3, selection: {anchor: 6}, effects: [appendConfig.of(N), marker.of(\"m\")]}).state", N: "create records (doc length, main head); update records (value, docChanged, marker effects) and returns v + \"|u\" + tr.state.doc.length"},
-     {seen, value: s4.field(n)})
-  let comp = new Compartment, f = Facet.define<string>()
-  let r0 = EditorState.create({extensions: [comp.of(f.of("A")), f.of("base")]})
-  let r1 = r0.update({effects: [comp.reconfigure(f.of("B")), StateEffect.appendConfig.of(f.of("app")), comp.reconfigure(f.of("C"))]}).state
-  fx(I.trState, [B("Transaction.state", 3)], {call: "r0 = create([comp.of(f.of(\"A\")), f.of(\"base\")]); r1 = r0.update({effects: [comp.reconfigure(f.of(\"B\")), appendConfig.of(f.of(\"app\")), comp.reconfigure(f.of(\"C\"))]}).state; facet: r1.facet(f); startCompartmentAfter: comp.get(r0) afterwards, written f.of(<value>)"},
-     {facet: r1.facet(f), startCompartmentAfter: comp.get(r0) === undefined ? "<undefined>" : (comp.get(r0) as any).facet ? "f.of(" + (comp.get(r0) as any).value + ")" : "?"})
-  let q0 = EditorState.create({extensions: [comp.of(f.of("A")), f.of("base")]})
-  let q1 = q0.update({effects: [StateEffect.appendConfig.of([]), comp.reconfigure(f.of("B"))]}).state
-  let q2 = q0.update({effects: StateEffect.appendConfig.of([])}).state
-  fx(I.trState, [B("Transaction.state", 7)], {call: "s0 = create([comp.of(f.of(\"A\")), f.of(\"base\")]); s0.update({effects: [appendConfig.of([]), comp.reconfigure(f.of(\"B\"))]}).state; then comp.get(s0), s0.facet(f), s0.update({effects: appendConfig.of([])}).state.facet(f) (Q14)"},
-     {newState: q1.facet(f), startCompartmentNow: (comp.get(q0) as any).value, startFacetNow: q0.facet(f), laterFromStart: q2.facet(f)})
-  let calls = 0
-  let c = StateField.define<number>({create: () => 0, update: v => { calls++; return v + 1 }})
-  let fl = EditorState.create({doc: "ab", extensions: [c, EditorState.transactionFilter.of(t => { t.state; return [t, {}] })]})
-  let ft = fl.update({changes: {from: 0, insert: "x"}})
-  let before = calls, fs = ft.state
-  fx(I.trState, [B("Transaction.state", 9)], {call: "s = EditorState.create({doc: \"ab\", extensions: [C, transactionFilter reading tr.state then returning [tr, {}]]}); ft = s.update({changes: {from: 0, insert: \"x\"}}); C.update calls after update() (callsAfterUpdate) and after reading ft.state (callsAfterFinalState); ft.state.field(C) (field)", doc: "ab", C: "create () => 0, update v => v + 1 (calls counted)"},
-     {callsAfterUpdate: before, callsAfterFinalState: calls, field: fs.field(c)})
+     R([set("seen", list()), op("effect.define", {name: "marker"}),
+        fieldDef("N", {create: fn(["cs"], seq(push($("seen"), list(label("create"), get(docOf($("cs")), "length"), get(get(selOf($("cs")), "main"), "head"))),
+                                         op("concat", {of: [label("c"), get(docOf($("cs")), "length")]}))),
+                       update: fn(["vn", "tn"], seq(push($("seen"), list(label("update"), $("vn"), get(tt, "docChanged"),
+                                                       op("map", {over: op("filter", {over: get(tt, "effects"), as: "ef", do: op("effect.is", {effect: $("ef"), type: "marker"})}), as: "ef", do: get($("ef"), "value")}))),
+                                                op("concat", {of: [$("vn"), label("|u"), get(docOf(st(tt)), "length")]})))}),
+        set("s4", st(update(create({doc: "abc", selection: {anchor: 3}}), {changes: {from: 3, insert: "def"}, selection: {anchor: 6},
+          effects: list(op("effect.appendConfig", {ext: {field: "N"}}), eff("marker", "m"))})))],
+       rec({seen: $("seen"), value: field($("s4"), "N")})))
+  const cf = [op("define", {def: ["compartment", "comp"]}), op("facet.define", {name: "f"})]
+  const compRe = (v: string) => op("compartment.reconfigure", {comp: "comp", ext: of("f", v)})
+  fx(I.trState, [B("Transaction.state", 3)],
+     R([...cf, set("r0", create({extensions: [{comp: ["comp", of("f", "A")]}, of("f", "base")]})),
+        set("r1", st(update($("r0"), {effects: list(compRe("B"), op("effect.appendConfig", {ext: of("f", "app")}), compRe("C"))}))),
+        set("c", op("compartment.get", {comp: "comp", state: $("r0")}))],
+       rec({facet: facet($("r1"), "f"), startCompartmentAfter: cond(op("isType", {of: $("c"), type: "undefined"}), $("c"),
+         cond(iget($("c"), "facet"), op("concat", {of: [label("f.of("), iget($("c"), "value"), label(")")]}), label("?")))})))
+  fx(I.trState, [B("Transaction.state", 7)],
+     R([...cf, set("q0", create({extensions: [{comp: ["comp", of("f", "A")]}, of("f", "base")]})),
+        set("q1", st(update($("q0"), {effects: list(op("effect.appendConfig", {ext: []}), compRe("B"))}))),
+        set("q2", st(update($("q0"), {effects: op("effect.appendConfig", {ext: []})})))],
+       rec({newState: facet($("q1"), "f"), startCompartmentNow: iget(op("compartment.get", {comp: "comp", state: $("q0")}), "value"),
+            startFacetNow: facet($("q0"), "f"), laterFromStart: facet($("q2"), "f")})))
+  fx(I.trState, [B("Transaction.state", 9)],
+     R([set("calls", 0),
+        fieldDef("C", {create: constFn(0), update: fn(["v"], block([set("calls", add($("calls"), 1)), set("rv", add($("v"), 1))], "rv"))}),
+        defFn("tf", ["tr1"], seq(st($("tr1")), list($("tr1"), rec({})))),
+        set("fl", create({doc: "ab", extensions: [{field: "C"}, ofVar("transactionFilter", "tf")]})),
+        set("ft", update($("fl"), {changes: {from: 0, insert: "x"}})), set("before", $("calls")), set("fs", st($("ft")))],
+       rec({callsAfterUpdate: $("before"), callsAfterFinalState: $("calls"), field: field($("fs"), "C")})))
 }
 
 // ---- annotation (101), docChanged (102), reconfigured (103)
 {
-  let s = EditorState.create({doc: "abc"})
-  let other = name(Annotation.define<number>(), "other")
-  let t = s.update({annotations: [ann1.of("first"), ann2.of(2), ann1.of("second")]})
+  const s0 = set("s", create({doc: "abc"}))
   fx(I.annotation, [B("Transaction.annotation", 1), B("Transaction.annotation", 2), B("Transaction.annotation", 3)],
-     {call: "s.update({annotations: [ann1.of(\"first\"), ann2.of(2), ann1.of(\"second\")]}); annotation(ann1), annotation(ann2), annotation(other); s.update({annotations: ann1.of(undefined)}).annotation(ann1) (undefinedValue)", doc: "abc"},
-     {ann1: t.annotation(ann1), ann2: t.annotation(ann2), other: u(t.annotation(other)), undefinedValue: u(s.update({annotations: ann1.of(undefined)}).annotation(ann1))})
+     R([...ANNS, defAnn("other"), s0, set("t", update(s, {annotations: list(ann("ann1", "first"), ann("ann2", 2), ann("ann1", "second"))}))],
+       rec({ann1: ann_(t, "ann1"), ann2: ann_(t, "ann2"), other: ann_(t, "other"), undefinedValue: ann_(update(s, {annotations: ann("ann1", undefined)}), "ann1")})))
   for (let [changes, n] of [[[], 1], [{from: 1, insert: ""}, 1], [{from: 1, to: 1}, 1], [{from: 0, to: 1, insert: "a"}, 1], [{from: 3, insert: "\n"}, 1]] as [any, number][])
-    fx(I.docChanged, [B("Transaction.docChanged", n)], {call: "s.update({changes}).docChanged", doc: "abc", changes}, s.update({changes}).docChanged)
-  let f = EditorState.create({doc: "abc", extensions: EditorState.changeFilter.of(() => false)})
-  fx(I.docChanged, [B("Transaction.docChanged", 2)], {call: "with changeFilter () => false: update({changes: {from: 0, insert: \"x\"}}).docChanged (filtered); update({changes: {from: 0, insert: \"x\"}, filter: false}).docChanged (unfiltered)", doc: "abc"},
-     {filtered: f.update({changes: {from: 0, insert: "x"}}).docChanged, unfiltered: f.update({changes: {from: 0, insert: "x"}, filter: false}).docChanged})
-  let comp = new Compartment, fc = Facet.define<number>(), content = fc.of(1)
-  let r = EditorState.create({extensions: comp.of(content)})
-  let calls = 0
-  let cf = StateField.define<number>({create: () => 0, update: v => { calls++; return v }})
-  let rr = EditorState.create({extensions: [comp.of(content), cf]})
-  let rt = rr.update({})
-  let callsBefore = calls
-  let rec = rt.reconfigured
+    fx(I.docChanged, [B("Transaction.docChanged", n)], R([s0], get(update(s, {changes}), "docChanged")))
+  fx(I.docChanged, [B("Transaction.docChanged", 2)],
+     R([defFn("cf", [], let_(false)), set("f", create({doc: "abc", extensions: ofVar("changeFilter", "cf")}))],
+       rec({filtered: get(update($("f"), {changes: {from: 0, insert: "x"}}), "docChanged"), unfiltered: get(update($("f"), {changes: {from: 0, insert: "x"}, filter: false}), "docChanged")})))
   fx(I.reconfigured, [B("Transaction.reconfigured", 1), B("Transaction.reconfigured", 2)],
-     {call: "content = fc.of(1); rr = EditorState.create({extensions: [comp.of(content), CF]}); rt = rr.update({}); CF.update calls before (fieldUpdatesBeforeRead) and after (fieldUpdatesAfterRead) reading rt.reconfigured (none); EditorState.create().update({effects: reconfigure.of([])}).reconfigured (reconfigureEmpty); r = EditorState.create({extensions: comp.of(content)}): r.update({effects: appendConfig.of([])}).reconfigured (appendEmpty), r.update({effects: comp.reconfigure(content)}).reconfigured (compartmentSameContent), r.update({effects: plain.of(1)}).reconfigured (plainEffect)", CF: "create () => 0, update v => v (calls counted)"},
-     {none: rec, fieldUpdatesBeforeRead: callsBefore, fieldUpdatesAfterRead: calls,
-      reconfigureEmpty: EditorState.create().update({effects: StateEffect.reconfigure.of([])}).reconfigured,
-      appendEmpty: r.update({effects: StateEffect.appendConfig.of([])}).reconfigured,
-      compartmentSameContent: r.update({effects: comp.reconfigure(content)}).reconfigured,
-      plainEffect: r.update({effects: plainEffect.of(1)}).reconfigured})
+     R([...EFFS, op("define", {def: ["compartment", "comp"]}), op("facet.define", {name: "fc"}), op("define", {def: ["shared", "content", of("fc", 1)]}),
+        set("r", create({extensions: {comp: ["comp", {ref: "content"}]}})), set("calls", 0),
+        fieldDef("CF", {create: constFn(0), update: fn(["v"], block([set("calls", add($("calls"), 1))], "v"))}),
+        set("rr", create({extensions: [{comp: ["comp", {ref: "content"}]}, {field: "CF"}]})), set("rt", update($("rr"), {})),
+        set("callsBefore", $("calls")), set("rec", get($("rt"), "reconfigured"))],
+       rec({none: $("rec"), fieldUpdatesBeforeRead: $("callsBefore"), fieldUpdatesAfterRead: $("calls"),
+            reconfigureEmpty: get(update(create(), {effects: op("effect.reconfigure", {ext: []})}), "reconfigured"),
+            appendEmpty: get(update($("r"), {effects: op("effect.appendConfig", {ext: []})}), "reconfigured"),
+            compartmentSameContent: get(update($("r"), {effects: op("compartment.reconfigure", {comp: "comp", ext: {ref: "content"}})}), "reconfigured"),
+            plainEffect: get(update($("r"), {effects: eff(PLAIN, 1)}), "reconfigured")})))
 }
 
 // ---- isUserEvent (104), userEvent (106)
 {
-  let s = EditorState.create()
+  const s0 = set("s", create())
   let cases: [any, string, number][] = [
     ["select.pointer", "select.pointer", 1], ["input", "input", 1],
     ["select.pointer", "select", 2], ["input.type.compose", "input.type", 2], ["input.type.compose", "input", 2], ["input.type", "input.type.compose", 2],
@@ -338,51 +312,46 @@ const T0 = Transaction.time.of(1000)
     ["select", "", 4], [".x", "", 4], ["x.", "x", 2],
     ["\u00e9v.\u{1F600}", "\u00e9v", 2],
   ]
-  for (let [ev, q, n] of cases) {
-    let t = ev === undefined ? s.update({}) : s.update({annotations: Transaction.userEvent.of(ev)})
-    fx(I.isUserEvent, [B("Transaction.isUserEvent", n)], {call: ev === undefined ? "s.update({}).isUserEvent(event)" : "s.update({annotations: Transaction.userEvent.of(ev)}).isUserEvent(event)", ev: u(ev), event: q}, t.isUserEvent(q))
-  }
-  let t = s.update({annotations: [Transaction.userEvent.of("delete"), Transaction.userEvent.of("input.type")]})
-  fx(I.isUserEvent, [B("Transaction.isUserEvent", 5)], {call: "annotations [userEvent \"delete\", userEvent \"input.type\"]; isUserEvent(\"input\"), isUserEvent(\"delete\")"},
-     {input: t.isUserEvent("input"), delete: t.isUserEvent("delete")})
-  let u1 = s.update({userEvent: "input.type"}), u2 = s.update({annotations: Transaction.userEvent.of("select.pointer")})
-  fx(I.userEvent, [B("Transaction^userEvent", 1)], {call: "update({userEvent: \"input.type\"}).annotation(Transaction.userEvent); update({annotations: Transaction.userEvent.of(\"select.pointer\")}).annotation(...)"},
-     {fromShorthand: u1.annotation(Transaction.userEvent), fromAnnotation: u2.annotation(Transaction.userEvent)})
+  for (let [ev, q, n] of cases)
+    fx(I.isUserEvent, [B("Transaction.isUserEvent", n)], R([s0], isUE(ev === undefined ? update(s, {}) : update(s, {annotations: ann("Transaction.userEvent", ev)}), q)))
+  fx(I.isUserEvent, [B("Transaction.isUserEvent", 5)],
+     R([s0, set("t", update(s, {annotations: list(ann("Transaction.userEvent", "delete"), ann("Transaction.userEvent", "input.type"))}))],
+       rec({input: isUE(t, "input"), delete: isUE(t, "delete")})))
+  fx(I.userEvent, [B("Transaction^userEvent", 1)],
+     R([s0], rec({fromShorthand: ann_(update(s, {userEvent: "input.type"}), "Transaction.userEvent"),
+                  fromAnnotation: ann_(update(s, {annotations: ann("Transaction.userEvent", "select.pointer")}), "Transaction.userEvent")})))
 }
 
 // ---- time (105), addToHistory (107), remote (108)
 {
-  let s = EditorState.create()
+  const s0 = set("s", create())
   for (let v of [42, 0, -5, 1.5, 1e15])
-    fx(I.time, [B("Transaction^time", 1)], {call: "s.update({annotations: Transaction.time.of(v)}).annotation(Transaction.time)", v}, s.update({annotations: Transaction.time.of(v)}).annotation(Transaction.time))
-  let t = s.update({annotations: [Transaction.addToHistory.of(false), Transaction.remote.of(true)], changes: {from: 0, insert: "x"}})
+    fx(I.time, [B("Transaction^time", 1)], R([s0], ann_(update(s, {annotations: ann("Transaction.time", v)}), "Transaction.time")))
   fx(I.addToHistory, [B("Transaction^addToHistory", 1), B("Transaction^remote", 1)],
-     {call: "update({annotations: [addToHistory.of(false), remote.of(true)], changes}) (the collab receiveUpdates annotations, mirrors/cm6/collab/src/collab.ts:128-129) with changes {from: 0, insert: \"x\"}: annotation(addToHistory), annotation(remote), state.doc; s.update({}).annotation(addToHistory) (absentAddToHistory), s.update({}).annotation(remote) (absentRemote)", doc: ""},
-     {addToHistory: t.annotation(Transaction.addToHistory), remote: t.annotation(Transaction.remote), doc: t.state.doc.toString(), absentAddToHistory: u(s.update({}).annotation(Transaction.addToHistory)), absentRemote: u(s.update({}).annotation(Transaction.remote))})
+     R([s0, set("t", update(s, {annotations: list(ann("Transaction.addToHistory", false), ann("Transaction.remote", true)), changes: {from: 0, insert: "x"}}))],
+       rec({addToHistory: ann_(t, "Transaction.addToHistory"), remote: ann_(t, "Transaction.remote"), doc: toStr(docOf(st(t))),
+            absentAddToHistory: ann_(update(s, {}), "Transaction.addToHistory"), absentRemote: ann_(update(s, {}), "Transaction.remote")})))
 }
 
 // ---- TransactionSpec.changes (110)
 {
-  let s = EditorState.create({doc: "abcd"})
-  for (let changes of [{from: 1, to: 3, insert: "X"}, [{from: 0, insert: "A"}, [{from: 4, insert: "Z"}]], ChangeSet.of({from: 2, insert: "C"}, 4), [{from: 1, to: 2}, ChangeSet.of({from: 3, insert: "Q"}, 4)]])
-    fx(I.specChanges, [B("TransactionSpec.changes", 1)], {call: "s.update({changes})", doc: "abcd", changes: changes instanceof ChangeSet ? {ChangeSet: changes.toJSON()} : JSON.parse(JSON.stringify(changes, (k, v) => v instanceof ChangeSet ? {ChangeSet: v.toJSON()} : v))},
-       (() => { let t = s.update({changes}); return {changes: t.changes.toJSON(), doc: t.newDoc.toString()} })())
-  for (let [doc, insert, sep] of [["ab", "x\ny", null], ["ab", "x\r\ny\rz", null], ["ab", "x\u2028y", null], ["ab", "\u{1F600}\r\n", null], ["ab", "x\ny\r\nz", "\r\n"]] as [string, string, string | null][]) {
-    let s1 = EditorState.create({doc, extensions: sep ? EditorState.lineSeparator.of(sep) : []})
-    let t = s1.update({changes: {from: 1, insert}})
-    fx(I.specChanges, [B("TransactionSpec.changes", 3)], {call: "s.update({changes: {from: 1, insert}})", doc, insert, sep}, {changes: t.changes.toJSON(), newLength: t.changes.newLength, doc: text(t.newDoc)})
-  }
+  const s0 = set("s", create({doc: "abcd"}))
+  for (let changes of [{from: 1, to: 3, insert: "X"}, [{from: 0, insert: "A"}, [{from: 4, insert: "Z"}]], chOf({from: 2, insert: "C"}, 4), list({from: 1, to: 2}, chOf({from: 3, insert: "Q"}, 4))])
+    fx(I.specChanges, [B("TransactionSpec.changes", 1)], R([s0, set("t", update(s, {changes}))], rec({changes: chJSON(get(t, "changes")), doc: toStr(get(t, "newDoc"))})))
+  for (let [doc, insert, sep] of [["ab", "x\ny", null], ["ab", "x\r\ny\rz", null], ["ab", "x\u2028y", null], ["ab", "\u{1F600}\r\n", null], ["ab", "x\ny\r\nz", "\r\n"]] as [string, string, string | null][])
+    fx(I.specChanges, [B("TransactionSpec.changes", 3)],
+       R([set("t", update(create({doc, extensions: sep ? of("lineSeparator", sep) : []}), {changes: {from: 1, insert}}))],
+         rec({changes: chJSON(get(t, "changes")), newLength: get(get(t, "changes"), "newLength"), doc: jtext(get(t, "newDoc"))})))
   for (let changes of [{from: 1}, {from: 1, to: 1, insert: ""}, [{from: 0, insert: ""}, {from: 2}]])
-    fx(I.specChanges, [B("TransactionSpec.changes", 5)], {call: "s.update({changes})", doc: "abcd", changes}, (() => { let t = s.update({changes}); return {changes: t.changes.toJSON(), docChanged: t.docChanged} })())
+    fx(I.specChanges, [B("TransactionSpec.changes", 5)], R([s0, set("t", update(s, {changes}))], rec({changes: chJSON(get(t, "changes")), docChanged: get(t, "docChanged")})))
 }
 
 // ---- TransactionSpec.selection (111)
 {
-  let s = EditorState.create({doc: "abcd"})
-  let given = EditorSelection.create([EditorSelection.cursor(2, 1)])
-  for (let [desc, selection] of [["EditorSelection.create([cursor(2, 1)])", given], ["{anchor: 1}", {anchor: 1}], ["{anchor: 3, head: 1}", {anchor: 3, head: 1}], ["undefined", undefined], ["false", false], ["0", 0]] as [string, any][])
-    fx(I.specSelection, [B("TransactionSpec.selection", 1)], {call: "t = s.update({selection}); t.selection (selection), t.selection === the given object (same)", doc: "abcd", selection: desc},
-       (() => { let t = s.update({selection}); let v: any = t.selection; return {selection: v instanceof EditorSelection ? sel(v) : v === undefined ? "<undefined>" : v, same: v === given} })())
+  const s0 = set("s", create({doc: "abcd"})), given = set("given", selCreate([cursor(2, 1)]))
+  for (let selection of [$("given"), {anchor: 1}, {anchor: 3, head: 1}, undefined, false, 0])
+    fx(I.specSelection, [B("TransactionSpec.selection", 1)], R([s0, given, set("t", update(s, {selection}))],
+       rec({selection: jsel(selOf(t)), same: same(selOf(t), $("given"))})))
   let cases: [string, any[], number][] = [
     ["later selection wins, mapped through earlier changes", [{changes: {from: 0, insert: "AAA"}, selection: {anchor: 0}}, {changes: {from: 2, insert: "B"}, selection: {anchor: 3}}], 2],
     ["later selection at the shared insertion point", [{changes: {from: 2, insert: "XX"}}, {changes: {from: 2, insert: "Y"}, selection: {anchor: 2, head: 3}}], 2],
@@ -392,66 +361,53 @@ const T0 = Transaction.time.of(1000)
     ["selection valid only in the final document", [{selection: {anchor: 5}}, {changes: {from: 0, insert: "xx"}}], 4],
   ]
   for (let [desc, specs, n] of cases)
-    fx(I.specSelection, [B("TransactionSpec.selection", n)], {call: "s.update(...specs)", doc: "abcd", desc, specs}, cap(() => { let t = s.update(...specs); return {selection: sel(t.selection), doc: t.newDoc.toString()} }))
+    fx(I.specSelection, [B("TransactionSpec.selection", n)], R([s0, set("t", update(s, ...specs))], rec({selection: jsel(selOf(t)), doc: toStr(get(t, "newDoc"))}), {desc}))
 }
 
 // ---- TransactionSpec.effects (112), annotations (113), userEvent (114)
 {
-  let s = EditorState.create({doc: "abcdef"})
-  for (let [desc, effects] of [["single", posEffect.of(1)], ["array", [posEffect.of(1), plainEffect.of(2)]], ["null", null], ["undefined", undefined], ["[]", []]] as [string, any][])
-    fx(I.specEffects, [B("TransactionSpec.effects", 1)], {call: "s.update({effects}).effects", doc: "abcdef", desc}, s.update({effects}).effects.map(eff))
-  let t = s.update({effects: [foldLike.of({from: 1, to: 3}), posEffect.of(2), trackAfter.of(4)]}, {changes: {from: 1, to: 4}, effects: [foldLike.of({from: 0, to: 2}), posEffect.of(1)]})
+  const s0 = set("s", create({doc: "abcdef"}))
+  for (let [desc, effects] of [["single", eff(POS, 1)], ["array", list(eff(POS, 1), eff(PLAIN, 2))], ["null", null], ["undefined", undefined], ["[]", []]] as [string, any][])
+    fx(I.specEffects, [B("TransactionSpec.effects", 1)], R([...EFFS, s0], jeffs(get(update(s, {effects}), "effects")), {desc}))
   fx(I.specEffects, [B("TransactionSpec.effects", 2)],
-     {call: "s.update({effects: [foldLike {1,3}, pos 2, trackAfter 4]}, {changes: delete 1-4, effects: [foldLike {0,2}, pos 1]})", doc: "abcdef"}, tr(t))
-  let t2 = s.update({changes: {from: 0, insert: "XY"}, effects: posEffect.of(0)}, {changes: {from: 0, insert: "Z"}, effects: [posEffect.of(0), trackAfter.of(0)]})
-  fx(I.specEffects, [B("TransactionSpec.effects", 2)], {call: "s.update({changes: insert \"XY\" at 0, effects: pos 0}, {changes: insert \"Z\" at 0, effects: [pos 0, trackAfter 0]})", doc: "abcdef"}, tr(t2))
-  let t3 = s.update({annotations: ann1.of(1), userEvent: "input"}, {annotations: [ann2.of(2), ann1.of(3)], userEvent: "delete"}, {annotations: T0})
+     R([...EFFS, s0], jtr(update(s, {effects: list(eff(FOLD, {from: 1, to: 3}), eff(POS, 2), eff(TRACK, 4))}, {changes: {from: 1, to: 4}, effects: list(eff(FOLD, {from: 0, to: 2}), eff(POS, 1))}))))
+  fx(I.specEffects, [B("TransactionSpec.effects", 2)],
+     R([...EFFS, s0], jtr(update(s, {changes: {from: 0, insert: "XY"}, effects: eff(POS, 0)}, {changes: {from: 0, insert: "Z"}, effects: list(eff(POS, 0), eff(TRACK, 0))}))))
+  const anns = (x: any) => op("map", {over: iget(x, "annotations"), as: "an", do: op("json.ann", {of: $("an")})})
   fx(I.specAnnotations, [B("TransactionSpec.annotations", 1), B("TransactionSpec.userEvent", 1)],
-     {call: "s.update({annotations: ann1.of(1), userEvent: \"input\"}, {annotations: [ann2.of(2), ann1.of(3)], userEvent: \"delete\"}, {annotations: Transaction.time.of(1000)})", doc: "abcdef"},
-     {annotations: tr(t3).annotations, ann1: t3.annotation(ann1), userEvent: t3.annotation(Transaction.userEvent)})
+     R([...ANNS, s0, set("t3", update(s, {annotations: ann("ann1", 1), userEvent: "input"}, {annotations: list(ann("ann2", 2), ann("ann1", 3)), userEvent: "delete"}, {annotations: T0}))],
+       rec({annotations: anns($("t3")), ann1: ann_($("t3"), "ann1"), userEvent: ann_($("t3"), "Transaction.userEvent")})))
   for (let ue of ["", "input.type", "select.pointer", "delete.selection", "move.drop"])
-    fx(I.specUserEvent, [B("TransactionSpec.userEvent", 1)], {call: "s.update({userEvent, annotations: Transaction.time.of(1000)})", userEvent: ue}, tr(s.update({userEvent: ue, annotations: T0})).annotations)
+    fx(I.specUserEvent, [B("TransactionSpec.userEvent", 1)], R([s0], anns(update(s, {userEvent: ue, annotations: T0}))))
 }
 
 // ---- TransactionSpec.filter (116)
 {
-  let s = EditorState.create({doc: "ab", extensions: [EditorState.changeFilter.of(() => false), EditorState.transactionFilter.of(t => [t, {annotations: ann2.of("tf")}])]})
+  const s0 = [...ANNS, defFn("cf", [], let_(false)), defFn("tf", ["tr1"], list($("tr1"), rec({annotations: ann("ann2", "tf")}))),
+    set("s", create({doc: "ab", extensions: filters(["changeFilter", "cf"], ["transactionFilter", "tf"])}))]
   for (let [desc, specs] of [["filter: false", [{changes: {from: 0, insert: "x"}, filter: false}]], ["filter: 0", [{changes: {from: 0, insert: "x"}, filter: 0}]],
                              ["filter: null", [{changes: {from: 0, insert: "x"}, filter: null}]], ["filter: undefined", [{changes: {from: 0, insert: "x"}}]],
                              ["second spec filter: false", [{changes: {from: 0, insert: "x"}}, {changes: {from: 2, insert: "y"}, filter: false}]],
-                             ["filter: true", [{changes: {from: 0, insert: "x"}, filter: true}]]] as [string, any[]][]) {
-    let t = s.update(...specs)
-    fx(I.specFilter, [B("TransactionSpec.filter", 1)], {call: "t = s.update(...specs) with changeFilter () => false and transactionFilter returning [tr, {annotations: ann2.of(\"tf\")}]; t.docChanged, t.newDoc, t.annotation(ann2) === \"tf\" (transactionFilterRan)", doc: "ab", desc, specs},
-       {docChanged: t.docChanged, doc: t.newDoc.toString(), transactionFilterRan: t.annotation(ann2) === "tf"})
-  }
+                             ["filter: true", [{changes: {from: 0, insert: "x"}, filter: true}]]] as [string, any[]][])
+    fx(I.specFilter, [B("TransactionSpec.filter", 1)], R([...s0, set("t", update(s, ...specs))],
+       rec({docChanged: get(t, "docChanged"), doc: toStr(get(t, "newDoc")), transactionFilterRan: same(ann_(t, "ann2"), label("tf"))}), {desc}))
 }
 
 // ---- TransactionSpec.sequential (117)
 {
-  let s = EditorState.create({doc: "abcd"})
   let cases: [string, any[], number[]][] = [
     ["sequential positions refer to the previous result", [{changes: {from: 0, insert: "XY"}}, {changes: {from: 2, insert: "!"}, sequential: true}], [1]],
     ["same spec non-sequential", [{changes: {from: 0, insert: "XY"}}, {changes: {from: 2, insert: "!"}}], [1]],
     ["append at new end", [{changes: {from: 4, insert: "end"}}, {changes: {from: 7, insert: "!"}, sequential: true}], [1, 4]],
     ["non-sequential at 7 is out of range", [{changes: {from: 4, insert: "end"}}, {changes: {from: 7, insert: "!"}}], [4]],
     ["sequential range beyond the intermediate doc", [{changes: {from: 0, to: 4}}, {changes: {from: 1, insert: "!"}, sequential: true}], [4]],
-    ["earlier selection and effects mapped through a sequential spec; its own not mapped", [{changes: {from: 1, insert: "AA"}, selection: {anchor: 3}, effects: posEffect.of(3)}, {changes: {from: 0, insert: "Z"}, effects: posEffect.of(0), sequential: true}], [2]],
+    ["earlier selection and effects mapped through a sequential spec; its own not mapped", [{changes: {from: 1, insert: "AA"}, selection: {anchor: 3}, effects: eff(POS, 3)}, {changes: {from: 0, insert: "Z"}, effects: eff(POS, 0), sequential: true}], [2]],
     ["sequential spec selection not mapped", [{changes: {from: 0, insert: "AA"}}, {changes: {from: 0, insert: "B"}, selection: {anchor: 0}, sequential: true}], [2]],
     ["sequential on the first spec is ignored", [{changes: {from: 4, insert: "x"}, sequential: true}], [3]],
     ["three specs mixed", [{changes: {from: 0, insert: "1"}}, {changes: {from: 4, insert: "2"}}, {changes: {from: 0, insert: "3"}, sequential: true}, {changes: {from: 2, insert: "4"}}], [1]],
   ]
-  // Effects in a recorded spec are written {effect: <type name>, value} and the types they use are defined in
-  // `effectTypes` (a StateEffect instance would serialize as {type: {}, value}, losing its type and map; V28).
-  const TYPE_DEFS: Record<string, string> = {"pos(mapPos)": "StateEffect.define<number>({map: (value, mapping) => mapping.mapPos(value)}) (s2-lib.ts posEffect)"}
-  const specIn = (spec: any) => {
-    let effs = spec.effects === undefined ? undefined : (Array.isArray(spec.effects) ? spec.effects : [spec.effects]).map((e: StateEffect<any>) => ({effect: typeName(e.type), value: e.value}))
-    return effs === undefined ? spec : {...spec, effects: Array.isArray(spec.effects) ? effs : effs[0]}
-  }
-  const typesIn = (specs: any[]) => {
-    let used = new Set<string>(); for (let sp of specs) for (let e of [sp.effects ?? []].flat()) used.add(typeName((e as StateEffect<any>).type))
-    return used.size ? Object.fromEntries([...used].map(n => [n, TYPE_DEFS[n]])) : undefined
-  }
   for (let [desc, specs, ns] of cases)
-    fx(I.specSequential, ns.map(n => B("TransactionSpec.sequential", n)), {call: "s.update(...specs)", doc: "abcd", desc, specs: specs.map(specIn), ...(typesIn(specs) ? {effectTypes: typesIn(specs)} : {})},
-       cap(() => { let t = s.update(...specs); return {changes: t.changes.toJSON(), doc: t.newDoc.toString(), selection: sel(t.selection), effects: t.effects.map(eff)} }))
+    fx(I.specSequential, ns.map(n => B("TransactionSpec.sequential", n)),
+       R([...EFFS, set("s", create({doc: "abcd"})), set("t", update(s, ...specs))],
+         rec({changes: chJSON(get(t, "changes")), doc: toStr(get(t, "newDoc")), selection: jsel(selOf(t)), effects: jeffs(get(t, "effects"))}), {desc}))
 }

@@ -1,6 +1,9 @@
 // Replay of recorded fixture inputs (docs/workflow/specification.md §8 item 1), run by tools/spec_check.py:
 //   npx tsx --tsconfig .harness/<package>/tsconfig.json tools/cm6/replay.ts <crate> [--ran] <chunk> [<chunk> ...]
 // (--ran: only which ops each fixture ran, for tools/spec_facts.py)
+//   npx tsx --tsconfig .harness/<package>/tsconfig.json tools/cm6/replay.ts <crate> --trace <chunk> <fixture id>
+// (--trace: what every op of one fixture evaluated to on cm6, for finding where a crate's replayer first differs; the
+// lines are described at `traceOne`; the chunk `lang` names the cases of tools/cm6/lang-cases.jsonl)
 // from the repository root. For every fixture of docs/parity/<crate>/fixtures/<chunk>.jsonl it decodes the recorded
 // input, wraps it so that every key read by the interpreter or by cm6 is recorded, runs it through the `lang` that
 // docs/parity/<crate>/oracle/cm6/<chunk>/interp.ts exports (tools/cm6/program.ts), and compares the encoded output
@@ -15,6 +18,9 @@
 //                              string with a parenthesis, a space or = under op, ops or calls)
 //   literalOut: [ids]          an `out` template with a leaf that is not {"$": name}: an expected value in the input
 //   noCm6Op: [ids]             the run reached no op of kind api or internal: the fixture shows nothing of cm6
+//   thrown: {id: site}         the fixtures whose run ends in a throw nothing caught, with where cm6 threw
+//                              (`throwSite` of tools/cm6/program.ts: "mirrors/cm6/<package>/src/<file>:<line>", ""
+//                              when the stack has no frame in a cm6 package's source). The site is not in the output
 //   opsWithoutKinds: [ops]     registered with no kind
 //   opsNotInHeader: [ops]      not named in the header of interp.ts (for an op of the language: of program.ts)
 //   evalUse: [files]           eval or Function in a file of the chunk
@@ -22,7 +28,7 @@
 import {readFileSync, readdirSync, existsSync} from "node:fs"
 import {resolve, join} from "node:path"
 import {pathToFileURL, fileURLToPath} from "node:url"
-import {decode, runIsolated, isolatedMain} from "@harness/lib"
+import {decode, encode, runIsolated, isolatedMain} from "@harness/lib"
 import {Language} from "@harness/program"
 
 const TEXT_KEYS = ["expr", "call", "code"], OP_KEYS = ["op", "ops", "calls"]
@@ -68,11 +74,11 @@ function literalLeaf(t: any): boolean {
   return true
 }
 
-type One = {output: any, unread: string[], ran: string[]}
+type One = {output: any, unread: string[], ran: string[], thrownAt: string | null}
 function replayOne(lang: Language, input: any): One {
   const inp = decode(input), t = tracked(inp)
   const output = lang.evaluate(t.view)
-  return {output, unread: unreadPaths(inp, t.read, lang.descriptive), ran: [...lang.ran]}
+  return {output, unread: unreadPaths(inp, t.read, lang.descriptive), ran: [...lang.ran], thrownAt: lang.thrownAt}
 }
 
 const interpPath = (crate: string, chunk: string) => resolve("docs", "parity", crate, "oracle", "cm6", chunk, "interp.ts")
@@ -94,7 +100,7 @@ async function chunkReport(crate: string, chunk: string) {
     opsWithoutKinds: [...lang.ops].filter(([, d]) => !d.kinds.length).map(([n]) => n),
     opsNotInHeader: [...lang.ops.keys()].filter(n => !named(language.has(n) ? shared : own, n)),
     evalUse: readdirSync(dir).filter(f => f.endsWith(".ts") && /\beval\s*\(|\bFunction\s*\(/.test(readFileSync(join(dir, f), "utf8"))),
-    ops: [] as any[]}
+    thrown: {} as Record<string, string>, ops: [] as any[]}
   const byOp = new Map<string, {fixtures: number, behaviors: Set<string>}>()
   for (const fx of fixtures(crate, chunk)) {
     rep.fixtures++
@@ -103,9 +109,10 @@ async function chunkReport(crate: string, chunk: string) {
     if (limit == null) one = replayOne(lang, fx.input)
     else {
       const r = runIsolated(fileURLToPath(import.meta.url), JSON.stringify({crate, chunk, id: fx.id}), limit)
-      one = "timeout" in r ? {output: r, unread: [], ran: []} : r
+      one = "timeout" in r ? {output: r, unread: [], ran: [], thrownAt: null} : r
     }
     if (JSON.stringify(one.output) != JSON.stringify(fx.output)) rep.differ.push(fx.id)
+    if (one.thrownAt != null) rep.thrown[fx.id] = one.thrownAt
     for (const p of one.unread) rep.unread[p] = (rep.unread[p] ?? 0) + 1
     if (one.unread.length) rep.unreadFixtures++
     const inp = fx.input && typeof fx.input == "object" ? fx.input : {}
@@ -121,17 +128,62 @@ async function chunkReport(crate: string, chunk: string) {
   return rep
 }
 
-/** With --ran: {chunk, kinds: {op: kinds}, ran: {fixture id: [ops]}}, for tools/spec_facts.py. */
+/** With --ran: {chunk, kinds: {op: kinds}, ran: {fixture id: [ops]}, thrown: {fixture id: site}}, for tools/spec_facts.py. */
 async function ranReport(crate: string, chunk: string) {
   const file = interpPath(crate, chunk)
   const lang: Language | undefined = existsSync(file) ? (await import(pathToFileURL(file).href)).lang : undefined
   if (!(lang instanceof Language)) return {chunk, error: "no interpreter in the language"}
-  const ran: Record<string, string[]> = {}
+  const ran: Record<string, string[]> = {}, thrown: Record<string, string> = {}
   for (const fx of fixtures(crate, chunk)) {
     const timeout = fx.output && typeof fx.output == "object" && Object.keys(fx.output).length == 1 && typeof fx.output.timeout == "number"
-    ran[fx.id] = timeout ? [] : replayOne(lang, fx.input).ran
+    const one = timeout ? null : replayOne(lang, fx.input)
+    ran[fx.id] = one ? one.ran : []
+    if (one && one.thrownAt != null) thrown[fx.id] = one.thrownAt
   }
-  return {chunk, kinds: Object.fromEntries([...lang.ops].map(([n, d]) => [n, d.kinds])), ran}
+  return {chunk, kinds: Object.fromEntries([...lang.ops].map(([n, d]) => [n, d.kinds])), ran, thrown}
+}
+
+/** A value as a trace line shows it: a primitive, an array or a plain object as `encode` writes it (members shown
+ * the same way); an instance of a class as {"cm6": "<constructor name>"}, since the two sides hold different objects
+ * there and only the program-visible values can be compared; below 8 levels, "...". */
+function shown(v: any, depth = 0): any {
+  if (v === null || typeof v != "object") return encode(v)
+  if (depth > 8) return "..."
+  if (Array.isArray(v)) return Array.from(v, x => shown(x, depth + 1))
+  const proto = Object.getPrototypeOf(v)
+  if (proto === Object.prototype || proto === null) return Object.fromEntries(Object.keys(v).map(k => [k, shown(v[k], depth + 1)]))
+  return {cm6: v.constructor?.name ?? "object"}
+}
+
+/** With --trace: one JSON line per op the fixture's program evaluated on cm6, in the order the evaluations began:
+ *   {n, depth, op, kinds, value}   or   {n, depth, op, kinds, threw: {name, message}}
+ * n counts evaluations from 0, depth is the nesting of ops, value is the op's result as `shown` writes it. A last line
+ * {output, recorded, equal} gives the run's output and the recorded one. A crate's replayer prints the same lines for
+ * the same fixture (the crate's plan says how); the first line that differs is where the two runs part. An op of kind
+ * `harness` only touches no cm6 value, so a difference that begins at one is the replayer's; one that begins at any
+ * other op is in that op's part of the replayer or in the crate's code. */
+async function traceOne(crate: string, chunk: string, id: string) {
+  // the chunk name `lang` is the language's own cases (tools/cm6/lang-cases.jsonl), which no crate owns
+  const own = chunk == "lang"
+  const lang: Language = own ? new Language("lang", ["note"]) : (await import(pathToFileURL(interpPath(crate, chunk)).href)).lang
+  const all = own ? readFileSync(fileURLToPath(import.meta.url).replace(/replay\.ts$/, "lang-cases.jsonl"), "utf8").split("\n").filter(l => l.trim()).map(l => JSON.parse(l)) : fixtures(crate, chunk)
+  const fx = all.find(f => f.id == id)
+  if (!fx) throw new Error(`no fixture ${id} in chunk ${chunk}`)
+  const lines: any[] = []
+  let depth = 0
+  for (const [op, def] of lang.ops) {
+    const run = def.run
+    def.run = (a, p) => {
+      const line: any = {n: lines.length, depth, op, kinds: def.kinds}
+      lines.push(line); depth++
+      try { const v = run(a, p); line.value = shown(v); return v }
+      catch (e: any) { line.threw = {name: e?.name ?? "Error", message: String(e?.message ?? e)}; throw e }
+      finally { depth-- }
+    }
+  }
+  const output = lang.run(fx.input)
+  for (const l of lines) process.stdout.write(JSON.stringify(l) + "\n")
+  process.stdout.write(JSON.stringify({output, recorded: fx.output, equal: JSON.stringify(output) == JSON.stringify(fx.output)}) + "\n")
 }
 
 const arg = process.argv[2] ?? ""
@@ -140,6 +192,8 @@ if (arg.startsWith("{")) {
   const {crate, chunk, id} = JSON.parse(arg)
   import(pathToFileURL(interpPath(crate, chunk)).href).then(m =>
     isolatedMain(() => replayOne(m.lang, fixtures(crate, chunk).find(f => f.id == id).input)))
+} else if (process.argv[3] == "--trace") {
+  traceOne(arg, process.argv[4], process.argv[5]).catch(e => { console.error(String(e?.stack ?? e)); process.exit(1) })
 } else {
   (async () => {
     const perFixture = process.argv[3] == "--ran"

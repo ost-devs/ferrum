@@ -13,75 +13,31 @@
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/oracle/cm6/state/s4-fix5.ts
 // Not a generator in the §5 item 5 sense: three hand-picked cases, no randomness. Positions, numeric parameters and
 // text classes do not apply (the facet logic reads no position or text; the behavior is not tagged D1 or D2).
-import {readFileSync, writeFileSync} from "node:fs"
-import {EditorState, Facet, StateEffect} from "@codemirror/state"
-import {writer, FIX} from "./s2-lib"
+import {behaviorWriter, dropRange, $, op, R, set, rec, list, label, push, create, update, get, facet} from "./s2-lib"
 
 const FIRST = 7000, LAST = 7099
-writeFileSync(FIX, readFileSync(FIX, "utf8").split("\n").filter(l => {
-  if (!l) return false
-  let n = Number(JSON.parse(l).id.slice(1)); return n < FIRST || n > LAST
-}).map(l => l + "\n").join(""))
-
-// Behavior id -> inventory item id, read from the behavior file so the item ids cannot drift.
-const ITEM = new Map<string, string>()
-for (let l of readFileSync("docs/parity/ferrum-state/raw/behaviors.jsonl", "utf8").split("\n"))
-  if (l) { let b = JSON.parse(l); ITEM.set(b.id, b.item_id) }
-const fx0 = writer(FIRST)
-const fx = (bs: string[], input: any, output: any) => {
-  let item = ITEM.get(bs[0]); if (!item) throw new Error("unknown behavior " + bs[0])
-  for (let b of bs) if (ITEM.get(b) !== item) throw new Error("behaviors of different items in one fixture: " + bs.join(", "))
-  let id = fx0(item, bs, input, output); console.log(id, bs.join(","), JSON.stringify(output)); return id
-}
+dropRange(FIRST, LAST)
+const fx = behaviorWriter(FIRST)
 const B3 = "state.EditorState.facet.B3"
 
-function facets(log: string[], compareInputNever: boolean) {
-  const ci = (name: string) => compareInputNever
-    ? (a: number, b: number) => { log.push(`compareInput ${name} ${a} ${b}`); return false }
-    : (a: number, b: number) => { log.push(`compareInput ${name} ${a} ${b}`); return a === b }
-  const N = Facet.define<number>({compareInput: ci("N")})
-  const C = Facet.define<number, number[]>({compareInput: ci("C"), combine: v => { log.push(`combine C ${JSON.stringify(v)}`); return v.slice() }})
-  return {N, C}
+// N: Facet.define({compareInput}) without combine (compare is sameArray); C: the same with combine: v => v.slice()
+// (compare is ===). Both written in the facet vocabulary with log: true, so the run's Scope log holds each
+// "compareInput <name> <a> <b>" and "combine C <values>" line (oracle/cm6/facet/interp.ts, Def facet).
+const facets = (compareInputNever: boolean) => {
+  const ci = compareInputNever ? {returns: false} : "eq"
+  return [op("define", {def: ["facet", "N", {compareInput: ci, log: true}]}), op("define", {def: ["facet", "C", {compareInput: ci, combine: "copy", log: true}]})]
 }
-const DEFS = (never: boolean) => ({
-  N: `Facet.define<number>({compareInput: (a, b) => ${never ? "false" : "a === b"} (logged)}) (no combine: compare is sameArray)`,
-  C: `Facet.define<number, number[]>({compareInput: (a, b) => ${never ? "false" : "a === b"} (logged), combine: v => v.slice() (logged, from the call Facet.define makes for the default, combine([]))}) (compare is ===)`,
-})
-const reads = (s0: EditorState, s1: EditorState, N: any, C: any) =>
-  ({N: [s0.facet(N), s1.facet(N)], NSame: s1.facet(N) === s0.facet(N), C: [s0.facet(C), s1.facet(C)], CSame: s1.facet(C) === s0.facet(C)})
+const reads = rec({N: list(facet($("s0"), "N"), facet($("s1"), "N")), NSame: op("same", {a: facet($("s1"), "N"), b: facet($("s0"), "N")}),
+  C: list(facet($("s0"), "C"), facet($("s1"), "C")), CSame: op("same", {a: facet($("s1"), "C"), b: facet($("s0"), "C")}), log: op("scope.log")})
+const run = (never: boolean, deps: string[], marker: string, spec: any) =>
+  R([...facets(never), set("s0", create({extensions: [{compute: ["N", deps, {const: 1}]}, {compute: ["C", deps, {const: 1}]}]})),
+     facet($("s0"), "N"), facet($("s0"), "C"), push(op("scope.log"), label(marker)), set("s1", get(update($("s0"), spec), "state"))], reads)
 
 // ---- 1. update path, inputs reported changed (compareInput always false), equal values: N kept, C new
-{
-  let log: string[] = []
-  let {N, C} = facets(log, true)
-  let s0 = EditorState.create({extensions: [N.compute(["doc"], () => 1), C.compute(["doc"], () => 1)]})
-  s0.facet(N); s0.facet(C)
-  log.push("-- update")
-  let s1 = s0.update({changes: {from: 0, insert: "x"}}).state
-  fx([B3], {call: "s0 = EditorState.create({extensions: [N.compute([\"doc\"], () => 1), C.compute([\"doc\"], () => 1)]}); read s0.facet(N), s0.facet(C); log \"-- update\"; s1 = s0.update({changes: {from: 0, insert: \"x\"}}).state; N: [s0.facet(N), s1.facet(N)], NSame: s1.facet(N) === s0.facet(N), C and CSame likewise; log of compareInput and combine calls", ...DEFS(true)},
-     {...reads(s0, s1, N, C), log})
-}
+fx([B3], run(true, ["doc"], "-- update", {changes: {from: 0, insert: "x"}}))
 
 // ---- 2. reconfigure path, new provider objects with equal values: N kept, C new
-{
-  let log: string[] = []
-  let {N, C} = facets(log, true)
-  let s0 = EditorState.create({extensions: [N.compute([], () => 1), C.compute([], () => 1)]})
-  s0.facet(N); s0.facet(C)
-  log.push("-- reconfigure")
-  let s1 = s0.update({effects: StateEffect.reconfigure.of([N.compute([], () => 1), C.compute([], () => 1)])}).state
-  fx([B3], {call: "s0 = EditorState.create({extensions: [N.compute([], () => 1), C.compute([], () => 1)]}); read s0.facet(N), s0.facet(C); log \"-- reconfigure\"; s1 = s0.update({effects: StateEffect.reconfigure.of([N.compute([], () => 1), C.compute([], () => 1)])}).state (new provider objects); N: [s0.facet(N), s1.facet(N)], NSame: s1.facet(N) === s0.facet(N), C and CSame likewise; log of compareInput and combine calls", ...DEFS(true)},
-     {...reads(s0, s1, N, C), log})
-}
+fx([B3], run(true, [], "-- reconfigure", {effects: op("effect.reconfigure", {ext: [{compute: ["N", [], {const: 1}]}, {compute: ["C", [], {const: 1}]}]})}))
 
 // ---- 3. update path, getters rerun but report equal inputs (compareInput a === b): not recombined, both kept
-{
-  let log: string[] = []
-  let {N, C} = facets(log, false)
-  let s0 = EditorState.create({extensions: [N.compute(["doc"], () => 1), C.compute(["doc"], () => 1)]})
-  s0.facet(N); s0.facet(C)
-  log.push("-- update")
-  let s1 = s0.update({changes: {from: 0, insert: "x"}}).state
-  fx([B3], {call: "s0 = EditorState.create({extensions: [N.compute([\"doc\"], () => 1), C.compute([\"doc\"], () => 1)]}); read s0.facet(N), s0.facet(C); log \"-- update\"; s1 = s0.update({changes: {from: 0, insert: \"x\"}}).state; N: [s0.facet(N), s1.facet(N)], NSame: s1.facet(N) === s0.facet(N), C and CSame likewise; log of compareInput and combine calls", ...DEFS(false)},
-     {...reads(s0, s1, N, C), log})
-}
+fx([B3], run(false, ["doc"], "-- update", {changes: {from: 0, insert: "x"}}))
