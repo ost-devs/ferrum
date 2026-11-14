@@ -1,0 +1,28 @@
+//! Columns: cm6's `column.ts` (`mirrors/cm6/state/src/column.ts`). Offsets are UTF-8 byte offsets into the string
+//! given (D1); a column counts grapheme clusters, a tab advancing to the next multiple of the tab size.
+
+/// The column at byte offset `to` of `string`, counting grapheme clusters and expanding tabs to `tab_size`. cm6's
+/// default for `to` is the length of `string`, which the caller writes (D14).
+///
+/// # Panics
+///
+/// When `tab_size` is 0 (`state.cm6.216.d1`), and when `to` is inside a character (D1).
+///
+/// cm6: countColumn
+pub fn count_column(string: &str, tab_size: usize, to: usize) -> usize {
+    todo!()
+}
+
+/// The byte offset in `string` of column `col`, counting as [`count_column`] does. When the string is too short to
+/// reach the column, the result is the string's length, or `None` when `strict` is true (cm6's `-1`). cm6's default
+/// for `strict` is false, which the caller writes (D14).
+///
+/// # Panics
+///
+/// When `tab_size` is 0 (`state.cm6.216.d1`).
+///
+/// cm6: findColumn
+// QUESTION Q67: cm6 returns -1 for "not reached"; a position is `usize` (D12), so the sentinel is `None` here.
+pub fn find_column(string: &str, col: usize, tab_size: usize, strict: bool) -> Option<usize> {
+    todo!()
+}
