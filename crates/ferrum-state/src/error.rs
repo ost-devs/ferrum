@@ -1,4 +1,6 @@
-//! The errors of the crate: one variant per explicit throw of `@codemirror/state` 6.7.6 (`design.md` §5).
+//! The errors of the crate: one variant per explicit throw of `@codemirror/state` 6.7.6 that Ferrum can reach
+//! (`design.md` §5). The two throws of `flatten` for a value that is no extension (`facet.ts:550`, `:551`) are
+//! excluded by type and have none.
 //!
 //! A reader of serialized data (`from_json`) returns them; every other function panics with
 //! `panic!("{}", error)` where cm6 throws (D13). `Display` writes cm6's message, with the numbers in Ferrum's values.
@@ -122,24 +124,6 @@ pub enum Error {
     ///
     /// ferrum-only: the throw of flatten for a compartment used twice, see D13
     DuplicateCompartment,
-    /// `Unrecognized extension value in extension set (<ext>).` (`mirrors/cm6/state/src/facet.ts:550`).
-    ///
-    /// ferrum-only: the throw of flatten for a value that is no extension, see D13
-    // QUESTION Q74: design.md §3 says no "unrecognized extension" case exists (D12), §5 asks a variant per explicit
-    // throw; the variant is written as §5 says.
-    UnrecognizedExtension {
-        /// cm6's string conversion of the value.
-        ext: String,
-    },
-    /// `Unrecognized extension value in extension set (<ext>). This sometimes happens because multiple instances of
-    /// @codemirror/state are loaded, breaking instanceof checks.` (`mirrors/cm6/state/src/facet.ts:551`).
-    ///
-    /// ferrum-only: the throw of flatten for an object whose extension property is set, see D13
-    // QUESTION Q74
-    UnrecognizedExtensionInstances {
-        /// cm6's string conversion of the value.
-        ext: String,
-    },
     /// `Cyclic dependency between fields and/or facets` (`mirrors/cm6/state/src/facet.ts:570`).
     ///
     /// ferrum-only: the throw of ensureAddr, see D13

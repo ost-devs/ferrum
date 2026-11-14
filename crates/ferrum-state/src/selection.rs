@@ -319,18 +319,18 @@ impl PartialEq for EditorSelection {
 /// What a selection is given as in a state configuration or a transaction spec: cm6's
 /// `EditorSelection | {anchor: number, head?: number}`.
 ///
-/// ferrum-only: cm6's union EditorSelection | {anchor, head?}, see D14
-// QUESTION Q62: the name of this type and of its variants is not given by the design or a decision.
+/// ferrum-only: cm6's union EditorSelection | {anchor, head?}, see N17
 #[derive(Clone, Debug)]
 pub enum SelectionSpec {
     /// A selection, used as it is.
     ///
-    /// ferrum-only: the EditorSelection member of cm6's union, see D14
+    /// ferrum-only: the EditorSelection member of cm6's union, see N17
     Selection(EditorSelection),
-    /// A single range, as [`EditorSelection::single`] builds it.
+    /// A single range, as [`EditorSelection::single`] builds it. A [`SelectionRange`] given where cm6 accepts one by
+    /// structure is written `Single { anchor, head }`: cm6 drops its side and goal column too (`design.md` §3).
     ///
-    /// ferrum-only: the {anchor, head?} member of cm6's union, see D14
-    Range {
+    /// ferrum-only: the {anchor, head?} member of cm6's union, see N17
+    Single {
         /// The anchor of the range.
         anchor: usize,
         /// The head of the range; `None` is `anchor`.

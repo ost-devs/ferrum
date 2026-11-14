@@ -54,45 +54,52 @@ pub(crate) struct StateInner {
 }
 
 /// What a [`EditorState::change_by_range`] callback returns for one range: the range after the changes, the changes
-/// (in the coordinates of the start document) and effects. cm6's `changes` and `effects` are optional; their
-/// default is none.
+/// (in the coordinates of the start document) and effects. `range` is required ([`RangeChange::new`]); cm6's
+/// `changes` and `effects` are optional, their default none, and are set with struct update syntax.
 ///
-/// ferrum-only: cm6's anonymous result type of the changeByRange callback, see D14
-// QUESTION Q62: the name of this type is not given by the design or a decision.
+/// ferrum-only: cm6's anonymous result type of the changeByRange callback, see N17
 #[derive(Clone)]
 pub struct RangeChange {
     /// The range, in the coordinates of the document after this call's own changes.
     ///
-    /// ferrum-only: cm6's range member of the changeByRange callback's result, see D14
+    /// ferrum-only: cm6's range member of the changeByRange callback's result, see N17
     pub range: SelectionRange,
     /// The changes, in the coordinates of the start document.
     ///
-    /// ferrum-only: cm6's changes member of the changeByRange callback's result, see D14
+    /// ferrum-only: cm6's changes member of the changeByRange callback's result, see N17
     pub changes: ChangeSpec,
     /// The effects.
     ///
-    /// ferrum-only: cm6's effects member of the changeByRange callback's result, see D14
+    /// ferrum-only: cm6's effects member of the changeByRange callback's result, see N17
     pub effects: Vec<StateEffect>,
+}
+
+impl RangeChange {
+    /// The result for `range` with no changes and no effects.
+    ///
+    /// ferrum-only: the constructor of the changeByRange callback's result with its required range, see N17
+    pub fn new(range: SelectionRange) -> RangeChange {
+        todo!()
+    }
 }
 
 /// What [`EditorState::change_by_range`] returns: the merged changes, the new selection and the effects, a
 /// transaction spec once converted with `into()`.
 ///
-/// ferrum-only: cm6's anonymous result type of changeByRange, see D14
-// QUESTION Q62: the name of this type is not given by the design or a decision.
+/// ferrum-only: cm6's anonymous result type of changeByRange, see N17
 #[derive(Clone)]
 pub struct ChangeByRange {
     /// The changes of every range, merged.
     ///
-    /// ferrum-only: cm6's changes member of changeByRange's result, see D14
+    /// ferrum-only: cm6's changes member of changeByRange's result, see N17
     pub changes: ChangeSet,
     /// The ranges returned, mapped and merged into a selection with the start selection's main index.
     ///
-    /// ferrum-only: cm6's selection member of changeByRange's result, see D14
+    /// ferrum-only: cm6's selection member of changeByRange's result, see N17
     pub selection: EditorSelection,
     /// The effects of every range, mapped.
     ///
-    /// ferrum-only: cm6's effects member of changeByRange's result, see D14
+    /// ferrum-only: cm6's effects member of changeByRange's result, see N17
     pub effects: Vec<StateEffect>,
 }
 
@@ -167,11 +174,11 @@ impl EditorState {
         todo!()
     }
 
-    /// Calls `f` for each selection range and merges the changes, ranges and effects it returns.
+    /// Calls `f` for each selection range and merges the changes, ranges and effects it returns. `f` is called only
+    /// before the call returns (D14).
     ///
     /// cm6: EditorState.changeByRange
-    // QUESTION Q68
-    pub fn change_by_range(&self, f: impl Fn(SelectionRange) -> RangeChange + Send + Sync + 'static) -> ChangeByRange {
+    pub fn change_by_range(&self, f: impl FnMut(SelectionRange) -> RangeChange) -> ChangeByRange {
         todo!()
     }
 
@@ -342,9 +349,10 @@ impl EditorState {
     /// `wordChars` of the language data at `at`.
     ///
     /// cm6: EditorState.charCategorizer
-    // QUESTION Q73: cm6 returns a function; its Rust type is not given by the design or a decision.
-    pub fn char_categorizer(&self, at: usize) -> Box<dyn Fn(&str) -> CharCategory + Send + Sync> {
-        todo!()
+    pub fn char_categorizer(&self, at: usize) -> impl Fn(&str) -> CharCategory + Send + Sync + 'static {
+        // The skeleton's body: `todo!()` alone has no type that names this `impl Fn` (`design.md` §3).
+        let f: fn(&str) -> CharCategory = |_| todo!();
+        f
     }
 
     /// The range of word characters around `pos`; `None` when no word character is next to it.

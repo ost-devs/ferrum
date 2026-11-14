@@ -46,21 +46,20 @@ pub struct ChangeDesc {
 
 /// Whether changes touch a range: cm6's result `false`, `true` or `"cover"` of [`ChangeDesc::touches_range`].
 ///
-/// ferrum-only: cm6's result type boolean | "cover", see D14
-// QUESTION Q62: the name of this type and of its variants is not given by the design or a decision.
+/// ferrum-only: cm6's result type boolean | "cover", see N17
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum TouchesRange {
     /// No change touches the range (cm6's `false`).
     ///
-    /// ferrum-only: cm6's false, see D14
+    /// ferrum-only: cm6's false, see N17
     False,
     /// A change touches the range (cm6's `true`).
     ///
-    /// ferrum-only: cm6's true, see D14
+    /// ferrum-only: cm6's true, see N17
     True,
     /// One change covers the range entirely (cm6's `"cover"`).
     ///
-    /// ferrum-only: cm6's "cover", see D14
+    /// ferrum-only: cm6's "cover", see N17
     Cover,
 }
 
@@ -88,20 +87,19 @@ impl ChangeDesc {
     }
 
     /// Calls `f(pos_a, pos_b, length)` for each unchanged range, with its start in the old and in the new document.
+    /// `f` is called only before the call returns (D14).
     ///
     /// cm6: ChangeDesc.iterGaps
-    // QUESTION Q68: a callback called during the call only, bound `Send + Sync + 'static` as D6 words it.
-    pub fn iter_gaps(&self, f: impl Fn(usize, usize, usize) + Send + Sync + 'static) {
+    pub fn iter_gaps(&self, f: impl FnMut(usize, usize, usize)) {
         todo!()
     }
 
     /// Calls `f(from_a, to_a, from_b, to_b)` for each changed range, in the old and in the new document. When
     /// `individual` is true, adjacent changes are reported separately. cm6's default for `individual` is false, which
-    /// the caller writes (D14).
+    /// the caller writes (D14). `f` is called only before the call returns (D14).
     ///
     /// cm6: ChangeDesc.iterChangedRanges
-    // QUESTION Q68
-    pub fn iter_changed_ranges(&self, f: impl Fn(usize, usize, usize, usize) + Send + Sync + 'static, individual: bool) {
+    pub fn iter_changed_ranges(&self, f: impl FnMut(usize, usize, usize, usize), individual: bool) {
         todo!()
     }
 
@@ -138,10 +136,10 @@ impl ChangeDesc {
         todo!()
     }
 
-    /// Maps a position through the changes. `assoc` below 0 keeps the position with the character before it, 0 or
-    /// above with the character after it; `mode` decides whether a deletion gives no position. cm6's two overloads
-    /// are one function here: with [`MapMode::Simple`] the result is always `Some`. cm6's defaults, which the caller
-    /// writes (D14): `assoc` -1, `mode` [`MapMode::Simple`].
+    /// Maps a position through the changes, in [`MapMode::Simple`]: the result is always a position. `assoc` below 0
+    /// keeps the position with the character before it, 0 or above with the character after it. cm6's default for
+    /// `assoc` is -1, which the caller writes (D14). The form with a mode is [`try_map_pos`](ChangeDesc::try_map_pos)
+    /// (N13).
     ///
     /// # Panics
     ///
@@ -151,8 +149,22 @@ impl ChangeDesc {
     /// [`Error::PositionOutOfRange`]: crate::error::Error::PositionOutOfRange
     ///
     /// cm6: ChangeDesc.mapPos
-    // QUESTION Q67: cm6's overloads (`number`, and `number | null` with a mode) as one function returning `Option`.
-    pub fn map_pos(&self, pos: usize, assoc: i8, mode: MapMode) -> Option<usize> {
+    pub fn map_pos(&self, pos: usize, assoc: i8) -> usize {
+        todo!()
+    }
+
+    /// Maps a position through the changes as [`map_pos`](ChangeDesc::map_pos) does, with `mode` deciding whether a
+    /// deletion gives no position (`None`, cm6's `null`). With [`MapMode::Simple`] the result is always `Some`.
+    ///
+    /// # Panics
+    ///
+    /// With `Position <pos> is out of range for changeset of length <length>` ([`Error::PositionOutOfRange`]) when
+    /// `pos` is beyond the end of the old document.
+    ///
+    /// [`Error::PositionOutOfRange`]: crate::error::Error::PositionOutOfRange
+    ///
+    /// ferrum-only: cm6's overload mapPos(pos, assoc, mode), which can give null, see N13
+    pub fn try_map_pos(&self, pos: usize, assoc: i8, mode: MapMode) -> Option<usize> {
         todo!()
     }
 
@@ -201,7 +213,6 @@ pub enum ChangeSpec {
     /// A deletion, insertion or replacement. `to` absent is `from`; `insert` absent inserts nothing.
     ///
     /// ferrum-only: the object member of cm6's union, see state.cm6.135.d1
-    // QUESTION Q62: the names of the variants are not given by the design or a decision.
     Change {
         /// The start of the change.
         from: usize,
@@ -231,7 +242,6 @@ impl Default for ChangeSpec {
 /// [`ChangeDesc`] it extends (through `Deref`), as cm6's `ChangeSet` is a subclass of `ChangeDesc`.
 ///
 /// cm6: ChangeSet
-// QUESTION Q65: cm6's subclass relation as `Deref<Target = ChangeDesc>`.
 #[derive(Clone)]
 pub struct ChangeSet {
     pub(crate) desc: ChangeDesc,
@@ -301,15 +311,11 @@ impl ChangeSet {
 
     /// Calls `f(from_a, to_a, from_b, to_b, inserted)` for each changed range: its range in the old document, the
     /// range that replaces it in the new one, and the text inserted. When `individual` is true, adjacent changes are
-    /// reported separately. cm6's default for `individual` is false, which the caller writes (D14).
+    /// reported separately. cm6's default for `individual` is false, which the caller writes (D14). `f` is called
+    /// only before the call returns (D14).
     ///
     /// cm6: ChangeSet.iterChanges
-    // QUESTION Q68
-    pub fn iter_changes(
-        &self,
-        f: impl Fn(usize, usize, usize, usize, &Text) + Send + Sync + 'static,
-        individual: bool,
-    ) {
+    pub fn iter_changes(&self, f: impl FnMut(usize, usize, usize, usize, &Text), individual: bool) {
         todo!()
     }
 

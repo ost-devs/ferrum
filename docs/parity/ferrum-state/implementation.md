@@ -28,7 +28,7 @@ The 47 implicit throws of `docs/parity/ferrum-state/raw/throws.jsonl` (engine `T
 | `facet.ts:185` (FacetProvider.dynamicSlot reconfigure) | excluded by type | as `facet.ts:160` (D12) |
 | `facet.ts:152` (FacetProvider.dynamicSlot) | excluded by type | `deps: &[Slot]` is always a list (D12) |
 | `facet.ts:155` (FacetProvider.dynamicSlot) | excluded by type | a `Slot` is a facet reader, a field, `Doc` or `Selection`, never null (D12) |
-| `facet.ts:61` (Facet constructor) | excluded by type | `FacetConfig.combine` is `Option` of a function (D12) |
+| `facet.ts:61` (Facet constructor) | excluded by type | `FacetConfig.combine` is a function: required by `FacetConfig::new(combine)`, and the list of inputs in `FacetConfig::default()`, which exists only for `FacetConfig<I, Vec<I>>` (`design.md` §3, D12) |
 | `facet.ts:238` (dynamicFacetSlot.update) | excluded by type | `FacetConfig.compare` is `Option` of a function (D12) |
 | `facet.ts:250` (dynamicFacetSlot.reconfigure) | excluded by type | as `facet.ts:238` (D12) |
 | `facet.ts:498` (Configuration.resolve) | excluded by type | as `facet.ts:238` (D12) |
@@ -50,11 +50,15 @@ The 47 implicit throws of `docs/parity/ferrum-state/raw/throws.jsonl` (engine `T
 | `charcategory.ts:32` (makeCategorizer) | excluded by type | a language-data field holding `null` or `undefined` does not exist (`state.cm6.029.d1`); `char_categorizer` reads `wordChars` as `String` |
 | `transaction.ts:362` (filterTransaction) | excluded by type | an input of `EditorState::CHANGE_FILTER` is a function (D12) |
 | `transaction.ts:384` (filterTransaction) | excluded by type | an input of `EditorState::TRANSACTION_FILTER` is a function (D12) |
-| `transaction.ts:331` (resolveTransactionInner) | excluded by type | `EditorState::update(specs: &[TransactionSpec])` and `TransactionFilterResult::Specs(Vec<TransactionSpec>)` hold no null spec (D12) |
+| `transaction.ts:331` (resolveTransactionInner) | excluded by type | `EditorState::update(specs: &[TransactionSpec])` and `TransactionFilterOutput::Specs(Vec<TransactionSpec>)` hold no null spec (D12) |
 | `transaction.ts:347` (resolveTransaction) | excluded by type | as `transaction.ts:331` (D12) |
 | `transaction.ts:395` (extendTransaction) | excluded by type | an input of `EditorState::TRANSACTION_EXTENDER` is a function (D12) |
 | `transaction.ts:102` (StateEffect.mapEffects) | excluded by type | effects lists are `Vec<StateEffect>`, holding no null (`state.cm6.034.d1`, D12) |
 | `transaction.ts:80` (StateEffect.map) | excluded by type | `StateEffectSpec.map` is `Option` of a function (D12) |
+
+## Explicit throws excluded by type
+
+`facet.ts:550` and `facet.ts:551` (`flatten`, a value that is no extension): an `Extension` is made only from Ferrum's extension kinds, so no such value exists and `Error` has no variant for them (`design.md` §3, §5; D12).
 
 ## Native mechanisms
 

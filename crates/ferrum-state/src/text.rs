@@ -155,10 +155,10 @@ impl Text {
         todo!()
     }
 
-    /// A cursor over the lines numbered `from` to `to` (1-based, `to` excluded), without the breaks between them,
-    /// yielding an empty string for an empty line. With `from` `None` it covers the whole document through
-    /// [`iter`](Text::iter) and `to` is not read; cm6's default for `to` is [`lines`](Text::lines)` + 1`, which the
-    /// caller writes (D14).
+    /// A cursor over lines, without the breaks between them, yielding an empty string for an empty line. `None` is
+    /// cm6's call without `from`: the whole document, through [`iter`](Text::iter). `Some((from, to))` covers the
+    /// lines numbered `from` to `to` (1-based, `to` excluded); where cm6's caller omits `to`, the caller writes
+    /// [`lines`](Text::lines)` + 1` (D14).
     ///
     /// # Panics
     ///
@@ -166,7 +166,7 @@ impl Text {
     /// nor `lines() + 1`, is not a line of the document.
     ///
     /// cm6: Text.iterLines
-    pub fn iter_lines(&self, from: Option<usize>, to: usize) -> TextIterator {
+    pub fn iter_lines(&self, range: Option<(usize, usize)>) -> TextIterator {
         todo!()
     }
 
@@ -213,6 +213,7 @@ impl Text {
     }
 }
 
+/// cm6 impl: Text.eq, see N3
 impl PartialEq for Text {
     fn eq(&self, other: &Text) -> bool {
         todo!()
@@ -221,6 +222,7 @@ impl PartialEq for Text {
 
 impl Eq for Text {}
 
+/// cm6 impl: Text.toString, see N2
 impl fmt::Display for Text {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         todo!()
@@ -233,6 +235,7 @@ impl fmt::Debug for Text {
     }
 }
 
+/// cm6 impl: Text.[Symbol.iterator], see N8
 impl IntoIterator for &Text {
     type Item = String;
     type IntoIter = TextIntoIter;
@@ -377,9 +380,7 @@ impl IntoIterator for TextIterator {
 /// The iterator a `for` loop over a `&Text` or a [`TextIterator`] runs: each call moves the cursor with `next(0)`
 /// and yields its value, until the cursor is done.
 ///
-/// cm6: Text.[Symbol.iterator]
-// QUESTION Q69: no item but this type can carry the mapping of `Text.[Symbol.iterator]`, which is a trait
-// implementation in Rust (N8); its name is not the conversion of a cm6 name.
+/// ferrum-only: the iterator of the IntoIterator implementations of Text and TextIterator, see N8
 pub struct TextIntoIter {
     pub(crate) cursor: TextIterator,
 }
@@ -396,17 +397,16 @@ impl Iterator for TextIntoIter {
 /// the `insert` of a change, `EditorState.replaceSelection`). A string is split into lines where it is used, on
 /// `\r\n?|\n` or on the state's line separator (D2).
 ///
-/// ferrum-only: cm6's union string | Text, see D14
-// QUESTION Q62: the name of this type and of its variants is not given by the design or a decision.
+/// ferrum-only: cm6's union string | Text, see N17
 #[derive(Clone, Debug)]
 pub enum TextSpec {
     /// A string, split into lines where it is used.
     ///
-    /// ferrum-only: the string member of cm6's union, see D14
+    /// ferrum-only: the string member of cm6's union, see N17
     String(String),
     /// A document, used as it is.
     ///
-    /// ferrum-only: the Text member of cm6's union, see D14
+    /// ferrum-only: the Text member of cm6's union, see N17
     Text(Text),
 }
 

@@ -1,8 +1,8 @@
 //! Transactions, annotations and effects: cm6's `transaction.ts` (`mirrors/cm6/state/src/transaction.ts`).
 //!
-//! An annotation or effect of a value type `T` is `Annotation<T>` or `StateEffect<T>`; the lists of a transaction and
-//! of a spec hold values of any type as `Annotation` and `StateEffect`, whose type parameter defaults to
-//! `dyn Any + Send + Sync` (cm6's `Annotation<any>`, `StateEffect<any>`), and every typed one converts into them.
+//! An [`Annotation`] or a [`StateEffect`] has no type parameter, so that lists of them hold values of any type (cm6's
+//! `Annotation<any>`, `StateEffect<any>`); each is made by a typed [`AnnotationType`] or [`StateEffectType`], and its
+//! value is read through the type that made it (`design.md` §3).
 
 use std::any::Any;
 use std::marker::PhantomData;
@@ -22,32 +22,31 @@ pub(crate) struct TypeInner {
     pub(crate) map: Option<Box<dyn Any + Send + Sync>>,
 }
 
-/// A tagged value attached to a transaction as metadata (its time, its origin).
+/// A tagged value attached to a transaction as metadata (its time, its origin). Its value is read through the type
+/// that made it.
 ///
 /// cm6: Annotation
-// QUESTION Q64: cm6's `Annotation<any>` as `Annotation<dyn Any + Send + Sync>`, the default type parameter.
-pub struct Annotation<T: ?Sized = dyn Any + Send + Sync> {
-    pub(crate) r#type: AnnotationType<T>,
-    pub(crate) value: Arc<T>,
-}
-
-impl<T: ?Sized> Annotation<T> {
-    /// The annotation's type.
-    ///
-    /// cm6: Annotation.type
-    pub fn r#type(&self) -> &AnnotationType<T> {
-        todo!()
-    }
-
-    /// The annotation's value.
-    ///
-    /// cm6: Annotation.value
-    pub fn value(&self) -> &T {
-        todo!()
-    }
+pub struct Annotation {
+    pub(crate) ty: Arc<TypeInner>,
+    pub(crate) value: Arc<dyn Any + Send + Sync>,
 }
 
 impl Annotation {
+    /// The annotation's value when it is of type `ty`; `None` when it is of another type.
+    ///
+    /// cm6: Annotation.value
+    pub fn value<T: Send + Sync + 'static>(&self, ty: &AnnotationType<T>) -> Option<&T> {
+        todo!()
+    }
+
+    /// Whether the annotation is of type `ty`: cm6's `annotation.type == ty`.
+    ///
+    /// cm6: Annotation.type
+    /// name: see N12
+    pub fn is<T>(&self, ty: &AnnotationType<T>) -> bool {
+        todo!()
+    }
+
     /// Defines a new type of annotation.
     ///
     /// cm6: Annotation^define
@@ -56,44 +55,38 @@ impl Annotation {
     }
 }
 
-impl<T: ?Sized> Clone for Annotation<T> {
-    fn clone(&self) -> Annotation<T> {
-        todo!()
-    }
-}
-
-impl<T: Send + Sync + 'static> From<Annotation<T>> for Annotation {
-    fn from(annotation: Annotation<T>) -> Annotation {
+impl Clone for Annotation {
+    fn clone(&self) -> Annotation {
         todo!()
     }
 }
 
 /// The type of an annotation, which creates annotations and reads them from a transaction. `==` compares by
-/// pointer, across value types.
+/// pointer.
 ///
 /// cm6: AnnotationType
-pub struct AnnotationType<T: ?Sized> {
+pub struct AnnotationType<T> {
     pub(crate) inner: Arc<TypeInner>,
-    pub(crate) value: PhantomData<fn() -> Box<T>>,
+    pub(crate) value: PhantomData<fn() -> T>,
 }
 
 impl<T: Send + Sync + 'static> AnnotationType<T> {
     /// An annotation of this type holding `value`.
     ///
     /// cm6: AnnotationType.of
-    pub fn of(&self, value: T) -> Annotation<T> {
+    pub fn of(&self, value: T) -> Annotation {
         todo!()
     }
 }
 
-impl<T: ?Sized> Clone for AnnotationType<T> {
+impl<T> Clone for AnnotationType<T> {
     fn clone(&self) -> AnnotationType<T> {
         todo!()
     }
 }
 
-impl<T: ?Sized, U: ?Sized> PartialEq<AnnotationType<U>> for AnnotationType<T> {
-    fn eq(&self, other: &AnnotationType<U>) -> bool {
+impl<T> PartialEq for AnnotationType<T> {
+    fn eq(&self, other: &AnnotationType<T>) -> bool {
         todo!()
     }
 }
@@ -115,69 +108,67 @@ impl<T> Default for StateEffectSpec<T> {
     }
 }
 
-/// A type of state effect, which creates effects. `==` compares by pointer, across value types.
+/// A type of state effect, which creates effects. `==` compares by pointer.
 ///
 /// cm6: StateEffectType
-pub struct StateEffectType<T: ?Sized> {
+pub struct StateEffectType<T> {
     pub(crate) inner: Arc<TypeInner>,
-    pub(crate) value: PhantomData<fn() -> Box<T>>,
+    pub(crate) value: PhantomData<fn() -> T>,
 }
 
 impl<T: Send + Sync + 'static> StateEffectType<T> {
     /// An effect of this type holding `value`.
     ///
     /// cm6: StateEffectType.of
-    pub fn of(&self, value: T) -> StateEffect<T> {
+    pub fn of(&self, value: T) -> StateEffect {
         todo!()
     }
 }
 
-impl<T: ?Sized> Clone for StateEffectType<T> {
+impl<T> Clone for StateEffectType<T> {
     fn clone(&self) -> StateEffectType<T> {
         todo!()
     }
 }
 
-impl<T: ?Sized, U: ?Sized> PartialEq<StateEffectType<U>> for StateEffectType<T> {
-    fn eq(&self, other: &StateEffectType<U>) -> bool {
+impl<T> PartialEq for StateEffectType<T> {
+    fn eq(&self, other: &StateEffectType<T>) -> bool {
         todo!()
     }
 }
 
 /// An effect that goes with a transaction, often an update of a field that a document or selection change does not
-/// imply.
+/// imply. Its value is read through the type that made it.
 ///
 /// cm6: StateEffect
-// QUESTION Q64: cm6's `StateEffect<any>` as `StateEffect<dyn Any + Send + Sync>`, the default type parameter.
-pub struct StateEffect<T: ?Sized = dyn Any + Send + Sync> {
-    pub(crate) r#type: StateEffectType<T>,
-    pub(crate) value: Arc<T>,
+pub struct StateEffect {
+    pub(crate) ty: Arc<TypeInner>,
+    pub(crate) value: Arc<dyn Any + Send + Sync>,
 }
 
-impl<T: ?Sized> StateEffect<T> {
-    /// The effect's value.
+impl StateEffect {
+    /// The effect's value when it is of type `ty`; `None` when it is of another type. `Some` exactly when
+    /// [`is`](StateEffect::is) is true.
     ///
     /// cm6: StateEffect.value
-    pub fn value(&self) -> &T {
+    pub fn value<T: Send + Sync + 'static>(&self, ty: &StateEffectType<T>) -> Option<&T> {
         todo!()
     }
 
     /// The effect mapped through a change with its type's `map`; `None` when the mapping deletes it.
     ///
     /// cm6: StateEffect.map
-    pub fn map(&self, mapping: &ChangeDesc) -> Option<StateEffect<T>> {
+    pub fn map(&self, mapping: &ChangeDesc) -> Option<StateEffect> {
         todo!()
     }
 
-    /// Whether the effect is of the given type.
+    /// Whether the effect is of type `ty`.
     ///
     /// cm6: StateEffect.is
-    pub fn is<U: ?Sized>(&self, r#type: &StateEffectType<U>) -> bool {
+    pub fn is<T>(&self, ty: &StateEffectType<T>) -> bool {
         todo!()
     }
-}
 
-impl StateEffect {
     /// Defines a new type of effect. cm6's default for `spec`, which the caller writes (D14), is
     /// `StateEffectSpec::default()`.
     ///
@@ -207,14 +198,8 @@ impl StateEffect {
     pub const APPEND_CONFIG: &LazyLock<StateEffectType<Extension>> = &APPEND_CONFIG;
 }
 
-impl<T: ?Sized> Clone for StateEffect<T> {
-    fn clone(&self) -> StateEffect<T> {
-        todo!()
-    }
-}
-
-impl<T: Send + Sync + 'static> From<StateEffect<T>> for StateEffect {
-    fn from(effect: StateEffect<T>) -> StateEffect {
+impl Clone for StateEffect {
+    fn clone(&self) -> StateEffect {
         todo!()
     }
 }
@@ -270,6 +255,16 @@ pub struct TransactionSpec {
 
 impl Default for TransactionSpec {
     fn default() -> TransactionSpec {
+        todo!()
+    }
+}
+
+impl From<&Transaction> for TransactionSpec {
+    /// The spec cm6 reads from a transaction given among other specs (`[tr, {changes, sequential: true}]`,
+    /// `mirrors/cm6/language/src/indent.ts:394`): its change set, the selection it set, its effects, all its
+    /// annotations and `scroll_into_view`; `user_event` empty, `filter` true, `sequential` false (`design.md` §3,
+    /// "Types cm6 does not name").
+    fn from(tr: &Transaction) -> TransactionSpec {
         todo!()
     }
 }
@@ -366,7 +361,7 @@ impl Transaction {
     /// The value of the transaction's annotation of the given type, if any.
     ///
     /// cm6: Transaction.annotation
-    pub fn annotation<T: Send + Sync + 'static>(&self, r#type: &AnnotationType<T>) -> Option<&T> {
+    pub fn annotation<T: Send + Sync + 'static>(&self, ty: &AnnotationType<T>) -> Option<&T> {
         todo!()
     }
 

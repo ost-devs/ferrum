@@ -2,7 +2,6 @@
 //! whose identity is a behavior (`design.md` §10, the identity table). Compiled only with the feature `__test`, which
 //! `cargo test` turns on and no application build does.
 
-use std::any::Any;
 use std::sync::Arc;
 use std::sync::atomic::AtomicUsize;
 
@@ -11,7 +10,7 @@ use crate::facet::Extension;
 use crate::rangeset::{RangeSet, RangeValue};
 use crate::state::EditorState;
 use crate::text::Text;
-use crate::transaction::{Annotation, StateEffect, StateEffectType, Transaction};
+use crate::transaction::{Annotation, Transaction};
 
 /// Whether two documents are the same node (`text.sharedChildren`, `set.apply`; `Text::empty()` is one node).
 ///
@@ -54,13 +53,6 @@ pub fn same_config(a: &EditorState, b: &EditorState) -> bool {
 ///
 /// ferrum-only: cm6's internal Transaction.annotations, see D15
 pub fn transaction_annotations(tr: &Transaction) -> &[Annotation] {
-    todo!()
-}
-
-/// The type of an effect (cm6's `StateEffect.type`, `transaction.ts:73`; op `internal.get` of `type`).
-///
-/// ferrum-only: cm6's internal StateEffect.type, see D15
-pub fn effect_type<T: ?Sized>(effect: &StateEffect<T>) -> StateEffectType<dyn Any + Send + Sync> {
     todo!()
 }
 

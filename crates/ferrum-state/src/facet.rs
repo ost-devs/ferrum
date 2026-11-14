@@ -21,11 +21,49 @@ pub(crate) static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 // shows the types they stand for.
 pub(crate) type CombineFn<I, O> = Box<dyn Fn(&[I]) -> O + Send + Sync>;
 pub(crate) type CompareFn<T> = Box<dyn Fn(&T, &T) -> bool + Send + Sync>;
-pub(crate) type EnablesFn<I, O> = Box<dyn Fn(&Facet<I, O>) -> Extension + Send + Sync>;
+pub(crate) type EnablesFn<I, O> = Box<dyn FnOnce(&Facet<I, O>) -> Extension>;
+pub(crate) type ProvideFn<T> = Box<dyn FnOnce(&StateField<T>) -> Extension>;
 pub(crate) type UpdateFn<T> = Box<dyn Fn(&T, &Transaction) -> T + Send + Sync>;
-pub(crate) type ProvideFn<T> = Box<dyn Fn(&StateField<T>) -> Extension + Send + Sync>;
 pub(crate) type ToJsonFn<T> = Box<dyn Fn(&T, &EditorState) -> serde_json::Value + Send + Sync>;
 pub(crate) type FromJsonFn<T> = Box<dyn Fn(&serde_json::Value, &EditorState) -> T + Send + Sync>;
+
+/// A shared value compared by address: the form of a value cm6 compares with `===` and Rust cannot compare by
+/// content, a function given as a facet input (`design.md` §3, "Types cm6 does not name"). `Clone` gives the same
+/// value; it dereferences to the value, so a function is called as one.
+///
+/// ferrum-only: a value cm6 compares by identity, compared by address, see N17
+pub struct ByAddress<T: ?Sized> {
+    pub(crate) value: Arc<T>,
+}
+
+impl<T: ?Sized> ByAddress<T> {
+    /// The value holding `value`. Two values made from one `Arc` are equal; two made from different ones are not.
+    ///
+    /// ferrum-only: the constructor of a value compared by address, see N17
+    pub fn new(value: Arc<T>) -> ByAddress<T> {
+        todo!()
+    }
+}
+
+impl<T: ?Sized> Clone for ByAddress<T> {
+    fn clone(&self) -> ByAddress<T> {
+        todo!()
+    }
+}
+
+impl<T: ?Sized> PartialEq for ByAddress<T> {
+    fn eq(&self, other: &ByAddress<T>) -> bool {
+        todo!()
+    }
+}
+
+impl<T: ?Sized> Deref for ByAddress<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        todo!()
+    }
+}
 
 /// What a facet reader points at: the facet's id and its default output, type-erased.
 pub(crate) struct FacetInner {
@@ -39,7 +77,6 @@ pub(crate) struct FacetInner {
 /// A `Facet` can be used wherever a [`FacetReader`] is expected: it dereferences to its reader.
 ///
 /// cm6: Facet
-// QUESTION Q65: cm6's `Facet implements FacetReader` as `Deref<Target = FacetReader<O>>`.
 pub struct Facet<I, O = Vec<I>> {
     pub(crate) reader: FacetReader<O>,
     pub(crate) input: PhantomData<fn(I)>,
@@ -54,16 +91,18 @@ pub struct FacetReader<O: ?Sized> {
     pub(crate) output: PhantomData<fn() -> Box<O>>,
 }
 
-/// The configuration of [`Facet::define`]. Each default is cm6's.
+/// The configuration of [`Facet::define`]. `combine` is required unless the output is the list of inputs:
+/// `FacetConfig::default()` exists only for `FacetConfig<I, Vec<I>>`, and a facet with another output type is
+/// configured with [`FacetConfig::new`] (`design.md` §3). The other members are at cm6's defaults and set with struct
+/// update syntax.
 ///
 /// ferrum-only: the type of the config argument of Facet.define, which cm6 does not export, see D14
-pub struct FacetConfig<I, O> {
+pub struct FacetConfig<I, O = Vec<I>> {
     /// Combines the inputs into the output. Called once when the facet is defined, with no inputs, for the default
-    /// output. Default: none, which makes the list of inputs the output.
+    /// output. cm6's default, the list of inputs as the output, is the `combine` of `FacetConfig::default()`.
     ///
     /// cm6: Facet^define config FacetConfig.combine
-    // QUESTION Q70: with no `combine` the output is the list of inputs, which only `O = Vec<I>` can hold.
-    pub combine: Option<CombineFn<I, O>>,
+    pub combine: CombineFn<I, O>,
     /// Compares two outputs, called as `(new, old)` (`state.cm6.046.d1`). Default: `O`'s `==`, element-wise for the
     /// list of inputs.
     ///
@@ -76,38 +115,49 @@ pub struct FacetConfig<I, O> {
     /// Forbids dynamic inputs ([`Facet::compute`], [`Facet::compute_n`]). Default false.
     ///
     /// cm6: Facet^define config FacetConfig.static
-    // QUESTION Q72: cm6's name `static` is a Rust keyword, written as the raw identifier.
-    pub r#static: bool,
+    /// name: see N12
+    pub is_static: bool,
     /// Extensions added to every state in which the facet is provided. Default: none.
     ///
     /// cm6: Facet^define config FacetConfig.enables
     pub enables: Option<FacetEnables<I, O>>,
 }
 
-impl<I, O> Default for FacetConfig<I, O> {
-    fn default() -> FacetConfig<I, O> {
+impl<I, O> FacetConfig<I, O> {
+    /// A configuration with the given `combine` and every other member at cm6's default: the form of a facet whose
+    /// output is not the list of its inputs (`design.md` §3).
+    ///
+    /// ferrum-only: the constructor of a facet config whose combine is required, see N17
+    pub fn new(combine: impl Fn(&[I]) -> O + Send + Sync + 'static) -> FacetConfig<I, O> {
+        todo!()
+    }
+}
+
+impl<I: Clone> Default for FacetConfig<I, Vec<I>> {
+    /// cm6's defaults: the output is the list of inputs, compared element-wise; the facet is not static and enables
+    /// nothing.
+    fn default() -> FacetConfig<I, Vec<I>> {
         todo!()
     }
 }
 
 /// The `enables` of a [`FacetConfig`]: cm6's `Extension | ((self: Facet) => Extension)`.
 ///
-/// ferrum-only: cm6's union Extension | function of the facet, see D14
-// QUESTION Q62: the name of this type and of its variants is not given by the design or a decision.
+/// ferrum-only: cm6's union Extension | function of the facet, see N17
 pub enum FacetEnables<I, O> {
     /// An extension, added as it is.
     ///
-    /// ferrum-only: the Extension member of cm6's union, see D14
+    /// ferrum-only: the Extension member of cm6's union, see N17
     Extension(Extension),
-    /// A function called once, with the facet, when the facet is defined.
+    /// A function called once, with the facet, when the facet is defined (D14).
     ///
-    /// ferrum-only: the function member of cm6's union, see D14
+    /// ferrum-only: the function member of cm6's union, see N17
     Function(EnablesFn<I, O>),
 }
 
 impl<I, O> Facet<I, O>
 where
-    I: PartialEq + Send + Sync + 'static,
+    I: Clone + PartialEq + Send + Sync + 'static,
     O: PartialEq + Send + Sync + 'static,
 {
     /// The facet's reader.
@@ -118,7 +168,7 @@ where
     }
 
     /// Defines a new facet. cm6's default for `config`, which the caller writes (D14), is
-    /// `FacetConfig::default()`.
+    /// `FacetConfig::default()`, for a facet whose output is the list of its inputs.
     ///
     /// cm6: Facet^define
     pub fn define(config: FacetConfig<I, O>) -> Facet<I, O> {
@@ -217,25 +267,24 @@ impl<O: ?Sized, P: ?Sized> PartialEq<FacetReader<P>> for FacetReader<O> {
 /// A dependency of a computed facet input: cm6's `Slot` (`facet.ts:136`), a facet, a field, the document or the
 /// selection. Facet readers and fields of any type convert into it.
 ///
-/// ferrum-only: cm6's unexported type Slot of the deps of Facet.compute, see D14
-// QUESTION Q62, Q64: the name of this type and of its variants is not given by the design or a decision.
+/// ferrum-only: cm6's unexported type Slot of the deps of Facet.compute, see N17
 #[derive(Clone)]
 pub enum Slot {
     /// A facet's output.
     ///
-    /// ferrum-only: the FacetReader member of cm6's Slot, see D14
+    /// ferrum-only: the FacetReader member of cm6's Slot, see N17
     Facet(FacetReader<dyn Any + Send + Sync>),
     /// A field's value.
     ///
-    /// ferrum-only: the StateField member of cm6's Slot, see D14
+    /// ferrum-only: the StateField member of cm6's Slot, see N17
     Field(StateField<dyn Any + Send + Sync>),
     /// The document (cm6's `"doc"`).
     ///
-    /// ferrum-only: cm6's "doc", see D14
+    /// ferrum-only: cm6's "doc", see N17
     Doc,
     /// The selection (cm6's `"selection"`).
     ///
-    /// ferrum-only: cm6's "selection", see D14
+    /// ferrum-only: cm6's "selection", see N17
     Selection,
 }
 
@@ -271,7 +320,6 @@ pub(crate) struct FieldInner {
 /// ([`EditorState::to_json`], [`Slot`]).
 ///
 /// cm6: StateField
-// QUESTION Q64: a field of any value type as `StateField<dyn Any + Send + Sync>`.
 pub struct StateField<T: ?Sized> {
     pub(crate) inner: Arc<FieldInner>,
     pub(crate) value: PhantomData<fn() -> Box<T>>,
@@ -295,7 +343,7 @@ pub struct StateFieldSpec<T> {
     ///
     /// cm6: StateField^define config StateFieldSpec.compare
     pub compare: Option<CompareFn<T>>,
-    /// Extensions provided by the field, computed once when it is defined. Default: none.
+    /// Extensions provided by the field, computed once when it is defined (D14). Default: none.
     ///
     /// cm6: StateField^define config StateFieldSpec.provide
     pub provide: Option<ProvideFn<T>>,
@@ -365,6 +413,12 @@ impl<T: Send + Sync + 'static> From<StateField<T>> for StateField<dyn Any + Send
     }
 }
 
+impl<T: Send + Sync + 'static> From<&StateField<T>> for StateField<dyn Any + Send + Sync> {
+    fn from(field: &StateField<T>) -> StateField<dyn Any + Send + Sync> {
+        todo!()
+    }
+}
+
 /// What an extension was converted from; its identity is that of the `Arc` (`design.md` §3).
 pub(crate) enum ExtensionKind {
     Provider(Arc<dyn Any + Send + Sync>),
@@ -410,10 +464,10 @@ impl Default for Extension {
 }
 
 /// Precedences of extensions. Extensions are ordered first by precedence, then by their order in the flattened
-/// configuration; one without a precedence takes that of its nearest wrapped parent, or `default`.
+/// configuration; one without a precedence takes that of its nearest wrapped parent, or `default`. cm6's constant
+/// object of functions is an uninhabited enum with associated functions (N16).
 ///
 /// cm6: Prec
-// QUESTION Q72: cm6's constant object of functions as an uninhabited type holding associated functions.
 pub enum Prec {}
 
 impl Prec {
@@ -453,12 +507,10 @@ impl Prec {
     }
 }
 
-/// A part of a configuration that a transaction can replace. A new compartment is `Compartment::default()`; `Clone`
+/// A part of a configuration that a transaction can replace. A new compartment is [`Compartment::new`]; `Clone`
 /// gives the same compartment, `==` compares by pointer.
 ///
 /// cm6: Compartment
-// QUESTION Q71: cm6's `new Compartment()` has no inventory row; it is written as `Default`.
-#[derive(Default)]
 pub struct Compartment {
     pub(crate) inner: Arc<CompartmentInner>,
 }
@@ -466,6 +518,13 @@ pub struct Compartment {
 /// The allocation that gives a compartment its identity.
 #[derive(Default)]
 pub(crate) struct CompartmentInner;
+
+impl Default for Compartment {
+    /// [`Compartment::new`] (N15).
+    fn default() -> Compartment {
+        todo!()
+    }
+}
 
 impl Clone for Compartment {
     fn clone(&self) -> Compartment {
@@ -482,6 +541,13 @@ impl PartialEq for Compartment {
 impl Eq for Compartment {}
 
 impl Compartment {
+    /// A new compartment, distinct from every other.
+    ///
+    /// ferrum-only: cm6's new Compartment(), see N15
+    pub fn new() -> Compartment {
+        todo!()
+    }
+
     /// An extension that puts `ext` in this compartment.
     ///
     /// cm6: Compartment.of

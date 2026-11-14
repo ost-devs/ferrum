@@ -28,15 +28,16 @@ pub mod __test;
 pub use change::{ChangeDesc, ChangeSet, ChangeSpec, MapMode, TouchesRange};
 pub use char::{code_point_at, code_point_size, find_cluster_break};
 pub use charcategory::CharCategory;
-pub use column::{count_column, find_column};
+pub use column::{count_column, find_column, try_find_column};
 pub use config::combine_config;
 pub use error::Error;
 pub use extension::{
-    Callback, ChangeFilterResult, LanguageData, StateCommand, StateCommandTarget, TransactionExtension,
-    TransactionFilterResult,
+    ChangeFilter, ChangeFilterOutput, LanguageData, LanguageDataProvider, StateCommand, StateCommandTarget,
+    TransactionExtender, TransactionExtenderOutput, TransactionFilter, TransactionFilterOutput,
 };
 pub use facet::{
-    Compartment, Extension, Facet, FacetConfig, FacetEnables, FacetReader, Prec, Slot, StateField, StateFieldSpec,
+    ByAddress, Compartment, Extension, Facet, FacetConfig, FacetEnables, FacetReader, Prec, Slot, StateField,
+    StateFieldSpec,
 };
 pub use rangeset::{
     Range, RangeComparator, RangeCursor, RangeSet, RangeSetBuilder, RangeSetUpdate, RangeValue, SpanIterator,

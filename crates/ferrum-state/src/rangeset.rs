@@ -8,8 +8,9 @@ use std::sync::Arc;
 
 use crate::change::{ChangeDesc, MapMode};
 
-/// The boxed filter of [`RangeSetUpdate`], named for clippy's `type_complexity`; rustdoc shows the type.
-pub(crate) type FilterFn<T> = Box<dyn Fn(usize, usize, &T) -> bool + Send + Sync>;
+/// The filter of [`RangeSetUpdate`], called only during [`RangeSet::update`] (D14), named for clippy's
+/// `type_complexity`; rustdoc shows the type.
+pub(crate) type FilterFn<'a, T> = &'a mut dyn FnMut(usize, usize, &T) -> bool;
 
 /// The largest number of ranges in one chunk (cm6's `C.ChunkSize`, `rangeset.ts:96`).
 pub(crate) const CHUNK_SIZE: usize = 250;
@@ -21,7 +22,7 @@ pub(crate) const FAR: i64 = 1_000_000_000;
 /// them when it is built and when it is walked (`design.md` §3).
 ///
 /// cm6: RangeValue
-// QUESTION Q69: `RangeValue.eq` is the supertrait `PartialEq` (N10), which no public item can carry the mapping of.
+/// cm6 impl: RangeValue.eq, see N10
 pub trait RangeValue: PartialEq {
     /// The bias at the start of the range, which orders it among ranges starting at the same position. Default 0.
     ///
@@ -100,7 +101,6 @@ impl<T> Range<T> {
 /// The methods [`RangeSet::compare`] calls to report differences.
 ///
 /// cm6: RangeComparator
-// QUESTION Q68: the receiver is `&mut self`, so that a comparator can record what it is told.
 pub trait RangeComparator<T> {
     /// A range, in positions of the new document, whose sets of values differ between the old sets (A) and the new
     /// ones (B).
@@ -125,7 +125,6 @@ pub trait RangeComparator<T> {
 /// The methods [`RangeSet::spans`] calls; together its calls cover the whole range iterated.
 ///
 /// cm6: SpanIterator
-// QUESTION Q68
 pub trait SpanIterator<T> {
     /// A stretch covered by no point: `active` holds the values that cover it (maybe none), `open_start` how many of
     /// them continue from before the stretch.
@@ -203,7 +202,7 @@ impl<T: RangeValue + Clone> RangeCursor<T> {
 /// What [`RangeSet::update`] adds and removes. Each default is cm6's.
 ///
 /// ferrum-only: the type of the argument of RangeSet.update, which cm6 does not export, see D14
-pub struct RangeSetUpdate<T> {
+pub struct RangeSetUpdate<'a, T> {
     /// Ranges to add, sorted by `from` and `start_side` unless `sort` is true. Default: none.
     ///
     /// cm6: RangeSet.update config RangeSetUpdate.add
@@ -213,10 +212,10 @@ pub struct RangeSetUpdate<T> {
     /// cm6: RangeSet.update config RangeSetUpdate.sort
     pub sort: bool,
     /// Keeps the ranges of the set for which it returns true, among those between `filter_from` and `filter_to`.
-    /// Default: none, which keeps every range.
+    /// Called only before [`RangeSet::update`] returns (D14). Default: none, which keeps every range.
     ///
     /// cm6: RangeSet.update config RangeSetUpdate.filter
-    pub filter: Option<FilterFn<T>>,
+    pub filter: Option<FilterFn<'a, T>>,
     /// The start of the stretch the filter applies to. Default 0.
     ///
     /// cm6: RangeSet.update config RangeSetUpdate.filterFrom
@@ -227,8 +226,8 @@ pub struct RangeSetUpdate<T> {
     pub filter_to: Option<usize>,
 }
 
-impl<T> Default for RangeSetUpdate<T> {
-    fn default() -> RangeSetUpdate<T> {
+impl<T> Default for RangeSetUpdate<'_, T> {
+    fn default() -> Self {
         todo!()
     }
 }
@@ -279,7 +278,7 @@ impl<T: RangeValue + Clone> RangeSet<T> {
     /// With ``Ranges must be added sorted by `from` position and `startSide` `` where cm6 throws it.
     ///
     /// cm6: RangeSet.update
-    pub fn update(&self, update_spec: RangeSetUpdate<T>) -> RangeSet<T> {
+    pub fn update(&self, update_spec: RangeSetUpdate<'_, T>) -> RangeSet<T> {
         todo!()
     }
 
@@ -291,11 +290,11 @@ impl<T: RangeValue + Clone> RangeSet<T> {
         todo!()
     }
 
-    /// Calls `f(from, to, value)` for each range that touches `from..to`, until it returns false.
+    /// Calls `f(from, to, value)` for each range that touches `from..to`, until it returns false. `f` is called only
+    /// before the call returns (D14).
     ///
     /// cm6: RangeSet.between
-    // QUESTION Q68
-    pub fn between(&self, from: usize, to: usize, f: impl Fn(usize, usize, &T) -> bool + Send + Sync + 'static) {
+    pub fn between(&self, from: usize, to: usize, f: impl FnMut(usize, usize, &T) -> bool) {
         todo!()
     }
 
@@ -311,7 +310,7 @@ impl<T: RangeValue + Clone> RangeSet<T> {
     /// cm6's default for `from` is 0, which the caller writes (D14).
     ///
     /// cm6: RangeSet^iter
-    // QUESTION Q66: cm6's static `RangeSet.iter` and instance `iter` cannot share the name `iter` in Rust (E0592).
+    /// name: see N14
     pub fn iter_sets(sets: &[RangeSet<T>], from: usize) -> RangeCursor<T> {
         todo!()
     }
@@ -321,7 +320,6 @@ impl<T: RangeValue + Clone> RangeSet<T> {
     /// `None` is cm6's default -1, comparing every range.
     ///
     /// cm6: RangeSet^compare
-    // QUESTION Q67: cm6's `minPointSize` default -1 is `None`.
     pub fn compare(
         old_sets: &[RangeSet<T>],
         new_sets: &[RangeSet<T>],
@@ -344,7 +342,6 @@ impl<T: RangeValue + Clone> RangeSet<T> {
     /// Returns the number of ranges still open at `to`. `min_point_size` as in [`RangeSet::compare`].
     ///
     /// cm6: RangeSet^spans
-    // QUESTION Q67
     pub fn spans(
         sets: &[RangeSet<T>],
         from: usize,

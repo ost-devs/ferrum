@@ -3,10 +3,9 @@
 
 use std::any::Any;
 use std::collections::HashMap;
-use std::ops::Deref;
 use std::sync::{Arc, LazyLock};
 
-use crate::facet::Facet;
+use crate::facet::{ByAddress, Facet};
 use crate::state::EditorState;
 use crate::transaction::{Annotation, StateEffect, Transaction, TransactionSpec};
 
@@ -30,51 +29,12 @@ pub struct StateCommandTarget<'a> {
     pub dispatch: &'a mut dyn FnMut(Transaction),
 }
 
-/// A function given as a facet input, compared by pointer as cm6 compares functions with `===` (D14,
-/// `design.md` §3). `Clone` gives the same function; it dereferences to the function, so it is called as one.
-///
-/// ferrum-only: a function-valued facet input, compared by pointer, see D14
-// QUESTION Q63: the type of function-valued facet inputs is not named by the design or a decision.
-pub struct Callback<F: ?Sized> {
-    pub(crate) f: Arc<F>,
-}
-
-impl<F: ?Sized> Callback<F> {
-    /// The input holding `f`. Two inputs made from one `Arc` are equal; two made from different ones are not.
-    ///
-    /// ferrum-only: the constructor of a function-valued facet input, see D14
-    pub fn new(f: Arc<F>) -> Callback<F> {
-        todo!()
-    }
-}
-
-impl<F: ?Sized> Clone for Callback<F> {
-    fn clone(&self) -> Callback<F> {
-        todo!()
-    }
-}
-
-impl<F: ?Sized> PartialEq for Callback<F> {
-    fn eq(&self, other: &Callback<F>) -> bool {
-        todo!()
-    }
-}
-
-impl<F: ?Sized> Deref for Callback<F> {
-    type Target = F;
-
-    fn deref(&self) -> &F {
-        todo!()
-    }
-}
-
 /// What a change filter returns: accept every change, reject every change, or keep only the changes outside the
 /// given `(from, to)` ranges of the start document (`state.cm6.032.d1`).
 ///
 /// ferrum-only: cm6's result type boolean | readonly number[] of a change filter, see state.cm6.032.d1
-// QUESTION Q62: the name of this type and of its variants is not given by the design or a decision.
 #[derive(Clone, Debug, PartialEq)]
-pub enum ChangeFilterResult {
+pub enum ChangeFilterOutput {
     /// cm6's `true`: the changes are kept.
     ///
     /// ferrum-only: cm6's true, see state.cm6.032.d1
@@ -90,30 +50,32 @@ pub enum ChangeFilterResult {
     Ranges(Vec<(usize, usize)>),
 }
 
-/// What a transaction filter returns: cm6's `TransactionSpec | readonly TransactionSpec[]`, where a transaction (or a
-/// one-element array holding one) is used as it is.
+/// What a transaction filter returns: cm6's `TransactionSpec | readonly TransactionSpec[]`. A transaction returned
+/// alone, or as the only element of an array, is used as it is (`mirrors/cm6/state/src/transaction.ts:385`); a
+/// transaction among other specs is given as its spec, `TransactionSpec::from(&tr)`.
 ///
-/// ferrum-only: cm6's result type of a transaction filter, see D14
-// QUESTION Q62: the name of this type and of its variants is not given by the design or a decision; a cm6 array that
-// mixes a transaction with other specs has no member here.
-pub enum TransactionFilterResult {
+/// ferrum-only: cm6's result type of a transaction filter, see N17
+pub enum TransactionFilterOutput {
     /// A transaction, used as it is.
     ///
-    /// ferrum-only: the Transaction member of cm6's result, see D14
+    /// ferrum-only: the Transaction member of cm6's result, see N17
     Transaction(Transaction),
     /// Specs, resolved into a new transaction without filters.
     ///
-    /// ferrum-only: the TransactionSpec members of cm6's result, see D14
+    /// ferrum-only: the TransactionSpec members of cm6's result, see N17
     Specs(Vec<TransactionSpec>),
 }
 
 /// What a transaction extender adds: effects and annotations only, cm6's declared
 /// `Pick<TransactionSpec, "effects" | "annotations">` (`state.cm6.034.d1`). Each default is none.
 ///
+/// The extender returns `Option` of it. `None` is cm6's `null` or `{}`, which adds nothing. `Some`, even with both
+/// lists empty, is an object with a key, for which cm6 merges the extension into the transaction and so maps the
+/// transaction's effects once more (`mirrors/cm6/state/src/transaction.ts:396`).
+///
 /// ferrum-only: cm6's result type of a transaction extender, see state.cm6.034.d1
-// QUESTION Q62: the name of this type is not given by the design or a decision.
 #[derive(Clone, Default)]
-pub struct TransactionExtension {
+pub struct TransactionExtenderOutput {
     /// Effects to add, in the coordinates of the transaction's new document.
     ///
     /// ferrum-only: cm6's effects member of the extender's result, see state.cm6.034.d1
@@ -130,14 +92,27 @@ pub struct TransactionExtension {
 /// ferrum-only: cm6's object of language data fields, see state.cm6.029.d1
 pub type LanguageData = HashMap<String, Arc<dyn Any + Send + Sync>>;
 
-/// The input type of [`EditorState::LANGUAGE_DATA`]: a provider of language data at a position and side.
-pub(crate) type LanguageDataProvider = Callback<dyn Fn(&EditorState, usize, i8) -> Vec<LanguageData> + Send + Sync>;
-/// The input type of [`EditorState::CHANGE_FILTER`].
-pub(crate) type ChangeFilter = Callback<dyn Fn(&Transaction) -> ChangeFilterResult + Send + Sync>;
-/// The input type of [`EditorState::TRANSACTION_FILTER`].
-pub(crate) type TransactionFilter = Callback<dyn Fn(&Transaction) -> TransactionFilterResult + Send + Sync>;
-/// The input type of [`EditorState::TRANSACTION_EXTENDER`].
-pub(crate) type TransactionExtender = Callback<dyn Fn(&Transaction) -> Option<TransactionExtension> + Send + Sync>;
+/// The input type of [`EditorState::LANGUAGE_DATA`]: a provider of language data at a position and side, compared
+/// by address.
+///
+/// ferrum-only: the function input of EditorState.languageData, see N17
+pub type LanguageDataProvider = ByAddress<dyn Fn(&EditorState, usize, i8) -> Vec<LanguageData> + Send + Sync>;
+
+/// The input type of [`EditorState::CHANGE_FILTER`], compared by address.
+///
+/// ferrum-only: the function input of EditorState.changeFilter, see N17
+pub type ChangeFilter = ByAddress<dyn Fn(&Transaction) -> ChangeFilterOutput + Send + Sync>;
+
+/// The input type of [`EditorState::TRANSACTION_FILTER`], compared by address.
+///
+/// ferrum-only: the function input of EditorState.transactionFilter, see N17
+pub type TransactionFilter = ByAddress<dyn Fn(&Transaction) -> TransactionFilterOutput + Send + Sync>;
+
+/// The input type of [`EditorState::TRANSACTION_EXTENDER`], compared by address. Its function returns `None` or
+/// `Some` as [`TransactionExtenderOutput`] says.
+///
+/// ferrum-only: the function input of EditorState.transactionExtender, see N17
+pub type TransactionExtender = ByAddress<dyn Fn(&Transaction) -> Option<TransactionExtenderOutput> + Send + Sync>;
 
 pub(crate) static LANGUAGE_DATA: LazyLock<Facet<LanguageDataProvider>> = LazyLock::new(|| todo!());
 pub(crate) static ALLOW_MULTIPLE_SELECTIONS: LazyLock<Facet<bool, bool>> = LazyLock::new(|| todo!());
