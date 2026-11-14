@@ -46,6 +46,7 @@
 - A check may change after its code without a call per fix: its author fixes it, each fix names the rule it restores, I read the list in batches; a fix that restores no rule is a question. Same entry
 - Prose marks that a later reader must interpret (positions without their text): make the author write the fact as a row with the op; reading them afterwards cost a run and found 32 gaps. `docs/decisions/method.md`, 2026-11-14, end of stage
 - A document that names paths the work will create declares them (`refs:planned`), so the checker stays strict on every other path and the marker goes stale by itself. Same entry
+- A number inside a formatted string of cm6 (an error message, a debug form) is a position like any other: compare it converted, never stripped; state the text per cm6 throw (the function owns it), not per harness op, and let the replayer find it by the argument the message repeats; ambiguity is a question, never "any text that fits". Before deciding, run the fixtures with a wrapper that tallies op by throw site. `docs/decisions/ferrum-state.md` Q60
 
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.

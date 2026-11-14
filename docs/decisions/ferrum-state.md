@@ -444,3 +444,34 @@ which would make the rows' only consumer outside state an application.
 
 **Reopens.** The pilot showing position rounds that the rules do not settle; the control run finding compared fixtures that pass altered; the implementer reporting more cases without a behavior row than the rate above predicts for its unit (U1 has 39 items: more than about three), which would call for the completeness reading on the remaining units before their code.
 
+## 2026-11-14 · Q60 and the end of step D: positions inside cm6's error messages; a skip is a distance; the approval stands
+
+*Decided by the consultant (Q60 of `ferrum-state`; the review of step D's output). Binding text: `docs/parity/ferrum-state/plan.md` "Positions", rules 7, 9 and 10, and its section "Specification (done 2026-11-14)"; the header of `tools/cm6/program.ts` (the output format); `docs/workflow/specification.md` §4 (`raw/throws.jsonl`, the field `positions`). Ledger: E17.*
+
+**The question.** cm6 writes positions into some error messages ("Invalid change range 3 to 3 (in doc of length 2)"). Ferrum writes the same message with its own numbers, in bytes (D13, already in force). The fixtures hold cm6's text, and nothing told the replayer that these numbers are positions or which text each is measured on. For a document of plain ASCII the two messages are equal; for "😀" cm6 says length 2 and Ferrum says length 4.
+
+**What I verified.**
+- *Which messages.* I read every `throw` of `mirrors/cm6/state/src/` that builds its message from a value: eight. Four hold positions or lengths: `text.ts:40`, `change.ts:140`, `:328`, `:334`. One holds line numbers (`text.ts:46`), which are the same number in both units. Three hold no number of the document (`config.ts:19`, `facet.ts:550`, `:551`).
+- *Which ops reach them.* I ran every fixture on cm6 with a wrapper that records the op inside which each such error is first thrown (a scratch script, nothing committed). Thirteen pairs of op and throw: in chunk `text`, `text.lineAt`; in `change`, `desc.mapPos`, `range.map`, `sel.map` (`:140`) and `set.of` (`:328`, `:334`); in `rangeset`, `set.map` (`:140`); in `state`, `state.wordAt` (`text.ts:40`), `state.changes` (`:328`, `:334`), `state.update` (`:140`, `:334`) and `effect.mapEffects` (`:140`). 88 throws with numbers in all (and one whose position is `Infinity`), 30 of them in fixtures whose input holds non-ASCII text (an upper bound of the cases where the two units differ: in `F1154` the non-ASCII text is in another spec than the one that fails).
+- *What the numbers are.* In each of the four throws the first numbers are the argument that failed, unchanged, and the last is the length it was checked against (I read `mapPos`, `ChangeSet.of` with its `process`, `lineAt`, and `resolveTransaction` with `mergeTransaction`). In `:328` the first number is the length of the set given as a spec, on that set's own start document. I worked four fixtures by hand through the rule (`state` F2043, F2044, F1148, F1166): Ferrum's message converted back gives cm6's.
+- *Deduced, not run:* that inside `state.update` a position that reaches `mapPos` out of range is always one the caller wrote (a position already mapped once is inside the document it was mapped to).
+
+**The decision.**
+1. *The four messages are compared with their numbers, converted.* The op that called Ferrum reads the panic's message in cm6's format and converts its numbers back to UTF-16 units, through the text the failed argument is measured on, before the program sees the error. The text needs no new facts: it is the one the position rows already give for the argument the message repeats. Where an op's arguments lie on several texts (`state.update`) the replayer takes the argument whose value and whose text's length are the message's; if two fit and would convert differently, or none fits, it is a question, not a guess.
+2. *Every other message is compared as written.*
+3. *From the next crate, the fact is written with the throw*: a row of `raw/throws.jsonl` whose message interpolates a value says which values are positions and on which text. For `ferrum-state` the four are in the plan, verified here; a worker run to copy four facts I had just read into rows would buy nothing.
+4. *A `skip` of a text iterator is a distance* (step D's fact): the replayer converts its two ends, keeping the iterator's position in cm6's unit. The plan's position rules spoke only of positions.
+
+**Alternatives and why each lost.**
+- *Compare the message with its numbers removed, or only for ASCII documents.* Thinner evidence: the numbers are what the developer reads in the panic, and a wrong number there (a length in the wrong unit, the wrong position reported) would pass.
+- *Rows of `raw/positions.jsonl` per op and message.* Thirteen rows today, but the throw belongs to the cm6 function and not to the op: an op the oracle reaches later, or a new op, would have no row, while the rule by throw covers it.
+- *Let the replayer find the text by repeating cm6's order of resolution inside `state.update`.* The check would then re-implement the code it checks.
+- *Accept any text of the call that makes the messages equal.* It can pass a Ferrum that failed on the wrong document.
+- *Ferrum's messages in UTF-16 units.* It contradicts D1 and D13: the number a Rust developer reads would not index their strings.
+
+**Step D's output and the approval.** Nothing in it changes the approval: no fixture changed (the check against 7b2558d, which I ran again after my edits), and the counts are the same 264 items, 952 behaviors, 172 tests, 4,965 fixtures. The 18 position rows removed beyond the work list follow the rule the step was given (a number a harness op computes has no row). The `concat` that differed on `null` is one implementation now and no fixture has such a member; its header says what it does. `codePointSize` and the `docParity` getter are covered by the rule that a number is converted where it passes between the program and Ferrum. Step D cost 287,641 tokens against 250,000 (1.15 times, one run of the check); no expectation reaches its checking point at this step (E13 is checked at `ferrum-view`, E14 at the end of the implementation).
+
+**Confidence.** High that the numbers must be compared and on the four texts. Medium-high on finding the text by the repeated argument in `state.update`: derived from the code and four fixtures; the fixtures of U4 test it, and a failure shows as a mismatch or a question, never as a pass.
+
+**Reopens.** A fixture of U1, U2 or U4 whose message the rule converts wrongly; more than a handful of `state.update` fixtures ending as questions under rule 10; E17 refuted.
+

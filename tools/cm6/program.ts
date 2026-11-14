@@ -10,7 +10,9 @@
 //                       the output.
 // The input is read with `decode` (tools/cm6/oracle-lib.ts) first, so {"js_undefined": true} is undefined and so on.
 // The output is {"ok": value} or, when a step throws outside a `try`, {"error": {name, message}}, the value encoded
-// by `encode`. An output holds what cm6 gives its caller and nothing about cm6's source: where an uncaught throw
+// by `encode`. A message is cm6's text: where cm6 writes a position, offset or length into it, the number counts
+// UTF-16 code units like every other position of an output (the crate's plan says which messages hold one and on
+// which text each number is measured). An output holds what cm6 gives its caller and nothing about cm6's source: where an uncaught throw
 // came from (`throwSite`) is kept beside the run in `Language.thrownAt`, which tools/cm6/replay.ts reports and
 // tools/spec_check.py compares with raw/throws.jsonl.
 // - Setup keys: what the chunk builds before the steps run (the header of its interpreter names them).
