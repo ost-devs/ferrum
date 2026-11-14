@@ -2,9 +2,4 @@
 
 Questions for the consultant about how the work runs (`docs/workflow/README.md` §7), in the shape of `CLAUDE.md` "Raising a question", ids `M<n>` (the next is M21). The orchestrator adds one when an observation calls the method into question or a stop-loss fires; the consultant removes it when it records the decision (`docs/decisions/method.md`).
 
-## M20. The coverage check reports, for every source file, a site that no input can reach and that is not a branch of cm6
-- **Found.** Step B of `ferrum-state` (2026-11-14): 13 of the 33 sites of `docs/parity/ferrum-state/raw/coverage.jsonl` are, one per file of `mirrors/cm6/state/src/`, the zero-count range of the compiled module's last statement (the export annotation esbuild writes), mapped to the last source line that has a mapping (`docs/parity/ferrum-state/verification.md` "Coverage", outcome `artifact`; the worker mapped V8's raw ranges through the source-map cache of the check and compiled four files to see the annotation). They remain in `raw/coverage.jsonl` after the step (26 sites left, 13 of them these).
-- **Open because.** `tools/spec_check.py` drops a site on the first line of a file and its docstring says that a site on a declaration or a closing line comes from the mapping; nothing in `docs/workflow/specification.md` §8 item 1 says what the tool does with a site it can show to be the module's last statement, and a change to what the tool reports is a method change.
-- **Bears on it.** One `spec-auditor` at `high` settled the 33 sites for 223,199 tokens against a budget of 150,000 (1.49 times; the stop-loss is at 1.5). Every later crate has one such site per source file (a deduction: the same build runs them). `char.ts:37` holds both the artifact and a real conditional whose two sides are reached, so the line alone does not tell them apart; the column range does (the worker's reading). Not verified: whether c8's report gives the tool the generated-code range it needs to recognize the statement.
-- **Blocks.** Nothing in `ferrum-state`; the S1 coverage step of `ferrum-view`.
-- **Raised by.** Orchestrator, 2026-11-14.
+None open.

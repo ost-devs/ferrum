@@ -48,6 +48,7 @@
 {"chunk": "rangeset", "op": "cursor.read", "how": "run", "parts": [], "note": "a value's index is the index the replayer's value type carries (design.md §10)"}
 {"chunk": "rangeset", "op": "eqlog.count", "how": "run", "parts": [], "note": "the replayer's value type logs in its `PartialEq` as design.md §10 says"}
 {"chunk": "rangeset", "op": "eqlog.take", "how": "run", "parts": [], "note": "the replayer's value type logs in its `PartialEq` as design.md §10 says"}
+{"chunk": "rangeset", "op": "layer.fake", "how": "none", "parts": [], "note": "a plain object given where a `RangeSet` is expected; `RangeSet::join` takes range sets only (D12, state.cm6.184.d2)"}
 {"chunk": "rangeset", "op": "same", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
 {"chunk": "rangeset", "op": "sameItems", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
 {"chunk": "rangeset", "op": "set.between", "how": "run", "parts": [], "note": ""}

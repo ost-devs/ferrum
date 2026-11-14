@@ -40,6 +40,12 @@
 - A check on a file only I write must not fail a worker's run: count it, and require zero at approval. `docs/decisions/method.md`, 2026-11-14
 - String-keyed dynamic protocol of cm6 (language data): ask what the names buy (crates that provide without importing the reader) before typing it away. Same ferrum-state entry
 - Figures in a record: recompute each from the tool output before committing (three of mine were wrong in the draft).
+- Approving a specification: say what it does not claim. Residual risk = the samples' high rate times the items nobody read twice, then what stands against it; a wrong row weakens the description, not the proof, when outputs come from runs and coverage is by branch. `docs/decisions/ferrum-state.md`, "S5, third part"
+- Facts I did not all verify (314 position rows): accept them when a wrong one cannot pass silently (it fails a fixture), say which I checked, and never when the error would hide. Same entry
+- When one program is the proof (a replayer), plan around its false passes: a control run on altered expected values, an approved file of what it leaves out, unwritten code never counted as a matching error. Same entry
+- A check may change after its code without a call per fix: its author fixes it, each fix names the rule it restores, I read the list in batches; a fix that restores no rule is a question. Same entry
+- Prose marks that a later reader must interpret (positions without their text): make the author write the fact as a row with the op; reading them afterwards cost a run and found 32 gaps. `docs/decisions/method.md`, 2026-11-14, end of stage
+- A document that names paths the work will create declares them (`refs:planned`), so the checker stays strict on every other path and the marker goes stale by itself. Same entry
 
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.

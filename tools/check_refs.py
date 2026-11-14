@@ -9,7 +9,10 @@ Findings:
   LINE     file:line beyond the end of the file
   SECTION  "`<file>.md` §N" (or "<file>.md §N") with no heading "## N." in that file; a bare §N
            refers to the last file named on the same line, or else to the file being checked
-A line containing "refs:ignore" is skipped. Paths with placeholders (<, *, {, …) are skipped, and so are
+  STALE    a path a "refs:planned" line names that now exists (the line is removed)
+A line containing "refs:ignore" is skipped. A line that starts with "<!-- refs:planned " and lists repository paths declares
+paths the work will create: a missing path equal to one of them or under it is not MISSING in that file, and is
+counted as planned. Paths with placeholders (<, *, {, …) are skipped, and so are
 repository paths on a line that names branch `bad-start`, or anywhere in a file marked `refs:bad-start`
 (they refer to that branch, read with git show).
 Exit status 1 when anything is found.
@@ -65,10 +68,17 @@ def resolve(name, here):
 def check(md, out):
     in_code = False
     branch_file = 'refs:bad-start' in md.read_text(errors='replace')
+    planned = set()
+    for i, line in enumerate(md.read_text(errors='replace').split('\n'), 1):
+        if line.lstrip().startswith('<!-- refs:planned '):
+            for m in PATH.finditer(line):
+                if (ROOT / m.group(1)).exists():
+                    out.append(('STALE', md, i, f'refs:planned {m.group(1)} exists'))
+                planned.add(m.group(1))
     for i, line in enumerate(md.read_text(errors='replace').split('\n'), 1):
         if line.startswith('```'):
             in_code = not in_code
-        if 'refs:ignore' in line:
+        if 'refs:ignore' in line or line.lstrip().startswith('<!-- refs:planned '):
             continue
         for m in SCRATCH.finditer(line):
             out.append(('SCRATCH', md, i, line[max(0, m.start() - 30):m.end() + 40]))
@@ -85,7 +95,9 @@ def check(md, out):
                     continue
             p = ROOT / rel
             if not p.exists():
-                if not branch_file:
+                if any(rel == q or rel.startswith(q + '/') for q in planned):
+                    skipped['planned'] += 1
+                elif not branch_file:
                     out.append(('MISSING', md, i, rel))
             elif ln and p.is_file() and int(ln) > nlines(p):
                 out.append(('LINE', md, i, f'{rel}:{ln} > {nlines(p)} lines'))
@@ -119,6 +131,9 @@ def main():
             print(f'{kind:8} {f.relative_to(ROOT)}:{i}  {s}')
     counts = collections.Counter(k for k, *_ in out)
     print('files', len(files), 'findings', dict(counts) if counts else 0)
+    planned = skipped.pop('planned', 0)
+    if planned:
+        print('planned paths not yet created:', planned)
     if skipped:
         print('not checked (mirror not fetched):', ', '.join(f'{k} ({v})' for k, v in sorted(skipped.items())))
     return 1 if out else 0
