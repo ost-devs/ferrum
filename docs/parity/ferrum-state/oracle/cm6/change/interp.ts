@@ -16,7 +16,9 @@
 //   cut off after ms milliseconds. The replay runs those inputs the same way.
 //
 // Positions. An argument or result field marked (pos) is a document position, offset or length in UTF-16 code units
-// (the replayer converts these and nothing else).
+// (the replayer converts these and nothing else), also inside a JSON form cm6 reads or returns and inside a string cm6
+// formats. Harness ops (the language's ops of tools/cm6/program.ts; this chunk registers none) compute in UTF-16 code
+// units on the numbers they are given.
 //
 // Arguments are data (the op itself builds the cm6 values from them):
 // - Argument list (`args` and the arrays of `cursor`, `range`, `undir`, `single`): spread as the call's arguments,
@@ -44,7 +46,8 @@
 // - selection spec: {"create": [range specs], "main"?: n} is EditorSelection.create(ranges) or create(ranges, main);
 //   {"single": [anchor (pos), head (pos)]} is EditorSelection.single(...); {"json": {...}} is EditorSelection.fromJSON;
 //   {"jsonRefs": {...}} is EditorSelection.fromJSON like "json", and then its range objects are appended, in order,
-//   to `built`.
+//   to `built`. The object of "json" and "jsonRefs" is selection JSON (the EditorSelection.toJSON form):
+//   {ranges: [{anchor (pos), head (pos)}], main}, handed to cm6 whole.
 //
 // Values in results:
 // - desc(r) = {sections: (r.desc if r is a ChangeSet, else r).toJSON() (sections, pos as above),
@@ -61,9 +64,9 @@
 //   desc.props {desc}  {api}          [{length (pos), newLength (pos), empty}]
 //   desc.iterGaps {desc}  {api, callbacks}   [d.iterGaps(f): one [posA (pos), posB (pos), length (pos)] per call]
 //   desc.iterChangedRanges {desc, individual?}  {api, internal, callbacks}   [d.iterChangedRanges(f) or
-//       d.iterChangedRanges(f, individual): one [fromA, toA, fromB, toB (pos), x] per call, x = String of the fifth
-//       argument cm6 passes (the inserted Text, undocumented for this method; change.ts:404 `iterChanges`), null
-//       when it passes four]
+//       d.iterChangedRanges(f, individual): one [fromA (pos), toA (pos), fromB (pos), toB (pos), x] per call, x =
+//       String of the fifth argument cm6 passes (the inserted Text, undocumented for this method; change.ts:404
+//       `iterChanges`), null when it passes four]
 //   desc.invertedDesc {desc}  {api, identity}   [{...desc(x), sameTwice: x === d.invertedDesc}, x = d.invertedDesc]
 //   desc.composeDesc {a: desc spec, b: desc spec}  {api, identity}   [r = a.composeDesc(b):
 //       {...desc(r), identity: identity(r, a, b), length (pos), newLength (pos)}]
@@ -74,10 +77,12 @@
 //   desc.touchesRange {desc, args: argument list [from (pos), to (pos)]}  {api}   [d.touchesRange(...args): true,
 //       false or "cover"]
 //   desc.toJSON {desc: {sections}}  {api, identity}   [d = ChangeDesc.fromJSON(s), s the input array, j = d.toJSON():
-//       {json: j, sameAsInputArray: j === s, sameTwice: j === d.toJSON()}]
+//       {json: j (sections, pos as above), sameAsInputArray: j === s, sameTwice: j === d.toJSON()}]
 //   desc.fromJSON {json: sections}  {api, identity}   [d = ChangeDesc.fromJSON(json): {sections: d.toJSON(),
 //       keepsInputArray: d.toJSON() === json, length (pos), newLength (pos), empty}]
-//   desc.toString {desc}  {internal}  [String(d): ChangeDesc.toString is @internal (change.ts:156)]
+//   desc.toString {desc}  {internal}  [String(d): ChangeDesc.toString is @internal (change.ts:156): for each section,
+//       "len" when ins < 0, else "len:ins", joined by one space (change.ts:157-164); each len (pos) and each ins (pos)
+//       written in the string as a decimal number]
 // ChangeSet
 //   set.of {spec: change spec, length (pos), lineSep?}  {api}   [s = ChangeSet.of(spec, length, lineSep):
 //       {...desc(s), length (pos), newLength (pos), empty}]
@@ -94,10 +99,11 @@
 //       {...desc(r), identity: identity(r, a, b)}]
 //   set.mapDesc {a: set spec, b: desc spec, before?}  {api, identity}   [the same with a.mapDesc]
 //   set.iterChanges {set, individual?}  {api, callbacks}   [s.iterChanges(f) or s.iterChanges(f, individual): one
-//       [fromA, toA, fromB, toB (pos), inserted.toJSON() (lines)] per call]
+//       [fromA (pos), toA (pos), fromB (pos), toB (pos), inserted.toJSON() (lines)] per call]
 //   set.desc {set}  {api, internal, identity}   [d = s.desc: {...desc(d), sameTwice: d === s.desc,
 //       sharesSections: d.sections === s.sections (`sections` is @internal, change.ts:29)}]
-//   set.toJSON {set}  {api}           [{json: s.toJSON(), stringified: JSON.stringify(s)}]
+//   set.toJSON {set}  {api}           [{json: s.toJSON() (change JSON, pos as above), stringified: JSON.stringify(s)
+//       (the same change JSON as a string: each len (pos) written in it as a decimal number)}]
 //   set.fromJSON {json: change JSON}  {api}   [s = ChangeSet.fromJSON(json): {...desc(s), length (pos),
 //       newLength (pos), empty, roundTrip: s.toJSON()}]
 //   set.empty {length (pos)}  {api}   [s = ChangeSet.empty(length): {...desc(s), length (pos), newLength (pos), empty}]
@@ -110,10 +116,11 @@
 //   range.extend {range: range spec, args: argument list [from (pos), to (pos), assoc]}  {api, identity}
 //       [range(r.extend(...args))]
 //   range.eq {a: range spec, b: range spec, includeAssoc?}  {api}   [a.eq(b) or a.eq(b, includeAssoc)]
-//   range.toJSON {range: range spec}  {api}   [{json: r.toJSON(), stringified: JSON.stringify(r)}]
-//   range.fromJSON {json}  {api, identity}   [range(SelectionRange.fromJSON(json)) (not added to `built`). `json`
-//       is handed to cm6 whole: every key in it is part of the call, including keys fromJSON does not read (F0470
-//       passes assoc and goalColumn, which it ignores)]
+//   range.toJSON {range: range spec}  {api}   [{json: r.toJSON(): {anchor (pos), head (pos)}, stringified:
+//       JSON.stringify(r): the same object as a string, anchor (pos) and head (pos) written in it as decimal numbers}]
+//   range.fromJSON {json: {anchor (pos), head (pos), ...}}  {api, identity}   [range(SelectionRange.fromJSON(json))
+//       (not added to `built`). `json` is handed to cm6 whole: every key in it is part of the call, including keys
+//       fromJSON does not read (F0470 passes assoc and goalColumn, which it ignores)]
 // EditorSelection
 //   sel.make {sel: selection spec}  {api, identity}   [{...selection(s), sameArray: s.ranges === the array of
 //       ranges given to create, null for any other selection spec}]
@@ -127,9 +134,12 @@
 //       selection(s.addRange(r, main))]
 //   sel.replaceRange {sel, range: range spec, which?}  {api, identity}   [x = s.replaceRange(r) or
 //       s.replaceRange(r, which): {...selection(x), same: x === s, sameArray: x.ranges === s.ranges}]
-//   sel.toJSON {sel}  {api}           [{json: s.toJSON(), stringified: JSON.stringify(s)}]
-//   sel.fromJSON {json}  {api, identity}   [selection(EditorSelection.fromJSON(json)) (ranges not added to `built`);
-//       `json` is handed to cm6 whole, as for range.fromJSON]
+//   sel.toJSON {sel}  {api}           [{json: s.toJSON(): selection JSON {ranges: [{anchor (pos), head (pos)}], main},
+//       stringified: JSON.stringify(s): the same object as a string, each anchor (pos) and head (pos) written in it as a
+//       decimal number}]
+//   sel.fromJSON {json: selection JSON {ranges: [{anchor (pos), head (pos)}], main}}  {api, identity}
+//       [selection(EditorSelection.fromJSON(json)) (ranges not added to `built`); `json` is handed to cm6 whole, as
+//       for range.fromJSON]
 // Every argument an op reads is listed with it; `?` marks one that is passed only when present.
 import {ChangeSet, ChangeDesc, EditorSelection, SelectionRange, Text, MapMode} from "@codemirror/state"
 import {capture} from "@harness/lib"

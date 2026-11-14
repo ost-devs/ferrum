@@ -10,8 +10,11 @@ Without --no-run it also re-runs every generator, in a scratch copy under .scrat
 tracked file changes, compares each regenerated fixtures/<chunk>.jsonl with the committed one byte for byte, and
 measures which lines and branches of the cm6 package's source the generators reach (V8 coverage, reported by c8).
 The unreached ones are written to docs/parity/<crate>/raw/coverage.jsonl, one row per site. A site reported on the
-first line of a file is dropped, and one on the line of a function declaration or of a closing brace comes from mapping
-the compiled code back to the source: read the function before treating it as a branch.
+first line of a file is dropped. So is the unmapped end of each compiled module (the export annotation the build
+appends, which never runs): a zero-count range of V8's raw data that starts after the last mapping of the module's
+source map is reported by c8 at the place of that last mapping, and a branch at exactly that line and column is
+dropped and counted. Any other site on the line of a function declaration or of a closing brace may still come from
+mapping the compiled code back to the source: read the function before treating it as a branch.
 Once verification.md has a `## Coverage` section, every site still unreached must be named there as
 `<file>:<line>` in backticks (its fixture was not added, so its reason is owed: specification.md §8 item 1).
 
@@ -66,7 +69,7 @@ It also prints how many values of each chunk are still written in a form older t
 Needs the harness (python3 tools/cm6/setup_harness.py <package>) and npx (tsx, c8). Exit status 1 when a check
 fails; an unreached branch is a fact to judge, not a failure.
 """
-import collections, json, os, re, shutil, subprocess, sys
+import collections, glob, json, os, re, shutil, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OLD_STRINGS = {"<undefined>": {"js_undefined": True}, "<NaN>": {"js_number": "NaN"}, "<wall-clock>": {"js_unstable": "wall-clock"},
@@ -120,6 +123,50 @@ def dicts(v):
         for x in v.values(): yield from dicts(x)
     elif isinstance(v, list):
         for x in v: yield from dicts(x)
+
+
+B64 = {c: i for i, c in enumerate("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")}
+
+
+def last_mapping(mappings):
+    """The last segment of a source map: (generated line, generated column, original line, original column), 0-based."""
+    last, src_line, src_col = None, 0, 0
+    for gl, line in enumerate(mappings.split(";")):
+        gc = 0
+        for seg in line.split(","):
+            if not seg: continue
+            vals, v, shift = [], 0, 0
+            for ch in seg:
+                d = B64[ch]; v |= (d & 31) << shift; shift += 5
+                if not d & 32:
+                    vals.append(-(v >> 1) if v & 1 else v >> 1); v, shift = 0, 0
+            gc += vals[0]
+            if len(vals) >= 4:
+                src_line += vals[2]; src_col += vals[3]
+                last = (gl, gc, src_line, src_col)
+    return last
+
+
+def module_end_artifacts(v8_dir, marker):
+    """{source file path: (line, column)} of the place each compiled module's unmapped tail is reported at."""
+    found = {}
+    for f in glob.glob(os.path.join(v8_dir, "*.json")):
+        d = json.load(open(f, encoding="utf-8"))
+        cache = d.get("source-map-cache") or {}
+        for r in d["result"]:
+            e = cache.get(r["url"])
+            if marker not in r["url"] or not e or not e.get("lineLengths"): continue
+            lm = last_mapping(e["data"]["mappings"])
+            if not lm: continue
+            starts, o = [], 0
+            for n in e["lineLengths"]: starts.append(o); o += n + 1
+            for fn in r["functions"]:
+                for x in fn["ranges"]:
+                    if x["count"]: continue
+                    line = max(i for i, s in enumerate(starts) if s <= x["startOffset"])
+                    if (line, x["startOffset"] - starts[line]) > lm[:2]:
+                        found[r["url"].replace("file://", "")] = (lm[2] + 1, lm[3])
+    return found
 
 
 def rows(path):
@@ -303,7 +350,8 @@ def main():
                         "--exclude-after-remap=false", "--allowExternal", "--include", f"**/cm6/{pkg}/src/**"],
                        cwd=work, capture_output=True, text=True, timeout=900)
         report = json.load(open(os.path.join(out, "coverage-final.json"), encoding="utf-8"))
-        sites = []
+        sites, dropped = [], 0
+        artifacts = module_end_artifacts(cov, f"/cm6/{pkg}/src/")
         for path, d in sorted(report.items()):
             name = os.path.relpath(path, src)
             mirror = f"mirrors/cm6/{pkg}/src/{name}"
@@ -314,13 +362,14 @@ def main():
                     if not n:
                         miss_b += 1
                         loc = d["branchMap"][k]["locations"][i]["start"]
-                        if loc.get("line", 0) > 1: sites.append({"file": mirror, "kind": "branch", "line": loc["line"]})
+                        if (loc.get("line"), loc.get("column")) == artifacts.get(path): dropped += 1
+                        elif loc.get("line", 0) > 1: sites.append({"file": mirror, "kind": "branch", "line": loc["line"]})
             for line in unreached: sites.append({"file": mirror, "kind": "line", "line": line})
             print(f"coverage {name}: lines unreached {len(unreached)} of {len(d['s'])}, branches unreached {miss_b} of {total_b}")
         if not only:
             with open(os.path.join(base, "raw", "coverage.jsonl"), "w", encoding="utf-8") as f:
                 for s in sites: f.write(json.dumps(s) + "\n")
-            print(f"wrote raw/coverage.jsonl: {len(sites)} unreached sites")
+            print(f"wrote raw/coverage.jsonl: {len(sites)} unreached sites; {dropped} dropped as the unmapped end of a compiled module")
             vp = os.path.join(base, "verification.md")
             vt = open(vp, encoding="utf-8").read() if os.path.exists(vp) else ""
             m = re.search(r"^## Coverage\s*$(.*?)(?=^## |\Z)", vt, re.M | re.S)

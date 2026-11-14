@@ -56,6 +56,25 @@
 //         "okValueOrError":   {ok: r, or "returned undefined" when r is undefined} | {error: e.constructor.name,
 //                             message: e.message}
 //         "okOrMessage":      "ok" | e.message
+// Values the program builds (kind `harness`; each was registered by more than one chunk, with one implementation that
+// replays every fixture of those chunks, and moved here). An argument written `arg` is an <expr> (evaluated) or data
+// (used as it is and read whole with `markRead`); the members of data are not evaluated.
+//   let {value: arg}                  [the value]
+//   list {of: [arg]}                  [a new array of the members' values, in order]
+//   record {of: {key: arg}}           [a new object with the same keys, in the same order, holding the values]
+//   merge {of: [expr]}                [Object.assign({}, ...values)]
+//   block {steps: [step], result}     [runs the steps (their variables stay set); the variable `result` after them]
+//   capture {do: expr}                [{ok: value} or, when evaluating `do` throws e, {error: {name: e.name ("Error"
+//                                      when absent), message: String(e.message), String(e) when e has none}}; on a
+//                                      throw, the rest of `do` counts as read]
+//   ints {from: arg, to?: arg, below?: arg, step?: arg}   [the numbers from, from + step, ... (step default 1) while
+//                                      <= to when `to` is present, else while < below; evaluated in the order from,
+//                                      step, to or below]
+//   floor {of: arg}                   [Math.floor(value)]
+//   div {a: arg, b: arg}              [a / b]
+//   concat {of: [arg]}                [the concatenation of String(value) of each value]
+//   countOf {of: expr, value: arg}    [the number of members of the array that are === value]
+//   array.push {of: expr, value: arg} [of.push(value); undefined]
 //
 // Kinds: what an op observes, so that the crate's design can say what its replayer does with each
 // (specification.md §5 item 3). Every op is registered with one or more of
@@ -79,6 +98,10 @@ type OpFn = (a: any, p: Program) => any
 export function markRead(x: any): void {
   if (x && typeof x == "object") for (const k of Object.keys(x)) markRead(x[k])
 }
+
+const isExpr = (x: any) => !!x && typeof x == "object" && !Array.isArray(x) && ("$" in x || "op" in x)
+/** An `arg`: an expression's value, or the data as it is (read whole). */
+function arg(p: Program, x: any): any { if (isExpr(x)) return p.ev(x); markRead(x); return x }
 
 /** One run of one input: its variables and what the chunk's setup built (`chunk`). */
 export class Program {
@@ -180,6 +203,26 @@ export class Language {
       }
       throw new Error("interp: bad try mode " + a.mode)
     })
+    // values the program builds
+    o("let", ["harness"], (a, p) => arg(p, a.value))
+    o("list", ["harness"], (a, p) => a.of.map((x: any) => arg(p, x)))
+    o("record", ["harness"], (a, p) => Object.fromEntries(Object.keys(a.of).map(k => [k, arg(p, a.of[k])])))
+    o("merge", ["harness"], (a, p) => Object.assign({}, ...p.evs(a.of)))
+    o("block", ["harness"], (a, p) => { p.steps(a.steps); return p.get(a.result) })
+    o("capture", ["harness"], (a, p) => {
+      try { return {ok: p.ev(a.do)} } catch (e: any) { markRead(a.do); return {error: {name: e?.name ?? "Error", message: String(e?.message ?? e)}} }
+    })
+    o("ints", ["harness"], (a, p) => {
+      const from = arg(p, a.from), step = "step" in a ? arg(p, a.step) : 1, out: number[] = []
+      if ("to" in a) { const to = arg(p, a.to); for (let i = from; i <= to; i += step) out.push(i) }
+      else { const below = arg(p, a.below); for (let i = from; i < below; i += step) out.push(i) }
+      return out
+    })
+    o("floor", ["harness"], (a, p) => Math.floor(arg(p, a.of)))
+    o("div", ["harness"], (a, p) => arg(p, a.a) / arg(p, a.b))
+    o("concat", ["harness"], (a, p) => a.of.map((x: any) => String(arg(p, x))).join(""))
+    o("countOf", ["harness"], (a, p) => { const v = arg(p, a.value); return p.ev(a.of).filter((x: any) => x === v).length })
+    o("array.push", ["harness"], (a, p) => { p.ev(a.of).push(arg(p, a.value)); return undefined })
   }
   /** Register an op of the chunk with its kinds (the list in this file's header). */
   op(name: string, kinds: Kind[], run: OpFn): this {
