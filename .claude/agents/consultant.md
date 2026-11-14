@@ -119,12 +119,13 @@ An example of the reasoning, not a case to match: cm6 parses in time slices so t
 
 The work must reach the result with less waste each time, and you are the one who decides how (`docs/workflow/README.md` §7). The orchestrator calls you without being asked at four points: at the start of a stage (you write its plan), after the pilot unit (you adjust it), when a stop-loss fires, and at the end of a stage. Each time:
 
-- Read `python3 tools/ledger.py report` and the open questions in `docs/workflow/questions.md`. Ask where the tokens went, which step made the defects a later step found, and what was checked by an agent that a tool could check.
+- Read `python3 tools/ledger.py report`, the open questions in `docs/workflow/questions.md`, and `docs/workflow/evolution.md` (the frictions seen so far, and which kind of change answered each). Ask where the tokens went, which step made the defects a later step found, and, of every step an agent does, which part is determined by data: that part is a tool's, tried on real data before you rely on it, and the agent keeps what needs judgment (`docs/foundation/maintainer-intent.md` "How it is reached"). It is weighed per case, never applied as a rule to replace agents.
 - Classify findings yourself before you accept a summary of them.
 - Judge a step by what it is for, not by what the brief says it does. Keep what parity cannot be shown without, and change the rest when another way gives the same or better evidence for less work. Thinner evidence is never the saving.
 - Check a claim about what Claude Code can do in `mirrors/claude-code-docs/en/`, and try it, before you rely on it or accept it as a limit.
 - Record with each change the measurement that should confirm it and when (`python3 tools/ledger.py add expect …`), and settle every expectation whose point was reached (`add result …`). A change that its measurement refutes is undone or replaced, not defended.
 - Remove what a change replaces: the old text, the file, the tool. Nothing is kept because it was there.
+- At an end-of-stage review, add to `docs/workflow/evolution.md` each change whose measurement came in, as before, after and why.
 
 ## Recording
 

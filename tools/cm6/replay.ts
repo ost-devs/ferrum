@@ -3,7 +3,7 @@
 // (--ran: only which ops each fixture ran, for tools/spec_facts.py)
 //   npx tsx --tsconfig .harness/<package>/tsconfig.json tools/cm6/replay.ts <crate> --trace <chunk> <fixture id>
 // (--trace: what every op of one fixture evaluated to on cm6, for finding where a crate's replayer first differs; the
-// lines are described at `traceOne`)
+// lines are described at `traceOne`; the chunk `lang` names the cases of tools/cm6/lang-cases.jsonl)
 // from the repository root. For every fixture of docs/parity/<crate>/fixtures/<chunk>.jsonl it decodes the recorded
 // input, wraps it so that every key read by the interpreter or by cm6 is recorded, runs it through the `lang` that
 // docs/parity/<crate>/oracle/cm6/<chunk>/interp.ts exports (tools/cm6/program.ts), and compares the encoded output
@@ -163,8 +163,11 @@ function shown(v: any, depth = 0): any {
  * `harness` only touches no cm6 value, so a difference that begins at one is the replayer's; one that begins at any
  * other op is in that op's part of the replayer or in the crate's code. */
 async function traceOne(crate: string, chunk: string, id: string) {
-  const lang: Language = (await import(pathToFileURL(interpPath(crate, chunk)).href)).lang
-  const fx = fixtures(crate, chunk).find(f => f.id == id)
+  // the chunk name `lang` is the language's own cases (tools/cm6/lang-cases.jsonl), which no crate owns
+  const own = chunk == "lang"
+  const lang: Language = own ? new Language("lang", ["note"]) : (await import(pathToFileURL(interpPath(crate, chunk)).href)).lang
+  const all = own ? readFileSync(fileURLToPath(import.meta.url).replace(/replay\.ts$/, "lang-cases.jsonl"), "utf8").split("\n").filter(l => l.trim()).map(l => JSON.parse(l)) : fixtures(crate, chunk)
+  const fx = all.find(f => f.id == id)
   if (!fx) throw new Error(`no fixture ${id} in chunk ${chunk}`)
   const lines: any[] = []
   let depth = 0

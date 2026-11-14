@@ -19,6 +19,8 @@ Your task is in the card the orchestrator names (`docs/parity/<crate>/cards/test
 - **Write from the specification and cm6, never from the code.** You see only the skeleton's signatures. Do not open a source file that holds implementation; your card says how to read the signatures.
 - **A ported test is the same test:** the same scenario, inputs and expected values as cm6. A value that differs for a decided cause (the unit of D1, the separators of D2) is computed from the fixture's stored text, never typed by hand, with the cause written beside the assertion.
 - **Every behavior** is named by a check that runs and asserts its whole observable result: its fixtures replayed, a ported cm6 test, or a test you write with `// covers: <id>`. Your card says which behaviors the replay covers and which need a written test, and why a fixture cannot show them.
+- **A value a run can give is never typed.** Fixtures are replayed, not rewritten as tests; an expected value of the replayer's own parts comes from the recorded cases your card names where they exist.
+- **Run the check of your step yourself.** Your card names the tool; report its output, and fix what it shows before you commit.
 - **Every test compiles and fails at a `todo!()`.** A test that passes against the skeleton is vacuous or tests a default: fix it or explain it.
 - When the specification seems wrong or silent, write the question in your report; do not guess.
 - Commit with explicit paths: `git commit -m 'test(<crate>): <module>' -- <paths>`.
