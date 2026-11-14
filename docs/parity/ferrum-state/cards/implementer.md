@@ -1,5 +1,7 @@
 # ferrum-state: implementer card
 
+<!-- refs:planned crates/ferrum-state crates/ferrum-state/tests docs/parity/ferrum-state/implementation.md -->
+
 Written by the orchestrator from `docs/parity/ferrum-state/plan.md` "Implementation". Your assignment (the spawn prompt) names the step. Reference: `@codemirror/state` 6.7.6 in `mirrors/cm6/state/`, with `@marijn/find-cluster-break` 1.0.4 in `mirrors/marijn/find-cluster-break/`.
 
 ## Step U0: the skeleton
@@ -7,7 +9,7 @@ Written by the orchestrator from `docs/parity/ferrum-state/plan.md` "Implementat
 **What it is for.** Every later step stands on it. The `test-writer` writes the fixture replayer and the tests against these signatures without seeing any code, so a signature that cannot express what cm6's callers pass, or that expresses what the decisions exclude, becomes a wrong check or a fixture left out. The consultant approves the skeleton by reading the signatures against `design.md`, so nothing in it may be a choice of yours that the design and the decisions do not make: such a case is a question in your report (shape: `CLAUDE.md` "Raising a question"), and the item is written as cm6's declaration suggests with a `// QUESTION <n>` comment beside it so the consultant finds it.
 
 **What binds.** Read these whole before writing:
-- `docs/parity/ferrum-state/design.md` (every section binds; §1 modules, §2 number types, §3 the Rust form of each cm6 idiom, §4 core types, §5 errors, §6 threading, §7 `StateCommand`, §10 "Identity" for what `__test` must offer);
+- `docs/parity/ferrum-state/design.md` (every section binds: its modules, number types, the Rust form of each cm6 idiom, core types, errors, threading, `StateCommand`, and under "The fixture replayer" the paragraph "Identity" for what `__test` must offer);
 - `.claude/rules/decisions.md` (D1, D2, D5, D6, D11 to D16), `.claude/rules/rust-naming-decisions.md` (N1 to N11) and `.claude/rules/rust-crates.md`: they load when you touch `crates/`;
 - `docs/parity/ferrum-state/raw/decisions.jsonl`: 44 rows keyed by inventory id; the rows of class `form` say the Rust form of their item, the others what the code will do;
 - `docs/parity/ferrum-state/raw/inventory.jsonl`: the 261 rows whose `disposition` is `CORE` are the public items to write; the 3 `DROP` rows get no Rust item;
