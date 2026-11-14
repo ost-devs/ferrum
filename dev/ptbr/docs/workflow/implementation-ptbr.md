@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/implementation.md` (commit `bd64bfd`). O original em inglês é o que vale; as seções citadas (§3, §5…) seguem a numeração do original.
+> Tradução para leitura de `docs/workflow/implementation.md` (commit `9efcc73`). O original em inglês é o que vale; as seções citadas (§3, §5…) seguem a numeração do original.
 
 # Etapa de implementação
 
@@ -54,7 +54,7 @@ Itens com disposição `CONTRACT` precisam de um trait antes do código: o contr
 - Nada de relógio real ou aleatoriedade sem uma semente registrada. Comportamento dependente de tempo (agrupamento do histórico, `Transaction.time`) usa tempos explícitos.
 - Valores esperados que diferem do cm6 por uma causa decidida (a unidade de D1, os separadores de D2, a gramática de D3) são calculados a partir do texto guardado na fixture, nunca digitados à mão. A causa é escrita ao lado da asserção.
 - Os helpers de teste espelham os do cm6, como `raw/tests.jsonl` os especifica, e têm testes próprios.
-- O replayer de fixtures lê `docs/parity/<crate>/fixtures/*.jsonl`, roda cada entrada gravada, converte as posições de UTF-16 para a unidade de D1 usando o texto guardado, compara a saída inteira exatamente, e relata seu resultado por fixture e por comportamento. Para uma fixture listada em `fixtures/improved/<row id>.jsonl` ele compara com a saída gravada ali, e relata essas fixtures à parte, por melhoria.
+- O replayer de fixtures lê `docs/parity/<crate>/fixtures/*.jsonl`, roda cada entrada gravada, converte as posições entre UTF-16 e a unidade de D1 usando o texto guardado, compara a saída inteira exatamente, e relata seu resultado por fixture e por comportamento. O que ele não compara é só o que o `design.md` do crate diz não ter contrapartida no Ferrum (uma entrada que os tipos do Rust excluem, uma identidade ou interno do cm6, as chamadas que uma linha de `raw/decisions.jsonl` nomeia): fica de fora por chamada, não por fixture, onde o programa permitir; é escrito num arquivo que o consultor aprova e do qual o replayer então não pode se afastar; e é contado por comportamento, de modo que um comportamento que fique sem nenhuma fixture comparada apareça. Para uma fixture listada em `fixtures/improved/<row id>.jsonl` ele compara com a saída gravada ali, e relata essas fixtures à parte, por melhoria.
 
 ## 6. Documentação durante a etapa
 
