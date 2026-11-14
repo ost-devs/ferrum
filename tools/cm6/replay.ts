@@ -1,6 +1,9 @@
 // Replay of recorded fixture inputs (docs/workflow/specification.md §8 item 1), run by tools/spec_check.py:
 //   npx tsx --tsconfig .harness/<package>/tsconfig.json tools/cm6/replay.ts <crate> [--ran] <chunk> [<chunk> ...]
 // (--ran: only which ops each fixture ran, for tools/spec_facts.py)
+//   npx tsx --tsconfig .harness/<package>/tsconfig.json tools/cm6/replay.ts <crate> --trace <chunk> <fixture id>
+// (--trace: what every op of one fixture evaluated to on cm6, for finding where a crate's replayer first differs; the
+// lines are described at `traceOne`)
 // from the repository root. For every fixture of docs/parity/<crate>/fixtures/<chunk>.jsonl it decodes the recorded
 // input, wraps it so that every key read by the interpreter or by cm6 is recorded, runs it through the `lang` that
 // docs/parity/<crate>/oracle/cm6/<chunk>/interp.ts exports (tools/cm6/program.ts), and compares the encoded output
@@ -25,7 +28,7 @@
 import {readFileSync, readdirSync, existsSync} from "node:fs"
 import {resolve, join} from "node:path"
 import {pathToFileURL, fileURLToPath} from "node:url"
-import {decode, runIsolated, isolatedMain} from "@harness/lib"
+import {decode, encode, runIsolated, isolatedMain} from "@harness/lib"
 import {Language} from "@harness/program"
 
 const TEXT_KEYS = ["expr", "call", "code"], OP_KEYS = ["op", "ops", "calls"]
@@ -140,12 +143,54 @@ async function ranReport(crate: string, chunk: string) {
   return {chunk, kinds: Object.fromEntries([...lang.ops].map(([n, d]) => [n, d.kinds])), ran, thrown}
 }
 
+/** A value as a trace line shows it: a primitive, an array or a plain object as `encode` writes it (members shown
+ * the same way); an instance of a class as {"cm6": "<constructor name>"}, since the two sides hold different objects
+ * there and only the program-visible values can be compared; below 8 levels, "...". */
+function shown(v: any, depth = 0): any {
+  if (v === null || typeof v != "object") return encode(v)
+  if (depth > 8) return "..."
+  if (Array.isArray(v)) return Array.from(v, x => shown(x, depth + 1))
+  const proto = Object.getPrototypeOf(v)
+  if (proto === Object.prototype || proto === null) return Object.fromEntries(Object.keys(v).map(k => [k, shown(v[k], depth + 1)]))
+  return {cm6: v.constructor?.name ?? "object"}
+}
+
+/** With --trace: one JSON line per op the fixture's program evaluated on cm6, in the order the evaluations began:
+ *   {n, depth, op, kinds, value}   or   {n, depth, op, kinds, threw: {name, message}}
+ * n counts evaluations from 0, depth is the nesting of ops, value is the op's result as `shown` writes it. A last line
+ * {output, recorded, equal} gives the run's output and the recorded one. A crate's replayer prints the same lines for
+ * the same fixture (the crate's plan says how); the first line that differs is where the two runs part. An op of kind
+ * `harness` only touches no cm6 value, so a difference that begins at one is the replayer's; one that begins at any
+ * other op is in that op's part of the replayer or in the crate's code. */
+async function traceOne(crate: string, chunk: string, id: string) {
+  const lang: Language = (await import(pathToFileURL(interpPath(crate, chunk)).href)).lang
+  const fx = fixtures(crate, chunk).find(f => f.id == id)
+  if (!fx) throw new Error(`no fixture ${id} in chunk ${chunk}`)
+  const lines: any[] = []
+  let depth = 0
+  for (const [op, def] of lang.ops) {
+    const run = def.run
+    def.run = (a, p) => {
+      const line: any = {n: lines.length, depth, op, kinds: def.kinds}
+      lines.push(line); depth++
+      try { const v = run(a, p); line.value = shown(v); return v }
+      catch (e: any) { line.threw = {name: e?.name ?? "Error", message: String(e?.message ?? e)}; throw e }
+      finally { depth-- }
+    }
+  }
+  const output = lang.run(fx.input)
+  for (const l of lines) process.stdout.write(JSON.stringify(l) + "\n")
+  process.stdout.write(JSON.stringify({output, recorded: fx.output, equal: JSON.stringify(output) == JSON.stringify(fx.output)}) + "\n")
+}
+
 const arg = process.argv[2] ?? ""
 if (arg.startsWith("{")) {
   // The child of runIsolated: one fixture that may not terminate. The interpreter is loaded before the watchdog runs.
   const {crate, chunk, id} = JSON.parse(arg)
   import(pathToFileURL(interpPath(crate, chunk)).href).then(m =>
     isolatedMain(() => replayOne(m.lang, fixtures(crate, chunk).find(f => f.id == id).input)))
+} else if (process.argv[3] == "--trace") {
+  traceOne(arg, process.argv[4], process.argv[5]).catch(e => { console.error(String(e?.stack ?? e)); process.exit(1) })
 } else {
   (async () => {
     const perFixture = process.argv[3] == "--ran"

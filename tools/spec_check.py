@@ -32,6 +32,9 @@ it (counted, "errors without the site they had"); an output that still holds one
 Without a run it also prints, per chunk, the fixtures whose `out` references a variable bound by a `data` step (a
 value written in the input; any fails) and the labels of the op `label`, the one way such a value may reach an output.
 
+Without --no-run it also runs the language's own cases again (tools/cm6/lang-cases.ts --check): the committed
+tools/cm6/lang-cases.jsonl must be what the run gives, and every op of tools/cm6/program.ts must be run by a case.
+
 Without --no-run it also replays every fixture (tools/cm6/replay.ts): the recorded input, decoded and run through
 the `lang` its chunk's oracle/cm6/<chunk>/interp.ts exports (tools/cm6/program.ts) while every key read is recorded.
 One line per chunk; each count but the first must be zero:
@@ -395,6 +398,17 @@ def main():
         plain = lambda k: set(k) <= {"api"} or set(k) <= {"harness"}
         waiting = sorted(f"{o['chunk']}/{o['op']}" for o in rows(op) if not plain(o["kinds"]) and (o["chunk"], o["op"]) not in how)
         print(f"ops not only api or harness without a row of raw/replay.jsonl: {len(waiting)}" + (f" {waiting}" if waiting else ""))
+
+        # the language's own cases (tools/cm6/lang-cases.ts): the reference of a replayer's evaluator
+        lc = subprocess.run(["npx", "--yes", "tsx", "--tsconfig", os.path.join(".harness", pkg, "tsconfig.json"),
+                             os.path.join("tools", "cm6", "lang-cases.ts"), "--check"], cwd=ROOT, capture_output=True, text=True, timeout=600)
+        try: lr = json.loads(lc.stdout.strip().split("\n")[-1])
+        except ValueError: lr = None
+        if lr is None: bad.append(f"tools/cm6/lang-cases.ts did not run: {lc.stderr[-300:]}")
+        else:
+            print(f"language cases (tools/cm6/lang-cases.jsonl): {lr['cases']}, reproduced: {lr['same']}, ops of the language no case runs: {lr['unrun'] or 'none'}")
+            if not lr["same"]: bad.append("tools/cm6/lang-cases.jsonl is not what tools/cm6/lang-cases.ts gives: run it without --check and commit the file")
+            if lr["unrun"]: bad.append(f"ops of tools/cm6/program.ts that no case of tools/cm6/lang-cases.ts runs: {lr['unrun']}")
 
     for b in bad: print("FAIL", b)
     print("checks failed:" if bad else "checks passed", len(bad) if bad else "")
