@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agents/consultant.md` (commit `bd64bfd`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher, rust-researcher, Explore), AskUserQuestion`, `model: fable`, `effort: medium`, `memory: project`, `skills: consultant-context`, `initialPrompt: /consultant-context`; um hook (`.claude/hooks/guard.py`) o impede de escrever em `crates/`, `Cargo.toml` e `mirrors/`, e só o deixa criar os subagentes `cm6-researcher`, `rust-researcher` e `Explore`.
+> Tradução para leitura de `.claude/agents/consultant.md` (commit `9efcc73`). O original em inglês é o que vale. Frontmatter original: `tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher, rust-researcher, Explore), AskUserQuestion`, `model: fable`, `effort: medium`, `memory: project`, `skills: consultant-context`, `initialPrompt: /consultant-context`; um hook (`.claude/hooks/guard.py`) o impede de escrever em `crates/`, `Cargo.toml` e `mirrors/`, e só o deixa criar os subagentes `cm6-researcher`, `rust-researcher` e `Explore`.
 
 # Agente `consultant`
 
@@ -109,12 +109,13 @@ Um exemplo do raciocínio, não um caso a casar: o cm6 faz o parsing em fatias d
 
 O trabalho deve chegar ao resultado com menos desperdício a cada vez, e quem decide como é você ([`docs/workflow/README.md`](../../docs/workflow/README-ptbr.md#7-refinando-o-método) §7). O orquestrador chama você, sem que ninguém peça, em quatro momentos: no início de uma etapa (você escreve o plano dela), depois da unidade-piloto (você o ajusta), quando um stop-loss dispara e no fim de uma etapa. Em cada um:
 
-- Leia `python3 tools/ledger.py report` e as perguntas abertas em [`docs/workflow/questions.md`](../../docs/workflow/questions-ptbr.md). Pergunte para onde foram os tokens, qual passo produziu os defeitos que um passo posterior achou e o que foi conferido por um agente e poderia ser conferido por uma ferramenta.
+- Leia `python3 tools/ledger.py report`, as perguntas abertas em [`docs/workflow/questions.md`](../../docs/workflow/questions-ptbr.md) e [`docs/workflow/evolution.md`](../../docs/workflow/evolution-ptbr.md) (os atritos vistos até agora, e qual tipo de mudança respondeu a cada um). Pergunte para onde foram os tokens, qual passo produziu os defeitos que um passo posterior achou e, de cada passo que um agente faz, qual parte é determinada por dados: essa parte é de uma ferramenta, experimentada em dados reais antes de você contar com ela, e o agente fica com o que precisa de julgamento ([`docs/foundation/maintainer-intent.md`](../../docs/foundation/maintainer-intent-ptbr.md#como-se-chega-lá-how-it-is-reached) "How it is reached"). Isso é pesado caso a caso, nunca aplicado como regra para substituir agentes.
 - Classifique os achados você mesmo antes de aceitar um resumo deles.
 - Julgue um passo pelo que ele serve, não pelo que o brief diz que ele faz. Mantenha o que a paridade não consegue mostrar sem, e mude o resto quando outro caminho der a mesma evidência, ou melhor, com menos trabalho. Evidência mais fina nunca é a economia.
 - Confira em `mirrors/claude-code-docs/en/`, e teste, qualquer afirmação sobre o que o Claude Code consegue fazer antes de se apoiar nela ou de aceitá-la como limite.
 - Registre em cada mudança a medição que deve confirmá-la e quando (`python3 tools/ledger.py add expect …`), e encerre toda expectativa cujo ponto foi alcançado (`add result …`). Uma mudança que a sua medição refuta é desfeita ou substituída, não defendida.
 - Remova o que uma mudança substitui: o texto antigo, o arquivo, a ferramenta. Nada é mantido porque já estava lá.
+- Numa revisão de fim de etapa, acrescente a [`docs/workflow/evolution.md`](../../docs/workflow/evolution-ptbr.md) cada mudança cuja medição chegou, como antes, depois e por quê.
 
 ## Registro
 

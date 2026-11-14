@@ -50,6 +50,7 @@ Regras:
 | [`docs/foundation/maintainer-intent-ptbr.md`](docs/foundation/maintainer-intent-ptbr.md) | [`docs/foundation/maintainer-intent.md`](../../docs/foundation/maintainer-intent.md) |
 | [`docs/workflow/README-ptbr.md`](docs/workflow/README-ptbr.md) | [`docs/workflow/README.md`](../../docs/workflow/README.md) |
 | [`docs/workflow/conformance-ptbr.md`](docs/workflow/conformance-ptbr.md) | [`docs/workflow/conformance.md`](../../docs/workflow/conformance.md) |
+| [`docs/workflow/evolution-ptbr.md`](docs/workflow/evolution-ptbr.md) | [`docs/workflow/evolution.md`](../../docs/workflow/evolution.md) |
 | [`docs/workflow/implementation-ptbr.md`](docs/workflow/implementation-ptbr.md) | [`docs/workflow/implementation.md`](../../docs/workflow/implementation.md) |
 | [`docs/workflow/learnings-ptbr.md`](docs/workflow/learnings-ptbr.md) | [`docs/workflow/learnings.md`](../../docs/workflow/learnings.md) |
 | [`docs/workflow/questions-ptbr.md`](docs/workflow/questions-ptbr.md) | [`docs/workflow/questions.md`](../../docs/workflow/questions.md) |
