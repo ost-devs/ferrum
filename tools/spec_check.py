@@ -12,6 +12,8 @@ measures which lines and branches of the cm6 package's source the generators rea
 The unreached ones are written to docs/parity/<crate>/raw/coverage.jsonl, one row per site. A site reported on the
 first line of a file is dropped, and one on the line of a function declaration or of a closing brace comes from mapping
 the compiled code back to the source: read the function before treating it as a branch.
+Once verification.md has a `## Coverage` section, every site still unreached must be named there as
+`<file>:<line>` in backticks (its fixture was not added, so its reason is owed: specification.md §8 item 1).
 
 With --same-outputs-as <git ref>, every fixture file is also compared with its version at that commit: the same ids,
 and for each id the same item, behaviors and output. It is the check of a change that may rewrite inputs only.
@@ -319,6 +321,16 @@ def main():
             with open(os.path.join(base, "raw", "coverage.jsonl"), "w", encoding="utf-8") as f:
                 for s in sites: f.write(json.dumps(s) + "\n")
             print(f"wrote raw/coverage.jsonl: {len(sites)} unreached sites")
+            vp = os.path.join(base, "verification.md")
+            vt = open(vp, encoding="utf-8").read() if os.path.exists(vp) else ""
+            m = re.search(r"^## Coverage\s*$(.*?)(?=^## |\Z)", vt, re.M | re.S)
+            if m:
+                missing = sorted({f"{s['file']}:{s['line']}" for s in sites
+                                  if not re.search(re.escape(f"`{s['file']}:{s['line']}`"), m.group(1))})
+                print(f"coverage sites without an entry in verification.md: {len(missing)}")
+                if missing: bad.append(f"verification.md: no `## Coverage` entry for {missing[:10]}")
+            else:
+                print("coverage sites without an entry in verification.md: not checked, verification.md has no `## Coverage` section")
 
     dp, rp, op = (os.path.join(base, "raw", n) for n in ("decisions.jsonl", "replay.jsonl", "fixture-ops.jsonl"))
     if os.path.exists(dp):
