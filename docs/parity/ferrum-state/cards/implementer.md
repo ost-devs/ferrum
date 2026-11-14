@@ -1,6 +1,6 @@
 # ferrum-state: implementer card
 
-<!-- refs:planned crates/ferrum-state crates/ferrum-state/tests docs/parity/ferrum-state/implementation.md -->
+<!-- refs:planned crates/ferrum-state/tests -->
 
 Written by the orchestrator from `docs/parity/ferrum-state/plan.md` "Implementation". Your assignment (the spawn prompt) names the step. Reference: `@codemirror/state` 6.7.6 in `mirrors/cm6/state/`, with `@marijn/find-cluster-break` 1.0.4 in `mirrors/marijn/find-cluster-break/`.
 
