@@ -4,7 +4,6 @@ For the orchestrator and the consultant: the agents that change how Ferrum's wor
 
 Read it at the start of a stage, at a review of the method, when a stop-loss fires, and before writing a card for a step no crate has run yet. The evidence is elsewhere and is not repeated: observations in `docs/workflow/learnings.md` (`W<n>`), decisions with their alternatives in `docs/decisions/method.md` and `docs/decisions/<crate>.md`, costs and expectations in `python3 tools/ledger.py report` (`E<n>`). The tools named here: `tools/README.md`.
 
-<!-- refs:planned tools/impl_check.py -->
 ## 1. The levels so far
 
 A level is named by what does the work and by how an error is found. Each was left because of a measurement, not because a better idea existed.
@@ -39,7 +38,7 @@ Each line is one change, with the measurement that caused it. "Expected" marks a
 | One test per behavior | 627 of 799 test rows restated a fixture and went stale | a behavior is covered by the replay of its fixtures; a written test only where no run can show it | a copy of data is not a check of it (W40) | `docs/workflow/implementation.md` §2; E5 |
 | Shared ops | about twenty harness ops registered by two or more chunks | one implementation each in the language, accepted when it replays every fixture of every chunk that used the name | sameness was provable by a run, so nobody had to compare code | `docs/decisions/method.md`, end of the specification stage; E14 |
 | What the work cost | prose in the progress file, 35 KB loaded by every session | rows in a ledger, a report, expectations with an outcome | the question "which step made the defects" had no answer before (W47) | `tools/ledger.py` |
-| The replayer's language (expected) | to be tested on literals its author types | 47 cases recorded from a run of `program.ts`, which the evaluator must reproduce before any op of a chunk exists | the evaluator is the one part of the proof no fixture checks in isolation | `tools/cm6/lang-cases.ts`; E18 |
+| The replayer's language (expected) | to be tested on literals its author types | 48 cases recorded from a run of `program.ts`, which the evaluator must reproduce before any op of a chunk exists | the evaluator is the one part of the proof no fixture checks in isolation | `tools/cm6/lang-cases.ts`; E18 |
 | A failing fixture (expected) | the implementer and the test-writer each reason about whose error it is | `tools/trace_diff.py` names the first evaluation at which cm6 and Ferrum differ, and whether that op touches the crate at all | the unbounded cost of level 2 was agents disagreeing about what a tool could compute | E19 |
 | The checks of a step (expected) | commands the orchestrator composes each time | `tools/impl_check.py`, run by the worker on its own output before it reports | steps whose worker could run the whole check passed at the first merge and stayed within 1.5 times their budget (E7) | `docs/parity/ferrum-state/plan.md` "Implementation"; E20 |
 

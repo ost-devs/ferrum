@@ -2,6 +2,6 @@
 
 Open questions only (`docs/workflow/README.md` §3): a decided entry is removed in the commit that records the decision. Ids are stable and never reused.
 
-The next id is Q61.
+The next id is Q75.
 
 None open.

@@ -154,6 +154,8 @@ prog("record: the keys in order, values evaluated or data", [as("a", op("let", {
 prog("merge: later objects replace keys, the first position of a key is kept", [as("a", op("record", {of: {x: 1, y: 2}})), as("b", op("record", {of: {y: 3, z: 4}})), as("r", op("list", {of: [
   op("merge", {of: [$("a"), $("b")]}), op("merge", {of: [$("b"), $("a")]}), op("merge", {of: []}), op("merge", {of: [$("a")]}),
   op("same", {a: op("merge", {of: [$("a")]}), b: $("a")})]})), as("untouched", op("let", {value: $("a")}))], ["r", "untouched"])
+prog("an object keeps integer-like keys first, ascending, then the other keys in the order they were set", [as("a", op("record", {of: {b: 1}})), as("n", op("record", {of: {"10": 2}})), as("m", op("record", {of: {"2": 3, c: 4}})),
+  as("o", op("merge", {of: [$("a"), $("n"), $("m")]}))], ["o"])
 
 // --- ints, floor, div, concat, countOf, array.push
 prog("ints: to is inclusive, below is not, step defaults to 1; arguments may be expressions", [as("n", op("let", {value: 3})), as("r", op("list", {of: [
