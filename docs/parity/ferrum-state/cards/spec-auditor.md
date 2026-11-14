@@ -1,72 +1,60 @@
-# spec-auditor card: ferrum-state, specification step B (`@codemirror/state` 6.7.6, mirror commit 651084c)
+# spec-auditor card: ferrum-state, specification step D (`@codemirror/state` 6.7.6, mirror commit 651084c)
 
-Your assignment is step B of `docs/parity/ferrum-state/plan.md` "Specification: what remains": the sites of cm6's source that no recorded run reaches. This card is the whole task.
+Your assignment is units D1 and D2 of `docs/parity/ferrum-state/plan.md` "Specification: what remains", step D. This card is the whole task. Do D1 whole before D2: the work list cites lines of the interpreters as they are before D2 moves code.
 
 ## The task, and why
 
-Parity is shown by running the same inputs on cm6 and on Ferrum. A case of cm6 that no fixture runs is a case where Ferrum could differ and nothing would show it. The check tool runs every generator under V8 coverage and writes each line and branch of `mirrors/cm6/state/src/` that no run reached to `docs/parity/ferrum-state/raw/coverage.jsonl` (`file`, `kind` `line` or `branch`, `line`): 33 sites now, in `change.ts`, `char.ts`, `charcategory.ts`, `column.ts`, `config.ts`, `extension.ts`, `facet.ts`, `index.ts`, `rangeset.ts`, `selection.ts`, `state.ts`, `text.ts`, `transaction.ts`.
+The fixtures (`docs/parity/ferrum-state/fixtures/<chunk>.jsonl`) are programs; each chunk's interpreter (`docs/parity/ferrum-state/oracle/cm6/<chunk>/interp.ts`, chunks `text`, `change`, `facet`, `state`, `rangeset`) runs them on cm6. In the next stage a `test-writer` writes Ferrum's fixture replayer in Rust: it implements each op once **from the header of `interp.ts` alone**, runs the same inputs against the Rust crate, and compares outputs. Ferrum's positions are UTF-8 byte offsets (D1, `.claude/rules/decisions.md`) and cm6's are UTF-16 code units: the replayer runs the program in cm6's unit and converts, at each call into Ferrum, exactly the numbers the header marks `(pos)`, through the text that `docs/parity/ferrum-state/raw/positions.jsonl` names for that op and field.
 
-For **each site**, read the whole function that holds it and every helper and caller needed to know how the site is entered, then settle it as exactly one of:
+So a header that says something other than its code, a position without its mark or its row, or a mark on a number that is not a position, each becomes a fixture that fails in the replayer for a reason nobody can see from the Rust side, and a round between two workers. A reading of the five headers found such places: `docs/parity/ferrum-state/positions-report.md` is your work list. **The code is what produced the fixtures: you change headers and rows to say what the code does, never the behavior of an op.**
 
-1. **Reached by an input.** Some call through what the package exports reaches the site. Add a fixture that does (see "Adding a fixture"), and run the check to see the site leave `raw/coverage.jsonl`. If the only inputs that reach it are of a class JavaScript's lack of types allows (D12, below), add the fixture all the same and say so in the entry: the consultant decides what the replayer does with it, not you.
-2. **No input reaches it.** State why, from the code: the guard or invariant that excludes it, with `file:line` and symbol for each step of the argument. "Unlikely" is not a reason; if you cannot show it unreachable and cannot reach it, say exactly that, with what you tried.
-3. **It belongs to an item that is not ported.** The item's row in `docs/parity/ferrum-state/raw/inventory.jsonl` has `disposition` `DROP` (`fromCodePoint`, `mirrors/cm6/state/src/char.ts:31`, is one).
-4. **An artifact of mapping compiled code to source.** The site is on a declaration, an export or a closing line with no branch or statement of its own in the source. Say what the line holds.
+## D1. Headers and position rows
 
-Nobody checks this reading after you: whether an input reaches a branch is shown only by a run that reaches it, so try (a probe under `.scratch/coverage/`, run with `npx tsx --tsconfig .harness/state/tsconfig.json <probe>.ts`) before you write outcome 2.
+From `positions-report.md` (a `:<n>` after a chunk name there is a line of that chunk's `interp.ts` at commit 0ee34bb), in the five `interp.ts` and in `raw/positions.jsonl`:
 
-## Where the result is recorded
+1. **"Header and code that disagree" (6).** Read the op's code, then make the header say what the code does.
+2. **"Not marked (pos)" (32).** For each entry decide by this rule, from the op's code:
+   - a number that **passes between the program and cm6** (an argument cm6 receives, a value read from a cm6 object, a number inside a JSON form or a formatted string cm6 returns, an argument or result of a callback cm6 calls) gets its `(pos)` mark in the header **and** its row or rows in `raw/positions.jsonl`;
+   - a number that **a harness op computes** (`count` of a string, the length of a string, `div`, `floor`, `mul`, `concat`, `string`, a predicate on numbers) gets neither. Instead each of the five headers says once, under a heading "Positions", that harness ops compute in UTF-16 code units on the numbers they are given.
+   An entry you cannot place under either is reported as a question (`CLAUDE.md` "Raising a question": no options, no recommendation), not forced.
+3. **"(pos) marks on values that are not positions of their text" (3).**
+   - Remove the mark on `config.selection` of `state.fromJSON`; the header says that cm6 reads neither `config.doc` nor `config.selection` there (`mirrors/cm6/state/src/state.ts:233`; check it).
+   - Word "the length of `insert` text" as a length derived from the string, not an input field.
+   - Marks on arguments that no fixture passes stay: the code accepts them. Marked arguments that hold a value with no position in the text (inside a surrogate pair, a fraction, out of range) stay marked: what the replayer does with those fixtures is decided elsewhere.
+4. **The two ops step B added to `oracle/cm6/rangeset/interp.ts`.** `builder.addValue` gets the rows `builder.add` has, with its own op name. `layer.fake` gets none (its row in `raw/replay.jsonl` is `none`: the replayer does not run it).
 
-`docs/parity/ferrum-state/verification.md`, in a new last section `## Coverage`, one table row per site, in the order of `raw/coverage.jsonl` as it is when you start:
+**A row of `raw/positions.jsonl`:** `chunk, op, where` (`arg` or `result`), `field` (the name or path of the argument or result field), `text` (which text of the input the number is measured on: the op's `doc`, a string argument, the document of a state and which one, the document a change set applies to or produces; or `none`, with `note` saying what the number is then measured against), `source` (how the replayer finds that text from the op's arguments or the program's values), `evidence` (the interpreter's header and code by op name, without line numbers; cm6 by `file:line (symbol)` under `mirrors/cm6/state/src/`), `note`. A value whose text differs between uses of the op gets one row per case. Read the existing rows of the same op first and match their wording. Establish `text` from the op's code and cm6's, and run a fixture or a probe when the code leaves it open (`npx tsx --tsconfig .harness/state/tsconfig.json <file>.ts`, scratch files under `.scratch/d/`): a wrong row sends the conversion through the wrong text, which shows only on the fixtures with non-ASCII text.
 
-`| site | kind | outcome | evidence |`
+Append rows; change an existing row only where D1 changes what its op's header says, and list each such change in your report.
 
-- `site`: the path and line exactly as `` `mirrors/cm6/state/src/<file>:<line>` `` with the symbol in parentheses after it. The tool finds a site's entry by this text.
-- `outcome`: `fixture`, `unreachable`, `not ported` or `artifact`.
-- `evidence`: for `fixture`, the chunk, the fixture ids and the behavior id, and whether the input is of a D12 class; for the others, the reason as described above.
+## D2. One implementation per harness op
 
-The consultant reads this table when it approves the specification; a wrong `unreachable` leaves a case of cm6 untested for good.
+Each chunk met gaps of the language and wrote harness ops of its own; some names exist in several chunks (`list` in `text` and `facet`, arithmetic and others in `text` and `state`: find them all with `docs/parity/ferrum-state/raw/fixture-ops.jsonl` and the five `lang.op(` registrations). The replayer's author would implement each name once per chunk and could not tell whether they are the same.
 
-## Adding a fixture
-
-A fixture belongs to the chunk of its source file: `text` (`text.ts`, `char.ts`, `column.ts`, `charcategory.ts`), `change` (`change.ts`, `selection.ts`), `facet` (`facet.ts`, `extension.ts`, `config.ts`), `state` (`state.ts`, `transaction.ts`), `rangeset` (`rangeset.ts`).
-
-- Write one new generator per chunk that needs one, `docs/parity/ferrum-state/oracle/cm6/<chunk>/b-coverage.ts`, and append its name to that chunk's list in `docs/parity/ferrum-state/oracle/cm6/order.json`. Model: the chunk's last generator in `order.json`. It builds each input as data, records `run(input)` of the chunk's `interp.ts` as the output through the chunk's `writer`, and appends to `docs/parity/ferrum-state/fixtures/<chunk>.jsonl` with the next free `F<nnnn>` ids of that file. Existing fixture lines do not change.
-- The input is a program in the one language, `tools/cm6/program.ts` (read its header), using the ops the chunk's `interp.ts` registers (read its header). Ferrum's replayer implements each op once from that header and runs the same input against the Rust crate, so prefer existing ops. If none can express the call, add an op to that `interp.ts`: registered with its kinds (`api`: calls or reads a member cm6 exports and documents; `internal`: reads or depends on an `@internal` or unexported member or on internal layout; `identity`: its result depends on JavaScript object identity; `callbacks`: it observes how cm6 calls a function the input supplies; `harness`: no cm6 value touched), named and described in the header, with `(pos)` on every argument and result field that is a position, offset or length in UTF-16 code units of a document the input holds (the replayer converts exactly the marked values to UTF-8 bytes, D1). A fixture that can only reach its site through an op of kind `internal` is still worth recording; say so in the entry. An op you add whose kinds are not only `api` or only `harness` shows in the check's count "ops not only api or harness without a row of raw/replay.jsonl": that count is not a failure and not yours to clear (the consultant writes the row); name the op in your report.
-- Every leaf of `out` is a variable; no expected value is written in the input. An output is `{"ok": …}` or `{"error": {name, message}}` and never holds a place in cm6's source.
-- Values JSON cannot hold go through the one encoding of `tools/cm6/oracle-lib.ts` (`@harness/lib`), which the writer applies; write no marker of your own.
-- Never retype a string that holds an invisible or escaped character (U+2028, a combining mark, a lone surrogate): the Write tool has turned `\uXXXX` escapes into literal characters. Build such strings in code (`String.fromCharCode`) or move them with a script.
-
-**The behavior row.** A fixture names the behavior it shows (`behaviors[]`) and its item (`item_id`, the inventory id).
-- If a row of `docs/parity/ferrum-state/raw/behaviors.jsonl` already states the result your fixture shows, name that behavior and append the fixture id to its `fixtures`.
-- Otherwise the site is a behavior the specification lacks: append a row with the item's next `B<n>` and every field the item's other rows have (`id, item_id, text, cm6, deps, hazards, stack, consumer_values, cost, cm6_tests, fixtures, golden_note`). `text`: the input class and the observable result, as the code and your run show them. `cm6`: `file:line (symbol)`. The implementer builds from these rows and the test-writer checks against them; a missing row is a behavior Ferrum will lack.
-- If the fixture ends in a throw, the row of `docs/parity/ferrum-state/raw/throws.jsonl` at that line lists it: append the fixture id to its `fixtures` and the behavior to its `behaviors`. A throw at a line with no row is reported as a question, not given a row by you.
-- You write nothing else in `raw/`: not `disposition`, `reason`, `raw/decisions.jsonl` or `raw/improvements.jsonl` (the consultant's).
-
-## Decisions in force that bear on this
-
-- D1 (`.claude/rules/decisions.md`): Ferrum's positions are UTF-8 byte offsets; hence the `(pos)` marks.
-- D12: input that exists only because JavaScript is untyped (a negative, fractional, `NaN` or infinite position or count; a value of the wrong type; a key beyond a typed struct; a lone surrogate in a string) is excluded from Ferrum by type. You still record what cm6 does with it when that is the only way to a site, and mark the entry.
-- You decide nothing. A site whose handling the code and these rules do not settle, or a way Ferrum could do better than cm6 there, is a question in your report, in the shape of `CLAUDE.md` "Raising a question" (no options, no recommendation).
+- An op whose kinds are `harness` only and that more than one chunk registers **moves into `tools/cm6/program.ts`** (the one language, `@harness/program`; read its header) when one implementation replays every fixture of every chunk that uses the name. It is documented in that file's header with the language's own ops; the chunks stop registering it and their headers say the op is the language's.
+- A name whose chunks need different implementations **stays in each chunk**, and each header says in one line that it differs from the other chunk's op of that name, and how.
+- Names, arguments and kinds do not change, and no fixture input is rewritten: every fixture file stays byte for byte as it is.
+- An op only one chunk registers stays where it is.
 
 ## Check (run it until it passes; the orchestrator runs it again before merging)
 
-`python3 tools/spec_check.py ferrum-state` from the repository root, about two minutes. It must end with `checks passed`. What its lines mean for your work:
-- `regenerated <chunk>: identical`: the fixture file is exactly what the generators of `order.json` write, in order.
-- `replay of <chunk>: N fixtures; 0 …`: every count after the first is zero (an output that differs from its recorded input's run, an input key nothing read, call text, a literal in `out`, a fixture running no op of kind `api` or `internal`, an op without kinds or not named in the header).
-- `uncaught throws of <chunk>: … 0 thrown at no row of raw/throws.jsonl`.
-- the counts of ids: no duplicate id, every cited id exists, every behavior has fixtures.
-- `coverage <file>: lines unreached …` and `wrote raw/coverage.jsonl: N unreached sites`: N falls by the sites your fixtures reach.
-- `coverage sites without an entry in verification.md: 0`: every site still in `raw/coverage.jsonl` has its row in the `## Coverage` table. The tool looks for the site as `` `mirrors/cm6/state/src/<file>:<line>` `` inside that section, so write the section before your first run of the check.
+From the repository root:
+- `python3 tools/spec_check.py ferrum-state --same-outputs-as 7b2558d` ends with `checks passed` (about two minutes; it regenerates every fixture file from the generators and must print `regenerated <chunk>: identical` for the five chunks, replays every fixture with every count after the first at zero, and prints `ops without kinds 0, not named in the header 0`: an op you move must be named in the header of `tools/cm6/program.ts` or still in the chunk's);
+- `git diff --stat 7b2558d -- docs/parity/ferrum-state/fixtures` prints nothing;
+- `python3 tools/check_refs.py docs .claude tools` reports 0 findings.
 
-The tool rewrites `raw/coverage.jsonl` and `raw/fixture-ops.jsonl`; leave them as it writes them. `tsc -p .harness/state 2>&1 | grep b-coverage` type-checks your generators; it is a help, not part of the check.
+The check does not show a header that disagrees with its code, nor a wrong or missing position row: that is your reading, and nobody repeats it. For D1, after editing, re-read each header entry you changed against the op's code once more. For the rows, this must hold and you verify it with a script of a few lines (report its output): every op and field marked `(pos)` in a header has at least one row with that `chunk`, `op` and `field`, except `layer.fake`; every row names an op its chunk registers or the language provides.
+
+The tool rewrites `raw/coverage.jsonl` and `raw/fixture-ops.jsonl`; leave them as it writes them. The orchestrator is changing the coverage part of `tools/spec_check.py` at the same time, in a copy, and installs it only after you report: you will not see it change. `tsc -p .harness/state 2>&1 | grep -E 'oracle/cm6/[a-z]+/interp.ts|tools/cm6/program.ts'` type-checks what you touch (errors that were there before you started, in generators, are not yours); it is a help, not part of the check.
 
 ## Limits
 
-- Write only: `docs/parity/ferrum-state/oracle/cm6/<chunk>/b-coverage.ts`, additions of ops to a chunk's `interp.ts`, `docs/parity/ferrum-state/oracle/cm6/order.json`, appended lines of `docs/parity/ferrum-state/fixtures/<chunk>.jsonl` (through the generator, never by hand), `docs/parity/ferrum-state/raw/behaviors.jsonl` and `raw/throws.jsonl` as described, the `## Coverage` section of `docs/parity/ferrum-state/verification.md`, and `.scratch/coverage/`. Do not edit `tools/`, existing generators, existing fixture lines or another section of `verification.md`. Do not commit.
-- Keep `.scratch/coverage/progress` (sites settled, remaining) so that you can be resumed.
+- Write only: the five `docs/parity/ferrum-state/oracle/cm6/<chunk>/interp.ts`, `tools/cm6/program.ts` (D2 only: the moved ops and their header lines), `docs/parity/ferrum-state/raw/positions.jsonl`, `.scratch/d/`. Do not edit generators, fixtures, another file of `raw/` or of `tools/`, `positions-report.md`, `plan.md`. Do not commit.
+- Never retype a line that holds an invisible or escaped character: the Write tool has turned `\uXXXX` escapes into literal characters. Use Edit on the lines you change, not Write on a whole interpreter.
+- You decide nothing: a place where the code looks wrong, or a way Ferrum could do better than cm6, is a question in your report, and the header still says what the code does.
+- Keep `.scratch/d/progress` (entries of the work list settled, remaining) so that you can be resumed.
 - Stop and report what fails when the check fails a third time on the same fixtures, or when you have used half as much again as the budget in your assignment.
 
 ## Final report
 
-Per outcome, the count and the sites; the fixtures and behavior rows added (ids), the ops added (chunk, name, kinds); the sites reached only by a D12 input; the check's coverage lines and its last line; how many times you ran the check; questions; tokens if known; then the two lines of `CLAUDE.md` "Reporting from a card".
+D1: per list of the work list, each entry and what you did (header changed, mark and rows added, harness number left unmarked, question); rows added per chunk, rows changed. D2: ops moved into the language, names kept apart and why. The check's last line and the two other commands' output; your script's output; how many times you ran the check; questions; tokens if known; then the two lines of `CLAUDE.md` "Reporting from a card".
