@@ -2,7 +2,8 @@
 #   RUSTC_BOOTSTRAP=1 cargo rustdoc -p <crate> -- -Z unstable-options --output-format json
 #   python3 tools/ferrum_pub.py target/doc/<crate_name>.json <crate dir, e.g. crates/ferrum-view> > pub.jsonl
 # Each row carries `mapping`: the mapping lines of the item's doc comment (.claude/rules/rust-crates.md "Annotations"),
-# which tools/impl_check.py joins with raw/inventory.jsonl.
+# which tools/impl_check.py joins with raw/inventory.jsonl. A row of kind `cm6 impl` is an impl block or a trait whose
+# doc comment holds `cm6 impl:` lines (in `mapping`): each is the counterpart of the cm6 item it names.
 # Enumerate every public item of a crate from rustdoc JSON (written for format 61; it also reads format 57, rustc 1.97):
 # modules, structs (+pub fields), enums (+variants), traits (+methods), functions,
 # consts, statics, type aliases, inherent impl methods/assoc items, crate-trait impls,
@@ -71,5 +72,13 @@ def walk(item_id, prefix):
         for i in inner['items']:
             ti = idx[str(i)]; add(f"{path}::{ti['name']}", 'trait method' + (' (provided)' if ti['inner'].get('function', {}).get('has_body') else ''), ti)
 walk(d['root'], '')
+# `cm6 impl:` lines (.claude/rules/rust-crates.md "Annotations"): on an impl block, or on a trait for a supertrait
+for it in idx.values():
+    if it.get('crate_id') != 0: continue
+    lines = [l.strip() for l in (it.get('docs') or '').split('\n') if l.strip().startswith('cm6 impl:')]
+    if not lines: continue
+    k = list(it['inner'].keys())[0]; inner = it['inner'][k]
+    name = it.get('name') or (f"impl {inner['trait']['path']} for {json.dumps(inner['for'])[:80]}" if k == 'impl' and inner.get('trait') else k)
+    rows.append((name, 'cm6 impl', sp(it), lines))
 for i, r in enumerate(rows, 1): print(json.dumps({"id": f"{CRATE.split('/')[-1]}.fe.{i:03d}", "item": r[0], "kind": r[1], "loc": r[2], "mapping": r[3]}))
 for t, l in impls_by_type.items(): print(json.dumps({"type": t, "impls": sorted(set(l))}), file=sys.stderr)

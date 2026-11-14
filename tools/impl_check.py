@@ -17,7 +17,9 @@ the tool reads each unit's cm6 files (its modules `src/<file>.rs`), chunks and c
 What the tool expects to find (the plan fixes what each thing is; this fixes where it is and how it is spelled):
 
   crates/<crate>/tests/replay.rs, tests/replay/      the fixture replayer, one test target named `replay`
-  tests/replay/lang.rs or tests/replay/lang/         the language of tools/cm6/program.ts; holds no `ferrum_state`
+  tests/replay/lang.rs or tests/replay/lang/         the language of tools/cm6/program.ts; holds no `ferrum_state`.
+                                                     A fixture file is read as the crate's plan says ("Reading a
+                                                     fixture file"): keys in file order, never through serde_json::Value
   tests/replay/<chunk>.rs or tests/replay/<chunk>/   the ops of one chunk (the unit's part of the replayer)
   tests/cm6_<stem>.rs                                the ported cases of mirrors/cm6/<package>/test/test-<stem>.ts
   tests/written_<unit>.rs                            the written tests of a unit
@@ -44,7 +46,9 @@ What the tool expects to find (the plan fixes what each thing is; this fixes whe
     // covers: <behavior id>[, <id> ...]
     // passes against the skeleton: <reason>      a test that does not fail while its unit is `todo!()`
     // literal <value>: <cause>                   inside a ported case: a number or a string (in double quotes) that
-                                                  the case and cm6's case do not hold the same number of times
+                                                  the case and cm6's case do not hold the same number of times; the
+                                                  cause starts with the id of the decision that makes the difference
+                                                  (D<n>, N<n>, or a row id such as state.cm6.008.d1)
   In docs/parity/<crate>/implementation.md, the section "Changes to checks after their code" names every file under
   crates/<crate>/tests/ changed after its unit's checks commit.
 """
@@ -271,7 +275,8 @@ def annotation_scan(c, crate):
     p = run([sys.executable, os.path.join(REPO, "tools", "ferrum_pub.py"), doc, os.path.join("crates", crate)])
     pub = [json.loads(l) for l in p.stdout.split("\n") if l.startswith("{")]
     skipped = collections.Counter(x["kind"].split(" of ")[0] for x in pub if x["kind"] == "module" or x["kind"].startswith(("re-export", "trait impl")))
-    items = [x for x in pub if x["kind"] != "module" and not x["kind"].startswith(("re-export", "trait impl"))]
+    impls = [x for x in pub if x["kind"] == "cm6 impl"]
+    items = [x for x in pub if x["kind"] not in ("module", "cm6 impl") and not x["kind"].startswith(("re-export", "trait impl"))]
     c.say(f"public items: {len(items)} ({dict(collections.Counter(x['kind'] for x in items))}); not asked for a mapping line: {dict(skipped)}")
     bad = [f"{x['item']} ({x['loc']}): {len(x['mapping'])} mapping lines" for x in items if len(x["mapping"]) != 1]
     c.need(not bad, f"every public item carries exactly one mapping line: {len(bad)} do not", bad)
@@ -279,6 +284,11 @@ def annotation_scan(c, crate):
     norm = lambda s: s.replace("^", ".")
     want = collections.Counter(norm(x["item"]) for x in inv if x["disposition"] == "CORE")
     got = collections.Counter(norm(m[len("cm6:"):].strip()) for x in items for m in x["mapping"] if m.startswith("cm6:"))
+    via_impl = [norm(m[len("cm6 impl:"):].split(", see")[0].strip()) for x in impls for m in x["mapping"]]
+    got.update(via_impl)
+    c.say(f"`cm6 impl:` lines on impl blocks and traits, each a counterpart: {len(via_impl)} ({', '.join(sorted(via_impl))})")
+    nosee = [f"{x['item']} ({x['loc']}): {m}" for x in impls for m in x["mapping"] if not re.search(r", see \S", m)]
+    c.need(not nosee, f"every `cm6 impl:` line names its decision (`, see <decision>`): {len(nosee)} do not", nosee)
     shared = sum(1 for n in want if want[n] > 1)
     c.say(f"inventory: {sum(want.values())} CORE items; {shared} names are both a static and an instance member (two rows, two counterparts)")
     off = [f"{n}: {want[n]} row(s), {got[n]} counterpart(s)" for n in want if got[n] != want[n]]
@@ -296,7 +306,7 @@ def todo_report(c, crate):
             for fn in functions(read(p)):
                 total += 1
                 if not is_todo(fn["body"]): not_todo.append(f"{os.path.relpath(p, ROOT)}:{fn['line']} {fn['name']}")
-    c.say(f"functions with a body in src/: {total}; body is not todo!(): {len(not_todo)} (the consultant reads this list: constructors of plain data only)")
+    c.say(f"functions with a body in src/: {total}; body is not todo!(): {len(not_todo)} (the consultant reads this list: constructors of plain data, and a function whose return type no todo!() can have)")
     for x in not_todo: c.say("        " + x)
 
 def ported(c, crate, test_files, sources):
@@ -360,7 +370,7 @@ def literals(c, crate, mine, found):
     if p.returncode: c.need(False, "literals of cm6's cases", p.stderr.strip().split("\n")[-5:]); return
     cm6 = json.loads(p.stdout)
     same = caused = markers = compared = 0
-    bad = []
+    bad, no_id, by_id = [], [], collections.Counter()
     for r in mine:
         fns = found.get(case_name(r), [])
         if len(fns) != 1: continue
@@ -380,12 +390,19 @@ def literals(c, crate, mine, found):
                 if t.startswith('"'): v, end = json.JSONDecoder().raw_decode(t); v = json.dumps(v, ensure_ascii=False)
                 else: v, end = f"{float(t.split(':')[0]):g}", t.index(":")
             except ValueError: continue
-            if t[end:].lstrip().startswith(":") and t[end:].lstrip()[1:].strip(): given.add(v)
+            cause = t[end:].lstrip()[1:].strip() if t[end:].lstrip().startswith(":") else ""
+            m = DECISION.match(cause)
+            if m: given.add(v); by_id[m.group(1)] += 1
+            elif cause: no_id.append(f"{case_name(r)}: {cm}")
         left = [d for d in diff if d not in given]
         if left:
             bad.append(f"{case_name(r)}: " + "; ".join(f"{d} (cm6 {a[lit(d)]}, Rust {b[lit(d)]})" for d in left))
         else: caused += 1; markers += len(diff)
+    c.need(not no_id, f"every `// literal` comment gives a cause that starts with a decision id (D<n>, N<n> or a row id): {len(no_id)} do not", no_id)
+    c.say(f"`// literal` comments by the decision their cause names: {dict(by_id)}")
     c.need(not bad, f"literals of ported cases against cm6's: {compared} compared, {same} hold the same, {caused} differ with a cause written for each of {markers} literal(s), {len(bad)} with a difference that has no cause (write `// literal <value>: <cause>` in the test)", bad)
+
+DECISION = re.compile(r"(D\d+|N\d+|[a-z]+\.(?:cm6|imp)\.\d+(?:\.d\d+)?)\b")
 
 def lit(s): return ("str", json.loads(s)) if s.startswith('"') else ("num", float(s))
 
@@ -627,13 +644,13 @@ def handoff(c, crate, args):
     for f in got:
         for b in fx.get((f["chunk"], f["fixture"]), []): by[b][f["result"]] += 1
     tested = {b for r_ in mine if len(found.get(case_name(r_), [])) == 1 for b in r_["behaviors"]}
-    decided = {b: d["id"] for d in rows(spec(crate, "raw", "decisions.jsonl")) for b in d["behaviors"]}
+    decided = {b: d["id"] for d in rows(spec(crate, "raw", "decisions.jsonl")) if d["class"] == "form" for b in d["behaviors"]}
     behaviors = [b["id"] for b in rows(spec(crate, "raw", "behaviors.jsonl"))]
     bare = [b for b in behaviors if not (by[b]["equal"] or by[b]["part"] or b in tested or b in named)]
     acc = [f"{b}: {decided[b]}" for b in bare if b in decided]
     bare = [b for b in bare if b not in decided]
     c.say(f"behaviors: {len(behaviors)}; with a fixture compared whole {sum(1 for b in behaviors if by[b]['equal'])}, only in part {sum(1 for b in behaviors if not by[b]['equal'] and by[b]['part'])}; named by a ported case {len(tested & set(behaviors))}; by `// covers:` {len(named & set(behaviors))}")
-    c.say(f"behaviors with no check that a row of raw/decisions.jsonl names (the consultant reads this list): {len(acc)}")
+    c.say(f"behaviors with no check that a row of class `form` of raw/decisions.jsonl names (the consultant reads this list): {len(acc)}")
     for a in acc: c.say("        " + a)
     c.need(not bare, f"every behavior is named by a check that runs: {len(bare)} are not", bare)
     # checks unchanged since their unit's code

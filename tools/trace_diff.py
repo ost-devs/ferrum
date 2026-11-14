@@ -8,7 +8,9 @@ Run from the repository root, with the harness built (tools/cm6/setup_harness.py
 its nesting depth, its kinds and its value or the error it threw) and compares the lines with those the crate's
 replayer printed for the same fixture (the crate's plan says how to get them). Values are compared exactly, as the
 program sees them (cm6's unit), with one exception: where cm6's line holds an instance of a class ({"cm6": name}) the
-replayer's holds a value of the crate ({"ferrum": name}), and the two match whatever the names.
+replayer's holds a value of the crate ({"ferrum": name}), and the two match whatever the names. Two objects are
+compared by their members, without the order of their keys (a JSON object the crate returns has none: the crate's
+design, "Key order"); the number of objects that differed only in that order is printed.
 
 It prints the first evaluation at which the two runs differ, with a few lines before it, and what the place says:
   - an op whose kinds are only `harness` touches no cm6 value: when everything it was given is equal, the difference
@@ -23,12 +25,17 @@ import json, os, subprocess, sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
+ORDER_ONLY = [0]   # objects whose members were equal and whose keys came in another order
+
+
 def same(a, b):
     """cm6's shown value against the replayer's."""
     if isinstance(a, dict) and set(a) == {"cm6"}:
         return isinstance(b, dict) and set(b) == {"ferrum"}
     if isinstance(a, dict) and isinstance(b, dict):
-        return list(a) == list(b) and all(same(a[k], b[k]) for k in a)
+        if set(a) != set(b): return False
+        if list(a) != list(b): ORDER_ONLY[0] += 1
+        return all(same(a[k], b[k]) for k in a)
     if isinstance(a, list) and isinstance(b, list):
         return len(a) == len(b) and all(same(x, y) for x, y in zip(a, b))
     return type(a) is type(b) and a == b
@@ -83,6 +90,7 @@ def main():
     cm6, ferrum = lines_of(out.stdout), lines_of(open(path, encoding="utf8").read())
     ops_a, ops_b = [l for l in cm6 if "op" in l], [l for l in ferrum if "op" in l]
     at, why = first_difference(cm6, ferrum)
+    if ORDER_ONLY[0]: print(f"objects with equal members whose keys came in another order (not a difference): {ORDER_ONLY[0]}")
     if at is None:
         fin_a = next((l for l in cm6 if "output" in l), None)
         print(f"{crate} {chunk} {fid}: {len(ops_a)} evaluations, all equal. cm6's output equals the recorded one: {fin_a and fin_a['equal']}."

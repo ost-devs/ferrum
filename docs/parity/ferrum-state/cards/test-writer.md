@@ -11,7 +11,7 @@ Where things are and how they are spelled is fixed by the docstring of `tools/im
 
 ## Step R: the replayer's core
 
-**What it is for.** Everything of the replayer that no chunk decides. Each later unit adds only the ops of its chunk, and `ferrum-view` will read the same language, so an error here is in every fixture of four crates. Its reference is not typed by anyone: `tools/cm6/lang-cases.jsonl` holds 47 programs that touch no cm6 value, each with the output `tools/cm6/program.ts` gave, and your evaluator must give the same.
+**What it is for.** Everything of the replayer that no chunk decides. Each later unit adds only the ops of its chunk, and `ferrum-view` will read the same language, so an error here is in every fixture of four crates. Its reference is not typed by anyone: `tools/cm6/lang-cases.jsonl` holds 48 programs that touch no cm6 value, each with the output `tools/cm6/program.ts` gave, and your evaluator must give the same.
 
 **Read:** `tools/cm6/program.ts` whole (its header is the definition of the language; its code is the reference for every op and for the evaluation order); `tools/cm6/oracle-lib.ts` (`encode`, `decode`, `encodeStr`: the one encoding of values JSON cannot hold); `tools/cm6/lang-cases.ts` (what the cases exercise); `tools/cm6/replay.ts` (`traceOne` and `shown`: the trace line, exactly); `tools/trace_diff.py` (how the trace is compared); `docs/parity/ferrum-state/design.md` "The fixture replayer"; `docs/parity/ferrum-state/plan.md` "The replayer" and "Positions".
 
@@ -26,7 +26,7 @@ Where things are and how they are spelled is fixed by the docstring of `tools/im
 
 **Why each matters.** The report is read by `tools/impl_check.py`, which derives every number the plan and the consultant use (per chunk, per behavior, per decision row); a line that says `equal` for a fixture not compared whole is a false proof. The trace is what `tools/trace_diff.py` compares with cm6's run to say whether a failing fixture is the replayer's fault or the crate's; a trace that differs from cm6's in form sends every later failure to the wrong worker. The control run is the only check that the comparison sees every leaf.
 
-**Check, run by you before you commit:** `python3 tools/impl_check.py ferrum-state core`. It requires: every test of the target passing; a test of the conversion functions; the 47 language cases `equal`; the 28 ops of the language registered under the chunk `lang`; the control run leaving no case passing; the trace of each case equal to what `tools/cm6/replay.ts --trace` gives (it runs both); no `ferrum_state` in the language module. Put its whole output in your report. You never script a check of your own; a failure you believe is the tool's is reported with its output.
+**Check, run by you before you commit:** `python3 tools/impl_check.py ferrum-state core`. It requires: every test of the target passing; a test of the conversion functions; the 48 language cases `equal`; the 28 ops of the language registered under the chunk `lang`; the control run leaving no case passing; the trace of each case equal to what `tools/cm6/replay.ts --trace` gives (it runs both); no `ferrum_state` in the language module. Put its whole output in your report. You never script a check of your own; a failure you believe is the tool's is reported with its output.
 
 **Budget.** 250,000 tokens. If you pass 375,000, stop and report where you are.
 
