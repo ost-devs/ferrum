@@ -126,24 +126,32 @@ fn strings(v: &Value) -> Vec<String> {
 }
 
 /// What `raw/decisions.jsonl` says of each fixture (`chunk:id`): the rows with a condition that list it, and the rows
-/// without one that list it (the fixture is not compared).
+/// without one that list it (the fixture is left out whole).
 #[derive(Default)]
-struct Decisions {
-    condition: HashMap<String, Vec<String>>,
-    listed: HashMap<String, Vec<String>>,
+pub struct Decisions {
+    pub condition: HashMap<String, Vec<String>>,
+    pub listed: HashMap<String, Vec<String>>,
+}
+
+impl Decisions {
+    /// From rows of `raw/decisions.jsonl`: a row states a condition when its `decision` holds "Condition for the
+    /// replayer".
+    pub fn from_rows(rows: &[Value]) -> Decisions {
+        let mut d = Decisions::default();
+        for row in rows {
+            let id = s(&row.field("id"));
+            let has_condition = s(&row.field("decision")).contains("Condition for the replayer");
+            for f in strings(&row.field("fixtures")) {
+                let m = if has_condition { &mut d.condition } else { &mut d.listed };
+                m.entry(f).or_default().push(id.clone());
+            }
+        }
+        d
+    }
 }
 
 fn decisions(raw: &Path) -> Decisions {
-    let mut d = Decisions::default();
-    for row in read_lines(&raw.join("decisions.jsonl")) {
-        let id = s(&row.field("id"));
-        let has_condition = s(&row.field("decision")).contains("Condition for the replayer");
-        for f in strings(&row.field("fixtures")) {
-            let m = if has_condition { &mut d.condition } else { &mut d.listed };
-            m.entry(f).or_default().push(id.clone());
-        }
-    }
-    d
+    Decisions::from_rows(&read_lines(&raw.join("decisions.jsonl")))
 }
 
 // ---- comparison ---------------------------------------------------------------------------------------------------
@@ -293,13 +301,35 @@ pub struct Run {
     pub control: Option<(String, bool)>,
 }
 
-struct Ctx<'a> {
-    decisions: &'a Decisions,
+/// What a run of one fixture needs besides the fixture.
+pub struct Ctx<'a> {
+    pub decisions: &'a Decisions,
     /// The ops of each chunk's interpreter (`raw/fixture-ops.jsonl`).
-    chunk_ops: &'a HashMap<String, HashSet<String>>,
-    control: Option<String>,
-    trace: Option<(String, Option<String>)>,
-    trace_dir: PathBuf,
+    pub chunk_ops: &'a HashMap<String, HashSet<String>>,
+    /// The seed of a control run.
+    pub control: Option<String>,
+    /// The chunk, and the fixture when one, whose trace is written.
+    pub trace: Option<(String, Option<String>)>,
+    pub trace_dir: PathBuf,
+}
+
+fn row_entries(rows: &[String]) -> Vec<Rc<LeftOut>> {
+    rows.iter()
+        .map(|r| {
+            Rc::new(LeftOut {
+                reason: r.clone(),
+                op: String::new(),
+                what: What::Part("the fixture".into()),
+                value: Value::Null,
+                not_called: false,
+            })
+        })
+        .collect()
+}
+
+/// A recorded output `{"timeout": ms}`: cm6 did not return.
+fn is_timeout(recorded: &Value) -> bool {
+    matches!(recorded, Value::Object(o) if o.borrow().len() == 1 && matches!(o.borrow().get("timeout"), Some(Value::Num(_))))
 }
 
 fn op_names(v: &Value, out: &mut Vec<String>) {
@@ -332,7 +362,8 @@ fn left_out_value(l: &LeftOut) -> Value {
     ])
 }
 
-fn run_one(lang: &Language, fixture: &Value, ctx: &Ctx) -> Run {
+/// Run one fixture of a chunk and give its result with the report's entries (`design.md` section 10).
+pub fn run_one(lang: &Language, fixture: &Value, ctx: &Ctx) -> Run {
     let chunk = lang.chunk.clone();
     let id = s(&fixture.field("id"));
     let key = format!("{chunk}:{id}");
@@ -349,21 +380,16 @@ fn run_one(lang: &Language, fixture: &Value, ctx: &Ctx) -> Run {
     let input = fixture.field("input");
     let recorded = fixture.field("output");
 
-    // a row of raw/decisions.jsonl that states no condition and lists the fixture: not compared
-    if let Some(rows) = ctx.decisions.listed.get(&key) {
-        run.result = "none";
-        run.left_out = rows
-            .iter()
-            .map(|r| {
-                Rc::new(LeftOut {
-                    reason: r.clone(),
-                    op: String::new(),
-                    what: What::Part("the fixture".into()),
-                    value: Value::Null,
-                    not_called: true,
-                })
-            })
-            .collect();
+    let listed = ctx.decisions.listed.get(&key);
+    // a recorded timeout is never run (the replayer has no time limit); a row without a condition must list it
+    if is_timeout(&recorded) {
+        match listed {
+            Some(rows) => {
+                run.result = "none";
+                run.left_out = row_entries(rows);
+            }
+            None => run.note = "the recorded output is a timeout and no row of raw/decisions.jsonl lists it".into(),
+        }
         return run;
     }
     // an op of the chunk's interpreter that its module does not register yet
@@ -416,7 +442,7 @@ fn run_one(lang: &Language, fixture: &Value, ctx: &Ctx) -> Run {
             if !unmet.is_empty() {
                 run.note = format!("listed by {unmet:?}, whose condition no call met");
             } else if equal {
-                run.result = if c.skipped > 0 && c.leaves == 0 && c.paths.is_empty() {
+                run.result = if matches!(ours.field("ok"), Value::NoCounterpart(_)) {
                     "none"
                 } else if c.skipped == 0 && run.left_out.is_empty() {
                     "equal"
@@ -433,13 +459,42 @@ fn run_one(lang: &Language, fixture: &Value, ctx: &Ctx) -> Run {
                     };
                     run.control = Some((path, passes));
                 }
-            } else if recorded.has("error") && p.not_called() > 0 {
-                // the recorded output is an uncaught error, and a call Ferrum did not make may be the one that threw
+            } else if recorded.has("error")
+                && let Some(last) = p.last_not_called()
+            {
+                // the recorded output is an uncaught error, Ferrum's run does not end in it, and a call Ferrum did not
+                // make may be the one that threw
                 run.result = "none";
+                run.left_out.push(Rc::new(LeftOut {
+                    reason: "error".into(),
+                    op: last.op.clone(),
+                    what: What::Part("the uncaught error".into()),
+                    value: Value::Null,
+                    not_called: false,
+                }));
             } else {
                 run.note = format!("ours {} recorded {}", to_json(&ours), to_json(&recorded));
             }
         }
+    }
+    // a fixture listed by a row without a condition: run like any other, and `none` with the row's id, unless Ferrum
+    // reproduces it, which fails the run (the row then leaves out what Ferrum gives)
+    if let Some(rows) = listed {
+        match run.result {
+            "equal" => {
+                run.result = "mismatch";
+                run.note = format!("listed by {rows:?}, which state no condition, and its output equals the recorded one");
+            }
+            "pending" => {}
+            // the replayer's own failure, and a row with a condition that no call met, stay failures
+            _ if run.note.starts_with("the replayer: ") || run.note.starts_with("listed by ") => {}
+            _ => {
+                run.result = "none";
+                run.note.clear();
+                run.left_out = row_entries(rows);
+            }
+        }
+        run.control = None;
     }
     if let Some(lines) = p.trace.take() {
         write_trace(ctx, &chunk, &id, &lines, &output_shown, &recorded, run.result == "equal");

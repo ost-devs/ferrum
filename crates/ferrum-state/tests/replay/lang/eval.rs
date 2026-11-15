@@ -186,6 +186,8 @@ pub struct Program<'l> {
     pub listed: HashSet<String>,
     /// The rows whose condition a call met, in order.
     pub met: Vec<String>,
+    /// Values of Ferrum that a call not made would have changed: no counterpart in every later use.
+    marked: Vec<(*const (), Rc<LeftOut>)>,
 }
 
 impl<'l> Program<'l> {
@@ -201,12 +203,80 @@ impl<'l> Program<'l> {
             not_called: 0,
             listed: HashSet::new(),
             met: Vec::new(),
+            marked: Vec::new(),
         }
     }
 
     /// The value of a variable.
     pub fn get(&self, name: &str) -> Result<Value, Flow> {
-        self.vars.get(name).cloned().ok_or_else(|| Flow::error(&format!("interp: unset variable {name}")))
+        match self.vars.get(name) {
+            Some(v) => Ok(self.masked(v)),
+            None => Err(Flow::error(&format!("interp: unset variable {name}"))),
+        }
+    }
+
+    /// Mark a value of Ferrum that a call not made would have changed (a builder it adds to, a cursor it advances:
+    /// the receivers Ferrum takes as `&mut`) as no counterpart from then on, with the entry of that call (`nc`, the
+    /// value the op returns for the call). Every later read of it, through a variable, an op's value or the output,
+    /// is no counterpart (`design.md` section 10, "No counterpart", rule 5).
+    pub fn mark(&mut self, receiver: &Value, nc: &Value) {
+        if let (Value::Host(h), Value::NoCounterpart(l)) = (receiver, nc) {
+            let ptr = Rc::as_ptr(h) as *const ();
+            if !self.marked.iter().any(|(p, _)| *p == ptr) {
+                self.marked.push((ptr, l.clone()));
+            }
+        }
+    }
+
+    /// The value, or no counterpart when it is a marked value of Ferrum.
+    pub fn masked(&self, v: &Value) -> Value {
+        if let Value::Host(h) = v {
+            let ptr = Rc::as_ptr(h) as *const ();
+            if let Some((_, l)) = self.marked.iter().find(|(p, _)| *p == ptr) {
+                return Value::NoCounterpart(l.clone());
+            }
+        }
+        v.clone()
+    }
+
+    /// A copy of an output with every marked value of Ferrum in it replaced by no counterpart.
+    fn masked_deep(&self, v: &Value) -> Value {
+        if self.marked.is_empty() {
+            return v.clone();
+        }
+        match v {
+            Value::Array(a) => Value::array(a.borrow().iter().map(|x| self.masked_deep(x)).collect()),
+            Value::Object(o) => {
+                let ob = o.borrow();
+                let mut out = Object::new();
+                for (k, x) in ob.entries() {
+                    out.set(k.clone(), self.masked_deep(x));
+                }
+                out.unordered = ob.unordered;
+                Value::object(out)
+            }
+            other => self.masked(other),
+        }
+    }
+
+    /// Stop the program where its course depends on a value that is no counterpart (the condition of an `if`, a
+    /// member of `all`, the list of a `map`): the entry `flow` names the op.
+    fn stop(&mut self, op: &str, part: &str) -> Flow {
+        let l = Rc::new(LeftOut {
+            reason: "flow".into(),
+            op: op.into(),
+            what: What::Part(part.into()),
+            value: Value::Null,
+            not_called: false,
+        });
+        self.left_out.push(l.clone());
+        Flow::Stop(l)
+    }
+
+    /// The value of a call an op given `none` by `raw/replay.jsonl` stands for, once it has evaluated its arguments:
+    /// no counterpart with the reason `op`, a call not made.
+    pub fn op_none(&mut self, op: &str) -> Value {
+        self.no_counterpart("op", op, What::Part("the result".into()), Value::Null, true)
     }
 
     pub fn set(&mut self, name: String, v: Value) {
@@ -262,9 +332,16 @@ impl<'l> Program<'l> {
             self.left_out.push(l.clone());
             Err(Flow::Stop(l))
         } else if lang.none.contains(&name) {
-            Ok(self.no_counterpart("op", &name, What::Part("the result".into()), Value::Null, true))
+            // the op evaluates its arguments as cm6's interpreter does, then stands for a call not made
+            match (def.run)(a, self) {
+                Ok(Value::NoCounterpart(l)) if l.reason == "op" && l.not_called => Ok(Value::NoCounterpart(l)),
+                Ok(v) => Err(Flow::Fail(format!(
+                    "op {name} is given `none` by raw/replay.jsonl and returned {v:?}, not no counterpart with the reason `op`"
+                ))),
+                Err(e) => Err(e),
+            }
         } else {
-            (def.run)(a, self)
+            (def.run)(a, self).map(|v| self.masked(&v))
         };
         self.depth -= 1;
         if let (Some(i), Some(t)) = (line, self.trace.as_mut()) {
@@ -290,7 +367,10 @@ impl<'l> Program<'l> {
                 match truthy(&c) {
                     Some(true) => {}
                     Some(false) => continue,
-                    None => return Err(Flow::Stop(nc_of(&c))),
+                    None => {
+                        let op = property_key(&s.field("op")).unwrap_or_default();
+                        return Err(self.stop(&op, "if"));
+                    }
                 }
             }
             let r = self.op(&s)?;
@@ -354,6 +434,11 @@ impl<'l> Program<'l> {
         self.not_called
     }
 
+    /// The entry of the last call not made.
+    pub fn last_not_called(&self) -> Option<Rc<LeftOut>> {
+        self.last_not_called.clone()
+    }
+
     fn since(&self, before: usize) -> Option<Rc<LeftOut>> {
         if self.not_called > before { self.last_not_called.clone() } else { None }
     }
@@ -367,11 +452,11 @@ impl<'l> Program<'l> {
             }
             if !program {
                 let v = self.ev(inp)?;
-                return encode(&v);
+                return encode(&self.masked_deep(&v));
             }
             self.steps(&inp.field("steps"))?;
             let v = self.fill(&inp.field("out"))?;
-            encode(&v)
+            encode(&self.masked_deep(&v))
         })();
         match r {
             Ok(v) => Outcome::Output(Value::record([("ok", v)])),
@@ -490,7 +575,7 @@ fn op_all(a: &Value, p: &mut Program) -> Result<Value, Flow> {
             Some(true) => {}
             Some(false) => return Ok(Value::Bool(false)),
             // whether the later members are evaluated depends on the value
-            None => return Err(Flow::Stop(nc_of(&v))),
+            None => return Err(p.stop("all", "a member")),
         }
     }
     Ok(Value::Bool(true))
@@ -587,9 +672,9 @@ fn op_label(a: &Value, _p: &mut Program) -> Result<Value, Flow> {
 
 fn op_map(a: &Value, p: &mut Program) -> Result<Value, Flow> {
     let over = p.ev(&a.field("over"))?;
-    if let Value::NoCounterpart(l) = over {
+    if let Value::NoCounterpart(_) = over {
         // the steps of `do` and the variable `as` depend on the members
-        return Err(Flow::Stop(l));
+        return Err(p.stop("map", "over"));
     }
     let Value::Array(arr) = &over else { return Err(Flow::Fail("map over a value that is not an array".into())) };
     let name = property_key(&a.field("as"))?;

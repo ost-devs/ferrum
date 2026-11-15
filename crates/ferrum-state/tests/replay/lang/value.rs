@@ -49,8 +49,9 @@ pub enum Value {
 pub trait Host: Any {
     /// The name a trace line shows, as `{"ferrum": name}` where cm6's line shows `{"cm6": class}`.
     fn type_name(&self) -> String;
-    /// `this === other`, by the identity table of `design.md` section 10; `None`: no counterpart.
-    fn same(&self, other: &Value) -> Option<bool>;
+    /// `this === other` for another value of Ferrum, by the identity table of `design.md` section 10; `None`: no
+    /// counterpart (two types of different kinds, or a type outside the table). The core answers every other pair.
+    fn same(&self, other: &dyn Host) -> Option<bool>;
     /// The value as `encode` writes it in an output (its `toJSON` form, or what the chunk's interpreter writes).
     fn encode(&self) -> Result<Value, Flow>;
     /// A property read (`value[key]`), for the harness ops `count`, `item`, `column`, `lengths`.
@@ -240,12 +241,20 @@ fn ptr<T: ?Sized>(rc: &Rc<T>) -> *const () {
     Rc::as_ptr(rc) as *const ()
 }
 
-/// `a === b`: primitives by value (NaN unequal to itself, 0 equal to -0), references the program built by identity,
-/// values of Ferrum by the identity table (`Host::same`). `None`: no counterpart (`design.md` section 10, "Identity").
+fn primitive(v: &Value) -> bool {
+    matches!(v, Value::Undefined | Value::Null | Value::Bool(_) | Value::Num(_) | Value::Str(_))
+}
+
+/// `a === b` (`design.md` section 10, "Identity"): primitives by value (NaN unequal to itself, 0 equal to -0); a
+/// primitive and anything else false (a value of Ferrum stands for an object of cm6), decided before Ferrum's identity
+/// is asked; references the program built by identity; two values of Ferrum by the identity table (`Host::same`). A
+/// value of Ferrum against a reference the program built, or `Host::same` answering `None`: no counterpart (`None`).
 pub fn strict_equal(a: &Value, b: &Value) -> Option<bool> {
     Some(match (a, b) {
         (Value::NoCounterpart(_), _) | (_, Value::NoCounterpart(_)) => return None,
-        (Value::Host(h), other) | (other, Value::Host(h)) => return h.same(other),
+        (x, y) if primitive(x) != primitive(y) => false,
+        (Value::Host(x), Value::Host(y)) => return x.same(y.as_ref()),
+        (Value::Host(_), _) | (_, Value::Host(_)) => return None,
         (Value::Undefined, Value::Undefined) | (Value::Null, Value::Null) => true,
         (Value::Bool(x), Value::Bool(y)) => x == y,
         (Value::Num(x), Value::Num(y)) => x == y,

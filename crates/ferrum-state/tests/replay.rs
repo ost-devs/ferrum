@@ -11,6 +11,7 @@ mod replay {
     pub mod convert;
     pub mod driver;
     pub mod lang;
+    mod rules;
 
     pub mod change;
     pub mod facet;
