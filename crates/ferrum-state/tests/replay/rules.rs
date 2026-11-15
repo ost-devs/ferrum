@@ -102,6 +102,16 @@ fn language() -> Language {
         Ok(Value::array(vec![Value::Num(1.0), nc]))
     });
     l.op("t.json", api, |_, _| Ok(from_serde_json(&serde_json::json!({"b": 1, "a": [2, {"d": 3, "c": 4}]}))));
+    l.op("t.list", api, |_, p| {
+        // a list Ferrum returned: `[1, [2], {"k": 3}]`
+        let v = Value::array(vec![
+            Value::Num(1.0),
+            Value::array(vec![Value::Num(2.0)]),
+            Value::record([("k", Value::Num(3.0))]),
+        ]);
+        p.returned_by_ferrum(&v);
+        Ok(v)
+    });
     l.none.insert("t.none".into());
     l.none.insert("t.noneWrong".into());
     l.skip.insert("t.skip".into());
@@ -228,8 +238,8 @@ fn rule_identity_of_values_of_ferrum() {
     );
     // a value of Ferrum against a reference the program built is no counterpart with countOf too
     let r = run(
-        r#"{"steps":[{"op":"t.make","as":"h"},{"op":"countOf","of":{"op":"list","of":[{"$":"h"}]},"value":{"op":"list","of":[]},"as":"c"}],"out":{"c":{"$":"c"}}}"#,
-        r#"{"ok":{"c":0}}"#,
+        r#"{"steps":[{"op":"t.make","as":"h"},{"op":"countOf","of":{"op":"list","of":[{"$":"h"}]},"value":{"op":"list","of":[]},"as":"c"},{"op":"let","value":1,"as":"k"}],"out":{"c":{"$":"c"},"k":{"$":"k"}}}"#,
+        r#"{"ok":{"c":0,"k":1}}"#,
     );
     assert_eq!((r.result, entries(&r)), ("part", vec![e("identity", "countOf")]));
     // Ferrum was called for both operands: a capture around the comparison is still a value
@@ -382,4 +392,89 @@ fn rule_the_control_run_alters_a_compared_leaf() {
     assert_eq!(r.result, "part");
     // the only compared leaf is the first member; the second is no counterpart
     assert_eq!(r.control, Some(("/ok/0".to_string(), false)));
+}
+
+#[test]
+fn rule_no_position_compared_is_none_with_its_entries() {
+    // every leaf is no counterpart: `none`, the entries kept
+    let input = r#"{"op":"list","of":[{"op":"t.type","x":1},{"op":"t.char","x":2}]}"#;
+    let r = run(input, r#"{"ok":[5,6]}"#);
+    assert_eq!(r.result, "none");
+    assert_eq!(entries(&r), vec![e("type", "t.type"), e("char", "t.char")]);
+    // the shape is compared all the same
+    assert_eq!(run(input, r#"{"ok":[5]}"#).result, "mismatch");
+    let obj = r#"{"op":"record","of":{"a":{"op":"t.type","x":1}}}"#;
+    assert_eq!(run(obj, r#"{"ok":{"a":5}}"#).result, "none");
+    assert_eq!(run(obj, r#"{"ok":{"b":5}}"#).result, "mismatch");
+    // an empty array or object is a compared position
+    let empty = r#"{"op":"list","of":[{"op":"t.type","x":1},{"op":"list","of":[]},{"op":"object"}]}"#;
+    assert_eq!(run(empty, r#"{"ok":[5,[],{}]}"#).result, "part");
+    assert_eq!(run(empty, r#"{"ok":[5,[0],{}]}"#).result, "mismatch");
+}
+
+#[test]
+fn rule_no_position_compared_is_not_altered_by_the_control_run() {
+    let lang = language();
+    let decisions = Decisions::default();
+    let ops = HashMap::new();
+    let ctx =
+        Ctx { decisions: &decisions, chunk_ops: &ops, control: Some("1".into()), trace: None, trace_dir: "unused".into() };
+    let fixture =
+        parse(r#"{"id":"F1","input":{"op":"list","of":[{"op":"t.type","x":1}]},"output":{"ok":[5]}}"#).expect("JSON");
+    let r = run_one(&lang, &fixture, &ctx);
+    assert_eq!((r.result, r.control), ("none", None));
+    // an empty array is altered
+    let fixture = parse(r#"{"id":"F1","input":{"op":"list","of":[{"op":"t.type","x":1},{"op":"list","of":[]}]},"output":{"ok":[5,[]]}}"#)
+        .expect("JSON");
+    let r = run_one(&lang, &fixture, &ctx);
+    assert_eq!((r.result, r.control), ("part", Some(("/ok/1".to_string(), false))));
+}
+
+#[test]
+fn rule_a_list_ferrum_returned_has_no_identity() {
+    let input = r#"{"steps":[{"op":"t.list","as":"l"},{"op":"t.list","as":"m"},{"op":"list","of":[1],"as":"own"},
+        {"op":"same","a":{"$":"l"},"b":{"$":"l"},"as":"self"},
+        {"op":"same","a":{"$":"l"},"b":{"$":"m"},"as":"other"},
+        {"op":"same","a":{"$":"l"},"b":{"$":"own"},"as":"built"},
+        {"op":"same","a":{"op":"item","of":{"$":"l"},"index":1},"b":{"op":"item","of":{"$":"l"},"index":1},"as":"inner"},
+        {"op":"same","a":{"op":"item","of":{"$":"l"},"index":2},"b":{"op":"item","of":{"$":"l"},"index":2},"as":"innerObject"},
+        {"op":"same","a":{"$":"l"},"b":{"op":"let","value":1},"as":"primitive"},
+        {"op":"same","a":{"op":"item","of":{"$":"l"},"index":0},"b":{"op":"let","value":1},"as":"member"}],
+        "out":{"self":{"$":"self"},"other":{"$":"other"},"built":{"$":"built"},"inner":{"$":"inner"},"innerObject":{"$":"innerObject"},"primitive":{"$":"primitive"},"member":{"$":"member"}}}"#;
+    let r = run(input, r#"{"ok":{"self":true,"other":false,"built":false,"inner":true,"innerObject":true,"primitive":false,"member":true}}"#);
+    assert_eq!(r.result, "part", "{}", r.note);
+    assert_eq!(entries(&r), vec![e("identity", "same"); 5]);
+    // against a primitive it is false, as for any object
+    assert_eq!(
+        run(input, r#"{"ok":{"self":true,"other":false,"built":false,"inner":true,"innerObject":true,"primitive":true,"member":true}}"#)
+            .result,
+        "mismatch"
+    );
+}
+
+#[test]
+fn rule_a_list_ferrum_returned_in_all_same_same_items_and_count_of() {
+    let input = r#"{"steps":[{"op":"t.list","as":"l"},
+        {"op":"allSame","of":{"op":"list","of":[{"$":"l"},{"$":"l"}]},"as":"all"},
+        {"op":"sameItems","a":{"op":"list","of":[{"$":"l"}]},"b":{"op":"list","of":[{"$":"l"}]},"as":"items"},
+        {"op":"countOf","of":{"op":"list","of":[{"$":"l"},2]},"value":{"$":"l"},"as":"count"},
+        {"op":"allSame","of":{"$":"l"},"as":"members"},
+        {"op":"let","value":1,"as":"k"}],
+        "out":{"all":{"$":"all"},"items":{"$":"items"},"count":{"$":"count"},"members":{"$":"members"},"k":{"$":"k"}}}"#;
+    let r = run(input, r#"{"ok":{"all":true,"items":true,"count":1,"members":false,"k":1}}"#);
+    assert_eq!(r.result, "part", "{}", r.note);
+    assert_eq!(entries(&r), vec![e("identity", "allSame"), e("identity", "sameItems"), e("identity", "countOf")]);
+    // `members` compares 1 with [2] and {"k": 3}: false is decided against the primitive
+    assert_eq!(run(input, r#"{"ok":{"all":true,"items":true,"count":1,"members":true,"k":1}}"#).result, "mismatch");
+}
+
+#[test]
+fn rule_copy_and_slice_of_a_list_ferrum_returned_are_the_program_s() {
+    let input = r#"{"steps":[{"op":"t.list","as":"l"},{"op":"copy","of":{"$":"l"},"as":"c"},{"op":"slice","of":{"$":"l"},"start":0,"as":"s"},
+        {"op":"same","a":{"$":"c"},"b":{"$":"c"},"as":"copySelf"},
+        {"op":"same","a":{"$":"c"},"b":{"$":"s"},"as":"copySlice"},
+        {"op":"same","a":{"$":"s"},"b":{"$":"s"},"as":"sliceSelf"}],
+        "out":{"copySelf":{"$":"copySelf"},"copySlice":{"$":"copySlice"},"sliceSelf":{"$":"sliceSelf"}}}"#;
+    let r = run(input, r#"{"ok":{"copySelf":true,"copySlice":false,"sliceSelf":true}}"#);
+    assert_eq!((r.result, r.left_out.len()), ("equal", 0), "{}", r.note);
 }

@@ -188,6 +188,10 @@ pub struct Program<'l> {
     pub met: Vec<String>,
     /// Values of Ferrum that a call not made would have changed: no counterpart in every later use.
     marked: Vec<(*const (), Rc<LeftOut>)>,
+    /// The arrays and objects of lists and JSON values Ferrum returned (`returned_by_ferrum`), by address, with a
+    /// reference to each that keeps the address from being reused during the run.
+    from_ferrum: HashSet<*const ()>,
+    from_ferrum_kept: Vec<Value>,
 }
 
 impl<'l> Program<'l> {
@@ -204,6 +208,8 @@ impl<'l> Program<'l> {
             listed: HashSet::new(),
             met: Vec::new(),
             marked: Vec::new(),
+            from_ferrum: HashSet::new(),
+            from_ferrum_kept: Vec::new(),
         }
     }
 
@@ -226,6 +232,49 @@ impl<'l> Program<'l> {
                 self.marked.push((ptr, l.clone()));
             }
         }
+    }
+
+    /// Mark a list or JSON value that a call of Ferrum returned (the array or object cm6's call gave back), with every
+    /// array and object inside it: it has no identity (`design.md` section 10, "Identity"), so an identity comparison
+    /// with it is no counterpart, `identity`, even against itself. An array or object an op builds itself, and the
+    /// result of `copy`, `slice` or any other harness op, is not marked.
+    pub fn returned_by_ferrum(&mut self, v: &Value) {
+        let ptr = match v {
+            Value::Array(a) => Rc::as_ptr(a) as *const (),
+            Value::Object(o) => Rc::as_ptr(o) as *const (),
+            _ => return,
+        };
+        if !self.from_ferrum.insert(ptr) {
+            return;
+        }
+        self.from_ferrum_kept.push(v.clone());
+        let inner: Vec<Value> = match v {
+            Value::Array(a) => a.borrow().clone(),
+            Value::Object(o) => o.borrow().entries().iter().map(|(_, x)| x.clone()).collect(),
+            _ => Vec::new(),
+        };
+        for x in &inner {
+            self.returned_by_ferrum(x);
+        }
+    }
+
+    /// Whether the value is an array or object of a list or JSON value Ferrum returned.
+    pub fn is_from_ferrum(&self, v: &Value) -> bool {
+        match v {
+            Value::Array(a) => self.from_ferrum.contains(&(Rc::as_ptr(a) as *const ())),
+            Value::Object(o) => self.from_ferrum.contains(&(Rc::as_ptr(o) as *const ())),
+            _ => false,
+        }
+    }
+
+    /// `a === b` with the rules of `design.md` section 10, "Identity": `strict_equal`, except that an operand that is
+    /// a list or JSON value Ferrum returned, against anything but a primitive, has no counterpart (`None`).
+    pub fn same_value(&self, a: &Value, b: &Value) -> Option<bool> {
+        let primitive = |v: &Value| matches!(v, Value::Undefined | Value::Null | Value::Bool(_) | Value::Num(_) | Value::Str(_));
+        if !primitive(a) && !primitive(b) && (self.is_from_ferrum(a) || self.is_from_ferrum(b)) {
+            return None;
+        }
+        strict_equal(a, b)
     }
 
     /// The value, or no counterpart when it is a marked value of Ferrum.
@@ -511,14 +560,14 @@ fn bool_or_nc(r: Option<bool>, a: &Value, b: &Value, p: &mut Program, op: &str) 
 fn op_same(a: &Value, p: &mut Program) -> Result<Value, Flow> {
     let x = p.ev(&a.field("a"))?;
     let y = p.ev(&a.field("b"))?;
-    Ok(bool_or_nc(strict_equal(&x, &y), &x, &y, p, "same"))
+    Ok(bool_or_nc(p.same_value(&x, &y), &x, &y, p, "same"))
 }
 
 /// `every` of identity comparisons: false when one is false, else no counterpart when one is unknown.
 fn every(pairs: Vec<(Value, Value)>, p: &mut Program, op: &str) -> Value {
     let mut unknown = None;
     for (x, y) in pairs {
-        match strict_equal(&x, &y) {
+        match p.same_value(&x, &y) {
             Some(false) => return Value::Bool(false),
             Some(true) => {}
             None => {
@@ -870,7 +919,7 @@ fn op_count_of(a: &Value, p: &mut Program) -> Result<Value, Flow> {
     let xs = array_of(&of, "countOf")?;
     let mut n = 0;
     for x in &xs {
-        match strict_equal(x, &v) {
+        match p.same_value(x, &v) {
             Some(true) => n += 1,
             Some(false) => {}
             None => return Ok(bool_or_nc(None, x, &v, p, "countOf")),

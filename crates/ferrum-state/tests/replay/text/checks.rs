@@ -209,6 +209,13 @@ fn check(a: &Value, p: &mut Program, op: &'static str, case: fn(&Doc, &Value) ->
             per_doc.set(name.clone(), Value::Num(k + 1.0));
             match case(&d, c)? {
                 Ok((got, want)) => {
+                    // `s.toJSON()` in the `got` of check.slice is the array cm6's call returned
+                    if op == "check.slice"
+                        && let Value::Array(g) = &got
+                        && let Some(json) = g.borrow().first()
+                    {
+                        p.returned_by_ferrum(json);
+                    }
                     if json_stringify(&got)? == json_stringify(&want)? {
                         agree += 1.0;
                     } else if mismatches.len() < 10 {

@@ -442,7 +442,10 @@ pub fn run_one(lang: &Language, fixture: &Value, ctx: &Ctx) -> Run {
             if !unmet.is_empty() {
                 run.note = format!("listed by {unmet:?}, whose condition no call met");
             } else if equal {
-                run.result = if matches!(ours.field("ok"), Value::NoCounterpart(_)) {
+                // no position compared (the whole output, or every leaf of it, is no counterpart; an empty array
+                // or object is a compared position): `none`, with the entries it has, and not altered by the
+                // control run (`design.md` section 10, the first case of `none`)
+                run.result = if c.paths.is_empty() {
                     "none"
                 } else if c.skipped == 0 && run.left_out.is_empty() {
                     "equal"

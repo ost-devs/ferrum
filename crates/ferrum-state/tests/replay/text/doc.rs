@@ -72,7 +72,10 @@ fn depth(d: &Doc) -> R<f64> {
 fn desc(a: &Value, p: &mut Program) -> R<Value> {
     let d = doc(a, p, "text.desc")?;
     let mut o = Object::new();
-    o.set("json".into(), jstrs(&ferrum(None, || d.t.to_json())?));
+    // `d.toJSON()` is the array cm6's call returned; the record around it is the op's own
+    let json = jstrs(&ferrum(None, || d.t.to_json())?);
+    p.returned_by_ferrum(&json);
+    o.set("json".into(), json);
     o.set("length".into(), d.length()?);
     o.set("lines".into(), Value::Num(ferrum(None, || d.t.lines())? as f64));
     if matches!(arg(p, &a.field("shape"))?, Value::Bool(true)) {
@@ -492,7 +495,12 @@ pub fn register(l: &mut Language) {
     l.op("text.children", API, |a, p| {
         finish(doc(a, p, "text.children").and_then(|d| {
             Ok(match d.children()? {
-                Some(cs) => Value::array(cs.into_iter().map(|c| Value::Host(Rc::new(c))).collect()),
+                Some(cs) => {
+                    // the array cm6's getter returns: no identity in Ferrum (`design.md` section 10)
+                    let v = Value::array(cs.into_iter().map(|c| Value::Host(Rc::new(c))).collect());
+                    p.returned_by_ferrum(&v);
+                    v
+                }
                 None => Value::Null,
             })
         }))
@@ -534,7 +542,14 @@ pub fn register(l: &mut Language) {
             Ok(jstr(&ferrum(None, || format!("{}", d.t))?))
         })())
     });
-    l.op("text.toJSON", API, |a, p| finish(doc(a, p, "text.toJSON").and_then(|d| Ok(jstrs(&ferrum(None, || d.t.to_json())?)))));
+    l.op("text.toJSON", API, |a, p| {
+        finish(doc(a, p, "text.toJSON").and_then(|d| {
+            // the array cm6's call returned: no identity in Ferrum (`design.md` section 10)
+            let v = jstrs(&ferrum(None, || d.t.to_json())?);
+            p.returned_by_ferrum(&v);
+            Ok(v)
+        }))
+    });
     l.op("text.stringify", API, |a, p| {
         finish(doc(a, p, "text.stringify").and_then(|d| {
             // `JSON.stringify` of a Text writes its `toJSON`
