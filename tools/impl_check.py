@@ -15,7 +15,9 @@ count. Every subcommand requires `cargo fmt --all -- --check` clean (rustfmt.tom
 `handoff` require every behavior to be named by a check that runs (a fixture compared whole or in part, a ported
 case, a `// covers:`), and accept, printing each: a behavior a row of class `form` names, and a behavior whose every
 fixture is `none` for input the signatures exclude (a left-out entry of reason `type` in each, and no reason but
-`type`, `flow` and `error`); `code` also lets pass a behavior with a fixture still `pending`. A cm6 test file belongs
+`type`, `flow` and `error`); `code` also lets pass a behavior with a fixture still `pending`. `checks` requires,
+before any code, every behavior whose every fixture a row of raw/decisions.jsonl lists to be named by a ported case or
+a `// covers:`, or by a row of class `form`: none of its fixtures will be compared whole. A cm6 test file belongs
 to the unit whose row of the "Units" table names it: the unit whose code its cases need last. `<unit>` is the name in the "Units" table of docs/parity/<crate>/plan.md (`text`, `change`, ...), from which
 the tool reads each unit's cm6 files (its modules `src/<file>.rs`), chunks and cm6 test files.
 
@@ -644,9 +646,27 @@ def checks(c, crate, args):
     fmt(c)
     registry(c, crate, u["chunks"], ops)
     mine, found = ported(c, crate, set(u["tests"]), src)
-    covers(c, crate, src)
+    named = covers(c, crate, src)
+    tested = {b for r_ in mine if len(found.get(case_name(r_), [])) == 1 for b in r_["behaviors"]}
+    foreseen(c, crate, u["chunks"], named, tested)
     literals(c, crate, mine, found)
     lang_cases(c, crate, fixtures)
+
+def foreseen(c, crate, chunks, named, tested):
+    """Behaviors of the chunks whose every fixture a row of raw/decisions.jsonl lists: the replayer will compare none
+    of them whole at the code step, so what Ferrum does there needs its written test now (plan "Ported tests and
+    written tests", "Anything else"). Accepted: a behavior a ported case or a `// covers:` names, or a row of class
+    `form` names. A fixture compared in part despite its row makes the test redundant, never wrong."""
+    dec = rows(spec(crate, "raw", "decisions.jsonl"))
+    listed = {f for d in dec for f in d["fixtures"]}
+    form = {b for d in dec if d["class"] == "form" for b in d["behaviors"]}
+    fx = collections.defaultdict(list)
+    for ch in chunks:
+        for f in rows(spec(crate, "fixtures", ch + ".jsonl")):
+            for b in f["behaviors"]: fx[b].append(f"{ch}:{f['id']}")
+    bare = [f"{b}: {', '.join(fs)}" for b, fs in sorted(fx.items())
+            if all(f in listed for f in fs) and b not in named and b not in tested and b not in form]
+    c.need(not bare, f"behaviors whose every fixture a decision row lists, each named by a ported case, a `// covers:` or a row of class `form`: {len(bare)} are not (a written test of what Ferrum does with those inputs, or a question)", bare)
 
 def code(c, crate, args):
     if len(args) < 3 or args[1] != "--since": sys.exit("code <unit> --since <the unit's checks commit>")
