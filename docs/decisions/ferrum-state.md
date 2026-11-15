@@ -513,3 +513,51 @@ which would make the rows' only consumer outside state an application.
 **Confidence.** High on Q61, Q68, Q69, Q70, Q74 and the names. Medium-high on Q64 and Q67: they are derived from how cm6's callers write, and the crates above are the test. Medium on `ByAddress` as the one type for `ferrum-view`'s facets.
 
 **Reopens.** Q64: ported code of `ferrum-view` that must read an effect's value without its type. Q63: `ferrum-view`'s specification showing function-valued facets written often enough that the constructor hides the code. Q65: a ported function found to depend on cm6's override through a base reference. E21 or E22 refuted.
+
+
+## 2026-11-15 · Q75 to Q78: what the replayer leaves out and how each omission is checked by a run
+
+*Decided by the consultant, from the questions step R raised (the replayer's core, commit 1067308). Binding text: `docs/parity/ferrum-state/design.md` §10 ("Identity", "No counterpart", "What a row of `raw/decisions.jsonl` lists", "A value a callback returns"); `docs/parity/ferrum-state/raw/decisions.jsonl` (47 rows: three new, `state.cm6.032.d2`, `state.cm6.034.d2`, `state.cm6.073.d2`; nine changed); `docs/parity/ferrum-state/raw/replay.jsonl` (104 rows: `value.set` of chunk `rangeset`); `docs/parity/ferrum-state/plan.md` (step R, "Its own tests", "Written tests", "Hand-off"); `tools/impl_check.py` (`handoff`). Ledger: E23.*
+
+**What was asked.** The core of the replayer exists and passes its check. Its author reported four places where the rules I wrote did not say what to do: fixtures taken out whole by a decision row whatever the row's class (Q75), nine fixtures in which cm6 never returned (Q76), a comparison of identity that has no name in the report (Q77), and six choices the core made where the rules were silent (Q78). None changes what Ferrum does for the person editing. All of them change what the proof counts: a fixture wrongly left out is evidence lost without a failing test, which is the kind of error I weigh most.
+
+**What I read and ran.** The 28 fixtures of Q75 and the nine of Q76, one by one, with the behavior each names and the other fixtures of that behavior; `driver.rs` and `lang/eval.rs` of the core, whole where they handle a value with no counterpart; cm6's `ChangeSet.filter` (`mirrors/cm6/state/src/change.ts:269-292`). After the changes: `python3 tools/spec_check.py ferrum-state` and `python3 tools/impl_check.py ferrum-state core`.
+
+**Q75. What a row's list of fixtures means.** A row's `fixtures` are what the row leaves out, for every class. A row of class `reproduce` listed fixtures only because its text also held an exclusion by type. Reading the 28 showed three defects of mine in those lists, all from lists written by reading and not by a run:
+- *Twelve were excluded by type, which the replayer finds by itself.* A lone surrogate (`text:F0642`, `F0643`), malformed change specs (five of chunk `change`), an extender returning `changes` (`state:F0746` to `F0748`), a value that is no object in a range set (`rangeset:F7102`, `F7103`). Their lists were also incomplete: `state:F2079` to `F2082` do what `F0746` does and no row named them. These lists are removed; the replayer reports the reason `type` with the value, which I read at approval. Two more (`rangeset:F7104`, `F7105`) are left out by an op already given `none`.
+- *One row mixed a condition with two fixtures that do not meet it* (`state.cm6.073.d1`): the replayer would have failed on them at U2. They are now `state.cm6.073.d2`.
+- *One listed fixture is reproduced by Ferrum* (`facet:F0156`: two different values under a key with no `combine` are a conflict in cm6 and in Ferrum). It is compared.
+- Two rows said "reproduce" for a behavior that Ferrum's types exclude entirely (`transactionExtender.B4`, `changeFilter.B11`): the hand-off would have asked for a check that cannot exist. Each has a row of class `form` now.
+
+The rule that follows: a row lists a fixture only where the replayer cannot find the omission from the signatures or from `raw/replay.jsonl`. What stays listed without a condition: 22 fixtures (deviations whose result differs for the whole fixture, and the recorded timeouts). And those lists are now checked as the conditioned ones are: a listed fixture is run, and the replayer fails if its output equals the recorded one. A hand-written list can no longer hide a fixture Ferrum reproduces.
+
+**Q76. Recorded timeouts.** A fixture whose output is a timeout is never run (the replayer has no time limit) and must be listed by a row; an unlisted one fails the run. `change:F6025` joins `state.cm6.156.d1` (Ferrum panics there; its written test covers it). The six of chunk `state` are a change filter returning an array of odd length: cm6's loop reads past the end of the array and never ends. An array of pairs cannot have odd length in Ferrum, so there is no behavior to decide; `state.cm6.032.d2` lists them. I checked that an even-length array, sorted or not, always ends in cm6 (the loop reaches `i == ranges.length` exactly), so Ferrum inherits no hang here.
+
+**Q77.** The reason is `identity`, as the core wrote it. One rule is widened: a primitive against anything that is not a primitive is false, since a value of Ferrum stands for an object of cm6. What remains without counterpart is a value of Ferrum against a reference the program built (cm6 may have returned the caller's own object where Ferrum copies, `state.cm6.229.d1`) and types outside the table.
+
+**Q78. The core's six choices.**
+- (a) a `try` or `capture` around a call that was not made is no counterpart: **kept**. Whether cm6 threw there is unknown, and guessing either way could report a match that is none.
+- (b) recorded uncaught error, with a call not made: **kept, and made visible**. The fixture is `part` when Ferrum ends in the recorded error and `none` otherwise, with an entry `error`. The rule as I first wrote it ("the throwing call is no counterpart") needs to know which call threw on cm6, which the replayer cannot know; cm6's trace does. So each `error` entry is confirmed against that trace, by me until the first exists and by the tool after.
+- (c) `if`, `all`, `map` on a value with no counterpart stop the fixture: **kept**, with an entry `flow`.
+- (d) anything left out makes a fixture `part`: **kept**. `equal` means every call was made and every position compared.
+- (e) an op given `none` did not evaluate its arguments: **changed**. It evaluates them as cm6's interpreter does. Otherwise an argument that throws or advances a cursor is skipped, and Ferrum's trace loses lines cm6's has, so the tool that locates a failure would point at the wrong place. `skip` stopping the fixture when reached is kept.
+- (f) the `allow(dead_code)` on the test target: **kept until U4's checks**, removed there, checked at hand-off.
+
+**Raised by me, not asked.**
+1. *A call that was not made may have changed a value.* A builder that did not receive a range, an iterator that did not advance: later results from it would differ from cm6's and fail for no fault of the code. Such a value is no counterpart from then on. Chunk `text` meets it with iterators (a skip ending inside a character).
+2. *A callback can return what the signature cannot hold*, and the replayer only learns it while Ferrum is running. The call is then left out by type.
+3. *Nothing tested the core's handling of "no counterpart"*: the 48 language cases come from cm6, which has no such value. Literal tests of each rule are now part of the core.
+4. `value.set` of chunk `rangeset` changes a range value after it was handed over and had no row; it is `skip`.
+
+**Alternatives and why each lost.**
+- *Keep every list as it was and only state the rule.* The lists were incomplete and one was wrong; nothing would have shown it.
+- *Give the replayer the evaluation at which cm6 threw, for every error fixture, in a file.* Exact, but a file and a tool for a case no fixture has shown yet. Taken up if the `error` entries turn out many or the confirmation by trace costs.
+- *Leave an op given `none` as a shortcut.* Fewer lines to write per chunk; it breaks the trace comparison that every failure is located with.
+- *Run the timeout fixtures under a time limit in a child process*, as cm6's replay does. Ferrum's result there is a panic covered by a written test, or input its types exclude; a process boundary would buy nothing.
+- *Treat a call not made as known not to throw for ops that only inspect JavaScript objects.* True for some `none` ops and not for others (`state.facetDuck`); decided by counts at the pilot review if (a) is seen to cost fixtures.
+
+**What a worker must change.** The `test-writer` of step R is resumed before U1's checks (`plan.md`, step R, the six changes). The card of U1's checks takes the new rules of `design.md` §10.
+
+**Confidence.** High on Q75 and Q76 (each fixture read, the checks rerun) and on (d), (e), (f). Medium-high on (a), (b), (c): they are the cautious choice, and their cost in fixtures is unknown until chunk `text` runs; the report now counts it by reason. Medium-high on the rule for values a call not made would have changed: reasoned from two cases, none run yet.
+
+**Reopens.** A listed fixture that equals its record at a unit's code step (the row is then wrong); `error` or `flow` entries numerous enough at the pilot review that a behavior is left with no compared fixture; an `error` entry whose throw on cm6 is at a call Ferrum made.

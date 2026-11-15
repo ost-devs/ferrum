@@ -65,6 +65,7 @@
 {"chunk": "rangeset", "op": "set.update", "how": "run", "parts": [], "note": ""}
 {"chunk": "rangeset", "op": "spans", "how": "part", "parts": ["the variable `kept` of a `spansKeep` iterator"], "note": "as for `compare`"}
 {"chunk": "rangeset", "op": "value.fields", "how": "part", "parts": ["ownKeys"], "note": "which fields are own properties of a JavaScript object"}
+{"chunk": "rangeset", "op": "value.set", "how": "skip", "parts": [], "note": "writes a field of a range value after it was given to a set (state.cm6.229.d1)"}
 {"chunk": "facet", "op": "allSame", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
 {"chunk": "facet", "op": "compartment.effectValue", "how": "none", "parts": [], "note": "internals of the reconfiguration effect"}
 {"chunk": "facet", "op": "compartment.reconfigureType", "how": "none", "parts": [], "note": "internals of the reconfiguration effect"}

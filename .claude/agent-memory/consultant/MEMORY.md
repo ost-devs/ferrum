@@ -54,6 +54,9 @@
 - A property the Rust type cannot hold (member order of a JSON object): do not rebuild it with a dependency feature that only tests turn on; promise nothing, and make the proof compare what the type does hold. Same entry
 - A tool's "accepted, and listed for the consultant" is a hole when the list can contain what the plan says needs a check: make the exemption a fact of the row (its class). Same entry
 - Where a rule of mine (D14) leaves Ferrum below cm6 for the developer, that is an improvement row too, with the point at which counts decide it.
+- A hand-written list of what a proof leaves out (fixtures under a row): list only what the tool cannot find itself, and make the run check the list (a listed case that equals its record fails). Reading the listed cases one by one found a third of them redundant, some siblings missing and one reproduced. `docs/decisions/ferrum-state.md`, "Q75 to Q78"
+- Rules a proof tool follows only on values the reference never produces ("no counterpart") have no run-made reference: require literal tests of each rule, and a named reason per rule in the report so the cautious choices can be counted before they are loosened. Same entry
+- A shortcut in an evaluator (not evaluating the arguments of an op whose result is discarded) is judged by what reads its trace, not by the result alone. Same entry
 
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.

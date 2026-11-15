@@ -607,6 +607,9 @@ def handoff(c, crate, args):
     no_todo(c, crate, None, "src/")
     allow = [p for p in ("lib.rs",) if os.path.exists(crate_dir(crate, "src", p)) and re.search(r"#!\[allow", read(crate_dir(crate, "src", p)))]
     c.need(not allow, "no crate-level allow in src/lib.rs")
+    tests = crate_dir(crate, "tests")
+    allow = [f for f in sorted(os.listdir(tests)) if f.endswith(".rs") and re.search(r"#!\[allow", read(os.path.join(tests, f)))] if os.path.isdir(tests) else []
+    c.need(not allow, "no target-level allow in a test target of tests/", allow)
     verdicts, r, fixtures, ops = replay(crate)
     report_counts(c, fixtures)
     chunks = [ch for u in us.values() for ch in u["chunks"]]
