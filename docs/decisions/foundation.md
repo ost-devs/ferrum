@@ -353,3 +353,17 @@ mechanical conversion settles anyway) or misses cases implementers hit.
 **Confidence.** High on the reading of the intent (it is the maintainer's statement). Medium-high on the timing rule: it is reasoned, and no delta has run. The ledger's E10 says what will confirm it.
 
 **Reopens.** The first improvement delta costing more than making the improvement during the port would have (measured in the ledger); an improvement that turns out to need an API change after its crate's design was implemented; the maintainer finding the register does not show them what was passed over.
+
+## 2026-11-15 · D12: a `null` cm6 treats as absent is the absent value
+
+*Decided by the consultant (Q91 of `ferrum-state`; the crate's part: `docs/decisions/ferrum-state.md`, "Q86 to Q91"). Binding text: `.claude/rules/decisions.md` D12.*
+
+**Question.** D12 excludes by type "`null` for an object". cm6 sometimes gives `null` the meaning of "absent" on purpose: `EditorSelection.cursor` tests `bidiLevel == null` (`mirrors/cm6/state/src/selection.ts:203`) and `SelectionRange.bidiLevel` returns `null` for "no level" (`selection.ts:66`); `ChangeSet.of` tests `!insert` (`mirrors/cm6/state/src/change.ts:335`). Is such a `null` excluded?
+
+**Decision.** No. A `null` that cm6's code treats exactly as an absent value (`x == null`, or a falsy test whose result is the absent one) is the absent value: `None` of an `Option` parameter (D14). The replayer gives it to Ferrum as `None` and cites cm6's line. A `null` cm6 reads as an object, or compares with `===`, stays excluded.
+
+**Why.** D12's reason is that untyped input gives engine artifacts no caller relies on. A `null` cm6 tests on purpose is not an artifact, and cm6's own getters return it, so a caller passes it back without thinking of it as a different value. In Rust the caller writes `None`. The public API does not change; only which recorded cases are compared does.
+
+**Lost.** Keeping them excluded: cases compared nowhere, and the same question at every `null` option of `@codemirror/view`.
+
+**Confidence.** High for `ferrum-state`. **Reopens:** an argument cm6 tests with `== null` in one place and reads as an object in another.

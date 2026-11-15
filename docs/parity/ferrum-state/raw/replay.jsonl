@@ -12,18 +12,20 @@
 {"chunk": "text", "op": "text.className", "how": "run", "parts": [], "note": "\"TextLeaf\" when `children()` is `None`, else \"TextNode\""}
 {"chunk": "text", "op": "text.sharedChildren", "how": "test", "parts": [], "note": "identity of `Text` nodes (design.md §10 identity table)"}
 {"chunk": "change", "op": "allSame", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
-{"chunk": "change", "op": "desc.composeDesc", "how": "part", "parts": ["identity"], "note": "which operand object cm6 returned; a `ChangeDesc` or `ChangeSet` has no identity in Ferrum"}
+{"chunk": "change", "op": "desc.composeDesc", "how": "part", "parts": ["identity", "isSet", "json"], "note": "which operand object cm6 returned, and so whether the result is a `ChangeSet` (`isSet`, and `json`, which cm6 writes only for a set and the op marks as may be absent); Ferrum returns the declared `ChangeDesc` (design.md §3, §10; Q87)"}
 {"chunk": "change", "op": "desc.fromJSON", "how": "part", "parts": ["keepsInputArray"], "note": "the reader copies its input (state.cm6.229.d1)"}
 {"chunk": "change", "op": "desc.invertedDesc", "how": "part", "parts": ["sameTwice"], "note": "object identity of a `ChangeDesc`"}
 {"chunk": "change", "op": "desc.iterChangedRanges", "how": "part", "parts": ["x"], "note": "the fifth argument cm6 passes beyond the declared four (D12)"}
 {"chunk": "change", "op": "desc.iterGaps", "how": "run", "parts": [], "note": ""}
-{"chunk": "change", "op": "desc.mapDesc", "how": "part", "parts": ["identity"], "note": "which operand object cm6 returned; a `ChangeDesc` or `ChangeSet` has no identity in Ferrum"}
+{"chunk": "change", "op": "desc.mapDesc", "how": "part", "parts": ["identity", "isSet", "json"], "note": "which operand object cm6 returned, and so whether the result is a `ChangeSet` (`isSet`, and `json`, which cm6 writes only for a set and the op marks as may be absent); Ferrum returns the declared `ChangeDesc` (design.md §3, §10; Q87)"}
 {"chunk": "change", "op": "desc.toJSON", "how": "part", "parts": ["sameAsInputArray", "sameTwice"], "note": "identity of JSON arrays (state.cm6.229.d1)"}
 {"chunk": "change", "op": "desc.toString", "how": "run", "parts": [], "note": "the `Debug` implementation of `ChangeDesc` (D15)"}
+{"chunk": "change", "op": "mapmode.values", "how": "none", "parts": [], "note": "the numbers and the reverse mapping of a TypeScript enum object; `MapMode` is a Rust enum, and the op's names and numbers are the replayer's own table (design.md OBVIOUS-1; state.cm6.161.d1; Q86)"}
 {"chunk": "change", "op": "range.extend", "how": "part", "parts": ["src"], "note": "which input range object a result is; `SelectionRange` is `Copy`"}
 {"chunk": "change", "op": "range.fromJSON", "how": "part", "parts": ["src"], "note": "which input range object a result is; `SelectionRange` is `Copy`"}
 {"chunk": "change", "op": "range.make", "how": "part", "parts": ["src"], "note": "which input range object a result is; `SelectionRange` is `Copy`"}
 {"chunk": "change", "op": "range.map", "how": "part", "parts": ["src", "same"], "note": "object identity of a `SelectionRange`"}
+{"chunk": "change", "op": "range.toJSON", "how": "part", "parts": ["stringified"], "note": "`JSON.stringify` of a JSON object Ferrum returns reads its key order, which Ferrum does not promise; `json` is compared member by member (design.md §3, §10 Key order; Q89)"}
 {"chunk": "change", "op": "same", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
 {"chunk": "change", "op": "sameItems", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
 {"chunk": "change", "op": "sel.addRange", "how": "part", "parts": ["src"], "note": "which input range object a result is; `SelectionRange` is `Copy`"}
@@ -33,12 +35,13 @@
 {"chunk": "change", "op": "sel.make", "how": "part", "parts": ["src", "sameArray"], "note": "object identity of ranges and of the array given to `create`"}
 {"chunk": "change", "op": "sel.map", "how": "part", "parts": ["src", "same", "sameArray"], "note": "object identity of a selection, its ranges and its array"}
 {"chunk": "change", "op": "sel.replaceRange", "how": "part", "parts": ["src", "same", "sameArray"], "note": "object identity of a selection, its ranges and its array"}
+{"chunk": "change", "op": "sel.toJSON", "how": "part", "parts": ["stringified"], "note": "`JSON.stringify` of a JSON object Ferrum returns reads its key order, which Ferrum does not promise; `json` is compared member by member (design.md §3, §10 Key order; Q89)"}
 {"chunk": "change", "op": "set.apply", "how": "test", "parts": [], "note": "`same` is identity of `Text` (design.md §10 identity table)"}
 {"chunk": "change", "op": "set.compose", "how": "part", "parts": ["identity"], "note": "which operand object cm6 returned; a `ChangeDesc` or `ChangeSet` has no identity in Ferrum"}
 {"chunk": "change", "op": "set.desc", "how": "part", "parts": ["sameTwice", "sharesSections"], "note": "object identity of a `ChangeDesc` and of the sections array"}
 {"chunk": "change", "op": "set.iterChanges", "how": "run", "parts": [], "note": ""}
 {"chunk": "change", "op": "set.map", "how": "part", "parts": ["identity"], "note": "which operand object cm6 returned; a `ChangeDesc` or `ChangeSet` has no identity in Ferrum"}
-{"chunk": "change", "op": "set.mapDesc", "how": "part", "parts": ["identity"], "note": "which operand object cm6 returned; a `ChangeDesc` or `ChangeSet` has no identity in Ferrum"}
+{"chunk": "change", "op": "set.mapDesc", "how": "part", "parts": ["identity", "isSet", "json"], "note": "which operand object cm6 returned, and so whether the result is a `ChangeSet` (`isSet`, and `json`, which cm6 writes only for a set and the op marks as may be absent); Ferrum returns the declared `ChangeDesc` (design.md §3, §10; Q87)"}
 {"chunk": "change", "op": "set.ofIdentity", "how": "part", "parts": ["same"], "note": "object identity of a `ChangeSet`"}
 {"chunk": "rangeset", "op": "allSame", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
 {"chunk": "rangeset", "op": "chunk.countReads", "how": "test", "parts": ["the numbers in `hits`: compared as zero or not zero (a label present or absent)"], "note": "a `__test` mark on a chunk that records whether a cursor read one of its values; how many times cm6's code reads an array index is not a behavior"}
