@@ -3,7 +3,7 @@
 
     python3 tools/impl_check.py <crate> skeleton
     python3 tools/impl_check.py <crate> core
-    python3 tools/impl_check.py <crate> checks <unit>
+    python3 tools/impl_check.py <crate> checks <unit> [--chunk <chunk>]   (--chunk: one step of a unit checked in two)
     python3 tools/impl_check.py <crate> code <unit> --since <the unit's checks commit>
     python3 tools/impl_check.py <crate> handoff --since <unit>=<its checks commit>,...
     (--root <dir>: another tree than the repository, for trying the tool on a copy)
@@ -602,11 +602,17 @@ def core(c, crate, args):
     c.need(bool(lang_files) and not uses, f"the language module ({len(lang_files)} file(s) at tests/replay/lang) holds no `ferrum_state`", uses)
 
 def checks(c, crate, args):
-    if not args: sys.exit("checks <unit>")
+    if not args or (len(args) > 1 and (args[1] != "--chunk" or len(args) != 3)): sys.exit("checks <unit> [--chunk <chunk>]")
     _, u = unit_of(c, crate, args[0])
+    if len(args) == 3:
+        # one test-writer step of a unit whose checks are written in two (the crate's plan): the chunk named, and the
+        # cm6 test file of the same name only; the unit's written tests and its other files belong to the last step
+        if args[2] not in u["chunks"]: sys.exit(f"no chunk {args[2]} in unit {args[0]}: {', '.join(u['chunks'])}")
+        u = dict(u, chunks=[args[2]], tests=[t for t in u["tests"] if stem(t) == args[2]])
+        c.say(f"only chunk {args[2]}, cm6 tests {u['tests']}, no written tests of the unit")
     cargo(c, "cargo test --no-run", ["test", "--workspace", "--no-run"])
     src = test_sources(crate)
-    targets = [f"cm6_{stem(t)}" for t in u["tests"]] + [f"written_{args[0]}"]
+    targets = [f"cm6_{stem(t)}" for t in u["tests"]] + ([f"written_{args[0]}"] if len(args) == 1 else [])
     missing = [t for t in targets if t + ".rs" not in src]
     c.need(not missing, f"test files of the unit: {len(targets) - len(missing)} of {len(targets)}", [f"crates/{crate}/tests/{t}.rs" for t in missing])
     passing, accepted, ignored, total = [], [], [], 0
