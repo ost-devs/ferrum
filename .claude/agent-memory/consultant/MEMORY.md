@@ -67,6 +67,9 @@
 - A JS `1e9` meaning "to the end" that no output shows is no bound; reproducing a hang is never parity (D11 a). Run the hang and a patched cm6 for the reference before deciding. `docs/decisions/ferrum-state.md` "Q92 and Q93"
 - A check that fires at the code step on something the data fix before code (rows list fixtures, fixtures name behaviors) belongs at the checks step as a tool check; try it on the real miss and a seeded one. Same entry
 
+- An implementer's list of "cases with no row" is triaged by me before a spec-auditor runs: re-derive reachability from every writer of the data (Q94: the `change.ts:388` case was unreachable). A flag on a row is a key on that row, aimed at whoever must read it (`added` → conformance). `docs/decisions/ferrum-state.md` Q94.
+- A card of a round after a unit's code must not ask a pre-code check (`checks <unit>`); my own Q92/Q93 text did. Check each check I name against the state it will run in. Q94.
+
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.
 - They confirm drafts readily when the draft states costs; what they push back on is a value judgment of mine presented as a technical one.
