@@ -15,7 +15,10 @@ count. Every subcommand requires `cargo fmt --all -- --check` clean (rustfmt.tom
 `handoff` require every behavior to be named by a check that runs (a fixture compared whole or in part, a ported
 case, a `// covers:`), and accept, printing each: a behavior a row of class `form` names, and a behavior whose every
 fixture is `none` for input the signatures exclude (a left-out entry of reason `type` in each, and no reason but
-`type`, `flow` and `error`); `code` also lets pass a behavior with a fixture still `pending`. `checks` requires,
+`type`, `flow` and `error`); `code` also lets pass a behavior with a fixture still `pending`. `code` also runs the
+checks of `checks` that do not ask for the skeleton (the ops registered for the chunks of the units done, the literals
+of their ported cases), so it is the one check of a round on a unit's checks once its code exists; `checks` holds
+only before the unit's code. `checks` requires,
 before any code, every behavior whose every fixture a row of raw/decisions.jsonl lists to be named by a ported case or
 a `// covers:`, or by a row of class `form`: none of its fixtures will be compared whole. A cm6 test file belongs
 to the unit whose row of the "Units" table names it: the unit whose code its cases need last. `<unit>` is the name in the "Units" table of docs/parity/<crate>/plan.md (`text`, `change`, ...), from which
@@ -711,6 +714,9 @@ def code(c, crate, args):
     tested = {b for r_ in cases if len(found.get(case_name(r_), [])) == 1 for b in r_["behaviors"]}
     bare = unnamed(c, crate, [ch for n in done for ch in us[n]["chunks"]], fixtures, covers(c, crate, src), tested)
     c.need(not bare, f"every behavior of the units done is named by a check that runs, or has every fixture excluded by type or pending: {len(bare)} are not (a written test with `// covers:`, or a question)", bare)
+    # the checks of `checks` that do not ask for the skeleton, for a round on the checks after the code exists
+    registry(c, crate, [ch for n in done for ch in us[n]["chunks"]], ops)
+    literals(c, crate, cases, found)
     fmt(c)
 
 def handoff(c, crate, args):
