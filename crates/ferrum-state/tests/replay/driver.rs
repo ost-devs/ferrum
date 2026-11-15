@@ -207,10 +207,17 @@ fn compare(ours: &Value, rec: &Value, path: &mut Vec<Seg>, c: &mut Compared) -> 
         }
         (Value::Object(a), Value::Object(b)) => {
             let (a, b) = (a.borrow(), b.borrow());
-            if a.len() != b.len() {
+            // a member marked *may be absent* that the recorded object lacks is no member of ours (Q87)
+            let keys: Vec<&str> = a
+                .entries()
+                .iter()
+                .filter(|(k, x)| !(matches!(x, Value::NoCounterpart(l) if l.may_be_absent) && !b.has(k)))
+                .map(|(k, _)| k.as_str())
+                .collect();
+            if keys.len() != b.len() {
                 return false;
             }
-            if !a.unordered && !a.keys().eq(b.keys()) {
+            if !a.unordered && !keys.iter().copied().eq(b.keys()) {
                 return false;
             }
             if b.is_empty() {
@@ -326,6 +333,7 @@ fn row_entries(rows: &[String]) -> Vec<Rc<LeftOut>> {
                 what: What::Part("the fixture".into()),
                 value: Value::Null,
                 not_called: false,
+                may_be_absent: false,
             })
         })
         .collect()
@@ -473,6 +481,7 @@ pub fn run_one(lang: &Language, fixture: &Value, ctx: &Ctx) -> Run {
                     what: What::Part("the uncaught error".into()),
                     value: Value::Null,
                     not_called: false,
+                    may_be_absent: false,
                 }));
             } else {
                 run.note = format!("ours {} recorded {}", to_json(&ours), to_json(&recorded));

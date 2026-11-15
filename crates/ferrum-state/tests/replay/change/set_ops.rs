@@ -7,12 +7,12 @@ use std::rc::Rc;
 
 use ferrum_state::{__test, ChangeSet, ChangeSpec, Text};
 
-use super::desc_ops::MAP_MODES;
 use super::form::Form;
 use super::shared::{R, Stop, desc_of, ferrum, invert, iter_changes, part, pos_arg, set_of};
 use super::values::{
-    Ch, Kind, back, bad_set_json, base, ctx, desc_out, desc_spec, json_arg, json_error, lengths, lines_arg, mapped_b,
-    opt_bool, record, set_json_out, set_json_to_bytes, set_of_spec, set_spec, text_of, text_out, to_serde,
+    Ch, Kind, back, bad_set_json, base, ctx, desc_out, desc_out_declared, desc_spec, json_arg, json_error, lengths,
+    lines_arg, mapped_b, opt_bool, record, set_json_out, set_json_to_bytes, set_of_spec, set_spec, text_of, text_out,
+    to_serde,
 };
 use crate::replay::lang::eval::{Flow, Language, Program};
 use crate::replay::lang::value::{Value, truthy};
@@ -179,7 +179,7 @@ fn map(a: &Value, p: &mut Program, op: &'static str) -> R<Value> {
         let b = mapped_b(&d, &*y.b()?, VecDeque::from(x.inserts()?))?;
         Ch::desc(d, y.b()?, Rc::new(b))
     };
-    let mut o = desc_out(p, &r)?;
+    let mut o = if op == "set.map" { desc_out(p, &r)? } else { desc_out_declared(p, op, &r)? };
     o.push(("identity".into(), part(p, op, "identity")));
     Ok(record(o))
 }
@@ -214,8 +214,9 @@ fn desc_op(a: &Value, p: &mut Program) -> R<Value> {
     Ok(record(o))
 }
 
-/// `JSON.stringify` of JSON Ferrum gave, its positions converted: what `serde_json::to_string` writes of it.
-pub fn stringified(v: &Value) -> Result<Value, Flow> {
+/// `JSON.stringify(s)` of a set: its JSON form, positions converted, as `serde_json::to_string` writes it (an array
+/// of numbers and of arrays of a number and strings: no object, so no member order is read).
+fn stringified(v: &Value) -> Result<Value, Flow> {
     match to_serde(v) {
         Some(j) => Ok(Value::str(&j.to_string())),
         None => Err(Flow::Fail("JSON Ferrum gave holds what JSON cannot".into())),
@@ -256,14 +257,10 @@ fn empty(a: &Value, p: &mut Program) -> R<Value> {
     Ok(record(set_out(p, &s)?))
 }
 
-/// The members of the TypeScript enum `MapMode` with their values, and its reverse mapping (`MapMode[i]`): the
-/// variants of Ferrum's `MapMode` in cm6's order, as the table `MAP_MODES` gives them to `desc.mapPos`.
-fn map_mode_values(_a: &Value, _p: &mut Program) -> R<Value> {
-    let mut o: Vec<(String, Value)> =
-        MAP_MODES.iter().enumerate().map(|(i, (_, name))| (name.to_string(), Value::Num(i as f64))).collect();
-    let names = MAP_MODES.iter().map(|(m, _)| Value::str(&format!("{m:?}"))).collect();
-    o.push(("names".into(), Value::array(names)));
-    Ok(record(o))
+/// The numbers and the reverse mapping of the TypeScript enum `MapMode`: `raw/replay.jsonl` gives the op `none`
+/// (`MapMode` is a Rust enum; `state.cm6.161.d1`, Q86).
+fn map_mode_values(_a: &Value, p: &mut Program) -> R<Value> {
+    Ok(p.op_none("mapmode.values"))
 }
 
 pub fn register(l: &mut Language) {

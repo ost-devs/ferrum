@@ -2,7 +2,8 @@
 //! fixture can show. The deviations of the unit whose fixtures the replayer leaves out and that a written test covers
 //! (`state.cm6.073.d2`, `state.cm6.156.d1`), and the readers' `Err` for numbers cm6 accepts (`state.cm6.160.d1`); the
 //! implicit throw of the unit that panics with Ferrum's message (`mirrors/cm6/state/src/selection.ts:192`,
-//! `EditorSelection::replace_range`, `design.md` section 5); a position of a document that is not on a `char` boundary
+//! `EditorSelection::replace_range`, `design.md` section 5), and the panic of `EditorSelection::create` with a main
+//! index beyond the ranges (`state.cm6.073.d1`, Q90); a position of a document that is not on a `char` boundary
 //! panics in the functions of the unit that take a position of a text they are given (D1); the `from_json` readers
 //! return `Err` with cm6's message, one test per message of `raw/throws.jsonl` (D13); the unit's public value types are
 //! `Send + Sync` (D6).
@@ -168,6 +169,22 @@ fn replace_range_beyond_the_ranges_panics() {
     assert_eq!(message, "Range index 3 is beyond the 2 ranges of the selection");
     let appended = sel.replace_range(nine, 2);
     assert_eq!(shape(&appended), (vec![(1, 1), (5, 5), (9, 9)], 1));
+}
+
+/// `state.cm6.073.d1`, the inputs of `change:F0522` and `F0540`: a main index at or beyond the number of ranges panics
+/// with the message of `design.md` section 5 (Q90), where cm6 keeps an undefined main range; no range at all panics
+/// first, with cm6's message (`mirrors/cm6/state/src/selection.ts:189`). Neither number is a position.
+// covers: state.cm6.073.d1, state.EditorSelection^create.B2, state.EditorSelection^create.B6
+#[test]
+fn create_with_a_main_index_beyond_the_ranges_panics() {
+    let (one, three) = (EditorSelection::cursor(1, 0, None, None), EditorSelection::cursor(3, 0, None, None));
+    let message = panics(|| drop(EditorSelection::create(&[one, three], 4)));
+    assert_eq!(message, "Main index 4 is beyond the 2 ranges of the selection");
+    let message = panics(|| drop(EditorSelection::create(&[three, one], 2)));
+    assert_eq!(message, "Main index 2 is beyond the 2 ranges of the selection");
+    let message = panics(|| drop(EditorSelection::create(&[], 1)));
+    assert_eq!(message, "A selection needs at least one range");
+    assert_eq!(shape(&EditorSelection::create(&[three, one], 1)), (vec![(1, 1), (3, 3)], 0));
 }
 
 // ---- a position of a document that is not on a char boundary (D1) ---------------------------------------------------

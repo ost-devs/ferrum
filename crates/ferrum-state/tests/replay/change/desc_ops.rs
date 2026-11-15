@@ -10,8 +10,8 @@ use ferrum_state::{ChangeDesc, MapMode, TouchesRange};
 use super::form::Form;
 use super::shared::{R, by_type, ferrum, iter_changed_ranges, known, part, pos_arg};
 use super::values::{
-    Ch, Kind, assoc_arg, back, back_len, bad_desc_json, base, ctx, desc_out, desc_spec, json_arg, json_error, lengths,
-    list_arg, mapped_b, nth, opt_bool, record, sections_out, sections_to_bytes,
+    Ch, Kind, assoc_arg, back, back_len, bad_desc_json, base, ctx, desc_out, desc_out_declared, desc_spec, json_arg,
+    json_error, lengths, list_arg, mapped_b, nth, opt_bool, record, sections_out, sections_to_bytes,
 };
 use crate::replay::lang::eval::Program;
 use crate::replay::lang::value::Value;
@@ -88,7 +88,7 @@ fn compose(a: &Value, p: &mut Program) -> R<Value> {
     let y = desc_spec(p, &c, OP, &a.field("b"), &x.b()?)?;
     let r = ferrum(&x.a, || x.d().compose_desc(y.d()))?;
     let r = Ch::desc(r, x.a.clone(), y.b()?);
-    let mut o = desc_out(p, &r)?;
+    let mut o = desc_out_declared(p, OP, &r)?;
     o.push(("identity".into(), part(p, OP, "identity")));
     let (length, new_length) = lengths(&r)?;
     o.push(("length".into(), length));
@@ -117,7 +117,7 @@ fn map(a: &Value, p: &mut Program) -> R<Value> {
     let y = desc_spec(p, &c, OP, &a.field("b"), &start)?;
     let before = opt_bool(p, OP, "before", &a.field("before"))?.unwrap_or(false);
     let r = map_desc(&x, &y, before)?;
-    let mut o = desc_out(p, &r)?;
+    let mut o = desc_out_declared(p, OP, &r)?;
     o.push(("identity".into(), part(p, OP, "identity")));
     Ok(record(o))
 }

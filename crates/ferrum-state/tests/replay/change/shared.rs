@@ -215,7 +215,8 @@ pub fn change_spec(p: &mut Program, op: &str, arg: &str, spec: &SpecIn, a: &Form
                 _ => return Err(by_type(p, op, arg, whole)),
             };
             let insert = match insert {
-                Insert::Absent | Insert::Value(Value::Undefined) => None,
+                // `null` is the absent insert: cm6 tests `!insert` (`mirrors/cm6/state/src/change.ts:335`; D12, Q91)
+                Insert::Absent | Insert::Value(Value::Undefined) | Insert::Value(Value::Null) => None,
                 Insert::Text(t) => Some(TextSpec::Text(t.clone())),
                 Insert::Value(v) => match string(v) {
                     Some(s) => Some(TextSpec::String(s)),

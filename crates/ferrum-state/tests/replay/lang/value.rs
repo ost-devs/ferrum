@@ -84,6 +84,10 @@ pub struct LeftOut {
     pub value: Value,
     /// Ferrum was not called: whether cm6 threw at this call is not known.
     pub not_called: bool,
+    /// A member of an object that cm6's op writes only for one class of its result, which Ferrum's type cannot be:
+    /// left out of the comparison of members and of key order when the recorded object lacks it (`design.md` section
+    /// 10, Q87).
+    pub may_be_absent: bool,
 }
 
 impl std::fmt::Debug for Value {

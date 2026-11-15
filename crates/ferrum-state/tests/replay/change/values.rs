@@ -310,6 +310,18 @@ pub fn desc_out(p: &mut Program, ch: &Ch) -> R<Vec<(String, Value)>> {
     Ok(o)
 }
 
+/// `descOut(r)` of an op whose result Ferrum's signature declares a `ChangeDesc` where cm6 may hand back a
+/// `ChangeSet` (`desc.composeDesc`, `desc.mapDesc`, `set.mapDesc`; `design.md` section 3, Q87): `sections` compared,
+/// `isSet` no counterpart, and `json`, which cm6 writes only for a set, no counterpart marked *may be absent*, in cm6's
+/// key order (`raw/replay.jsonl`: their parts `isSet` and `json`).
+pub fn desc_out_declared(p: &mut Program, op: &str, ch: &Ch) -> R<Vec<(String, Value)>> {
+    let sections = sections_out(ch, ch.d())?;
+    p.returned_by_ferrum(&sections);
+    let is_set = super::shared::part(p, op, "isSet");
+    let json = p.no_counterpart_may_be_absent("op", op, What::Part("json".into()), Value::Null);
+    Ok(vec![("sections".into(), sections), ("isSet".into(), is_set), ("json".into(), json)])
+}
+
 /// `length` and `newLength` of `ch`.
 pub fn lengths(ch: &Ch) -> R<(Value, Value)> {
     let (l, n) = ferrum(&ch.a, || (ch.d().length(), ch.d().new_length()))?;
@@ -586,7 +598,8 @@ pub fn set_of_spec(
     let spec = change_spec(p, op, "spec", &spec, a)?;
     let length = pos_arg(p, op, "length", len_v, a)?;
     let sep = match sep_v {
-        Value::Undefined => None,
+        // `null` is the absent separator: cm6 reads `lineSep || DefaultSplit` (`change.ts:335`; D12, Q91)
+        Value::Undefined | Value::Null => None,
         v => Some(string(v).ok_or_else(|| by_type(p, op, "lineSep", v))?),
     };
     Ok(Ch::set(set_of(spec, length, sep, a)?, a.clone()))
@@ -668,10 +681,11 @@ pub fn spec_in(p: &mut Program, c: &Shared, op: &str, s: &Value, a: &Rc<Form>) -
 
 // ---- ranges and selections ------------------------------------------------------------------------------------------
 
-/// A bidi level: `Option<u8>` (`state.cm6.074.d1`); `undefined` is absent.
+/// A bidi level: `Option<u8>` (`state.cm6.074.d1`); `undefined` and `null` are absent: cm6 tests `bidiLevel ==
+/// null` in `cursor` and `range` (`mirrors/cm6/state/src/selection.ts:203`, `:209`; D12, Q91).
 fn bidi_arg(p: &mut Program, op: &str, v: &Value) -> R<Option<u8>> {
     match v {
-        Value::Undefined => Ok(None),
+        Value::Undefined | Value::Null => Ok(None),
         Value::Num(n) if n.fract() == 0.0 && (0.0..=255.0).contains(n) => Ok(Some(*n as u8)),
         _ => Err(by_type(p, op, "bidiLevel", v)),
     }

@@ -112,6 +112,14 @@ fn language() -> Language {
         p.returned_by_ferrum(&v);
         Ok(v)
     });
+    l.op("t.absent", api, |_, p| {
+        // a result whose member `j` cm6 writes only for one class of its result
+        let j = p.no_counterpart_may_be_absent("op", "t.absent", What::Part("j".into()), Value::Null);
+        Ok(Value::record([("a", Value::Num(1.0)), ("j", j)]))
+    });
+    l.op("t.engine", api, |_, p| {
+        Err(p.engine_error("t.engine", "Range index 3 is beyond the 2 ranges of the selection"))
+    });
     l.none.insert("t.none".into());
     l.none.insert("t.noneWrong".into());
     l.skip.insert("t.skip".into());
@@ -493,4 +501,52 @@ fn rule_copy_and_slice_of_a_list_ferrum_returned_are_the_program_s() {
         "out":{"copySelf":{"$":"copySelf"},"copySlice":{"$":"copySlice"},"sliceSelf":{"$":"sliceSelf"}}}"#;
     let r = run(input, r#"{"ok":{"copySelf":true,"copySlice":false,"sliceSelf":true}}"#);
     assert_eq!((r.result, r.left_out.len()), ("equal", 0), "{}", r.note);
+}
+
+#[test]
+fn rule_a_member_that_may_be_absent_is_left_out_when_the_recorded_object_lacks_it() {
+    let input = r#"{"op":"t.absent"}"#;
+    // absent from the recorded object: left out of the members and of the key order
+    let r = run(input, r#"{"ok":{"a":1}}"#);
+    assert_eq!((r.result, entries(&r)), ("part", vec![e("op", "t.absent")]));
+    // present: in its place, and not compared
+    assert_eq!(run(input, r#"{"ok":{"a":1,"j":[2]}}"#).result, "part");
+    assert_eq!(run(input, r#"{"ok":{"j":[2],"a":1}}"#).result, "mismatch");
+    // every other member is compared as before
+    assert_eq!(run(input, r#"{"ok":{"a":2}}"#).result, "mismatch");
+    assert_eq!(run(input, r#"{"ok":{"a":1,"k":1}}"#).result, "mismatch");
+    assert_eq!(run(input, r#"{"ok":{}}"#).result, "mismatch");
+}
+
+#[test]
+fn rule_an_engine_error_compares_its_name_and_leaves_its_message_out() {
+    let r = run(
+        r#"{"op":"t.engine"}"#,
+        r#"{"error":{"name":"TypeError","message":"Cannot read properties of undefined (reading 'empty')"}}"#,
+    );
+    assert_eq!((r.result, entries(&r)), ("part", vec![e("engine", "t.engine")]));
+    assert_eq!(run(r#"{"op":"t.engine"}"#, r#"{"error":{"name":"RangeError","message":"m"}}"#).result, "mismatch");
+    assert_eq!(run(r#"{"op":"t.engine"}"#, r#"{"ok":1}"#).result, "mismatch");
+    // a capture holds the message as no counterpart
+    let cap = r#"{"steps":[{"op":"capture","do":{"op":"t.engine"},"as":"c"}],"out":{"c":{"$":"c"}}}"#;
+    let r = run(cap, r#"{"ok":{"c":{"error":{"name":"TypeError","message":"m"}}}}"#);
+    assert_eq!((r.result, entries(&r)), ("part", vec![e("engine", "t.engine")]));
+    assert_eq!(run(cap, r#"{"ok":{"c":{"error":{"name":"Error","message":"m"}}}}"#).result, "mismatch");
+    // a try in each mode that writes the message
+    for (mode, rec) in [
+        ("okOrError", r#"{"name":"TypeError","message":"m"}"#),
+        ("okOrMessage", r#""m""#),
+        ("noErrorOrMessage", r#"{"error":"m"}"#),
+    ] {
+        let input = format!(
+            r#"{{"steps":[{{"op":"try","mode":"{mode}","steps":[{{"op":"t.engine"}}],"as":"w"}},{{"op":"let","value":1,"as":"k"}}],"out":{{"w":{{"$":"w"}},"k":{{"$":"k"}}}}}}"#
+        );
+        let rec = match mode {
+            "okOrError" => r#"{"error":"TypeError","message":"m"}"#.to_string(),
+            _ => rec.to_string(),
+        };
+        let r = run(&input, &format!(r#"{{"ok":{{"w":{rec},"k":1}}}}"#));
+        assert_eq!(r.result, "part", "{mode}: {}", r.note);
+        assert_eq!(entries(&r), vec![e("engine", "t.engine")], "{mode}");
+    }
 }

@@ -217,6 +217,8 @@ pub struct Program<'l> {
     /// reference to each that keeps the address from being reused during the run.
     from_ferrum: HashSet<*const ()>,
     from_ferrum_kept: Vec<Value>,
+    /// The messages of engine errors (`engine_error`), by the address of the string, with their entry.
+    engine: Vec<(*const (), Rc<LeftOut>)>,
 }
 
 impl<'l> Program<'l> {
@@ -235,6 +237,7 @@ impl<'l> Program<'l> {
             marked: Vec::new(),
             from_ferrum: HashSet::new(),
             from_ferrum_kept: Vec::new(),
+            engine: Vec::new(),
         }
     }
 
@@ -343,6 +346,7 @@ impl<'l> Program<'l> {
             what: What::Part(part.into()),
             value: Value::Null,
             not_called: false,
+            may_be_absent: false,
         });
         self.left_out.push(l.clone());
         Flow::Stop(l)
@@ -403,6 +407,7 @@ impl<'l> Program<'l> {
                 what: What::Part("the fixture".into()),
                 value: Value::Null,
                 not_called: true,
+                may_be_absent: false,
             });
             self.left_out.push(l.clone());
             Err(Flow::Stop(l))
@@ -481,13 +486,50 @@ impl<'l> Program<'l> {
     /// Record a *no counterpart* and return it as a value. `not_called`: Ferrum was not called, so whether cm6
     /// threw at this call is not known (a `try` or `capture` around it is then no counterpart too).
     pub fn no_counterpart(&mut self, reason: &str, op: &str, what: What, value: Value, not_called: bool) -> Value {
-        let l = Rc::new(LeftOut { reason: reason.into(), op: op.into(), what, value, not_called });
+        let l =
+            Rc::new(LeftOut { reason: reason.into(), op: op.into(), what, value, not_called, may_be_absent: false });
         self.left_out.push(l.clone());
         if not_called {
             self.not_called += 1;
             self.last_not_called = Some(l.clone());
         }
         Value::NoCounterpart(l)
+    }
+
+    /// A member of the op's result that cm6 writes only for one class of the result, which Ferrum's type cannot be: no
+    /// counterpart marked *may be absent*, left out of the comparison when the recorded object lacks it (`design.md`
+    /// section 10; Q87). The call was made.
+    pub fn no_counterpart_may_be_absent(&mut self, reason: &str, op: &str, what: What, value: Value) -> Value {
+        let l = Rc::new(LeftOut {
+            reason: reason.into(),
+            op: op.into(),
+            what,
+            value,
+            not_called: false,
+            may_be_absent: true,
+        });
+        self.left_out.push(l.clone());
+        Value::NoCounterpart(l)
+    }
+
+    /// The error an op throws where cm6 threw an engine `TypeError` and Ferrum panicked with its own message of
+    /// `design.md` section 5 (section 10, "Engine errors"; Q88): named `TypeError`, its message no counterpart with the
+    /// reason `engine`. The call was made.
+    pub fn engine_error(&mut self, op: &str, message: &str) -> Flow {
+        let l = self.no_counterpart("engine", op, What::Part("the message".into()), Value::str(message), false);
+        let Value::NoCounterpart(l) = l else { unreachable!("no_counterpart gives no counterpart") };
+        let message = js(message);
+        self.engine.push((Rc::as_ptr(&message) as *const u16 as *const (), l));
+        Flow::Throw(JsError { name: "TypeError".into(), message })
+    }
+
+    /// `e.message` as the program sees it: no counterpart for the message of an engine error (`engine_error`).
+    pub fn message_value(&self, e: &JsError) -> Value {
+        let ptr = Rc::as_ptr(&e.message) as *const u16 as *const ();
+        match self.engine.iter().find(|(p, _)| *p == ptr) {
+            Some((_, l)) => Value::NoCounterpart(l.clone()),
+            None => Value::Str(e.message.clone()),
+        }
     }
 
     /// Whether the row of `raw/decisions.jsonl` applies in this fixture (a row's condition applies only in the
@@ -537,7 +579,16 @@ impl<'l> Program<'l> {
             Ok(v) => Outcome::Output(Value::record([("ok", v)])),
             Err(Flow::Throw(e)) => Outcome::Output(Value::record([(
                 "error",
-                Value::record([("name", Value::str(&e.name)), ("message", encode_str(&e.message))]),
+                Value::record([
+                    ("name", Value::str(&e.name)),
+                    (
+                        "message",
+                        match self.message_value(&e) {
+                            Value::Str(m) => encode_str(&m),
+                            nc => nc,
+                        },
+                    ),
+                ]),
             )])),
             Err(Flow::Pending(at)) => Outcome::Pending(at),
             Err(Flow::Stop(l)) => Outcome::Stop(l),
@@ -792,10 +843,10 @@ fn op_try(a: &Value, p: &mut Program) -> Result<Value, Flow> {
         },
         Err(Flow::Throw(e)) => match mode_s.as_str() {
             "okOrError" | "okValueOrError" => {
-                Some(Value::record([("error", Value::str(&e.name)), ("message", Value::Str(e.message.clone()))]))
+                Some(Value::record([("error", Value::str(&e.name)), ("message", p.message_value(&e))]))
             }
-            "noErrorOrMessage" => Some(Value::record([("error", Value::Str(e.message.clone()))])),
-            "okOrMessage" => Some(Value::Str(e.message.clone())),
+            "noErrorOrMessage" => Some(Value::record([("error", p.message_value(&e))])),
+            "okOrMessage" => Some(p.message_value(&e)),
             _ => None,
         },
         Err(other) => return Err(other),
@@ -866,10 +917,9 @@ fn op_capture(a: &Value, p: &mut Program) -> Result<Value, Flow> {
     let before = p.not_called;
     let v = match p.ev(&a.field("do")) {
         Ok(v) => Value::record([("ok", v)]),
-        Err(Flow::Throw(e)) => Value::record([(
-            "error",
-            Value::record([("name", Value::str(&e.name)), ("message", Value::Str(e.message))]),
-        )]),
+        Err(Flow::Throw(e)) => {
+            Value::record([("error", Value::record([("name", Value::str(&e.name)), ("message", p.message_value(&e))]))])
+        }
         Err(other) => return Err(other),
     };
     Ok(match p.since(before) {
