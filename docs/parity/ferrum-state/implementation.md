@@ -109,3 +109,9 @@ The U1 follow-up (commit a094049; `docs/parity/ferrum-state/plan.md` "Before U2"
 
 The checks of unit `change` (commit 4dbc4d8; `docs/parity/ferrum-state/plan.md` budget table, "the `changes.*` and `desc.*` ops of chunk `text` read again", decided at the pilot review: `docs/decisions/ferrum-state.md`, "The pilot review of the implementation"): the ops `changes.of`, `changes.desc`, `changes.invert`, `changes.iterChangesTexts` and `desc.iterChangedRangesArg` of chunk `text` now go through the function chunk `change` uses for the same Ferrum call (`crate::replay::change::shared`); the chunk's own change-spec reader became an adapter to the shared `SpecIn` and `change_spec`, its positions still over filler. The results of chunk `text` did not change. Files:
 - `crates/ferrum-state/tests/replay/text/changes.rs`
+
+The checks of unit `change` after Q86 to Q91 (commit ea896a1; decided by the consultant: `docs/decisions/ferrum-state.md`, "Q86 to Q91", "What it requires", items 2 and 6): the core gains a no-counterpart member marked *may be absent*, left out of the comparison of members and of key order when the recorded object lacks it (Q87), and an engine error whose message is no counterpart with the reason `engine`, so that only its name is compared (Q88), each with a literal test in `rules.rs`; the shared change spec reads a `null` that cm6 treats as absent as `None` (Q91), which `change_spec` of chunk `text` reaches through `replay/change/shared.rs` with no change of its own. Files:
+- `crates/ferrum-state/tests/replay/lang/value.rs`
+- `crates/ferrum-state/tests/replay/lang/eval.rs`
+- `crates/ferrum-state/tests/replay/driver.rs`
+- `crates/ferrum-state/tests/replay/rules.rs`
