@@ -77,17 +77,36 @@ Every mechanism a unit replaced by a native one, with the cm6 lines (`plan.md` "
 - **Signed positions where cm6's go negative.** `TextNode.decompose` passes `from - pos` to its children (`text.ts:275`), negative for the children after `from`, and the sign decides whether a child is open at its start (`:273`); `Text::decompose` takes `isize`. `PartialTextCursor` keeps `pos`, `from` and `to` signed (`text.ts:496-509`), and `Text::eq` its `end` (`text.ts:89`, negative when the two documents share every child).
 - **`toString` writes into the formatter** (`text.ts:132`, `sliceString(0)`): `Display` walks the tree and writes each line and break, building no intermediate string.
 
+### Unit change
+
+- **Duck typing of `inserted` as a slice.** `SectionIter.text` and `textBit` read `(this.set as ChangeSet).inserted` (`mirrors/cm6/state/src/change.ts:555-564`), and `iterChanges` reads it from a `ChangeDesc` receiver, where it is `undefined` and no text is joined (`change.ts:407`, `:416`). The private `SectionIter` holds the inserted texts as a slice, empty for a description, and the private `iter_changes` takes `Option<&[Text]>`, `None` for a description.
+- **`mapSet` and `composeSets` overloaded on `mkSet`** (`change.ts:426-428`, `:492-494`) return the sections and the texts (`map_set`, `compose_sets`), and the caller builds the type it declares. `ChangeSet::map_desc` runs `map_set` without building the texts, which cm6 builds and its declared result drops (`change.ts:213`; the sections do not depend on the texts); `ChangeDesc::iter_changed_ranges` joins no text, where cm6 joins them for a `ChangeSet` receiver and its callback ignores them (`change.ts:79`).
+- **The closures of `ChangeSet.of`** (`flush` and `process` over mutable locals, `change.ts:316-346`) as the methods of a private struct, `Of`; its dispatch by `Array.isArray` and `instanceof ChangeSet` (`change.ts:324-327`) is a `match` on `ChangeSpec`.
+- **`insert.split(lineSep || DefaultSplit)`** (`change.ts:335`, the regular expression at `change.ts:3`): `crate::change::split_lines` splits on the separator with `str::split` when one is given and not empty, and on `\r\n`, `\r` and `\n` by hand otherwise.
+- **`ranges[i++]` past the end of the array** (`change.ts:273`, `:284`), `undefined` in cm6, for which every comparison is false: `ChangeSet::filter` reads it as `None` and skips the loop it would bound.
+- **`EditorSelection.normalized`** (`mirrors/cm6/state/src/selection.ts:223-235`): the main range is followed by its index through the stable sort (`state.cm6.073.d2`) where cm6 searches the range object with `indexOf`; the merges are written over the sorted list instead of `splice` (`selection.ts:232`), which gives the same ranges and main index without shifting the rest of the array at each merge.
+- **`Math.abs(from - this.anchor)`** (`selection.ts:87`) is `usize::abs_diff`; the `const enum RangeFlag` (`selection.ts:12-18`) is the `u8` constants of `crate::selection`.
+
 ## Cases of cm6 with no behavior row
 
 ### Unit text
 
 None found: every case of `text.ts`, `char.ts`, `column.ts`, `charcategory.ts` and `@marijn/find-cluster-break` ported in unit text has a row of `raw/behaviors.jsonl` or of `raw/decisions.jsonl`, or is not observable (`nextClusterBreak` leaves `prev` unchanged after joining a regional indicator, `mirrors/marijn/find-cluster-break/src/index.js:60`: `prev` is only compared with ZWJ, and neither value can be ZWJ there).
 
+### Unit change
+
+- `mirrors/cm6/state/src/change.ts:388` (`addSection`): a zero-length unchanged section `(0, -1)`, which only `ChangeDesc::from_json` and `ChangeSet::from_json` build (`[0, -1]`, `[0]`), followed by an insertion of length `n` is merged into `(0, n - 1)` (`len == 0 && sections[last] == 0`), and the inserted text is still added in full by `addInsert`. Ported as it is; no row names this merge (`state.cm6.156.d2` names the panics of such sections in `mapSet` and `composeSets`).
+- `change.ts:272-293` (`ChangeSet.filter`): after the last pair, `next` is `1e9` (`state.cm6.032.d1`); for a set whose length is at least `1e9` the first inner loop ends at `pos == 1e9` before the sections do, and from then on every read of `ranges` is past the end, so the loop does not end. Ported as it is (the position unit makes it a set of `1e9` bytes); `state.cm6.032.d2` names the non-termination of an odd-length array only. Raised as a question in the report of step U2.
+
 ## Checks believed wrong
 
 ### Unit text
 
 - **The four tests of `crates/ferrum-state/tests/cm6_charcategory.rs` are required to pass at unit text, and cannot.** `tools/impl_check.py ferrum-state code text` requires every test of the unit's cm6 test files to pass; `plan.md` "Units" gives unit U1 the file `test-charcategory.ts`. Each of its cases builds its state with `mk`, which calls `EditorState::create` with `Vec<Extension>` converted into an `Extension` (`mirrors/cm6/state/test/test-charcategory.ts`, `mk`), and every one panics at the `todo!()` of `impl From<Vec<Extension>> for Extension` (`crates/ferrum-state/src/facet.rs`, unit U4), before any code of unit text runs; `EditorState::char_categorizer` is also unit U4's (`crates/ferrum-state/src/state.rs`). The tests are cm6's and are not wrong; what cannot hold is that they pass when unit text is done. Not a fixture, so no trace. Unit text's part of them is `crate::charcategory::make_categorizer`, which the fixtures of chunk `text` reach only through `EditorState::char_categorizer`: 214 of the 387 `pending` fixtures of the chunk categorize; until unit U4 a unit test of the private helper in `crates/ferrum-state/src/charcategory.rs` checks it on values of the rows of `CharCategory`.
+
+### Unit change
+
+- **`helper_comp_over_under_and_map_compare` in `crates/ferrum-state/tests/cm6_change.rs:219` asserts that `comp(&["2 0:1", "3"])` passes and that `comp(&["2 0:1", "2"])` panics.** `comp` (`cm6_change.rs:36`, cm6's `comp` at `mirrors/cm6/state/test/test-change.ts:34-37`) composes every spec but the last and compares the result with the last; with one spec there is nothing to compose: cm6's `[mk("2 0:1")].reduce(...)` returns the description itself, whose string is `"2 0:1"`, and the Rust helper's fold returns `first` likewise. So `comp(&["2 0:1", "3"])` compares `"2 0:1"` with `"3"` and fails, against any implementation, and `comp(&["2 0:1", "2"])` fails for the same reason rather than for a mismatch of lengths. Output of `cargo test -p ferrum-state --test cm6_change helper_comp`: `assertion left == right failed, left: "2 0:1", right: "3"` at `cm6_change.rs:43`. Not a fixture, so no trace. The 43 other tests of the file, the cm6 cases among them, pass.
 
 ## Changes to checks after their code
 

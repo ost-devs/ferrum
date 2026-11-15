@@ -24,7 +24,7 @@ pub fn same_text(a: &Text, b: &Text) -> bool {
 ///
 /// ferrum-only: cm6's internal ChangeSet.inserted, see D15
 pub fn change_set_inserted(set: &ChangeSet) -> &[Text] {
-    todo!()
+    &set.inserted
 }
 
 /// Whether two extensions were converted from the same thing (`design.md` §3).
