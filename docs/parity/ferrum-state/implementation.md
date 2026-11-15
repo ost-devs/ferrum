@@ -134,3 +134,8 @@ The checks of unit `change` after Q86 to Q91 (commit ea896a1; decided by the con
 - `crates/ferrum-state/tests/replay/lang/eval.rs`
 - `crates/ferrum-state/tests/replay/driver.rs`
 - `crates/ferrum-state/tests/replay/rules.rs`
+
+A round of "A check that is wrong" on the checks of unit `change`, and Q92 (commit 587a643; `docs/parity/ferrum-state/plan.md` "A check that is wrong"; decided by the consultant: `docs/decisions/ferrum-state.md`, "Q92 and Q93", "What it requires", item 1). In `cm6_change.rs`, `helper_comp_over_under_and_map_compare` now checks what cm6's `comp` does with one spec, the description itself (`mirrors/cm6/state/test/test-change.ts:34-37`; `.claude/rules/rust-crates.md` Tests 4), where it expected `"2 0:1"` composed alone to give `"3"`. In `written_change.rs`, the new test `a_selection_whose_main_index_is_outside_its_ranges_cannot_be_built` with `// covers: state.EditorSelection.asSingle.B2` runs the inputs of F0584 and F0583 (`plan.md` "Ported tests and written tests"; `state.cm6.073.d1`, `state.cm6.160.d1`). Files:
+- `crates/ferrum-state/tests/cm6_change.rs`
+- `crates/ferrum-state/tests/written_change.rs`
+
