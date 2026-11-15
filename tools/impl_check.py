@@ -514,6 +514,46 @@ def unnamed(c, crate, chunks, fixtures, named, tested):
 
 # ---- the steps -----------------------------------------------------------------------------------------------------
 
+
+def error_entries(c, crate, got):
+    """Every fixture left out with the reason `error` has, in cm6's trace, its throw at an evaluation Ferrum did not
+    make (plan "Hand-off"). The throw's origin is the evaluation of cm6's trace (tools/cm6/replay.ts --trace) that threw
+    and began last: an uncaught error ends the run, so the evaluations of its chain began after every caught one, and
+    the innermost of them began last. Ferrum's trace of the same fixture (FERRUM_REPLAY_TRACE) must hold, at the same
+    index, the same op with the value *no counterpart*, and the op the entry names must hold that value there or in an
+    evaluation inside it (an op's arguments begin after it, at a greater depth): the call not made is the origin
+    itself, or a call whose value the origin consumes (text F1014: `iter.drain` of a `text.iter` with direction 0)."""
+    pkg = crate.replace("ferrum-", "")
+    errs = [(f["chunk"], f["fixture"], e["op"]) for f in got for e in f.get("left_out", []) if e.get("reason") == "error"]
+    bad, ok_ = [], 0
+    for ch in sorted({x[0] for x in errs}):
+        tdir = target(crate, "trace")
+        run_tests(crate, "replay", {"FERRUM_REPLAY_CHUNKS": ch, "FERRUM_REPLAY_TRACE": ch})
+        for _, fid, op in [x for x in errs if x[0] == ch]:
+            r = subprocess.run(["npx", "--yes", "tsx", "--tsconfig", os.path.join(".harness", pkg, "tsconfig.json"),
+                                os.path.join("tools", "cm6", "replay.ts"), crate, "--trace", ch, fid],
+                               cwd=REPO, capture_output=True, text=True, timeout=600)
+            cm6 = [json.loads(l) for l in r.stdout.splitlines() if l.startswith('{"n"')]
+            threw = [l for l in cm6 if "threw" in l]
+            path = os.path.join(tdir, f"{ch}-{fid}.jsonl")
+            ours = rows(path) if os.path.exists(path) else []
+            nc = lambda l: isinstance(l.get("value"), dict) and "no_counterpart" in l["value"]
+            if not threw:
+                bad.append(f"{ch} {fid}: cm6's trace holds no evaluation that threw"); continue
+            o = max(threw, key=lambda l: l["n"])
+            at = ours[o["n"]] if o["n"] < len(ours) else None
+            if at is None or at.get("op") != o["op"] or not nc(at):
+                bad.append(f"{ch} {fid}: cm6 throws at evaluation {o['n']} ({o['op']}: {o['threw'].get('message', '')[:60]}); "
+                           f"Ferrum's trace there: {json.dumps(at)[:120] if at else 'nothing'}"); continue
+            sub = [at]
+            for l in ours[o["n"] + 1:]:
+                if l.get("depth", -1) <= at.get("depth", -1): break
+                sub.append(l)
+            if not any(l.get("op") == op and nc(l) for l in sub):
+                bad.append(f"{ch} {fid}: the entry names {op}, which Ferrum's trace does not hold as not made in evaluation {o['n']} ({o['op']}) or inside it"); continue
+            ok_ += 1
+    c.need(not bad, f"fixtures left out with the reason `error` whose cm6 throw is at an evaluation Ferrum did not make: {ok_} of {len(errs)}", bad)
+
 def skeleton(c, crate, args):
     cargo(c, "cargo build", ["build", "--workspace"])
     r = cargo(c, "cargo test --no-run", ["test", "--workspace", "--no-run"])
@@ -679,6 +719,7 @@ def handoff(c, crate, args):
     registry(c, crate, chunks, ops)
     lang_cases(c, crate, fixtures)
     control(c, crate, chunks)
+    error_entries(c, crate, got)
     # what is left out is the committed file
     nc = spec(crate, "fixtures", "no-counterpart.jsonl")
     tracked = run(["git", "ls-files", "--error-unmatch", os.path.relpath(nc, REPO)]).returncode == 0 if ROOT == REPO else os.path.exists(nc)
