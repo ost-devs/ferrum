@@ -64,6 +64,8 @@
 - A draft left by a cut run is a claim: re-derive each part; its arithmetic and its citations were where it erred (a budget rule stated and not applied; a test-writer choice called "cm6's code" when it only follows from it). `docs/decisions/ferrum-state.md` "The pilot review of the implementation"
 - What is determined by the report (a behavior with nothing compared, a test file's unit) is classified by the tool and the printed list read, never a hand-written list of rows. Same entry
 - A precondition on an argument fails on the argument alone (tab size 0), not when the data first trigger it. Same entry
+- A JS `1e9` meaning "to the end" that no output shows is no bound; reproducing a hang is never parity (D11 a). Run the hang and a patched cm6 for the reference before deciding. `docs/decisions/ferrum-state.md` "Q92 and Q93"
+- A check that fires at the code step on something the data fix before code (rows list fixtures, fixtures name behaviors) belongs at the checks step as a tool check; try it on the real miss and a seeded one. Same entry
 
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.
