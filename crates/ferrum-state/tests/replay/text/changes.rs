@@ -4,13 +4,17 @@
 //!
 //! The change sets of the chunk (fixture F7169) have no text in the input but the ASCII `doc` of `changes.invert`:
 //! their positions are converted as over ASCII filler, the same number in both units (`plan.md` "Positions", rule 5).
+//! Where the chunk `change` makes the same call of Ferrum (`ChangeSet::of`, `desc`, `invert`, `iter_changes`,
+//! `iter_changed_ranges`), both chunks go through its one function (`crate::replay::change::shared`).
 
 use std::rc::Rc;
 
-use ferrum_state::{__test, ChangeSet, ChangeSpec, EditorState, EditorStateConfig, Extension, TextSpec};
+use ferrum_state::{__test, ChangeSet, EditorState, EditorStateConfig, Extension, TextSpec};
 
 use super::doc::doc_arg;
-use super::host::{Desc, Doc, R, Set, State, by_type, ferrum, finish, known, str_arg, uint, uint_arg};
+use super::host::{Desc, Doc, R, Set, State, Stop, by_type, ferrum, finish, known, str_arg, uint, uint_arg};
+use crate::replay::change::form::Form;
+use crate::replay::change::shared::{self as cs, Insert, SpecIn};
 use crate::replay::lang::eval::{Language, Program, arg};
 use crate::replay::lang::value::{Value, What};
 
@@ -82,52 +86,55 @@ fn state_to_text(a: &Value, p: &mut Program) -> R<Value> {
     Ok(Doc::value(ferrum(None, || s.to_text(&string))?))
 }
 
-/// A change spec of the program as Ferrum's `ChangeSpec` (`state.cm6.135.d1`): an object `{from, to?, insert?}`, a
-/// list of specs, or a change set.
-fn change_spec(p: &mut Program, op: &str, v: &Value) -> R<ChangeSpec> {
-    known(v)?;
+/// A change spec of the program as the chunk `change`'s `SpecIn` (`state.cm6.135.d1`): an object `{from, to?,
+/// insert?}`, a list of specs, or a change set; read into Ferrum's `ChangeSpec` by the one function both chunks use.
+fn spec_in(v: &Value) -> SpecIn {
     match v {
         Value::Object(_) => {
-            let from = uint(&v.field("from")).ok_or_else(|| by_type(p, op, "spec", v))?;
-            let to = match v.field("to") {
-                Value::Undefined => None,
-                t => Some(uint(&t).ok_or_else(|| by_type(p, op, "spec", v))?),
+            let insert = if v.has("insert") {
+                let i = v.field("insert");
+                match Doc::of(&i) {
+                    Some(d) => Insert::Text(d.t),
+                    None => Insert::Value(i),
+                }
+            } else {
+                Insert::Absent
             };
-            let insert = match v.field("insert") {
-                Value::Undefined => None,
-                i @ Value::Str(_) => Some(TextSpec::String(str_arg(p, op, "spec", &i)?)),
-                i => match Doc::of(&i) {
-                    Some(d) => Some(TextSpec::Text(d.t)),
-                    None => return Err(by_type(p, op, "spec", v)),
-                },
-            };
-            Ok(ChangeSpec::Change { from, to, insert })
+            SpecIn::Change { from: v.field("from"), to: v.field("to"), insert, whole: v.clone() }
         }
-        Value::Array(xs) => {
-            let xs = xs.borrow().clone();
-            Ok(ChangeSpec::List(xs.iter().map(|x| change_spec(p, op, x)).collect::<R<Vec<_>>>()?))
-        }
+        Value::Array(xs) => SpecIn::List(xs.borrow().iter().map(spec_in).collect()),
+        Value::NoCounterpart(_) => SpecIn::Nc(v.clone()),
         _ => match Set::of(v) {
-            Some(s) => Ok(ChangeSpec::Set(s)),
-            None => Err(by_type(p, op, "spec", v)),
+            Some(s) => SpecIn::Set(s),
+            None => SpecIn::Other(v.clone()),
         },
     }
+}
+
+/// The value or stop of a call the chunk `change`'s functions make, as this chunk's.
+fn from_change<T>(r: cs::R<T>) -> R<T> {
+    r.map_err(|e| match e {
+        cs::Stop::Flow(f) => Stop::Flow(f),
+        cs::Stop::Nc(v) => Stop::Nc(v),
+    })
 }
 
 fn changes_of(a: &Value, p: &mut Program) -> R<Value> {
     const OP: &str = "changes.of";
     let spec_v = arg(p, &a.field("spec"))?;
     let len_v = arg(p, &a.field("length"))?;
-    let spec = change_spec(p, OP, &spec_v)?;
+    // the sets of the chunk have no text in the input: positions over ASCII filler (the module's header)
+    let filler = Form::filler();
+    let spec = from_change(cs::change_spec(p, OP, "spec", &spec_in(&spec_v), &filler))?;
     let len = uint_arg(p, OP, "length", &len_v)?;
-    let s = ferrum(None, || ChangeSet::of(spec, len, None))?;
+    let s = from_change(cs::set_of(spec, len, None, &filler))?;
     Ok(Value::Host(Rc::new(Set(s))))
 }
 
 fn changes_desc(a: &Value, p: &mut Program) -> R<Value> {
     let c = p.ev(&a.field("changes"))?;
     let c = set_arg(p, "changes.desc", "changes", &c)?;
-    Ok(Value::Host(Rc::new(Desc(ferrum(None, || c.desc())?))))
+    Ok(Value::Host(Rc::new(Desc(from_change(cs::desc_of(&c))?))))
 }
 
 fn changes_invert(a: &Value, p: &mut Program) -> R<Value> {
@@ -136,19 +143,15 @@ fn changes_invert(a: &Value, p: &mut Program) -> R<Value> {
     let d = p.ev(&a.field("doc"))?;
     let c = set_arg(p, OP, "changes", &c)?;
     let d = doc_arg(p, OP, "doc", &d)?;
-    Ok(Value::Host(Rc::new(Set(ferrum(None, || c.invert(&d.t))?))))
+    Ok(Value::Host(Rc::new(Set(from_change(cs::invert(&c, &d.t, &Form::filler()))?))))
 }
 
 fn iter_changes_texts(a: &Value, p: &mut Program) -> R<Value> {
     let c = p.ev(&a.field("changes"))?;
     let c = set_arg(p, "changes.iterChangesTexts", "changes", &c)?;
     // cm6's `individual` default false, which the caller writes (D14); the fifth argument of every call, in order
-    let texts = ferrum(None, || {
-        let mut r = Vec::new();
-        c.iter_changes(|_, _, _, _, t| r.push(t.clone()), false);
-        r
-    })?;
-    Ok(Value::array(texts.into_iter().map(Doc::value).collect()))
+    let calls = from_change(cs::iter_changes(&c, false, &Form::filler()))?;
+    Ok(Value::array(calls.into_iter().map(|(_, _, _, _, t)| Doc::value(t)).collect()))
 }
 
 fn iter_changed_ranges_arg(a: &Value, p: &mut Program) -> R<Value> {
@@ -160,11 +163,7 @@ fn iter_changed_ranges_arg(a: &Value, p: &mut Program) -> R<Value> {
     known(&d)?;
     let Some(d) = Desc::of(&d) else { return Err(by_type(p, OP, "desc", &d)) };
     let index = uint(&index_v).ok_or_else(|| by_type(p, OP, "index", &index_v))?;
-    let calls = ferrum(None, || {
-        let mut r = Vec::new();
-        d.iter_changed_ranges(|fa, ta, fb, tb| r.push([fa, ta, fb, tb]), false);
-        r
-    })?;
+    let calls = from_change(cs::iter_changed_ranges(&d, false, &Form::filler()))?;
     if index >= 4 {
         // `raw/replay.jsonl` gives "an `index` of 4 or more" no counterpart: Ferrum's callback has four arguments
         let nc = p.no_counterpart("op", OP, What::Part("an `index` of 4 or more".into()), index_v, false);
