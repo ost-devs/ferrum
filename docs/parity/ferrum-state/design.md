@@ -105,6 +105,19 @@ Other forms the skeleton fixed:
 
 One enum, `Error`, `#[non_exhaustive]`, a variant per explicit throw of `raw/throws.jsonl` that Ferrum can reach (25 of the 27 sites; sites that share a message share a variant; the two throws of `flatten` for a value that is no extension, `mirrors/cm6/state/src/facet.ts:550`, `:551`, are excluded by type and listed in `implementation.md`), carrying the numbers of the message; `Display` writes cm6's message. `from_json` readers return it; everywhere else the failure is `panic!("{}", Error::…)` (D13). The 47 implicit throws of `raw/throws.jsonl` are engine `TypeError`s: 42 need input that D12 excludes (among them `Text::iter` with a direction other than the two, `state.cm6.239.d1`; a field spec without `create` or `update`, `state.cm6.047.d1`; a `wordChars` that is `null` or `undefined`, `state.cm6.029.d1`); 2 do not compile (`RangeSetBuilder` after `finish`, `mirrors/cm6/state/src/rangeset.ts:529`, `:561`); 3 panic with a message of Ferrum's own, because Ferrum's types can still express their input (`to_json` or `from_json` with a field that lacks the function, `mirrors/cm6/state/src/state.ts:213`, `:229`, `state.cm6.016.d1`; `replace_range` with an index beyond the ranges, `mirrors/cm6/state/src/selection.ts:192`). The skeleton step lists, for each of the 47, which of the three it is.
 
+**Panics of Ferrum's own.** Where Ferrum panics and cm6 does not throw, or throws an engine `TypeError`, the message is Ferrum's and is one of these, whole; a written test compares it (`plan.md` "Ported tests and written tests"). A new one is added here by a decision, not by the code. `<pos>` and `<len>` are in the unit of D1.
+
+| Panic | Message | Where |
+|---|---|---|
+| a position of a document that is not on a `char` boundary (D1) | `Position <pos> is not on a character boundary of the document` | every function that takes a position of a `Text` it holds, one private function writing it |
+| a position of a string that is not on a `char` boundary (D1) | `Position <pos> is inside a character of the string` | `find_cluster_break`, `code_point_at`, `count_column`, `find_column`, `try_find_column`, the value of a cursor |
+| `find_cluster_break` beyond the end (`state.cm6.212.d1`) | `Position <pos> is beyond the end of a string of length <len>` | `find_cluster_break` |
+| tab size 0 (`state.cm6.216.d1`) | `Invalid tab size 0` | `count_column`, `find_column`, `try_find_column`, before the string is read: whatever it holds |
+| `to_json` or `from_json` with a field whose spec lacks the function (`state.cm6.016.d1`) | `Field "<name>" has no to_json function`, `Field "<name>" has no from_json function` | `EditorState::to_json`, `EditorState::from_json` |
+| `replace_range` with an index beyond the ranges | `Range index <which> is beyond the <n> ranges of the selection` | `EditorSelection::replace_range` |
+
+The replayer never compares these messages: the calls are left out (`char`, a row's id) or the recorded error is a `TypeError`.
+
 How a test checks a panic: `std::panic::catch_unwind` (around `AssertUnwindSafe`: the crate's values hold `dyn` contents), comparing the payload's text with the fixture's `message` (numbers that are positions mapped to the unit of D1). The error's `name` in a fixture is not compared, with one use: an error named `TypeError` is an engine error (all 47 implicit throws and no explicit one), so Ferrum must panic there and the message, which is Ferrum's own, is not compared.
 
 ## 6. Ownership and threading (D6)

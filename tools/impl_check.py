@@ -11,7 +11,12 @@
 Run from the repository root with the harness built (tools/cm6/setup_harness.py). A worker runs the subcommand of its
 step on its own output before it reports; the orchestrator runs it before a merge. Each prints its counts and ends
 with "checks passed" or with the failures and exit status 1. What a check accepts without failing it prints with its
-count. `<unit>` is the name in the "Units" table of docs/parity/<crate>/plan.md (`text`, `change`, ...), from which
+count. Every subcommand requires `cargo fmt --all -- --check` clean (rustfmt.toml at the root). `code` and
+`handoff` require every behavior to be named by a check that runs (a fixture compared whole or in part, a ported
+case, a `// covers:`), and accept, printing each: a behavior a row of class `form` names, and a behavior whose every
+fixture is `none` for input the signatures exclude (a left-out entry of reason `type` in each, and no reason but
+`type`, `flow` and `error`); `code` also lets pass a behavior with a fixture still `pending`. A cm6 test file belongs
+to the unit whose row of the "Units" table names it: the unit whose code its cases need last. `<unit>` is the name in the "Units" table of docs/parity/<crate>/plan.md (`text`, `change`, ...), from which
 the tool reads each unit's cm6 files (its modules `src/<file>.rs`), chunks and cm6 test files.
 
 What the tool expects to find (the plan fixes what each thing is; this fixes where it is and how it is spelled):
@@ -202,6 +207,12 @@ def cargo(c, what, args):
     ok = r.returncode == 0 and not msgs
     c.need(ok, f"{what}: exit {r.returncode}, {len(msgs)} warning(s) or error(s)", msgs or ([] if ok else r.stderr.strip().split("\n")[-8:]))
     return r
+
+def fmt(c):
+    """The workspace is formatted as rustfmt.toml says."""
+    r = run(["cargo", "fmt", "--all", "--", "--check"])
+    files = sorted({os.path.relpath(m, ROOT) for m in re.findall(r"^Diff in (\S+?):\d+:?$", r.stdout, re.M)})
+    c.need(r.returncode == 0, f"cargo fmt --check: exit {r.returncode}, {len(files)} file(s) differ", files or r.stderr.strip().split("\n")[-4:])
 
 def run_tests(crate, target_name, env=None):
     """libtest's verdict per test of one target: {name: "ok" | "FAILED" | "ignored"}, and the exit status."""
@@ -462,6 +473,45 @@ def report_counts(c, fixtures):
     if reasons: c.say("left out, by chunk and reason: " + ", ".join(f"{ch} {r}: {n}" for (ch, r), n in sorted(reasons.items(), key=str)))
 
 
+BY_TYPE = {"type", "flow", "error"}
+
+def unnamed(c, crate, chunks, fixtures, named, tested):
+    """Behaviors of the chunks that no check names: no fixture compared whole or in part, no ported case, no
+    `// covers:`. Returns those that need a written test or a decision. Printed with their count and not returned:
+    those a row of class `form` names; those whose every fixture needs input the signatures exclude (each fixture is
+    `none` and holds a left-out entry of reason `type`, and nothing but `type` and the `flow` and `error` that follow
+    one); those with a fixture still `pending`."""
+    fx, res = {}, {(f["chunk"], f["fixture"]): f for f in fixtures}
+    for ch in chunks:
+        for f in rows(spec(crate, "fixtures", ch + ".jsonl")):
+            for b in f["behaviors"]: fx.setdefault(b, []).append((ch, f["id"]))
+    decided = {b: d["id"] for d in rows(spec(crate, "raw", "decisions.jsonl")) if d["class"] == "form" for b in d["behaviors"]}
+    behaviors = [b["id"] for b in rows(spec(crate, "raw", "behaviors.jsonl"))]
+    if len(chunks) < len([f for f in os.listdir(spec(crate, "fixtures")) if f.endswith(".jsonl") and f != "no-counterpart.jsonl"]):
+        behaviors = [b for b in behaviors if b in fx]      # a unit's step: the behaviors its chunks' fixtures name
+    whole = part = 0
+    form, typed, waiting, bare = [], [], [], []
+    for b in behaviors:
+        rs = [res.get(k, {"result": "missing"}) for k in fx.get(b, [])]
+        got = collections.Counter(r["result"] for r in rs)
+        if got["equal"]: whole += 1
+        elif got["part"]: part += 1
+        if got["equal"] or got["part"] or b in tested or b in named: continue
+        if b in decided: form.append(f"{b}: {decided[b]}")
+        elif got["pending"]: waiting.append(b)
+        elif rs and all(r["result"] == "none" and {x.get("reason") for x in r.get("left_out", [])} <= BY_TYPE
+                        and any(x.get("reason") == "type" for x in r.get("left_out", [])) for r in rs):
+            typed.append(f"{b}: {len(rs)} fixture(s)")
+        else: bare.append(f"{b}: {dict(got) or 'no fixture'}")
+    c.say(f"behaviors: {len(behaviors)}; with a fixture compared whole {whole}, only in part {part}; named by a ported case {len(tested & set(behaviors))}; by `// covers:` {len(named & set(behaviors))}")
+    c.say(f"behaviors with no check that a row of class `form` of raw/decisions.jsonl names (the consultant reads this list): {len(form)}")
+    for a in form: c.say("        " + a)
+    c.say(f"behaviors with no check whose every fixture needs input excluded by type, D12 (the consultant reads this list): {len(typed)}")
+    for a in typed: c.say("        " + a)
+    if waiting: c.say(f"behaviors with no check yet and a fixture pending at a later unit: {len(waiting)}")
+    return bare
+
+
 # ---- the steps -----------------------------------------------------------------------------------------------------
 
 def skeleton(c, crate, args):
@@ -472,6 +522,7 @@ def skeleton(c, crate, args):
              and "__test" in m.get("features", []) for m in feats)
     c.need(on, "cargo test with no flags builds the crate with the feature __test")
     cargo(c, "cargo clippy", ["clippy", "--workspace", "--all-targets"])
+    fmt(c)
     annotation_scan(c, crate)
     todo_report(c, crate)
     impl = spec(crate, "implementation.md")
@@ -506,6 +557,7 @@ def core(c, crate, args):
     c.need(not bad, f"traces of the language cases equal to cm6's (tools/trace_diff.py): {n - len([b for b in bad if 'no trace' not in b])} of {n + len([b for b in bad if 'no trace' in b])}", bad)
     src = test_sources(crate)
     lang_files = [p for p in src if p == os.path.join("replay", "lang.rs") or p.startswith(os.path.join("replay", "lang") + os.sep)]
+    fmt(c)
     uses = [p for p in lang_files if "ferrum_state" in src[p]]
     c.need(bool(lang_files) and not uses, f"the language module ({len(lang_files)} file(s) at tests/replay/lang) holds no `ferrum_state`", uses)
 
@@ -543,6 +595,7 @@ def checks(c, crate, args):
         got = [f for f in fixtures if f["chunk"] == ch]
         eq = [f["fixture"] for f in got if f["result"] == "equal"]
         c.need(len(got) == n and not eq, f"chunk {ch}: {len(got)} of {n} fixtures reported, {len(eq)} reported equal against the skeleton", eq)
+    fmt(c)
     registry(c, crate, u["chunks"], ops)
     mine, found = ported(c, crate, set(u["tests"]), src)
     covers(c, crate, src)
@@ -587,6 +640,12 @@ def code(c, crate, args):
     later_chunks = {ch for n in names[len(done):] for ch in us[n]["chunks"]}
     mine = lambda p: p not in other and not any(p == f"replay/{ch}.rs" or p.startswith(f"replay/{ch}/") for ch in later_chunks)
     tests_unchanged(c, crate, args[2], mine, f"checks of {', '.join(done)} and the core")
+    src = test_sources(crate)
+    cases, found = ported(c, crate, {x for n in done for x in us[n]["tests"]}, src)
+    tested = {b for r_ in cases if len(found.get(case_name(r_), [])) == 1 for b in r_["behaviors"]}
+    bare = unnamed(c, crate, [ch for n in done for ch in us[n]["chunks"]], fixtures, covers(c, crate, src), tested)
+    c.need(not bare, f"every behavior of the units done is named by a check that runs, or has every fixture excluded by type or pending: {len(bare)} are not (a written test with `// covers:`, or a question)", bare)
+    fmt(c)
 
 def handoff(c, crate, args):
     if len(args) < 2 or args[0] != "--since": sys.exit("handoff --since <unit>=<its checks commit>,...")
@@ -640,21 +699,8 @@ def handoff(c, crate, args):
             off.append(f"{d['id']}: row lists {len(d['fixtures'])}, the replayer met it in {len(met[d['id']])}; only in the row {sorted(set(d['fixtures']) - met[d['id']])[:5]}, only in the run {sorted(met[d['id']] - set(d['fixtures']))[:5]}")
     c.need(not off, f"decision rows that state a condition: {len(cond)}, the fixtures in which the replayer met each equal its list: {len(cond) - len(off)}", off)
     # every behavior named by a check that runs
-    fx = {}
-    for ch in chunks:
-        for f in rows(spec(crate, "fixtures", ch + ".jsonl")): fx[(ch, f["id"])] = f["behaviors"]
-    by = collections.defaultdict(collections.Counter)
-    for f in got:
-        for b in fx.get((f["chunk"], f["fixture"]), []): by[b][f["result"]] += 1
     tested = {b for r_ in mine if len(found.get(case_name(r_), [])) == 1 for b in r_["behaviors"]}
-    decided = {b: d["id"] for d in rows(spec(crate, "raw", "decisions.jsonl")) if d["class"] == "form" for b in d["behaviors"]}
-    behaviors = [b["id"] for b in rows(spec(crate, "raw", "behaviors.jsonl"))]
-    bare = [b for b in behaviors if not (by[b]["equal"] or by[b]["part"] or b in tested or b in named)]
-    acc = [f"{b}: {decided[b]}" for b in bare if b in decided]
-    bare = [b for b in bare if b not in decided]
-    c.say(f"behaviors: {len(behaviors)}; with a fixture compared whole {sum(1 for b in behaviors if by[b]['equal'])}, only in part {sum(1 for b in behaviors if not by[b]['equal'] and by[b]['part'])}; named by a ported case {len(tested & set(behaviors))}; by `// covers:` {len(named & set(behaviors))}")
-    c.say(f"behaviors with no check that a row of class `form` of raw/decisions.jsonl names (the consultant reads this list): {len(acc)}")
-    for a in acc: c.say("        " + a)
+    bare = unnamed(c, crate, chunks, got, named, tested)
     c.need(not bare, f"every behavior is named by a check that runs: {len(bare)} are not", bare)
     # checks unchanged since their unit's code
     names = list(us)
@@ -670,6 +716,7 @@ def handoff(c, crate, args):
     tp = os.path.join(ROOT, "THIRD-PARTY-NOTICES.md")
     c.need(os.path.exists(tp) and "find-cluster-break" in read(tp), "THIRD-PARTY-NOTICES.md holds the notice of @marijn/find-cluster-break")
     refs = subprocess.run([sys.executable, os.path.join("tools", "check_refs.py"), "docs", ".claude", "tools", "--quiet"], cwd=REPO, capture_output=True, text=True)
+    fmt(c)
     c.need(refs.returncode == 0, "tools/check_refs.py clean", (refs.stdout + refs.stderr).strip().split("\n")[-5:] if refs.returncode else [])
 
 

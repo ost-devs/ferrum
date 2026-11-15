@@ -14,7 +14,9 @@ Kinds and their keys (date defaults to today; numbers are parsed):
   escape   crate defect class severity made_in found_in [note]       a defect one step made and a later step found
                                                                      (severity: high | low, specification.md §8 item 3)
   expect   id change expects check_at                                a method change and the measurement that confirms it
-  result   id outcome [note]                                         the outcome of an expectation (confirmed | refuted | revised)
+  result   id outcome [note]                                         the outcome of an expectation (confirmed | refuted | revised),
+                                                                     or `partial`: what one of several checking points measured,
+                                                                     the expectation staying open for the others
 """
 import collections, datetime, json, os, sys
 
@@ -39,6 +41,8 @@ def add(kind, pairs):
         row[k] = int(v) if v.isdigit() else None if (k, v) == ("tokens", "none") else v
     missing = [k for k in KEYS[kind] if k not in row]
     if missing: sys.exit(f"{kind} needs {', '.join(missing)}")
+    if kind == "result" and row["outcome"] not in ("confirmed", "refuted", "revised", "partial"):
+        sys.exit(f"outcome must be confirmed, refuted, revised or partial, not {row['outcome']}")
     if kind == "step" and not str(row["model"]).startswith("claude-"):
         sys.exit(f"model must be a model id (claude-...), not an alias: {row['model']}")
     with open(PATH, "a", encoding="utf-8") as f:
@@ -82,7 +86,8 @@ def report(crate=None):
         print("\n## Method changes and what should confirm them")
         for r in exp:
             res = done.get(r["id"])
-            state = f"{res['outcome']} ({res['date']})" if res else f"OPEN, check at {r['check_at']}"
+            if res and res["outcome"] != "partial": state = f"{res['outcome']} ({res['date']})"
+            else: state = f"OPEN, check at {r['check_at']}" + (f" (partial result {res['date']})" if res else "")
             print(f"- {r['id']}: {r['change']} | expects: {r['expects']} | {state}")
 
 
