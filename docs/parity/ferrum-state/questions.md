@@ -2,4 +2,11 @@
 
 Open questions only (`docs/workflow/README.md` §3): a decided entry is removed in the commit that records the decision. Ids are stable and never reused.
 
-The next id is Q94.
+The next id is Q95.
+
+## Q94. Step 3 of a unit ("What the unit found") has no budget and its rows have no field for their flag
+- **Found.** `docs/parity/ferrum-state/plan.md` "Each unit", step 3: "A case of cm6 with no behavior row gets its row and a fixture through the chunk's interpreter, by one `spec-auditor` per unit (as step B added fixtures), with the flag `added during implementation`" (also `docs/workflow/implementation.md` §2 item 1). U2 is the first unit with work for it: the decision "Q92 and Q93" (`docs/decisions/ferrum-state.md`, "What it requires", item 3) asks for a behavior row and a fixture of chunk `state` recording cm6's timeout (the change filter on a set of 1e9 positions or more) and the row for the merge at `mirrors/cm6/state/src/change.ts:388` (`implementation.md` "Cases of cm6 with no behavior row", unit change). U1 found none.
+- **Open because.** The table of `plan.md` "Effort and budgets" has no row for step 3, and `docs/workflow/README.md` §5 gives no default. The 952 rows of `raw/behaviors.jsonl` all have the same 12 keys (`cm6, cm6_tests, consumer_values, cost, deps, fixtures, golden_note, hazards, id, item_id, stack, text`), none of which holds a flag, and `docs/workflow/specification.md` §4 lists the fields with no flag; `tools/spec_check.py` does not check the keys of a row. No card for the `spec-auditor` exists in this stage (`docs/parity/ferrum-state/cards/` holds `implementer.md` and `test-writer.md`).
+- **Bears on it.** The spec-auditor's step cannot be given a budget or stop-loss without a row. Where the flag goes decides how the conformance stage and the hand-off find the rows added during implementation. Free fixture ids, from the generators' ranges: chunk `change` F7700 to F7799, chunk `state` F7300 to F7399. A fixture added to chunk `change` with an op that chunk has no replayer op for would fail `checks change` and `code change` (ops registered for the chunk) until a `test-writer` adds it; an op added to chunk `state` is written by U4b's `test-writer` with the chunk's others. A recorded timeout fails the replay until a row lists the fixture (`plan.md` "R", change 2), so `state.cm6.032.d3` must list it before the next `code` run.
+- **Blocks.** Step 3 of U2, and so the end of unit U2; the same step of U3 and U4.
+- **Raised by.** orchestrator, 2026-11-15.
