@@ -57,6 +57,9 @@
 - A hand-written list of what a proof leaves out (fixtures under a row): list only what the tool cannot find itself, and make the run check the list (a listed case that equals its record fails). Reading the listed cases one by one found a third of them redundant, some siblings missing and one reproduced. `docs/decisions/ferrum-state.md`, "Q75 to Q78"
 - Rules a proof tool follows only on values the reference never produces ("no counterpart") have no run-made reference: require literal tests of each rule, and a named reason per rule in the report so the cautious choices can be counted before they are loosened. Same entry
 - A shortcut in an evaluator (not evaluating the arguments of an op whose result is discarded) is judged by what reads its trace, not by the result alone. Same entry
+- A proof's result names ("compared in part") must not be earned by shape alone: a case with no compared value is "not compared", while its shape still fails on a difference. Report less than is checked, never more. `docs/decisions/ferrum-state.md`, "Q79 to Q83"
+- Work split by unit when the data are split by chunk: the piece belongs to where its definition lives (the chunk's interpreter), and the worker who later holds the rules re-reads what was bound early. Same entry
+- `impl Trait` returned from `&self` (edition 2024) borrows the receiver unless `use<>`; compile every "outlives" claim of a signature. Same entry
 
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.
