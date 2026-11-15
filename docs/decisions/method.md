@@ -693,3 +693,17 @@ So a difference on purpose is never a failure (the reference expects it), an err
 **Reopens.** E18, E19 or E20 refuted; an op vocabulary in `ferrum-view` regular enough to declare (then a generator of bindings is asked again, with that fact); a review of the method that does not use `docs/workflow/evolution.md`.
 
 **Raised by me, not asked.** (1) G3's literal comparison was a conformance step for a defect made at the checks step; it now runs where the defect is made. (2) The replayer of `ferrum-state` is also the driver of the differential oracle (G5) and of the improvement delta, so its fixture directory must be a parameter from the first version. (3) The maintainer's question assumed the fixtures are "100% structured"; the inputs are, the ops' bindings are not, and that boundary is where the agent's work lies.
+
+## 2026-11-15 · M21: a ledger row names the model that served the run
+
+**Question (M21).** A `step` row of `docs/progress/ledger.jsonl` said at which effort a run was made but not which model made it, so a run of the consultant on Fable 5.2 at `medium` read as an Opus run at `medium`.
+
+**Decision, by the maintainer** (their words: `dev/maintainer/instructions/2026-11-15-modelo-no-ledger.md`; carried out by the orchestrator on their instruction, with no consultant call). Every `step` row has a field `model`, the id of the model that served the run (`claude-opus-5-5`, `claude-fable-5-2`), never an alias. The rows already written are filled from the fact the maintainer gave: from 2026-11-13 the orchestrator and the consultant ran on Fable 5.2 at `medium`; every other row is Opus 5.5.
+
+**What was changed.** `tools/ledger.py`: `model` is a required key of `step`, a value that is not a model id is refused, and the report prints the runs by role, model and effort (seen: a row without `model` and a row with `model=opus` are both refused). `docs/progress/ledger.jsonl`: the 78 `step` rows carry `model`; the four orchestrator rows from 2026-11-13, recorded with effort `none`, now say `medium`. `docs/workflow/README.md` §5 "State", `tools/README.md` and `.claude/skills/ferrum-run/SKILL.md` say so.
+
+**Left as recorded, not verified.** One consultant row of 2026-11-13 ("A pilot review") says effort `high`, where the maintainer's fact says `medium` from that day; its model is set to Fable 5.2 and its effort is unchanged, because nothing here shows which of the two is right for that run.
+
+**Bears on later reviews.** E3 and the budgets of the pilot review compare rows by effort; they now read the model beside it. The model of a worker's row is the one its definition names (`.claude/agents/*.md`), which the orchestrator does not see confirmed in a finished run's notification; a failed run's notice did name it (`claude-opus-5-5`, step R, 2026-11-15).
+
+**Binding text.** `tools/ledger.py` (docstring and `KEYS`); `docs/workflow/README.md` §5 "State".
