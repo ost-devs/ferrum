@@ -16,7 +16,7 @@ use crate::transaction::{Annotation, Transaction};
 ///
 /// ferrum-only: the identity of Text, see D15
 pub fn same_text(a: &Text, b: &Text) -> bool {
-    todo!()
+    Arc::ptr_eq(&a.node, &b.node)
 }
 
 /// The texts a change set inserts, one per section, empty for an unchanged section (cm6's `ChangeSet.inserted`,

@@ -349,7 +349,7 @@ impl EditorState {
     /// `wordChars` of the language data at `at`.
     ///
     /// cm6: EditorState.charCategorizer
-    pub fn char_categorizer(&self, at: usize) -> impl Fn(&str) -> CharCategory + Send + Sync + 'static {
+    pub fn char_categorizer(&self, at: usize) -> impl Fn(&str) -> CharCategory + Send + Sync + 'static + use<> {
         // The skeleton's body: `todo!()` alone has no type that names this `impl Fn` (`design.md` §3).
         let f: fn(&str) -> CharCategory = |_| todo!();
         f

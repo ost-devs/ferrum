@@ -64,8 +64,29 @@ The 47 implicit throws of `docs/parity/ferrum-state/raw/throws.jsonl` (engine `T
 
 Every mechanism a unit replaced by a native one, with the cm6 lines (`plan.md` "Implementation", step 2). The skeleton replaces none: its forms of cm6's idioms are `design.md` §3.
 
+### Unit text
+
+- **The extending table decoded at compile time.** `@marijn/find-cluster-break` decodes its base-36 delta string into `rangeFrom` and `rangeTo` when the module loads (`mirrors/marijn/find-cluster-break/src/index.js:3-15`). `crate::char` keeps the same string (`EXTENDERS`) and decodes it the same way in a `const` (`RANGES`), so the table exists before the first call; `is_extending_char` is the package's binary search (`index.js:17-26`). The package's unused `check` (`index.js:32-37`) is not ported.
+- **Clusters on `char`s instead of UTF-16 code units** (D1, D2). `nextClusterBreak` assembles surrogate pairs and moves a position between their halves back to the pair (`index.js:47-50`, `:77-87`); `crate::char::next_cluster_break` reads one `char` at a time, a position inside a character being a violated precondition. The count of regional indicators steps back two code units at a time (`index.js:57-58`) and a joined indicator advances by 2 (`:60`): both are one indicator, which the port steps as one `char`. `prevClusterBreak` tries the candidates `pos - 2, pos - 3, …` in code units (`index.js:68-75`); `crate::char::prev_cluster_break` tries the characters before the last one, backward, and returns the end of the first whose forward cluster is that character alone, which is the same result (the reasoning is in its doc comment; a unit test runs cm6's loop on the UTF-16 form of mixed strings against it).
+- **`codePointAt` and `codePointSize` on `char`** (`mirrors/cm6/state/src/char.ts:13-25`, `:37`): `code_point_at` decodes the `char` at a byte offset, `code_point_size` is `char::len_utf8` (`design.md` §2).
+- **The categorizer's regular expressions as `char` predicates** (`mirrors/cm6/state/src/charcategory.ts:16`, `:30`): `\p{Alphabetic}`, `\p{Number}` and `_` are `char::is_alphabetic`, `char::is_numeric` and `'_'`; `/\S/` failing is every `char` being `char::is_whitespace` but U+0085, or U+FEFF (`state.cm6.166.d1`). `wordChars` is compared by UTF-16 code unit through `encode_utf16` (`charcategory.ts:32`, `state.cm6.167.d1`). The fallback for engines without property escapes (`charcategory.ts:13`, `:18-26`) is not ported (`state.cm6.166.d1`).
+- **`Text.empty` as a `LazyLock`** (`mirrors/cm6/state/src/text.ts:376`, assigned at module load): one immutable node for the process (`crate::text::EMPTY`), which `Text::empty()` and `Text::of(&[""])` return.
+- **`instanceof` dispatch as a `match`** on the private enum `Tree` (`text.ts:203`, `:321`, `:345`, `:350-351`, `:414`, `:422`, `:440`, `:457`), and the three cursor classes as the private enum `Cursor` (`text.ts:402`, `:475`, `:519`).
+- **The closures of `TextNode.from`** (`add` and `flush` over mutable locals, `text.ts:342-368`) as the methods of a private struct, `Chunker`; `currentLen`, which cm6 starts at -1, is kept plus one.
+- **Line strings shared.** cm6's lines are JavaScript strings, joined with `+=` (`text.ts:390`) and cut with `slice` (`:388-389`). Ferrum's are `Arc<str>`: a line taken whole is shared, a joined or cut one is allocated; a cursor's value refers to the line it is part of (`Value::Part`) instead of copying it.
+- **Signed positions where cm6's go negative.** `TextNode.decompose` passes `from - pos` to its children (`text.ts:275`), negative for the children after `from`, and the sign decides whether a child is open at its start (`:273`); `Text::decompose` takes `isize`. `PartialTextCursor` keeps `pos`, `from` and `to` signed (`text.ts:496-509`), and `Text::eq` its `end` (`text.ts:89`, negative when the two documents share every child).
+- **`toString` writes into the formatter** (`text.ts:132`, `sliceString(0)`): `Display` walks the tree and writes each line and break, building no intermediate string.
+
 ## Cases of cm6 with no behavior row
 
+### Unit text
+
+None found: every case of `text.ts`, `char.ts`, `column.ts`, `charcategory.ts` and `@marijn/find-cluster-break` ported in unit text has a row of `raw/behaviors.jsonl` or of `raw/decisions.jsonl`, or is not observable (`nextClusterBreak` leaves `prev` unchanged after joining a regional indicator, `mirrors/marijn/find-cluster-break/src/index.js:60`: `prev` is only compared with ZWJ, and neither value can be ZWJ there).
+
 ## Checks believed wrong
+
+### Unit text
+
+- **The four tests of `crates/ferrum-state/tests/cm6_charcategory.rs` are required to pass at unit text, and cannot.** `tools/impl_check.py ferrum-state code text` requires every test of the unit's cm6 test files to pass; `plan.md` "Units" gives unit U1 the file `test-charcategory.ts`. Each of its cases builds its state with `mk`, which calls `EditorState::create` with `Vec<Extension>` converted into an `Extension` (`mirrors/cm6/state/test/test-charcategory.ts`, `mk`), and every one panics at the `todo!()` of `impl From<Vec<Extension>> for Extension` (`crates/ferrum-state/src/facet.rs`, unit U4), before any code of unit text runs; `EditorState::char_categorizer` is also unit U4's (`crates/ferrum-state/src/state.rs`). The tests are cm6's and are not wrong; what cannot hold is that they pass when unit text is done. Not a fixture, so no trace. Unit text's part of them is `crate::charcategory::make_categorizer`, which the fixtures of chunk `text` reach only through `EditorState::char_categorizer`: 214 of the 387 `pending` fixtures of the chunk categorize; until unit U4 a unit test of the private helper in `crates/ferrum-state/src/charcategory.rs` checks it on values of the rows of `CharCategory`.
 
 ## Changes to checks after their code
