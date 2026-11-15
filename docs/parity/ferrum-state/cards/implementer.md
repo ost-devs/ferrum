@@ -58,7 +58,6 @@ For a type or a parameter, read cm6's declaration at the row's `file` and `line`
 
 ## Step U1 code: the unit `text`
 
-<!-- refs:planned crates/ferrum-state/tests/cm6_text.rs -->
 **What it is for.** The first unit of code: `Text` and what stands beside it (cm6's `text.ts`, `char.ts` with `@marijn/find-cluster-break`, `column.ts`, `charcategory.ts`; 39 items, 153 behaviors). Its checks exist already and you cannot change them: 1,662 fixtures of chunk `text` that the replayer runs against your code, 32 ported cm6 tests, the written tests. This unit is the pilot: your token count, the checks you report as wrong and what this card lacked set the plan of the three units after it.
 
 **How the code is written.** Port cm6's source whole function by whole function, every case of it, including those no check names: the checks show a wrong case, nothing mechanical shows a missing one, and conformance lists every line of the crate no check reaches. The behavior rows say what each case must give; they are not the work list, cm6's code is. Positions and lengths are UTF-8 bytes (D1), line separators as D2 says; every other rule is in what binds.
