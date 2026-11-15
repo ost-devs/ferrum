@@ -1,7 +1,9 @@
 //! The written tests of unit `text` (`docs/parity/ferrum-state/plan.md` "Ported tests and written tests"): what no
 //! fixture can show. The deviations of the unit whose fixtures the replayer leaves out (`state.cm6.212.d1`,
 //! `state.cm6.216.d1`, `state.cm6.229.d1`); a position that is not on a `char` boundary panics in every function of
-//! the unit that takes one (D1); `Text::is_char_boundary`; the unit's public value types are `Send + Sync` (D6).
+//! the unit that takes one (D1); every panic of Ferrum's own with its message of `design.md` section 5, "Panics of
+//! Ferrum's own", compared whole; the `IntoIterator` of `&Text` and of `TextIterator` (N8); `Text::is_char_boundary`;
+//! the unit's public value types are `Send + Sync` (D6).
 //!
 //! Positions are bytes (D1); every expected position is computed from the text beside it. A panic is asserted with a
 //! message other than the one of `todo!()`, so that no test passes while its function is unwritten.
@@ -25,6 +27,21 @@ fn panics(f: impl FnOnce()) -> String {
     message
 }
 
+/// The messages of `docs/parity/ferrum-state/design.md` section 5, "Panics of Ferrum's own", positions in bytes (D1).
+fn in_document(pos: usize) -> String {
+    format!("Position {pos} is not on a character boundary of the document")
+}
+
+fn in_string(pos: usize) -> String {
+    format!("Position {pos} is inside a character of the string")
+}
+
+fn beyond(pos: usize, len: usize) -> String {
+    format!("Position {pos} is beyond the end of a string of length {len}")
+}
+
+const TAB_SIZE_0: &str = "Invalid tab size 0";
+
 // passes against the skeleton: a helper of this file; it only checks how a closure of the test panics
 #[test]
 fn helper_panics_tells_a_todo_from_another_panic() {
@@ -42,31 +59,58 @@ fn helper_panics_tells_a_todo_from_another_panic() {
 fn find_cluster_break_beyond_the_end_panics() {
     let s = "ab";
     assert_eq!(find_cluster_break(s, s.len(), true, true), s.len());
-    panics(|| {
+    let message = panics(|| {
         find_cluster_break(s, s.len() + 1, true, true);
     });
-    panics(|| {
+    assert_eq!(message, beyond(s.len() + 1, s.len()));
+    let message = panics(|| {
         find_cluster_break(s, s.len() + 3, false, true);
     });
-    panics(|| {
+    assert_eq!(message, beyond(s.len() + 3, s.len()));
+    let message = panics(|| {
         find_cluster_break("", 1, true, false);
     });
+    assert_eq!(message, beyond(1, 0));
 }
 
-/// `state.cm6.216.d1`: a tab size of 0 panics in `count_column` and `find_column` (cm6 computes with `NaN`).
+/// `state.cm6.216.d1`: a tab size of 0 panics in `count_column`, `find_column` and `try_find_column` (cm6 computes
+/// with `NaN`), on the argument alone, before the string is read.
 // covers: state.cm6.216.d1, state.countColumn.B6, state.findColumn.B7
 #[test]
 fn a_tab_size_of_zero_panics() {
     assert_eq!(count_column("\tx", 4, 2), 5);
-    panics(|| {
+    let message = panics(|| {
         count_column("\tx", 0, 2);
     });
-    panics(|| {
+    assert_eq!(message, TAB_SIZE_0);
+    let message = panics(|| {
         find_column("\tx", 3, 0);
     });
-    panics(|| {
+    assert_eq!(message, TAB_SIZE_0);
+    let message = panics(|| {
         try_find_column("\tx", 3, 0);
     });
+    assert_eq!(message, TAB_SIZE_0);
+}
+
+/// `state.cm6.216.d1`: a tab size of 0 panics also on a string with no tab (the input of `text:F0433`, where cm6
+/// gives 2).
+// covers: state.cm6.216.d1, state.countColumn.B6, state.findColumn.B7
+#[test]
+fn a_tab_size_of_zero_panics_on_a_string_without_a_tab() {
+    let s = "ab";
+    let message = panics(|| {
+        count_column(s, 0, s.len());
+    });
+    assert_eq!(message, TAB_SIZE_0);
+    let message = panics(|| {
+        find_column(s, 1, 0);
+    });
+    assert_eq!(message, TAB_SIZE_0);
+    let message = panics(|| {
+        try_find_column(s, 1, 0);
+    });
+    assert_eq!(message, TAB_SIZE_0);
 }
 
 /// `state.cm6.229.d1`: `Text::of` copies its input, so changing the caller's lines afterwards leaves the document as
@@ -125,61 +169,72 @@ fn emoji_doc() -> (Text, usize, usize) {
     (Text::of(&[s]), start, start + 1)
 }
 
+// covers: state.Text.lineAt.B3
 #[test]
 fn text_line_at_inside_a_character_panics() {
     let (d, start, inside) = emoji_doc();
     assert_eq!(d.line_at(start).number(), 1);
-    panics(|| {
+    let message = panics(|| {
         d.line_at(inside);
     });
+    assert_eq!(message, in_document(inside));
 }
 
 #[test]
 fn text_replace_inside_a_character_panics() {
     let (d, start, inside) = emoji_doc();
     assert_eq!(d.replace(start, start, &Text::of(&["x"])).to_string(), "ax😀b");
-    panics(|| {
+    let message = panics(|| {
         d.replace(inside, d.len(), &Text::empty());
     });
-    panics(|| {
+    assert_eq!(message, in_document(inside));
+    let message = panics(|| {
         d.replace(0, inside, &Text::empty());
     });
+    assert_eq!(message, in_document(inside));
 }
 
+// covers: state.Text.slice.B2
 #[test]
 fn text_slice_inside_a_character_panics() {
     let (d, start, inside) = emoji_doc();
     assert_eq!(d.slice(start, d.len()).to_string(), "😀b");
-    panics(|| {
+    let message = panics(|| {
         d.slice(inside, d.len());
     });
-    panics(|| {
+    assert_eq!(message, in_document(inside));
+    let message = panics(|| {
         d.slice(0, inside);
     });
+    assert_eq!(message, in_document(inside));
 }
 
 #[test]
 fn text_slice_string_inside_a_character_panics() {
     let (d, start, inside) = emoji_doc();
     assert_eq!(d.slice_string(0, start, "\n"), "a");
-    panics(|| {
+    let message = panics(|| {
         d.slice_string(inside, d.len(), "\n");
     });
-    panics(|| {
+    assert_eq!(message, in_document(inside));
+    let message = panics(|| {
         d.slice_string(0, inside, "\n");
     });
+    assert_eq!(message, in_document(inside));
 }
 
 #[test]
 fn text_iter_range_inside_a_character_panics() {
     let (d, start, inside) = emoji_doc();
     assert_eq!(d.iter_range(start, d.len()).next(0).value(), "😀b");
-    panics(|| {
+    let message = panics(|| {
         d.iter_range(inside, d.len());
     });
-    panics(|| {
+    assert_eq!(message, in_document(inside));
+    let message = panics(|| {
         d.iter_range(0, inside);
     });
+    assert_eq!(message, in_document(inside));
 }
 
 #[test]
@@ -187,9 +242,11 @@ fn text_iterator_skip_ending_inside_a_character_panics() {
     let (d, start, inside) = emoji_doc();
     assert_eq!(d.iter(IterDirection::Forward).next(start as isize).value(), "😀b");
     let mut it = d.iter(IterDirection::Forward);
-    panics(move || {
+    let message = panics(move || {
         it.next(inside as isize);
     });
+    // the value of a cursor is a part of a line: the position is in that line's string, here the whole document
+    assert_eq!(message, in_string(inside));
 }
 
 #[test]
@@ -197,9 +254,10 @@ fn find_cluster_break_inside_a_character_panics() {
     let s = "a😀b";
     let start = s.find('😀').expect("the emoji is in the string");
     assert_eq!(find_cluster_break(s, start, true, true), start + '😀'.len_utf8());
-    panics(|| {
+    let message = panics(|| {
         find_cluster_break(s, start + 1, true, true);
     });
+    assert_eq!(message, in_string(start + 1));
 }
 
 #[test]
@@ -207,9 +265,10 @@ fn code_point_at_inside_a_character_panics() {
     let s = "a😀b";
     let start = s.find('😀').expect("the emoji is in the string");
     assert_eq!(code_point_at(s, start), Some('😀'));
-    panics(|| {
+    let message = panics(|| {
         code_point_at(s, start + 2);
     });
+    assert_eq!(message, in_string(start + 2));
 }
 
 #[test]
@@ -217,9 +276,59 @@ fn count_column_inside_a_character_panics() {
     let s = "a😀b";
     let start = s.find('😀').expect("the emoji is in the string");
     assert_eq!(count_column(s, 4, start), 1);
-    panics(|| {
+    let message = panics(|| {
         count_column(s, 4, start + 3);
     });
+    assert_eq!(message, in_string(start + 3));
+}
+
+// ---- N8: the `IntoIterator` of `&Text` and of `TextIterator` --------------------------------------------------------
+
+/// The strings `next(0)` gives until the cursor is done.
+fn drained(mut it: ferrum_state::TextIterator) -> Vec<String> {
+    let mut out = Vec::new();
+    while !it.next(0).done() {
+        out.push(it.value().to_string());
+    }
+    out
+}
+
+#[test]
+fn text_into_iter_yields_what_next_gives() {
+    let d = Text::of(&["one", "", "a😀b"]);
+    let got: Vec<String> = (&d).into_iter().collect();
+    assert_eq!(got, drained(d.iter(IterDirection::Forward)));
+    assert_eq!(got, ["one", "\n", "\n", "a😀b"]);
+    let mut n = 0;
+    for s in &d {
+        n += s.len();
+    }
+    assert_eq!(n, d.len());
+}
+
+#[test]
+fn text_iterator_into_iter_from_the_start_and_after_a_next() {
+    let d = Text::of(&["one", "", "a😀b"]);
+    // from the start, for each kind of cursor
+    for (a, b) in [
+        (d.iter(IterDirection::Forward), d.iter(IterDirection::Forward)),
+        (d.iter(IterDirection::Backward), d.iter(IterDirection::Backward)),
+        (d.iter_range(1, d.len()), d.iter_range(1, d.len())),
+        (d.iter_lines(None), d.iter_lines(None)),
+    ] {
+        assert_eq!(a.into_iter().collect::<Vec<String>>(), drained(b));
+    }
+    // after a `next`: the strings that follow the one the cursor stands on
+    let mut a = d.iter(IterDirection::Forward);
+    a.next(0);
+    let mut b = d.iter(IterDirection::Forward);
+    b.next(0);
+    let rest: Vec<String> = a.into_iter().collect();
+    assert_eq!(rest, drained(b));
+    assert_eq!(rest, ["\n", "\n", "a😀b"]);
+    let mut lines = d.iter_lines(Some((1, d.lines() + 1)));
+    lines.next(0);
+    assert_eq!(lines.into_iter().collect::<Vec<String>>(), ["", "a😀b"]);
 }
 
 // ---- Text::is_char_boundary --------------------------------------------------------------------------------------------
