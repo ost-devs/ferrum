@@ -1,6 +1,5 @@
 # ferrum-state: test-writer card
 
-<!-- refs:planned crates/ferrum-state/tests -->
 Written by the orchestrator from `docs/parity/ferrum-state/plan.md` "Implementation". Your assignment (the spawn prompt) names the step. Reference: `@codemirror/state` 6.7.6 in `mirrors/cm6/state/`. You write under `crates/ferrum-state/tests/` and `.scratch/` only (a hook blocks every other path), and you never open a file of `crates/ferrum-state/src/` that holds code: read signatures with `cargo doc -p ferrum-state --features __test --document-hidden-items` or from the skeleton commit your assignment names.
 
 ## What the replayer is, for every step
