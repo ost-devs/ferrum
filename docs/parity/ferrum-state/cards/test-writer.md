@@ -97,3 +97,16 @@ Where things are and how they are spelled is fixed by the docstring of `tools/im
 
 **Report:** the output of the check; counts (ops registered, ported cases, written tests); every `// passes against the skeleton:` and every `// literal` cause by decision id; the files of chunk `text` you changed and why; the questions; anything the tool reported that you had to fix before the commit; then the two lines of `CLAUDE.md` "Reporting from a card".
 
+## Step U2 checks, after Q86 to Q91
+
+The checks of 4dbc4d8 changed as the consultant decided Q86 to Q91 (`docs/decisions/ferrum-state.md`, "Q86 to Q91", its list "What it requires, before the code step of U2"). That list is the work, items 1 to 8; read the decision entry whole, and `docs/parity/ferrum-state/design.md` §3, §5 (the message of Q90) and §10 ("No counterpart", "Key order", "Engine errors") as they now stand, with the new rows of `raw/replay.jsonl` (`mapmode.values`, the parts of `desc.composeDesc`, `desc.mapDesc`, `set.mapDesc`, `range.toJSON`, `sel.toJSON`) and `state.cm6.161.d1` of `raw/decisions.jsonl`, and D12 in `.claude/rules/decisions.md`.
+
+**Write:** only under `crates/ferrum-state/tests/`: the core (`driver.rs`, `lang/`, with literal tests in `rules.rs`), chunk `change`'s module, `change_spec` of chunk `text` (`replay/text/changes.rs`), and `written_change.rs`. List in the report every file you change that is not of chunk `change` or `written_change.rs`: the orchestrator writes them in `implementation.md` "Changes to checks after their code".
+
+**Check:** `cargo fmt --all`, then `python3 tools/impl_check.py ferrum-state core` and `python3 tools/impl_check.py ferrum-state checks change`, until both pass.
+
+**Budget.** What is left of step U2 checks: it stops at 600,000 tokens in all, and 456,269 are spent. If you pass 600,000, stop and report where you are.
+
+**Commit** with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the checks of unit change after Q86 to Q91' -- crates/ferrum-state/tests`.
+
+**Report:** the output of both checks; the files changed outside chunk `change` and why; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
