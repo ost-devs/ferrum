@@ -110,3 +110,21 @@ The checks of 4dbc4d8 changed as the consultant decided Q86 to Q91 (`docs/decisi
 **Commit** with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the checks of unit change after Q86 to Q91' -- crates/ferrum-state/tests`.
 
 **Report:** the output of both checks; the files changed outside chunk `change` and why; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Step U2 checks, a round of "A check that is wrong" and Q92
+
+`python3 tools/impl_check.py ferrum-state code change --since ea896a1` at the code of unit `change` (c8cf9f8) fails on two checks, both yours to fix (`docs/parity/ferrum-state/plan.md` "A check that is wrong"; `docs/decisions/ferrum-state.md`, "Q92 and Q93", "What it requires", item 1):
+
+1. `helper_comp_over_under_and_map_compare` (`crates/ferrum-state/tests/cm6_change.rs:219`) fails against any implementation: `comp(&["2 0:1", "3"])` composes nothing (one spec), so it compares `"2 0:1"` with `"3"`; cm6's `comp` (`mirrors/cm6/state/test/test-change.ts:34-37`) returns the description itself on one spec, as the helper's fold does. Output: `assertion left == right failed, left: "2 0:1", right: "3"` at `cm6_change.rs:43`. The implementer's reasoning: `docs/parity/ferrum-state/implementation.md` "Checks believed wrong", unit change. The helper test is to check what cm6's helper does.
+2. `state.EditorSelection.asSingle.B2` is named by no check. Add to `crates/ferrum-state/tests/written_change.rs` one written test with `// covers: state.EditorSelection.asSingle.B2` that runs the inputs of F0584 and F0583: `EditorSelection::create` with cursors at 1 and 4 and main index 7 panics with `Main index 7 is beyond the 2 ranges of the selection`; `EditorSelection::from_json` of `{"ranges": [{"anchor": 0, "head": 0}, {"anchor": 1, "head": 1}], "main": -1}` is `Err(Error::InvalidEditorSelectionJson)` (rows `state.cm6.073.d1`, `state.cm6.160.d1`; `plan.md` "Ported tests and written tests").
+
+You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as before.
+
+**Check:** `cargo fmt --all`, then `python3 tools/impl_check.py ferrum-state checks change` (it now also fails on a behavior whose every fixture a decision row lists and that nothing names) and `python3 tools/impl_check.py ferrum-state code change --since ea896a1`; the second must pass but for its check that the tests are unchanged since ea896a1, which reports your two files until the orchestrator lists them.
+
+**Budget.** 60,000 tokens (a round, counted apart from the unit's steps). If you pass 90,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the checks of unit change, a wrong helper test and Q92' -- crates/ferrum-state/tests`.
+
+**Report:** the output of both checks; what you changed in each file and the rule each change restores; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
