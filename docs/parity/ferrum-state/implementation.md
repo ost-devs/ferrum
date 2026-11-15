@@ -103,3 +103,6 @@ Formatting only (`cargo fmt --all` with `rustfmt.toml`, decided at the pilot rev
 - `crates/ferrum-state/tests/replay/text/harness.rs`
 - `crates/ferrum-state/tests/replay/text/host.rs`
 - `crates/ferrum-state/tests/replay/text/strings.rs`
+
+The U1 follow-up (commit a094049; `docs/parity/ferrum-state/plan.md` "Before U2", item 2, decided at the pilot review: `docs/decisions/ferrum-state.md`, "The pilot review of the implementation"): the written tests of unit `text` gain `// covers: state.Text.lineAt.B3` and `state.Text.slice.B2`, the messages of `design.md` section 5 "Panics of Ferrum's own" compared whole, tab size 0 on a string with no tab, and the `IntoIterator` of `&Text` and of `TextIterator`. It restores `plan.md` "Ported tests and written tests". Files:
+- `crates/ferrum-state/tests/written_text.rs`
