@@ -7,7 +7,7 @@ use std::any::Any;
 use std::cell::{OnceCell, RefCell};
 use std::rc::Rc;
 
-use ferrum_state::{ChangeDesc, ChangeSet, CharCategory, EditorState, Line, Text, TextIterator, __test};
+use ferrum_state::{__test, ChangeDesc, ChangeSet, CharCategory, EditorState, Line, Text, TextIterator};
 
 use super::cursor::{Shadow, Token, tokens};
 use crate::replay::convert::{Converted, Excluded, utf8_to_utf16, utf16_to_utf8};

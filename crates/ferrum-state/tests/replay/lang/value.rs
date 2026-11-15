@@ -541,9 +541,7 @@ pub fn to_integer(v: &Value) -> Result<f64, Flow> {
 /// The bounds of `Array.prototype.slice` and `String.prototype.slice` on a value of length `len`.
 pub fn slice_bounds(len: usize, start: &Value, end: &Value) -> Result<(usize, usize), Flow> {
     let len_f = len as f64;
-    let rel = |x: f64| -> usize {
-        if x < 0.0 { (len_f + x).max(0.0) as usize } else { x.min(len_f) as usize }
-    };
+    let rel = |x: f64| -> usize { if x < 0.0 { (len_f + x).max(0.0) as usize } else { x.min(len_f) as usize } };
     let from = rel(to_integer(start)?);
     let to = if end.is_undefined() { len } else { rel(to_integer(end)?) };
     Ok((from, to.max(from)))

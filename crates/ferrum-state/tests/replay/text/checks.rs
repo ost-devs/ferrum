@@ -135,7 +135,11 @@ fn steps(it: &Iter, flat: &mut Shadow, skips: &Value) -> R<Case> {
         let (value, done, line_break) = it.fields()?;
         got.push(Value::array(vec![jstr(&value), Value::Bool(done), Value::Bool(line_break)]));
         flat.next(k);
-        want.push(Value::array(vec![Value::Str(flat.value()), Value::Bool(flat.done()), Value::Bool(flat.line_break())]));
+        want.push(Value::array(vec![
+            Value::Str(flat.value()),
+            Value::Bool(flat.done()),
+            Value::Bool(flat.line_break()),
+        ]));
     }
     Ok(Ok((Value::array(got), Value::array(want))))
 }

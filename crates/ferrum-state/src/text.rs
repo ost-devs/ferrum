@@ -181,11 +181,7 @@ impl Chunker {
             return;
         }
         let mut current = std::mem::take(&mut self.current_chunk);
-        let piece = if current.len() == 1 {
-            current.remove(0)
-        } else {
-            node_from(current, Some(self.current_len - 1))
-        };
+        let piece = if current.len() == 1 { current.remove(0) } else { node_from(current, Some(self.current_len - 1)) };
         self.chunked.push(piece);
         self.current_len = 0;
         self.current_lines = 0;
@@ -409,12 +405,7 @@ impl Text {
             }
         };
         TextIterator {
-            cursor: Cursor::Lines(Box::new(LineCursor {
-                inner,
-                after_break: true,
-                value: Value::Empty,
-                done: false,
-            })),
+            cursor: Cursor::Lines(Box::new(LineCursor { inner, after_break: true, value: Value::Empty, done: false })),
         }
     }
 
@@ -558,9 +549,7 @@ impl Text {
                     Text::leaf(slice_text(&leaf.text, a, b), (min(to, length) - max(0, from)) as usize)
                 };
                 if open & OPEN_FROM != 0 {
-                    let Some(prev) = target.pop() else {
-                        unreachable!("an open piece follows another piece")
-                    };
+                    let Some(prev) = target.pop() else { unreachable!("an open piece follows another piece") };
                     let (Tree::Leaf(prev), Tree::Leaf(piece)) = (&*prev.node, &*text.node) else {
                         unreachable!("the pieces at an open seam are leaves")
                     };

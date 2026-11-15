@@ -204,11 +204,7 @@ where
     /// [`Error::ComputeStaticFacet`]: crate::error::Error::ComputeStaticFacet
     ///
     /// cm6: Facet.computeN
-    pub fn compute_n(
-        &self,
-        deps: &[Slot],
-        get: impl Fn(&EditorState) -> Vec<I> + Send + Sync + 'static,
-    ) -> Extension {
+    pub fn compute_n(&self, deps: &[Slot], get: impl Fn(&EditorState) -> Vec<I> + Send + Sync + 'static) -> Extension {
         todo!()
     }
 

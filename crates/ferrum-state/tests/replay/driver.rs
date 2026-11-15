@@ -245,7 +245,11 @@ fn leaf(c: &mut Compared, path: &[Seg], equal: bool) -> bool {
 fn altered(v: &Value, path: &[Seg]) -> Value {
     match (v, path.first()) {
         (Value::Array(a), Some(Seg::Index(i))) => Value::array(
-            a.borrow().iter().enumerate().map(|(j, x)| if j == *i { altered(x, &path[1..]) } else { x.clone() }).collect(),
+            a.borrow()
+                .iter()
+                .enumerate()
+                .map(|(j, x)| if j == *i { altered(x, &path[1..]) } else { x.clone() })
+                .collect(),
         ),
         (Value::Object(o), Some(Seg::Key(k))) => {
             let mut out = Object::new();
@@ -354,12 +358,7 @@ fn left_out_value(l: &LeftOut) -> Value {
         What::Argument(a) => ("argument", Value::str(a)),
         What::Part(p) => ("part", Value::str(p)),
     };
-    Value::record([
-        ("reason", Value::str(&l.reason)),
-        ("op", Value::str(&l.op)),
-        what,
-        ("value", l.value.clone()),
-    ])
+    Value::record([("reason", Value::str(&l.reason)), ("op", Value::str(&l.op)), what, ("value", l.value.clone())])
 }
 
 /// Run one fixture of a chunk and give its result with the report's entries (`design.md` section 10).
@@ -486,7 +485,8 @@ pub fn run_one(lang: &Language, fixture: &Value, ctx: &Ctx) -> Run {
         match run.result {
             "equal" => {
                 run.result = "mismatch";
-                run.note = format!("listed by {rows:?}, which state no condition, and its output equals the recorded one");
+                run.note =
+                    format!("listed by {rows:?}, which state no condition, and its output equals the recorded one");
             }
             "pending" => {}
             // the replayer's own failure, and a row with a condition that no call met, stay failures

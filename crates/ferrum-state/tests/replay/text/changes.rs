@@ -7,7 +7,7 @@
 
 use std::rc::Rc;
 
-use ferrum_state::{ChangeSet, ChangeSpec, EditorState, EditorStateConfig, Extension, TextSpec, __test};
+use ferrum_state::{__test, ChangeSet, ChangeSpec, EditorState, EditorStateConfig, Extension, TextSpec};
 
 use super::doc::doc_arg;
 use super::host::{Desc, Doc, R, Set, State, by_type, ferrum, finish, known, str_arg, uint, uint_arg};

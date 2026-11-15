@@ -4,7 +4,7 @@
 
 use std::rc::Rc;
 
-use ferrum_state::{IterDirection, Text, __test};
+use ferrum_state::{__test, IterDirection, Text};
 
 use super::cursor::{Partial, Raw, Shadow};
 use super::host::{
@@ -364,7 +364,9 @@ fn it_arg(p: &mut Program, op: &str, v: &Value) -> R<Iter> {
 /// `read(it, fields, array, skip)` of the interpreter.
 fn read_fields(it: &Iter, fields: &Value, array: bool, skip: &Value) -> R<Value> {
     known(fields)?;
-    let Value::Array(fs) = fields else { return Err(Flow::Fail("iterator fields that are not an array".into()).into()) };
+    let Value::Array(fs) = fields else {
+        return Err(Flow::Fail("iterator fields that are not an array".into()).into());
+    };
     let fs = fs.borrow().clone();
     let (value, done, line_break) = it.fields()?;
     let mut vals = Vec::with_capacity(fs.len());
@@ -378,8 +380,11 @@ fn read_fields(it: &Iter, fields: &Value, array: bool, skip: &Value) -> R<Value>
             _ => {
                 let mut m: Vec<u16> = "interp: bad iterator field ".encode_utf16().collect();
                 m.extend_from_slice(&to_string(f)?);
-                return Err(Flow::Throw(crate::replay::lang::eval::JsError { name: "Error".into(), message: m.into() })
-                    .into());
+                return Err(Flow::Throw(crate::replay::lang::eval::JsError {
+                    name: "Error".into(),
+                    message: m.into(),
+                })
+                .into());
             }
         });
     }

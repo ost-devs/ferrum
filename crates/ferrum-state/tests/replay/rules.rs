@@ -212,7 +212,10 @@ fn rule_an_argument_that_is_no_counterpart_gives_no_counterpart() {
 #[test]
 fn rule_an_op_given_none_evaluates_its_arguments_and_returns_no_counterpart() {
     // its argument throws as on cm6, before the call that is not made
-    let r = run(r#"{"op":"t.none","x":{"op":"t.throw","message":"m"}}"#, r#"{"error":{"name":"RangeError","message":"m"}}"#);
+    let r = run(
+        r#"{"op":"t.none","x":{"op":"t.throw","message":"m"}}"#,
+        r#"{"error":{"name":"RangeError","message":"m"}}"#,
+    );
     assert_eq!(r.result, "equal");
     // an op given none that returns a value fails the run
     let r = run(r#"{"op":"t.noneWrong","x":1}"#, r#"{"ok":1}"#);
@@ -385,8 +388,13 @@ fn rule_the_control_run_alters_a_compared_leaf() {
     let lang = language();
     let decisions = Decisions::default();
     let ops = HashMap::new();
-    let ctx =
-        Ctx { decisions: &decisions, chunk_ops: &ops, control: Some("1".into()), trace: None, trace_dir: "unused".into() };
+    let ctx = Ctx {
+        decisions: &decisions,
+        chunk_ops: &ops,
+        control: Some("1".into()),
+        trace: None,
+        trace_dir: "unused".into(),
+    };
     let fixture = parse(r#"{"id":"F1","input":{"op":"t.part"},"output":{"ok":[1,"x"]}}"#).expect("JSON");
     let r = run_one(&lang, &fixture, &ctx);
     assert_eq!(r.result, "part");
@@ -417,8 +425,13 @@ fn rule_no_position_compared_is_not_altered_by_the_control_run() {
     let lang = language();
     let decisions = Decisions::default();
     let ops = HashMap::new();
-    let ctx =
-        Ctx { decisions: &decisions, chunk_ops: &ops, control: Some("1".into()), trace: None, trace_dir: "unused".into() };
+    let ctx = Ctx {
+        decisions: &decisions,
+        chunk_ops: &ops,
+        control: Some("1".into()),
+        trace: None,
+        trace_dir: "unused".into(),
+    };
     let fixture =
         parse(r#"{"id":"F1","input":{"op":"list","of":[{"op":"t.type","x":1}]},"output":{"ok":[5]}}"#).expect("JSON");
     let r = run_one(&lang, &fixture, &ctx);
@@ -441,7 +454,10 @@ fn rule_a_list_ferrum_returned_has_no_identity() {
         {"op":"same","a":{"$":"l"},"b":{"op":"let","value":1},"as":"primitive"},
         {"op":"same","a":{"op":"item","of":{"$":"l"},"index":0},"b":{"op":"let","value":1},"as":"member"}],
         "out":{"self":{"$":"self"},"other":{"$":"other"},"built":{"$":"built"},"inner":{"$":"inner"},"innerObject":{"$":"innerObject"},"primitive":{"$":"primitive"},"member":{"$":"member"}}}"#;
-    let r = run(input, r#"{"ok":{"self":true,"other":false,"built":false,"inner":true,"innerObject":true,"primitive":false,"member":true}}"#);
+    let r = run(
+        input,
+        r#"{"ok":{"self":true,"other":false,"built":false,"inner":true,"innerObject":true,"primitive":false,"member":true}}"#,
+    );
     assert_eq!(r.result, "part", "{}", r.note);
     assert_eq!(entries(&r), vec![e("identity", "same"); 5]);
     // against a primitive it is false, as for any object

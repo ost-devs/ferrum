@@ -7,8 +7,8 @@ use std::rc::Rc;
 
 use super::json::{encode, encode_str, shown};
 use super::value::{
-    JsStr, LeftOut, Object, Value, What, get_property, js, json_stringify, property_key, slice_bounds,
-    strict_equal, to_number, to_string, truthy,
+    JsStr, LeftOut, Object, Value, What, get_property, js, json_stringify, property_key, slice_bounds, strict_equal,
+    to_number, to_string, truthy,
 };
 
 /// An error a program sees: what `e.name` (and `e.constructor.name`) and `e.message` give.
@@ -53,9 +53,34 @@ pub const KINDS: [&str; 5] = ["api", "internal", "identity", "callbacks", "harne
 
 /// The ops of the language, registered in every chunk (the report lists them under the chunk `lang`).
 pub const LANGUAGE_OPS: [&str; 28] = [
-    "same", "allSame", "sameItems", "all", "not", "count", "slice", "item", "column", "copy", "lengths", "jsonEqual",
-    "object", "label", "map", "try", "let", "list", "record", "merge", "block", "capture", "ints", "floor", "div",
-    "concat", "countOf", "array.push",
+    "same",
+    "allSame",
+    "sameItems",
+    "all",
+    "not",
+    "count",
+    "slice",
+    "item",
+    "column",
+    "copy",
+    "lengths",
+    "jsonEqual",
+    "object",
+    "label",
+    "map",
+    "try",
+    "let",
+    "list",
+    "record",
+    "merge",
+    "block",
+    "capture",
+    "ints",
+    "floor",
+    "div",
+    "concat",
+    "countOf",
+    "array.push",
 ];
 
 pub type OpFn = Rc<dyn Fn(&Value, &mut Program<'_>) -> Result<Value, Flow>>;
@@ -270,7 +295,8 @@ impl<'l> Program<'l> {
     /// `a === b` with the rules of `design.md` section 10, "Identity": `strict_equal`, except that an operand that is
     /// a list or JSON value Ferrum returned, against anything but a primitive, has no counterpart (`None`).
     pub fn same_value(&self, a: &Value, b: &Value) -> Option<bool> {
-        let primitive = |v: &Value| matches!(v, Value::Undefined | Value::Null | Value::Bool(_) | Value::Num(_) | Value::Str(_));
+        let primitive =
+            |v: &Value| matches!(v, Value::Undefined | Value::Null | Value::Bool(_) | Value::Num(_) | Value::Str(_));
         if !primitive(a) && !primitive(b) && (self.is_from_ferrum(a) || self.is_from_ferrum(b)) {
             return None;
         }
@@ -765,10 +791,9 @@ fn op_try(a: &Value, p: &mut Program) -> Result<Value, Flow> {
             _ => None,
         },
         Err(Flow::Throw(e)) => match mode_s.as_str() {
-            "okOrError" | "okValueOrError" => Some(Value::record([
-                ("error", Value::str(&e.name)),
-                ("message", Value::Str(e.message.clone())),
-            ])),
+            "okOrError" | "okValueOrError" => {
+                Some(Value::record([("error", Value::str(&e.name)), ("message", Value::Str(e.message.clone()))]))
+            }
             "noErrorOrMessage" => Some(Value::record([("error", Value::Str(e.message.clone()))])),
             "okOrMessage" => Some(Value::Str(e.message.clone())),
             _ => None,

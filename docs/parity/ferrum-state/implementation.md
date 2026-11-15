@@ -90,3 +90,16 @@ None found: every case of `text.ts`, `char.ts`, `column.ts`, `charcategory.ts` a
 - **The four tests of `crates/ferrum-state/tests/cm6_charcategory.rs` are required to pass at unit text, and cannot.** `tools/impl_check.py ferrum-state code text` requires every test of the unit's cm6 test files to pass; `plan.md` "Units" gives unit U1 the file `test-charcategory.ts`. Each of its cases builds its state with `mk`, which calls `EditorState::create` with `Vec<Extension>` converted into an `Extension` (`mirrors/cm6/state/test/test-charcategory.ts`, `mk`), and every one panics at the `todo!()` of `impl From<Vec<Extension>> for Extension` (`crates/ferrum-state/src/facet.rs`, unit U4), before any code of unit text runs; `EditorState::char_categorizer` is also unit U4's (`crates/ferrum-state/src/state.rs`). The tests are cm6's and are not wrong; what cannot hold is that they pass when unit text is done. Not a fixture, so no trace. Unit text's part of them is `crate::charcategory::make_categorizer`, which the fixtures of chunk `text` reach only through `EditorState::char_categorizer`: 214 of the 387 `pending` fixtures of the chunk categorize; until unit U4 a unit test of the private helper in `crates/ferrum-state/src/charcategory.rs` checks it on values of the rows of `CharCategory`.
 
 ## Changes to checks after their code
+
+Formatting only (`cargo fmt --all` with `rustfmt.toml`, decided at the pilot review: `docs/decisions/method.md`, 2026-11-15, "The pilot review of the implementation"); no line of a check changed in what it does. It restores `.claude/rules/rust-crates.md` Code 5. Files:
+- `crates/ferrum-state/tests/replay.rs`
+- `crates/ferrum-state/tests/replay/driver.rs`
+- `crates/ferrum-state/tests/replay/lang/eval.rs`
+- `crates/ferrum-state/tests/replay/lang/value.rs`
+- `crates/ferrum-state/tests/replay/rules.rs`
+- `crates/ferrum-state/tests/replay/text/changes.rs`
+- `crates/ferrum-state/tests/replay/text/checks.rs`
+- `crates/ferrum-state/tests/replay/text/doc.rs`
+- `crates/ferrum-state/tests/replay/text/harness.rs`
+- `crates/ferrum-state/tests/replay/text/host.rs`
+- `crates/ferrum-state/tests/replay/text/strings.rs`

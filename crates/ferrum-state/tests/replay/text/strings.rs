@@ -338,8 +338,10 @@ fn categorizer(a: &Value, p: &mut Program) -> R<Value> {
         vec![data]
     };
     let s = ferrum(None, move || {
-        let provider: LanguageDataProvider = ByAddress::new(Arc::new(move |_: &EditorState, _: usize, _: i8| data.clone()));
-        let config = EditorStateConfig { extensions: EditorState::LANGUAGE_DATA.of(provider), ..EditorStateConfig::default() };
+        let provider: LanguageDataProvider =
+            ByAddress::new(Arc::new(move |_: &EditorState, _: usize, _: i8| data.clone()));
+        let config =
+            EditorStateConfig { extensions: EditorState::LANGUAGE_DATA.of(provider), ..EditorStateConfig::default() };
         let s = EditorState::create(config);
         let _ = s.char_categorizer(0);
         s

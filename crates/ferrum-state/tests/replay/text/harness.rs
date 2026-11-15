@@ -6,9 +6,7 @@ use std::cmp::Ordering;
 use std::rc::Rc;
 
 use crate::replay::lang::eval::{Flow, Language, Program, arg, items};
-use crate::replay::lang::value::{
-    JsStr, Value, array_index, property_key, slice_bounds, to_number, to_string,
-};
+use crate::replay::lang::value::{JsStr, Value, array_index, property_key, slice_bounds, to_number, to_string};
 
 const H: &[&str] = &["harness"];
 

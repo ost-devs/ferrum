@@ -1,10 +1,7 @@
 //! The fixture replayer of `ferrum-state` (`docs/parity/ferrum-state/design.md` section 10, `plan.md` "The
 //! replayer"): the language of `tools/cm6/program.ts` (`lang`), the conversion of positions (`convert`), the driver
 //! that runs every fixture file through its chunk's ops and writes the report (`driver`), and one module per chunk.
-#![allow(
-    dead_code,
-    reason = "the core's interface to the chunk modules, which use it as each unit registers its ops"
-)]
+#![allow(dead_code, reason = "the core's interface to the chunk modules, which use it as each unit registers its ops")]
 
 /// The modules under `tests/replay/`.
 mod replay {
@@ -20,8 +17,8 @@ mod replay {
     pub mod text;
 }
 
-use replay::{convert, driver};
 use convert::{Converted, Excluded, text_of, utf8_to_utf16, utf16_to_utf8};
+use replay::{convert, driver};
 
 /// Every fixture of the chunks asked for (`FERRUM_REPLAY_CHUNKS`, default all) and the 48 cases of
 /// `tools/cm6/lang-cases.jsonl`, compared with their recorded outputs; fails on any mismatch.
