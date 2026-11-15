@@ -217,8 +217,12 @@ fn helper_mk_reads_the_spec_and_string_writes_it() {
 
 #[test]
 fn helper_comp_over_under_and_map_compare() {
-    comp(&["2 0:1", "3"]);
-    assert!(catch_unwind(|| comp(&["2 0:1", "2"])).is_err());
+    // one spec: nothing is composed, the description itself is compared (`test-change.ts:34-37`)
+    comp(&["2 0:1", "2 0:1"]);
+    assert!(catch_unwind(|| comp(&["2 0:1", "3"])).is_err());
+    // composed with a description that changes nothing, the first is the result (`change.ts:97`)
+    comp(&["2 0:1", "3", "2 0:1"]);
+    assert!(catch_unwind(|| comp(&["2 0:1", "3", "3"])).is_err());
     over("2 0:1", "2", "2 0:1");
     under("2 0:1", "2", "2 0:1");
     assert!(catch_unwind(|| over("2 0:1", "2", "2")).is_err());

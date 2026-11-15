@@ -187,6 +187,22 @@ fn create_with_a_main_index_beyond_the_ranges_panics() {
     assert_eq!(shape(&EditorSelection::create(&[three, one], 1)), (vec![(1, 1), (3, 3)], 0));
 }
 
+/// `state.EditorSelection.asSingle.B2`: cm6's `asSingle` on a selection whose main index is outside its ranges gives
+/// `[undefined]` (`mirrors/cm6/state/src/selection.ts:152`). No `EditorSelection` Ferrum holds has that input: the two
+/// ways cm6 builds one fail in Ferrum at those inputs. `change:F0584` builds it with `create(…, 7)`, which panics
+/// (`state.cm6.073.d1`, the message of `design.md` section 5); `change:F0583` reads it from JSON with `main` -1, which
+/// is `Err` (`state.cm6.160.d1`).
+// covers: state.EditorSelection.asSingle.B2
+#[test]
+fn a_selection_whose_main_index_is_outside_its_ranges_cannot_be_built() {
+    let (one, four) = (EditorSelection::cursor(1, 0, None, None), EditorSelection::cursor(4, 0, None, None));
+    let message = panics(|| drop(EditorSelection::create(&[one, four], 7)));
+    assert_eq!(message, "Main index 7 is beyond the 2 ranges of the selection");
+    let json = json!({"ranges": [{"anchor": 0, "head": 0}, {"anchor": 1, "head": 1}], "main": -1});
+    let e = EditorSelection::from_json(&json).expect_err("a main index outside the domain");
+    assert_eq!(e, Error::InvalidEditorSelectionJson);
+}
+
 // ---- a position of a document that is not on a char boundary (D1) ---------------------------------------------------
 
 /// `ChangeSet::apply` replaces the set's ranges in the document it is given: a change that starts inside a character
