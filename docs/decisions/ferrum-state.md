@@ -736,3 +736,28 @@ The editor's need is "after the last range, keep the rest". 1e9 is a JavaScript 
 **Confidence.** High on 3: an enumeration of every writer, which a reader can repeat in a few minutes. High on 1, 4 and 5. Medium on the budget: one step of the same kind measured, with work of a different size.
 
 **Reopens.** Step 3 of a unit over 1.5 times its budget, or a case whose row conformance's reading finds wrong (E31). A caller of `addSection` added in a later cm6 version that passes an array not built by it (3).
+
+## 2026-11-16 · Q95: cm6's change filter hangs only above 1e9 positions, and the reading of step 3 of U2
+
+*Decided by the consultant, in the call after step 3 of U2 (`docs/decisions/ferrum-state.md`, "Q94", item 4). Q95 was raised by the `spec-auditor` of that step in its report (row `state.EditorState^changeFilter.B12`, header of `oracle/cm6/state/impl-change.ts`) and never reached `questions.md`. Binding text: `raw/decisions.jsonl` `state.cm6.032.d3`; `design.md` §2; `cards/spec-auditor.md` "Step 3 of U2". It corrects a fact of "Q92 and Q93", Q93, and items 4 and 5 there.*
+
+**Question.** My decision of Q93, row `state.cm6.032.d3`, the progress file and the U2 card said cm6 does not terminate on a change set of "1e9 positions or more". The spec-auditor's probe says cm6 terminates at exactly 1e9. Which is it, and what changes for the U4 cards?
+
+**What I verified.** I ran plain cm6 6.7.6 and a copy with `1e9` at `change.ts:273` replaced by `Infinity`, in the harness, with `ChangeSet.of([{from: 0, to: 1}, {from: 5, insert: "x"}], n).filter(ranges)`. With `[0, 2]`: n = 999,999,999 and 1,000,000,000 return at once (`[5,[0,"x"],999999994]`, `[5,[0,"x"],999999995]`); 1,000,000,001 and 1,000,000,005 do not return within 15 s. At n = 1,000,000,001: `[0, 1000000001]` and `[]` hang; `[0, 1000000002]` and `[0, 2, 1000000001, 1000000001]` return. The code explains each: at exactly 1e9 the scan meets the set's end, where `iter.len` is 0 and `iter.done` exits (`change.ts:274-275`); above it the scan stops at 1e9 with sections left, or the last pair ends past 1e9 so that the inner loop is never entered, and every later `ranges[i++]` is `undefined`; a pair reaching past the document's end hits `iter.done` in the second loop and exits. The patched copy on F7300's program (a 1,006,632,960-character document) returns changes `[5, [0, "x"], 1006632955]` and a new length of 1,006,632,961, in 389 ms including the build.
+
+**Decision.**
+1. cm6 hangs on a change set *longer than* 1e9 positions whose filter list lies inside the document; at 1e9 and below the bound changes nothing. The decision of Q93 does not change: Ferrum puts no bound after the last pair, and for every set of at most 1e9 positions that is cm6's result. Only the wording was wrong, and it is corrected where it binds: the row `state.cm6.032.d3` (which also lists F7300 now, and states which lists hang), `design.md` §2, the spec-auditor's card.
+2. *The U4 code card:* the doc comment on `EditorState::CHANGE_FILTER` is the one the row gives, "a change set longer than 1e9 positions". A comment saying "1e9 or more" would claim a difference from cm6 at a length where there is none.
+3. *The U4b card:* the written test runs F7300's own program, not the 2,047,997,952-character document of my Q93 run, and asserts the patched reference above. Its `// covers:` names `state.EditorState^changeFilter.B12` and `state.cm6.032.d3`: B12's only fixture is listed by the row, so `checks state` reports it as needing a written test (`foreseen`), and this test is that check. Using the fixture's program makes the test the exact Ferrum counterpart of the case cm6 records as a timeout, 6,632,960 positions above the boundary, with values from a run. No fixture at exactly 1e9 is added: Ferrum has no bound, so it equals cm6 there by construction, and existing fixtures compare short sets.
+4. *The row the step added* (`state.EditorState^changeFilter.B12`, `"added": "implementation change"`) is right: its text, citations, boundary and probe agree with my run. One word is broader than the facts: its hazard says "a well-formed filter result" hangs, where a list with a pair past the document's end returns. The row's input is `[0, 2]`, for which it holds, so the row stands; the precise condition is in `state.cm6.032.d3`, the row that decides.
+5. F7300 is listed in `state.cm6.032.d3` (fixtures `["state:F7300"]`, behaviors empty, as `state.cm6.156.d1` lists its timeouts). The replayer then marks it `none` and does not run it.
+
+**Alternatives and why each lost.**
+- *Keep "1e9 or more" as the safe side.* It states a difference from cm6 that does not exist; a reader of the doc comment, or a later test at exactly 1e9, would be told cm6 hangs where it returns.
+- *Keep the 2,047,997,952-character document in the written test.* Its values come from a run too, but no fixture records that input; F7300's program ties the test to the recorded case and sits nearer the boundary.
+
+**Escape.** My Q93 decision stated a boundary from two probes (999,999,999 and 2,000,000,000) without running the edge, and generalized "a list" where a list reaching past the end returns. The step meant to read cm6 again caught it before any code or test used it. Recorded in the ledger (low: the decided behavior is unchanged).
+
+**Confidence.** High: the edge was run on both sides, and the code explains every case run.
+
+**Reopens.** A cm6 version that changes `ChangeSet.filter`; a written test of U4b whose values differ from the patched run.
