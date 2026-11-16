@@ -1,6 +1,6 @@
-//! What the ops of chunk `change` share, and the calls of Ferrum that the ops of chunk `text` make too (`changes.of`,
-//! `changes.desc`, `changes.invert`, `changes.iterChangesTexts`, `desc.iterChangedRangesArg`): one function per call
-//! of Ferrum, whichever chunk makes it (`docs/parity/ferrum-state/cards/test-writer.md`, step U2).
+//! What the ops of chunk `change` share, and the calls of Ferrum that the ops of chunks `text` and `rangeset` make too
+//! (`changes.of`, `changes.desc`, `changes.invert`, `changes.iterChangesTexts`, `desc.iterChangedRangesArg`;
+//! `changes.of`, `changes.empty`, `changes.touchesRange`): one function per call of Ferrum, whichever chunk makes it (`docs/parity/ferrum-state/cards/test-writer.md`, step U2).
 //!
 //! - How an op stops: its value, the language's `Flow`, or a value that is *no counterpart* already recorded.
 //! - The reading of an argument into Ferrum's type, with what is left out when it cannot be (`design.md` section 10,
@@ -8,7 +8,7 @@
 //! - The error an op throws for a panic of Ferrum, its numbers converted back through the text they are measured on
 //!   (`plan.md` "Positions", rule 10).
 
-use ferrum_state::{ChangeDesc, ChangeSet, ChangeSpec, Text, TextSpec};
+use ferrum_state::{ChangeDesc, ChangeSet, ChangeSpec, Text, TextSpec, TouchesRange};
 
 use super::form::Form;
 use crate::replay::convert::Excluded;
@@ -231,6 +231,20 @@ pub fn change_spec(p: &mut Program, op: &str, arg: &str, spec: &SpecIn, a: &Form
 /// `ChangeSet.of(spec, length, lineSep)`, its errors' numbers converted back through `a`.
 pub fn set_of(spec: ChangeSpec, length: usize, line_sep: Option<String>, a: &Form) -> R<ChangeSet> {
     ferrum(a, move || ChangeSet::of(spec, length, line_sep.as_deref()))
+}
+
+/// `ChangeSet.empty(length)`, `length` measured on `a`.
+pub fn empty(length: usize, a: &Form) -> R<ChangeSet> {
+    ferrum(a, || ChangeSet::empty(length))
+}
+
+/// `desc.touchesRange(from, to)`, both measured on `a`, the start document of `d`: cm6's `false`, `true` or `"cover"`.
+pub fn touches_range(d: &ChangeDesc, from: usize, to: usize, a: &Form) -> R<Value> {
+    Ok(match ferrum(a, || d.touches_range(from, to))? {
+        TouchesRange::False => Value::Bool(false),
+        TouchesRange::True => Value::Bool(true),
+        TouchesRange::Cover => Value::str("cover"),
+    })
 }
 
 /// `set.desc`.

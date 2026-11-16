@@ -579,7 +579,7 @@ pub fn set_spec(p: &mut Program, c: &Shared, op: &str, s: &Value, a: &Rc<Form>) 
     }
     if s.has("empty") {
         let n = pos_arg(p, op, "empty", &s.field("empty"), a)?;
-        return Ok(Ch::set(ferrum(a, || ChangeSet::empty(n))?, a.clone()));
+        return Ok(Ch::set(super::shared::empty(n, a)?, a.clone()));
     }
     Err(Flow::error("interp: bad set spec").into())
 }

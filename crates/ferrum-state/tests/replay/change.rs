@@ -7,7 +7,8 @@
 //! - `form`: the text a position is measured on, with filler where the input holds none.
 //! - `shared`: how an op stops, the reading of arguments, the errors, and the calls of Ferrum the ops of chunk `text`
 //!   make too.
-//! - `values`: the change sets, descriptions, ranges and selections the ops build, with their documents.
+//! - `values`: the change sets, descriptions, ranges and selections the ops build, with their documents (public: chunk
+//!   `rangeset` keeps its change sets as `values::Ch`, with the document each produces).
 //! - `desc_ops`, `set_ops`, `sel_ops`: the ops.
 
 mod desc_ops;
@@ -15,7 +16,7 @@ pub mod form;
 mod sel_ops;
 mod set_ops;
 pub mod shared;
-mod values;
+pub mod values;
 
 use std::rc::Rc;
 

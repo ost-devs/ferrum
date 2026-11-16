@@ -253,7 +253,7 @@ fn empty(a: &Value, p: &mut Program) -> R<Value> {
     const OP: &str = "set.empty";
     let filler = Rc::new(Form::filler());
     let n = pos_arg(p, OP, "length", &a.field("length"), &filler)?;
-    let s = Ch::set(ferrum(&filler, || ChangeSet::empty(n))?, filler);
+    let s = Ch::set(super::shared::empty(n, &filler)?, filler);
     Ok(record(set_out(p, &s)?))
 }
 

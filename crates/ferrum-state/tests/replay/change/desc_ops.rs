@@ -5,7 +5,7 @@
 use std::collections::VecDeque;
 use std::rc::Rc;
 
-use ferrum_state::{ChangeDesc, MapMode, TouchesRange};
+use ferrum_state::{ChangeDesc, MapMode};
 
 use super::form::Form;
 use super::shared::{R, by_type, ferrum, iter_changed_ranges, known, part, pos_arg};
@@ -156,11 +156,7 @@ fn touches(a: &Value, p: &mut Program) -> R<Value> {
         Value::Undefined => from,
         v => pos_arg(p, OP, "to", &v, &ch.a)?,
     };
-    Ok(match ferrum(&ch.a, || ch.d().touches_range(from, to))? {
-        TouchesRange::False => Value::Bool(false),
-        TouchesRange::True => Value::Bool(true),
-        TouchesRange::Cover => Value::str("cover"),
-    })
+    super::shared::touches_range(ch.d(), from, to, &ch.a)
 }
 
 /// A bare sections array given to `ChangeDesc::from_json`, on filler (`raw/positions.jsonl`, `desc.toJSON` and
