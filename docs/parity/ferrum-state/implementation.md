@@ -139,3 +139,10 @@ A round of "A check that is wrong" on the checks of unit `change`, and Q92 (comm
 - `crates/ferrum-state/tests/cm6_change.rs`
 - `crates/ferrum-state/tests/written_change.rs`
 
+The checks of unit `rangeset` (commit fad6dce; `docs/parity/ferrum-state/plan.md` "Each unit", step 1: where an op of the unit's chunk makes the same call of Ferrum as an earlier chunk, both go through one function): the `changes.*` ops of chunk `rangeset` go through the functions of chunk `change`. `shared.rs` gains `empty` (`ChangeSet.empty`) and `touches_range` (`desc.touchesRange`, its result written `false`, `true` or `"cover"`); the op `desc.touchesRange` and the `ChangeSet::empty` calls of `set_ops.rs` and `values.rs` now call them; `mod values` becomes `pub mod values`. The results of chunk `change` did not change (633 equal, 451 part, 171 none). Files:
+- `crates/ferrum-state/tests/replay/change.rs`
+- `crates/ferrum-state/tests/replay/change/desc_ops.rs`
+- `crates/ferrum-state/tests/replay/change/set_ops.rs`
+- `crates/ferrum-state/tests/replay/change/shared.rs`
+- `crates/ferrum-state/tests/replay/change/values.rs`
+
