@@ -496,8 +496,9 @@ impl EditorState {
     ///
     /// # Panics
     ///
-    /// When a value under `name` is not a `T`, with Ferrum's message naming the field and both types
-    /// (`state.cm6.029.d1`).
+    /// When a value under `name` is not a `T`, with Ferrum's message `Language data field "<name>" holds a value that is
+    /// not a <T>`, which names the field and the type asked for, `<T>` being `std::any::type_name::<T>()`
+    /// (`state.cm6.029.d1`, `design.md` §5).
     ///
     /// cm6: EditorState.languageDataAt
     pub fn language_data_at<T: Send + Sync + 'static>(&self, name: &str, pos: usize, side: i8) -> Vec<Arc<T>> {

@@ -8,7 +8,7 @@
 //! The configuration a state resolves its extensions into (cm6's `Configuration`), its dynamic slots and the slot
 //! computation (`ensureAddr`, `getAddr`) live here too, as in cm6.
 
-use std::any::{Any, TypeId};
+use std::any::Any;
 use std::cell::Cell;
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
@@ -59,6 +59,9 @@ pub(crate) fn down<T: 'static>(v: &AnyValue) -> &T {
 thread_local! {
     /// Set while the crate's built-in facets are defined, on the thread that defines them.
     static IN_BUILTINS: Cell<bool> = const { Cell::new(false) };
+    /// Set by the `combine` of `FacetConfig::default()` when it runs: `Facet::define` reads it around its one call of
+    /// `combine([])` to know whether the facet has cm6's default `combine` (Q118).
+    static DEFAULT_COMBINE_RAN: Cell<bool> = const { Cell::new(false) };
 }
 
 /// A new id from the process-wide counter. The crate's built-in facets are defined first, whichever definition comes
@@ -179,8 +182,9 @@ pub(crate) trait FacetOps: Send + Sync {
     fn combine(&self, values: &[(ProviderType, &AnyValue)]) -> Val;
     /// `facet.compare(a, b)` of two outputs.
     fn compare(&self, a: &AnyValue, b: &AnyValue) -> bool;
-    /// cm6's `===` of two outputs (`facet.ts:178`): the same value, or, for an output that is not a list (an array
-    /// in cm6, compared by identity), equal ones (D14).
+    /// cm6's `===` of two outputs (`facet.ts:178`): the same value, or, for a facet with a `combine` of its own, equal
+    /// ones by `O`'s `==` (D14); the output of a facet without `combine` is an array cm6 builds, the same only when the
+    /// slot kept it (`design.md` §3, Q118).
     fn same_output(&self, a: &Val, b: &Val) -> bool;
     /// `facet.compareInput(a, b)` of two inputs.
     fn compare_input(&self, a: &AnyValue, b: &AnyValue) -> bool;
@@ -192,8 +196,9 @@ struct TypedFacet<I, O> {
     combine: CombineFn<I, O>,
     compare: Option<CompareFn<O>>,
     compare_input: Option<CompareFn<I>>,
-    /// Whether the output is the list of inputs' type, an array in cm6.
-    list_output: bool,
+    /// Whether the facet has no `combine` of its own (`FacetConfig::default()`): its output is the list Ferrum builds
+    /// of its inputs, an array cm6 builds.
+    no_combine: bool,
 }
 
 impl<I, O> TypedFacet<I, O>
@@ -235,7 +240,7 @@ where
     }
 
     fn same_output(&self, a: &Val, b: &Val) -> bool {
-        Arc::ptr_eq(a, b) || !self.list_output && down::<O>(&**a) == down::<O>(&**b)
+        Arc::ptr_eq(a, b) || !self.no_combine && down::<O>(&**a) == down::<O>(&**b)
     }
 
     fn compare_input(&self, a: &AnyValue, b: &AnyValue) -> bool {
@@ -326,7 +331,10 @@ impl<I: Clone> Default for FacetConfig<I, Vec<I>> {
     /// cm6's defaults: the output is the list of inputs, compared element-wise; the facet is not static and enables
     /// nothing.
     fn default() -> FacetConfig<I, Vec<I>> {
-        FacetConfig::new(|values: &[I]| values.to_vec())
+        FacetConfig::new(|values: &[I]| {
+            DEFAULT_COMBINE_RAN.with(|ran| ran.set(true));
+            values.to_vec()
+        })
     }
 }
 
@@ -363,12 +371,14 @@ where
     pub fn define(config: FacetConfig<I, O>) -> Facet<I, O> {
         // cm6's order (`facet.ts:45`, `:61-62`): the id, then the default from `combine([])`, then `enables`
         let id = new_id();
+        let outer = DEFAULT_COMBINE_RAN.with(|ran| ran.replace(false));
         let default: Val = Arc::new((config.combine)(&[]));
+        let no_combine = DEFAULT_COMBINE_RAN.with(|ran| ran.replace(outer));
         let ops = TypedFacet {
             combine: config.combine,
             compare: config.compare,
             compare_input: config.compare_input,
-            list_output: TypeId::of::<O>() == TypeId::of::<Vec<I>>(),
+            no_combine,
         };
         let inner =
             FacetInner { id, default, is_static: config.is_static, ops: Box::new(ops), extensions: OnceLock::new() };
