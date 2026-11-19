@@ -285,3 +285,6 @@ A round after Q119 on the checks of unit `state` (commit d4e9efc; a change the c
 - `crates/ferrum-state/tests/replay/rules.rs`
 - `crates/ferrum-state/tests/replay/state/harness.rs`
 - `crates/ferrum-state/tests/replay/state/ops.rs`
+
+The core after U4 (commit a7a4b40; the replay at one run is a function of the code and the fixtures, `docs/parity/ferrum-state/plan.md` "Hand-off", the replayer passing against `fixtures/no-counterpart.jsonl`). `Program::mark` knew a marked value of Ferrum by its allocation's address only, and an engine error's message likewise; a dropped value's address given by the allocator to a new value made the new one read as marked, so what was left out of F7127, F7132 and F7138 of chunk `text` changed from run to run. `marked` now keeps a clone of each marked value beside its address, and `engine` the message string, so no address is given to another value during the run. Sixteen fixtures of chunk `text` (F7126 to F7132, F7138, F7152 to F7159) now compare the positions of the fresh iterators the defect had taken for dropped ones; every result per chunk is unchanged. Files:
+- `crates/ferrum-state/tests/replay/lang/eval.rs`
