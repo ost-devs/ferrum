@@ -560,6 +560,23 @@ def error_entries(c, crate, got):
     c.say(f"`error` entries by chunk, the op cm6 throws in and the reason Ferrum's trace gives there: {len(origins)} group(s)")
     for (ch, op, why), n in sorted(origins.items()): c.say(f"        {ch} {op} ({why}): {n}")
 
+def left_out_groups(c, path):
+    """Print, failing nothing, the `type` and `char` entries of a no-counterpart file grouped by chunk, op and argument,
+    with their distinct values and the fixtures of each group: the reading the approval of the file makes by reason
+    (`docs/decisions/ferrum-state.md`, "The end of the implementation stage")."""
+    groups = collections.defaultdict(lambda: (set(), set()))
+    for x in rows(path):
+        for e in x["reasons"]:
+            if e.get("reason") in ("type", "char"):
+                vals, fxs = groups[(x["chunk"], e["reason"], e.get("op"), e.get("argument"))]
+                vals.add(json.dumps(e.get("value"), ensure_ascii=False, sort_keys=True))
+                fxs.add(x["id"])
+    c.say(f"`type` and `char` entries of no-counterpart.jsonl by chunk, reason, op and argument: {len(groups)} group(s)")
+    for (ch, why, op, arg), (vals, fxs) in sorted(groups.items(), key=lambda kv: tuple(str(p) for p in kv[0])):
+        vs = sorted(vals)
+        shown_vals = ", ".join(vs[:12]) + (f", … {len(vs) - 12} more" if len(vs) > 12 else "")
+        c.say(f"        {ch} {why} {op} {arg}: {len(fxs)} fixture(s) {' '.join(sorted(fxs)[:8])}{' …' if len(fxs) > 8 else ''}; value(s) {shown_vals}")
+
 def skeleton(c, crate, args):
     cargo(c, "cargo build", ["build", "--workspace"])
     r = cargo(c, "cargo test --no-run", ["test", "--workspace", "--no-run"])
@@ -762,6 +779,7 @@ def handoff(c, crate, args):
         have = {(f["chunk"], f["fixture"]): f["result"] for f in got if f["result"] in ("part", "none")}
         off = sorted(f"{k[0]} {k[1]}: file {want.get(k)}, run {have.get(k)}" for k in set(want) | set(have) if want.get(k) != have.get(k))
         c.need(not off, f"what the replayer leaves out equals no-counterpart.jsonl: {len(want)} entries, {len(off)} differ", off)
+        left_out_groups(c, nc)
     # decision rows that state a condition
     met = collections.defaultdict(set)
     for f in got:
