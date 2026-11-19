@@ -345,3 +345,20 @@ The work, under `crates/ferrum-state/tests/` only, as item 1 lists it: the repla
 **Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the checks of unit state after Q116 to Q118' -- crates/ferrum-state/tests`.
 
 **Report:** the output of the check, whole; each file you changed with the rule each change restores, for the orchestrator's list; the written tests with their `// covers:`; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Step U4, a round after Q119: case 5 and the variables of a `fn`
+
+A change the consultant decided, not a check found wrong (`docs/decisions/ferrum-state.md`, "Q119 and what remains after U4", "What it requires", item 2; read the entry whole, and `design.md` §10 "No counterpart" as now written). The work, under `crates/ferrum-state/tests/` only:
+
+1. In `tests/replay/rules.rs`, literal tests of case 5 through `Program::not_made`: a `try` and a `capture` around a call whose argument is no counterpart give the result and entries the rule gives; a value the program wrote before such a call is compared, and one a `fn` writes is not.
+2. In chunk `state`, the variables of a `fn` as §10 now says: its `params` belong to the set, and a name is made no counterpart whether or not it already holds a value.
+
+You do not read `crates/ferrum-state/src/`.
+
+**Check:** `cargo fmt --all`, then `python3 tools/impl_check.py ferrum-state core` and `python3 tools/impl_check.py ferrum-state code state --since efdebd2`, both passing whole but for the latter's check that your files are listed, which the orchestrator does in `implementation.md` "Changes to checks after their code".
+
+**Budget.** 40,000 tokens (a round, counted apart). If you pass 60,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): case 5 and the variables of a fn (Q119)' -- crates/ferrum-state/tests`.
+
+**Report:** the output of both checks, whole; each file you changed with what it now does, for the orchestrator's list; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".

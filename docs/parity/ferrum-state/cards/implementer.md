@@ -209,3 +209,21 @@ Nothing else changes; no public signature does. The test-writer's round that fol
 **Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'feat(ferrum-state): unit state after Q116 to Q118' -- crates/ferrum-state/src docs/parity/ferrum-state/implementation.md`.
 
 **Report:** the output of the check; what you changed; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Step U4 code, a round after Q119: no hidden per-call state
+
+The consultant decided Q119 (`docs/decisions/ferrum-state.md`, "Q119 and what remains after U4", "What it requires", item 1; read the entry whole, and `design.md` §3, its new row; `.claude/rules/rust-naming-decisions.md` N17, the pattern `<Member>Fn`). D6 stays as written: `crates/ferrum-state/src/facet.rs` holds no `thread_local!` and no `Cell` flag. The work, in the code of b5b36df:
+
+1. `FacetConfig.combine` becomes `Box<dyn CombineFn<I, O>>`, `CombineFn` a public trait (`Fn(&[I]) -> O + Any + Send + Sync`) implemented for every such closure, with its doc comment and annotation; `Facet::define` recognises the default `combine` by the `TypeId` of the boxed closure, and removes the flag the default `combine` set.
+2. `IN_BUILTINS` is replaced by a private function that hands the built-in facets their ids in cm6's order (`state.cm6.036.d2`).
+3. `docs/parity/ferrum-state/implementation.md` "Native mechanisms", unit state: the line on the built-in facets and the line on `===` and `==` say how each is now done.
+
+No test changes; no other public signature changes.
+
+**Check, run by you before you report:** `cargo fmt --all`, then `python3 tools/impl_check.py ferrum-state code state --since efdebd2`, which must pass whole, and `grep -rn thread_local crates/`, which must find nothing.
+
+**Budget.** 30,000 tokens (a round, counted apart). If you pass 45,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'feat(ferrum-state): unit state, no hidden per-call state (Q119)' -- crates/ferrum-state/src docs/parity/ferrum-state/implementation.md`.
+
+**Report:** the output of the check and of the `grep`; what you changed; then the two lines of `CLAUDE.md` "Reporting from a card".
