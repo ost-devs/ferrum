@@ -60,22 +60,22 @@ pub fn transaction_annotations(tr: &Transaction) -> &[Annotation] {
 ///
 /// ferrum-only: the identity of RangeSet, see D15
 pub fn same_range_set<T>(a: &RangeSet<T>, b: &RangeSet<T>) -> bool {
-    todo!()
+    a.same(b)
 }
 
-/// The layer below the top one (cm6's `RangeSet.nextLayer`, `rangeset.ts:236`); `None` for the empty set, where cm6
-/// holds `null`.
+/// The layer below the top one (cm6's `RangeSet.nextLayer`, `rangeset.ts:236`); `None` for the empty set, whose
+/// `nextLayer` in cm6 is the empty set itself (`rangeset.ts:482`), a cycle Ferrum's sets do not have.
 ///
 /// ferrum-only: cm6's internal RangeSet.nextLayer, see D15
 pub fn range_set_next_layer<T: RangeValue + Clone>(set: &RangeSet<T>) -> Option<RangeSet<T>> {
-    todo!()
+    set.inner.as_ref().map(|l| l.next_layer.clone())
 }
 
 /// The end of the last range of the set, over all layers (cm6's `RangeSet.length`, `rangeset.ts:248`).
 ///
 /// ferrum-only: cm6's internal RangeSet.length, see D15
 pub fn range_set_length<T: RangeValue + Clone>(set: &RangeSet<T>) -> usize {
-    todo!()
+    set.length() as usize
 }
 
 /// The size of the largest point range of the layer and those below; -1 for the empty set (cm6's
@@ -83,28 +83,28 @@ pub fn range_set_length<T: RangeValue + Clone>(set: &RangeSet<T>) -> usize {
 ///
 /// ferrum-only: cm6's internal RangeSet.maxPoint, see D15
 pub fn range_set_max_point<T: RangeValue + Clone>(set: &RangeSet<T>) -> i64 {
-    todo!()
+    set.max_point()
 }
 
 /// The start position of each chunk of the top layer (cm6's `RangeSet.chunkPos`, `rangeset.ts:232`).
 ///
 /// ferrum-only: cm6's internal RangeSet.chunkPos, see D15
 pub fn range_set_chunk_pos<T: RangeValue + Clone>(set: &RangeSet<T>) -> Vec<usize> {
-    todo!()
+    set.inner.as_ref().map_or_else(Vec::new, |l| l.chunk_pos.to_vec())
 }
 
 /// Whether the set is the empty set (cm6's `RangeSet.isEmpty`, `rangeset.ts:337`).
 ///
 /// ferrum-only: cm6's internal RangeSet.isEmpty, see D15
 pub fn range_set_is_empty<T: RangeValue + Clone>(set: &RangeSet<T>) -> bool {
-    todo!()
+    set.is_empty()
 }
 
 /// The chunks of the top layer (cm6's `RangeSet.chunk`, `rangeset.ts:234`).
 ///
 /// ferrum-only: cm6's internal RangeSet.chunk, see D15
 pub fn range_set_chunks<T: RangeValue + Clone>(set: &RangeSet<T>) -> Vec<Chunk<T>> {
-    todo!()
+    set.inner.as_ref().map_or_else(Vec::new, |l| l.chunk.iter().map(|c| Chunk { chunk: c.clone() }).collect())
 }
 
 /// A chunk of a range set (cm6's internal `Chunk`, `rangeset.ts:100`), shared between sets as cm6 shares it.
@@ -119,49 +119,49 @@ impl<T: RangeValue + Clone> Chunk<T> {
     ///
     /// ferrum-only: the identity of a chunk, see D15
     pub fn same(&self, other: &Chunk<T>) -> bool {
-        todo!()
+        Arc::ptr_eq(&self.chunk, &other.chunk)
     }
 
     /// The number of ranges in the chunk (cm6's `chunk.value.length`).
     ///
     /// ferrum-only: cm6's internal Chunk.value.length, see D15
     pub fn len(&self) -> usize {
-        todo!()
+        self.chunk.value.len()
     }
 
     /// Whether the chunk holds no range.
     ///
     /// ferrum-only: the companion of len, see N1
     pub fn is_empty(&self) -> bool {
-        todo!()
+        self.chunk.value.is_empty()
     }
 
     /// The start of each range, relative to the chunk's position (cm6's `Chunk.from`).
     ///
     /// ferrum-only: cm6's internal Chunk.from, see D15
     pub fn from(&self) -> &[usize] {
-        todo!()
+        &self.chunk.from
     }
 
     /// The end of each range, relative to the chunk's position (cm6's `Chunk.to`).
     ///
     /// ferrum-only: cm6's internal Chunk.to, see D15
     pub fn to(&self) -> &[usize] {
-        todo!()
+        &self.chunk.to
     }
 
     /// The value of each range (cm6's `Chunk.value`). Reading them is not marked as a cursor's read.
     ///
     /// ferrum-only: cm6's internal Chunk.value, see D15
     pub fn values(&self) -> &[T] {
-        todo!()
+        &self.chunk.value
     }
 
     /// The size of the largest point range of the chunk, -1 when it has none (cm6's `Chunk.maxPoint`).
     ///
     /// ferrum-only: cm6's internal Chunk.maxPoint, see D15
     pub fn max_point(&self) -> i64 {
-        todo!()
+        self.chunk.max_point
     }
 
     /// Marks the chunk so that a cursor or a walk of the crate that reads one of its values panics with
@@ -169,7 +169,7 @@ impl<T: RangeValue + Clone> Chunk<T> {
     ///
     /// ferrum-only: the mark of op chunk.poison, see D15
     pub fn poison(&self) {
-        todo!()
+        self.chunk.marks.poison()
     }
 
     /// Marks the chunk so that each read of one of its values by a cursor or a walk of the crate adds 1 to `hits`
@@ -177,6 +177,6 @@ impl<T: RangeValue + Clone> Chunk<T> {
     ///
     /// ferrum-only: the mark of op chunk.countReads, see D15
     pub fn count_reads(&self, hits: Arc<AtomicUsize>) {
-        todo!()
+        self.chunk.marks.count_reads(hits)
     }
 }
