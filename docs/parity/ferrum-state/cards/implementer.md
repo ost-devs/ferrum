@@ -86,7 +86,6 @@ A way for Ferrum to do better than cm6 is a question in your report, and you wri
 
 ## Step U2 code: the unit `change`
 
-<!-- refs:planned crates/ferrum-state/tests/cm6_change.rs -->
 **What it is for.** Change sets, change descriptions and selections (cm6's `change.ts` and `selection.ts`; 62 items, 183 behaviors). Its checks exist already and you cannot change them: 1,255 fixtures of chunk `change` that the replayer runs against your code, the 44 ported cases of `test-change.ts` and `test-selection.ts`, the written tests of `written_change.rs`, and the fixtures of chunk `text` that build a change set (they wait for this unit).
 
 **How the code is written.** Port cm6's source whole function by whole function, every case of it, including those no check names: the checks show a wrong case, nothing mechanical shows a missing one, and conformance lists every line of the crate no check reaches. The behavior rows say what each case must give; cm6's code is the work list. Positions and lengths are UTF-8 bytes (D1); every other rule is in what binds. Unit `text` is done (`crates/ferrum-state/src/text.rs`): use its API, and change it only where this unit's code needs it, saying where in your report.
@@ -113,7 +112,6 @@ A way for Ferrum to do better than cm6 is a question in your report, and you wri
 
 ## Step U3 code: the unit `rangeset`
 
-<!-- refs:planned crates/ferrum-state/tests/cm6_rangeset.rs crates/ferrum-state/tests/written_rangeset.rs -->
 **What it is for.** Range sets, their builder, cursors and comparison (cm6's `rangeset.ts`: 47 items, 169 behaviors). Its checks exist already and you cannot change them: 394 fixtures of chunk `rangeset` that the replayer runs against your code (13 of its ops read the set's layout through `__test`), the 47 ported cases of `test-rangeset.ts`, and the written tests of `written_rangeset.rs`.
 
 **How the code is written.** Port cm6's source whole function by whole function, every case of it, including those no check names: the checks show a wrong case, nothing mechanical shows a missing one, and conformance lists every line of the crate no check reaches. The behavior rows say what each case must give; cm6's code is the work list. Positions and lengths are UTF-8 bytes (D1); every other rule is in what binds. Units `text` and `change` are done (`crates/ferrum-state/src/text.rs`, `change.rs`, `selection.rs`): use their API, and change them only where this unit's code needs it, saying where in your report. A constant of cm6 is kept as cm6 has it: `design.md` section 2 says which `1e9` stays (`C.Far`, which an ended cursor reports and side bounds use, `state.cm6.187.d1`) and which means "to the end" and is no bound; a constant you would replace otherwise is a question.
@@ -161,7 +159,6 @@ Nothing else changes; the public API does not.
 
 ## Step U4 code: the unit `state`
 
-<!-- refs:planned crates/ferrum-state/tests/cm6_state.rs crates/ferrum-state/tests/written_state.rs crates/ferrum-state/tests/cm6_facet.rs -->
 **What it is for.** Facets, fields, compartments, extensions, configuration, transactions and the editor state (cm6's `facet.ts`, `config.ts`, `extension.ts`, `transaction.ts` and `state.ts`: 113 items, 447 behaviors). This is the crate's last unit. Its checks exist already and you cannot change them: 527 fixtures of chunk `facet` and 1,128 of chunk `state` that the replayer runs against your code, the fixtures of chunk `text` that wait for a state (387 `pending` now), the 52 ported cases of `test-facet.ts`, `test-state.ts` and `test-charcategory.ts`, and the written tests of `written_state.rs`. The checks commit is efdebd2.
 
 **How the code is written.** Port cm6's source whole function by whole function, every case of it, including those no check names: the checks show a wrong case, nothing mechanical shows a missing one, and conformance lists every line of the crate no check reaches. The behavior rows say what each case must give; cm6's code is the work list, in the order the plan gives (`docs/parity/ferrum-state/plan.md` "Units": facet, transaction, state; `config` and `extension` where they are needed). Positions and lengths are UTF-8 bytes (D1); every other rule is in what binds. Units `text`, `change` and `rangeset` are done (`crates/ferrum-state/src/text.rs`, `char.rs`, `column.rs`, `charcategory.rs`, `change.rs`, `selection.rs`, `rangeset.rs`): use their API, and change them only where this unit's code needs it or this card says so, saying where in your report.

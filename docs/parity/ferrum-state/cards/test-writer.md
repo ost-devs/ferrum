@@ -58,7 +58,6 @@ Where things are and how they are spelled is fixed by the docstring of `tools/im
 
 ## Step U2 checks: the unit `change`
 
-<!-- refs:planned crates/ferrum-state/tests/cm6_change.rs -->
 **What it is for.** The checks of the second unit (cm6's `change.ts` and `selection.ts`: 62 items, 183 behaviors), written before any code of the unit exists and never edited by whoever writes that code. 1,255 fixtures of chunk `change`, the 44 cases of `test-change.ts` and `test-selection.ts`, and the written tests are the only thing that says whether Ferrum's change sets and selections do what cm6's do. Positions are this chunk's main risk: `raw/positions.jsonl` has 171 rows for its 39 ops, and the four messages of "Positions" rule 10 are all `change.ts`'s or `text.ts`'s. Unlike U1, no model of the unit is written here (below), so an error in an op shows only when the code exists, as a round of "a check that is wrong" in which you are resumed: the more exactly each op follows its `interp.ts` header and its rows now, the fewer rounds.
 
 **Read:**
@@ -130,7 +129,6 @@ You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as b
 
 ## Step U3 checks: the unit `rangeset`
 
-<!-- refs:planned crates/ferrum-state/tests/cm6_rangeset.rs crates/ferrum-state/tests/written_rangeset.rs -->
 **What it is for.** The checks of the third unit (cm6's `rangeset.ts`: 47 items, 169 behaviors), written before any code of the unit exists and never edited by whoever writes that code. 394 fixtures of chunk `rangeset`, the 47 cases of `test-rangeset.ts` and the written tests are the only thing that says whether Ferrum's range sets do what cm6's do. This chunk's main risks are its layout and its callbacks: 15 of its ops observe cm6's internals (chunks, layers, `maxPoint`), which `raw/replay.jsonl` sends through `__test` where it can (13 rows `test`), and 6 observe how cm6 calls a function the input supplies (`compare`, `set.between`, `set.update`, `spans`, `eqlog.*`). As at U2, no model of the unit is written (below), so an error in an op shows only when the code exists, as a round of "A check that is wrong" in which you are resumed.
 
 **Read:**
@@ -210,7 +208,6 @@ You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as b
 
 ## Step U4a checks: the unit `state`, chunk `facet`
 
-<!-- refs:planned crates/ferrum-state/tests/cm6_facet.rs crates/ferrum-state/tests/written_state.rs -->
 **What it is for.** The first half of the checks of the fourth unit, `state` (cm6's `facet.ts`, `config.ts`, `extension.ts`, `transaction.ts` and `state.ts`: 113 items, 447 behaviors; `docs/parity/ferrum-state/plan.md` "Units"), written before any code of the unit exists and never edited by whoever writes that code. This step holds chunk `facet` (527 fixtures) and `test-facet.ts` (22 cases); chunk `state`, `test-state.ts`, the unit's written tests and the ops of chunk `text` that bind this unit are U4b's, in another context after yours. The chunk's fixtures build states, read facets and fields, and apply transactions, so its ops bind modules `facet`, `state` and `transaction` together. Its main risks are what cm6 shows of its own objects: of the chunk's 46 ops in `raw/fixture-ops.jsonl`, 15 observe internals, identity or callbacks (`compartment.effectValue`, `compartment.reconfigureType`, `counter`, `extension`, `extension.shape`, `field.shadowExtension`, `isArray`, `isFieldInstance`, `prec.level`, `same`, `scenario`, `secondCopy.*`, `state.facetDuck`), and `raw/replay.jsonl` gives 17 of them a row (6 `none`, 4 `skip`, 3 `identity`, 3 `run`, 1 `part`). An error in an op shows only when the code exists, as a round of "A check that is wrong" in which you are resumed.
 
 **Read:**
@@ -271,7 +268,6 @@ You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as b
 
 ## Step U4b checks: the unit `state`, chunk `state`
 
-<!-- refs:planned crates/ferrum-state/tests/cm6_state.rs -->
 **What it is for.** The second half of the checks of the fourth unit, `state` (cm6's `facet.ts`, `config.ts`, `extension.ts`, `transaction.ts` and `state.ts`; `docs/parity/ferrum-state/plan.md` "Units"), written before any code of the unit exists and never edited by whoever writes that code. U4a wrote chunk `facet` and `test-facet.ts` (commits c777c75, 1e80420 and the round 9b78209, after the consultant's decision of Q105 to Q110). This step holds chunk `state` (1,128 fixtures, of which F7300 records a timeout and is not run), `test-state.ts` (27 cases), `test-charcategory.ts` (3 cases, already ported in `tests/cm6_charcategory.rs`: read them again against the unit's API), the unit's written tests, and the ops `state.create`, `state.doc`, `state.toText`, `categorizer` and `categorize` of chunk `text`, read again. `python3 tools/impl_check.py ferrum-state checks state` names 87 ops of chunk `state` to register. An error in an op shows only when the code exists, as a round of "A check that is wrong" in which you are resumed.
 
 **Read:**
