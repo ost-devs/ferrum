@@ -376,3 +376,15 @@ The work, under `crates/ferrum-state/tests/` only: find why the entries left out
 **Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): what the replayer leaves out, the same at every run' -- crates/ferrum-state/tests`.
 
 **Report:** the cause; the outputs of the checks; each file you changed with what it now does, for the orchestrator's list; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## The end of the implementation stage: the last round
+
+The consultant approved `fixtures/no-counterpart.jsonl` by reason with four corrections, sorted the lines no check reaches and read the hand-off's failures (`docs/decisions/ferrum-state.md`, "The end of the implementation stage", "What it requires", item 1; read the entry whole, and `.claude/rules/decisions.md` D12 as widened, with its record in `docs/decisions/foundation.md`). Item 1 is your work list, each change with the rule it restores: the core's case-5 naming with its literal test, `set.update`'s `filter` in chunk `rangeset`, a falsy `enables` in chunk `facet`, the arguments of `state.phrase` in chunk `state`, and the written tests it names (`state.EditorState.toJSON.B3`, the eleven public forms of `implementation.md` "Lines no check reaches", D6's lazy state read by two threads). Work under `crates/ferrum-state/tests/` only; a public form's doc comment is read from `cargo doc` as before, never from `crates/ferrum-state/src/`.
+
+**Check:** `cargo fmt --all`, then `python3 tools/impl_check.py ferrum-state handoff --since text=c0ba180,change=ea896a1,rangeset=126dad7,state=efdebd2`, every check passing but "what the replayer leaves out equals no-counterpart.jsonl", whose differences it reports, and its check that your files are listed, which the orchestrator does. Leave `no-counterpart.jsonl` as it is: the orchestrator writes and commits it from its own run.
+
+**Budget.** 90,000 tokens (a round, counted apart). If you pass 135,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the last round of the implementation stage' -- crates/ferrum-state/tests`.
+
+**Report:** the output of the check, whole; each file you changed with the rule each change restores, for the orchestrator's list; the written tests with their `// covers:`; the left-out entries that differ from the file, as the check reports them; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
