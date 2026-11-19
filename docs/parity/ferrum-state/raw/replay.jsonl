@@ -67,6 +67,7 @@
 {"chunk": "rangeset", "op": "set.prop", "how": "test", "parts": [], "note": "`size` is public; `length`, `maxPoint`, `chunkPos`, `isEmpty` through `__test`"}
 {"chunk": "rangeset", "op": "set.update", "how": "run", "parts": [], "note": ""}
 {"chunk": "rangeset", "op": "spans", "how": "part", "parts": ["the variable `kept` of a `spansKeep` iterator"], "note": "as for `compare`"}
+{"chunk": "rangeset", "op": "value.eq", "how": "none", "parts": [], "note": "`eq` of a range value is the `PartialEq` of the implementing type (N10), in the replayer its own value type (design.md §10, Values), so the op calls no code of Ferrum; cm6's default `eq`, identity, has no Rust form (state.cm6.171.d1; Q96)"}
 {"chunk": "rangeset", "op": "value.fields", "how": "part", "parts": ["ownKeys"], "note": "which fields are own properties of a JavaScript object"}
 {"chunk": "rangeset", "op": "value.set", "how": "skip", "parts": [], "note": "writes a field of a range value after it was given to a set (state.cm6.229.d1)"}
 {"chunk": "facet", "op": "allSame", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}

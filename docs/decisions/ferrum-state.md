@@ -761,3 +761,67 @@ The editor's need is "after the last range, keep the rest". 1e9 is a JavaScript 
 **Confidence.** High: the edge was run on both sides, and the code explains every case run.
 
 **Reopens.** A cm6 version that changes `ChangeSet.filter`; a written test of U4b whose values differ from the patched run.
+
+## 2026-11-19 · Q96 to Q99: what the checks of unit `rangeset` compare where Ferrum has no form for cm6's value, and how a point's size converts
+
+*Decided by the consultant, from the questions of the checks of U3 (commit fad6dce; the code card e7721aa was already written). Binding text: `raw/replay.jsonl` (`value.eq`); `raw/decisions.jsonl` (`state.cm6.171.d1`, new; `state.cm6.201.d1`, which now names `state.RangeSetBuilder.add.B7`); `design.md` §2 (the sentence on sentinels); `plan.md` "Positions", rule 11. Closes Q96, Q97, Q98 and Q99.*
+
+**What I read and ran.** The four questions and the facts after them; `mirrors/cm6/state/src/rangeset.ts` (`RangeValue`, `cmpVal`, the `RangeCursor` interface, `LayerCursor`, `HeapCursor.from` and `next`, `RangeSet^eq`, the cycle at `:482`); every mirrored reader of a cursor's `rank` (`mirrors/cm6/view/src/buildtile.ts:199`, and `SpanCursor` at `rangeset.ts:791`, `:835`, both inside the loop where the value is set); the rows `state.RangeValue.eq.B1` to `.B5`, `state.RangeCursor.rank.B1`, `.B2`, `state.RangeSetBuilder.add.B7`, `.finish.B1`, `.B2`; fixtures F0003, F0236, F0237, F5004; `design.md` §2 and §10 (Values); `plan.md` "Positions"; `tools/impl_check.py` (`foreseen`, the list of `form` rows); the skeleton's `RangeCursor` and `__test::range_set_next_layer`; the replayer's handling of a `none` op (`lang/eval.rs`, which accepts from such an op only no counterpart with reason `op`). After the changes: `python3 tools/spec_check.py ferrum-state` passes, and `python3 tools/impl_check.py ferrum-state checks rangeset` passes. F0003 is now reported `mismatch`, because the op still returns a value where its row says `none`, so the replayer fails it. That is the test-writer's change below, and it must be made before the code step.
+
+**Q96. `value.eq` compares the replayer against itself.** The op is `==` on the replayer's own value type (N10, `design.md` §10). That type reproduces cm6's classes `V`, `W` and `Id` and has its own literal test. No code of Ferrum runs, so F0003 is `equal` whatever the crate does. This is Q86's case, and it gets Q86's answer. `value.eq` is `none` in `raw/replay.jsonl`, and `state.RangeValue.eq.B1` ("the default `eq` is identity") is named by a new row, `state.cm6.171.d1`, of class `form`. A Rust type has no object identity a set could fall back on, so Ferrum has no default: the implementing type decides, as a cm6 subclass does when it overrides `eq`. cm6's own doc comment advises overriding (`rangeset.ts:7-10`). What Ferrum's code does with that equality stays compared through `RangeSet::eq` and `RangeSet::compare`, with the replayer's type logging every call: which pairs it compares, on which side, in which order (`.B4`, `.B5`).
+- *Lost:* an exemption in the tool for a fixture the skeleton satisfies. That would be a hole for exactly the error the check exists to catch. *Lost:* a written test of `PartialEq` on a test type. It would test the test.
+- *Not an improvement row:* having no identity default is the form N10 already gives Ferrum, not a behavior to adopt later.
+
+**Q97. `RangeCursor::rank` returns `Option<usize>`.** cm6 sets `rank` to -1 in exactly one case: a cursor whose heap is empty, that is, over sets none of which holds a range (`rangeset.ts:712`). Every other rank it gives is a set index, at the end too (the lowest one, `state.RangeCursor.rank.B2`, 14 fixtures). `design.md` §2 already turns a sentinel cm6 keeps outside the positions into `None`: `min_point_size`, `try_find_column`, `try_map_pos`. `rank` is the same case, so the rule in force decides it. `rank()` is `Some(i)` wherever cm6 gives `i`, and `None` where cm6 gives -1. The replayer writes `None` as -1, and all five fixtures stay compared. The cost to a caller is one `unwrap` or `expect` where it reads the rank of a range it holds (`buildtile.ts:199` in `ferrum-view`). A -1 read as an index would be a wrong layer; a `None` cannot be.
+- *Lost:* keep `usize` and return some index for a cursor over no range. That gives a number no set has, and either five fixtures become uncompared, or the replayer decides from the inputs when cm6 would write -1, which means the check computes cm6's rule itself. *Lost:* `isize` with -1. That puts a sentinel into an index, against `design.md` §2. *Lost:* `None` at every end. That is cleaner for a caller, but it changes values that 12 fixtures compare, for a reading no consumer makes. If a consumer wants it, it can be raised later as an improvement.
+- Changing it now costs one signature. Changing it after `ferrum-view` is written against it is a breaking change. This is the first signature question of U3, and E21 counts it.
+
+**Q98. `state.RangeSetBuilder.add.B7` is named by `state.cm6.201.d1`.** The row already decides that `finish(self)` consumes the builder, so a use after `finish` does not compile. It listed the two fixtures but named no behavior, so the tool could not accept add.B7 through it. The row now names add.B7 and says why: the behavior is cm6's `TypeError` on that use, and the overlap path that escapes it. No test can show a use that does not compile. `.finish.B1`, `.finish.B2` and `.constructor.B1` keep their written tests and their ported case. This is better than cm6 for the developer: cm6's overlap path accepts the misuse silently. But it is the Rust form already decided, not a later improvement, so it gets no row of the register.
+
+**Q99. A point's size converts through the ranges it measures** (`plan.md` "Positions", rule 11). A `maxPoint` has no position of its own. It is the length of the largest point range of its chunk or layer. D1 says a length is converted through the text it refers to, and here that text is the range that gives the maximum. The replayer already does this, and the rule now says it, with two changes.
+1. A value that is not the byte length of any point range of its scope is written as Ferrum gave it, a `mismatch`. It used to fail naming the case. A wrong `maxPoint` must show as wrong, never as unconvertible.
+2. When the scope gives no single answer, the value has no counterpart, reason `char`. That happens when ranges of that byte length differ in UTF-16 length, or when the longest range in bytes is not the longest in UTF-16. D1 changes which range is the largest, and no conversion recovers cm6's number. This is the same reason as a position inside a character. Before, such a case would have been a false mismatch: Ferrum right in bytes, compared with cm6's maximum taken from another range.
+
+A `minPointSize` is a threshold the program gives. It is the same number in both units when every point range of the sets iterated has the same length in both, and otherwise the call has no counterpart, reason `char`. The test-writer's static walk found neither case among the 84 non-ASCII fixtures. A call over sets measured on documents that convert differently stays a question under rule 8. What a wrong conversion would cost is a fixture failing visibly. What the `char` branch could hide, a wrong `maxPoint` on a non-ASCII chunk, is computed by the same code that the 300-odd ASCII fixtures compare, and through its effect in `spans`.
+
+**The choices the test-writer reported where the rows say less.** I agree with each:
+- an ended cursor's `from` and `to` unconverted (`state.cm6.187.d1`, `design.md` §2: `C.Far` stays);
+- `RangeSet::eq`'s `to` 999,999,999 where the program omits it (the skeleton's doc comment, D14);
+- `minPointSize` -1 as `None`;
+- `null` or `undefined` for `filter` as no filter (Q91);
+- `filterFrom` and `filterTo` `undefined` as cm6's destructuring default;
+- a `between` callback returning `undefined` as `true`, and `0`, `null` or `""` left out by type (`design.md` §10).
+
+`set.nextLayer` giving the set itself when Ferrum gives `None` for the empty set is right too. cm6's cycle (`rangeset.ts:482`, "awkward patch-up") is a JavaScript device, and Ferrum's sets have no cycle. The skeleton's doc comment on `__test::range_set_next_layer` is wrong about cm6: it says cm6 holds `null` there, where cm6 holds the empty set itself. The implementer of U3 corrects it.
+
+**What it requires, and of whom.**
+1. *Before the test-writer is resumed, the orchestrator* puts the signature of Q97 in `crates/ferrum-state/src/rangeset.rs` (the body stays `todo!()`). It replaces the doc comment and signature of `RangeCursor::rank` with:
+   ```rust
+       /// The index, in the sets iterated, of the set the current range comes from. At the end it keeps the index cm6's
+       /// cursor keeps (`state.RangeCursor.rank.B2`); `None` only for a cursor over sets none of which holds a range,
+       /// where cm6 gives -1 (`design.md` §2).
+       ///
+       /// cm6: RangeCursor.rank
+       pub fn rank(&self) -> Option<usize> {
+   ```
+   Then `python3 tools/impl_check.py ferrum-state skeleton` must pass. No test can be written against the new form before it exists, and the test-writer writes only under `tests/`.
+2. *The test-writer of U3, resumed* (a round on the checks, budget 60,000):
+   - `value.eq` evaluates to no counterpart, reason `op`, so F0003 becomes `none`. The literal test of the value type's log (`replay/rangeset/harness.rs`) keeps showing the log through an op that is still run.
+   - Every op that writes a cursor's `rank` writes `None` as -1.
+   - The conversion of `maxPoint` and `minPointSize` follows rule 11, items 1 and 2 above.
+   - Then `checks rangeset` again. Its commit is the checks commit that the code step's `--since` takes.
+3. *The U3 code card* (`cards/implementer.md`, step U3 code) gains:
+   - `state.cm6.171.d1` in its list of rows;
+   - `rank` is `Option<usize>` as `design.md` §2 says, already in the skeleton, `None` only where cm6's heap is empty;
+   - the corrected doc comment of `__test::range_set_next_layer`: "`None` for the empty set, whose `nextLayer` in cm6 is the empty set itself (`rangeset.ts:482`), a cycle Ferrum's sets do not have."
+
+   Nothing else in the skeleton changes.
+
+**Confidence.** High on Q96 and Q98: each applies a rule already in force, and the tool's run shows the gate passing. Medium-high on Q97. The rule is the design's own, but its ergonomic cost lands on `ferrum-view`, which is not written yet. Medium-high on Q99. The rule is D1 applied to a size, and the `char` branch is reasoned, not yet seen on a fixture.
+
+**Reopens.**
+- A consumer that reads the rank of an ended cursor (Q97, the `None`-at-every-end form).
+- More than two `rangeset` fixtures ending as `char` under rule 11. Then whether their behaviors are still compared somewhere is read at the approval of the left-out file.
+- A `minPointSize` other than -1 or 0 in a mirrored consumer on non-ASCII text.
+
+**Raised by me, not asked.** The gate passed with F0003 a `mismatch` against the skeleton. That is right for `checks`, but the `code` check would fail on it. The order in item 2 makes sure the code step starts from a replayer that agrees with `raw/replay.jsonl`.
