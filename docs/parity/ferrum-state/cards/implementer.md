@@ -140,3 +140,21 @@ A way for Ferrum to do better than cm6 is a question in your report, and you wri
 
 **Report:** the output of the check; the counts of the report for chunks `text`, `change` and `rangeset` by result; each round on a failing fixture (the id, the evaluation `tools/trace_diff.py` named, whether the cause was there); the three lists of `implementation.md`; anything of `text.rs`, `change.rs` or `selection.rs` you changed; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
 
+
+## Step U3 code, a round after Q100 to Q104: signed chunk offsets
+
+The consultant decided Q100 (`docs/decisions/ferrum-state.md`, "Q100 to Q104"; `design.md` §2, chunk offsets): a chunk's offsets relative to its start are signed, as cm6's are negative for a range stored with `from > to` and for a range added after one (`rangeset.ts:531-532`, `state.cm6.201.d1`, `state.RangeSetBuilder.add.B6`). The work, in the code of 3aaf7f6:
+
+1. `crate::rangeset::Chunk`'s `from` and `to`, and the builder's `from` and `to` arrays, hold `isize`; remove `store` and `rel` (`crates/ferrum-state/src/rangeset.rs:30`, `:35`) and the conversions at their uses.
+2. `__test::Chunk::from()` and `to()` (`crates/ferrum-state/src/__test.rs:142`, `:149`) return `&[isize]`; their doc comments say the offsets are negative for a range stored with `from > to` and for a range added after one, citing `state.cm6.201.d1` and `state.RangeSetBuilder.add.B6`.
+3. Rewrite the item "Signed offsets in `usize`" of `docs/parity/ferrum-state/implementation.md` ("Native mechanisms", unit rangeset) to say what the code then does.
+
+Nothing else changes; the public API does not.
+
+**Check, run by you before you report:** `cargo fmt --all`, then `cargo build -p ferrum-state`, `cargo clippy -p ferrum-state --all-targets --features __test` with zero warnings except in the `replay` target, `cargo fmt --all -- --check`, and `cargo test -p ferrum-state --features __test --test cm6_rangeset --test written_rangeset`. The `replay` target does not compile until the test-writer's round that follows (it reads `&[usize]`): say so in the report with the compiler's error, and do not run `tools/impl_check.py`.
+
+**Budget.** 40,000 tokens (a round, counted apart). If you pass 60,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'feat(ferrum-state): unit rangeset, signed chunk offsets (Q100)' -- crates/ferrum-state/src docs/parity/ferrum-state/implementation.md`.
+
+**Report:** the output of each check; the replay target's error; then the two lines of `CLAUDE.md` "Reporting from a card".
