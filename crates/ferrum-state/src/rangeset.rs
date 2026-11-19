@@ -6,8 +6,8 @@
 
 // cm6 computes with signed numbers where a position is compared or made relative (`a - b || c - d`, the `-1` of an
 // unset chunk start, `-C.Far` before the first range); the code here does the same in `i64`. A chunk stores its
-// positions relative to its start as cm6 does; an offset that is negative (a range stored with `from > to`, or added
-// after one, `state.cm6.201.d1`) is kept in its `usize` as the two's complement of the `i64`, read back by `rel`.
+// positions relative to its start as cm6 does, as `isize`: an offset is negative for a range stored with `from > to`
+// and for a range added after one (`state.cm6.201.d1`, `state.RangeSetBuilder.add.B6`; Q100).
 
 use std::borrow::Cow;
 use std::cmp::Ordering;
@@ -25,16 +25,6 @@ pub(crate) type FilterFn<'a, T> = &'a mut dyn FnMut(usize, usize, &T) -> bool;
 pub(crate) const CHUNK_SIZE: usize = 250;
 /// cm6's `C.Far` (`rangeset.ts:98`): the end sentinel and the bound of positions and sides.
 pub(crate) const FAR: i64 = 1_000_000_000;
-
-/// A stored offset read as the signed number cm6 holds (the module's doc comment).
-fn rel(x: usize) -> i64 {
-    x as isize as i64
-}
-
-/// A signed offset stored in a `usize` (the inverse of [`rel`]).
-fn store(x: i64) -> usize {
-    x as isize as usize
-}
 
 /// cm6's `a - b || c - d`: the first difference that is not zero.
 fn or(a: i64, b: impl FnOnce() -> i64) -> i64 {
@@ -329,8 +319,8 @@ impl Marks {
 /// A chunk of at most [`CHUNK_SIZE`] ranges, positions relative to the chunk's start (cm6's `Chunk`,
 /// `rangeset.ts:100`).
 pub(crate) struct Chunk<T> {
-    pub(crate) from: Vec<usize>,
-    pub(crate) to: Vec<usize>,
+    pub(crate) from: Vec<isize>,
+    pub(crate) to: Vec<isize>,
     pub(crate) value: Vec<T>,
     pub(crate) max_point: i64,
     #[cfg(feature = "__test")]
@@ -338,7 +328,7 @@ pub(crate) struct Chunk<T> {
 }
 
 impl<T> Chunk<T> {
-    fn new(from: Vec<usize>, to: Vec<usize>, value: Vec<T>, max_point: i64) -> Chunk<T> {
+    fn new(from: Vec<isize>, to: Vec<isize>, value: Vec<T>, max_point: i64) -> Chunk<T> {
         Chunk {
             from,
             to,
@@ -352,7 +342,7 @@ impl<T> Chunk<T> {
     /// cm6's `get length()` (`rangeset.ts:112`): the last `to`, relative to the chunk's start. A chunk holds at
     /// least one range.
     fn length(&self) -> i64 {
-        rel(self.to[self.to.len() - 1])
+        self.to[self.to.len() - 1] as i64
     }
 
     /// cm6 reads `chunk.value` (the array, not an element).
@@ -386,7 +376,7 @@ impl<T: RangeValue> Chunk<T> {
                 return lo;
             }
             let mid = (lo + hi) >> 1;
-            let diff = or(rel(arr[mid]) - pos, || {
+            let diff = or(arr[mid] as i64 - pos, || {
                 let v = self.read(mid);
                 (if end { v.end_side() } else { v.start_side() }) as i64 - side
             });
@@ -409,7 +399,7 @@ impl<T: RangeValue + Clone> Chunk<T> {
         let e = self.find_index(to, FAR, false, i);
         while i < e {
             let value = self.read(i);
-            let (a, b) = ((offset as i64 + rel(self.from[i])) as usize, (offset as i64 + rel(self.to[i])) as usize);
+            let (a, b) = ((offset as i64 + self.from[i] as i64) as usize, (offset as i64 + self.to[i] as i64) as usize);
             if !f(a, b, value) {
                 return false;
             }
@@ -436,8 +426,8 @@ impl<T: RangeValue + Clone> Chunk<T> {
         let mut i = 0;
         'iter: while i < self.value_len() {
             let val = self.read(i);
-            let cur_from = (offset as i64 + rel(self.from[i])) as usize;
-            let cur_to = (offset as i64 + rel(self.to[i])) as usize;
+            let cur_from = (offset as i64 + self.from[i] as i64) as usize;
+            let cur_to = (offset as i64 + self.to[i] as i64) as usize;
             i += 1;
             let (start_side, end_side) = (val.start_side() as i64, val.end_side() as i64);
             let (new_from, mut new_to);
@@ -501,8 +491,8 @@ impl<T: RangeValue + Clone> Chunk<T> {
             None
         } else {
             Some(Chunk::new(
-                from.into_iter().map(store).collect(),
-                to.into_iter().map(store).collect(),
+                from.into_iter().map(|x| x as isize).collect(),
+                to.into_iter().map(|x| x as isize).collect(),
                 value,
                 max_point,
             ))
@@ -964,8 +954,8 @@ pub struct RangeSetBuilder<T> {
     last: Option<(i32, i32)>,
     last_from: i64,
     last_to: i64,
-    from: Vec<usize>,
-    to: Vec<usize>,
+    from: Vec<isize>,
+    to: Vec<isize>,
     value: Vec<T>,
     max_point: i64,
     set_max_point: i64,
@@ -1059,8 +1049,8 @@ impl<T: RangeValue + Clone> RangeSetBuilder<T> {
         if self.chunk_start < 0 {
             self.chunk_start = from as i64;
         }
-        self.from.push(store(from as i64 - self.chunk_start));
-        self.to.push(store(to as i64 - self.chunk_start));
+        self.from.push((from as i64 - self.chunk_start) as isize);
+        self.to.push((to as i64 - self.chunk_start) as isize);
         self.last = Some((start_side as i32, end_side as i32));
         self.last_from = from as i64;
         self.last_to = to as i64;
@@ -1086,8 +1076,8 @@ impl<T: RangeValue + Clone> RangeSetBuilder<T> {
         let last = chunk.value_len() - 1;
         let value = chunk.read(last);
         self.last = Some((value.start_side(), value.end_side()));
-        self.last_from = rel(chunk.from[last]) + from_i;
-        self.last_to = rel(chunk.to[last]) + from_i;
+        self.last_from = chunk.from[last] as i64 + from_i;
+        self.last_to = chunk.to[last] as i64 + from_i;
         true
     }
 
@@ -1257,8 +1247,8 @@ impl<T: RangeValue> LayerCursor<T> {
             } else {
                 let layer = &self.layer;
                 let (chunk_pos, chunk) = (layer.chunk_pos[self.chunk_index] as i64, &layer.chunk[self.chunk_index]);
-                self.from = chunk_pos + rel(chunk.from[self.range_index]);
-                self.to = chunk_pos + rel(chunk.to[self.range_index]);
+                self.from = chunk_pos + chunk.from[self.range_index] as i64;
+                self.to = chunk_pos + chunk.to[self.range_index] as i64;
                 let point = chunk.read(self.range_index).point();
                 self.value = Some((self.chunk_index, self.range_index));
                 self.set_range_index(self.range_index + 1);

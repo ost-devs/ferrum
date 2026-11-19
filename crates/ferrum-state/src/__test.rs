@@ -136,17 +136,21 @@ impl<T: RangeValue + Clone> Chunk<T> {
         self.chunk.value.is_empty()
     }
 
-    /// The start of each range, relative to the chunk's position (cm6's `Chunk.from`).
+    /// The start of each range, relative to the chunk's position (cm6's `Chunk.from`). The offsets are negative for a
+    /// range stored with `from > to` and for a range added after one (`state.cm6.201.d1`,
+    /// `state.RangeSetBuilder.add.B6`).
     ///
     /// ferrum-only: cm6's internal Chunk.from, see D15
-    pub fn from(&self) -> &[usize] {
+    pub fn from(&self) -> &[isize] {
         &self.chunk.from
     }
 
-    /// The end of each range, relative to the chunk's position (cm6's `Chunk.to`).
+    /// The end of each range, relative to the chunk's position (cm6's `Chunk.to`). The offsets are negative for a
+    /// range stored with `from > to` and for a range added after one (`state.cm6.201.d1`,
+    /// `state.RangeSetBuilder.add.B6`).
     ///
     /// ferrum-only: cm6's internal Chunk.to, see D15
-    pub fn to(&self) -> &[usize] {
+    pub fn to(&self) -> &[isize] {
         &self.chunk.to
     }
 
