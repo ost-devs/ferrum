@@ -191,10 +191,12 @@ impl<T: RangeValue + Clone> RangeCursor<T> {
         todo!()
     }
 
-    /// The index, in the sets iterated, of the set the current range comes from.
+    /// The index, in the sets iterated, of the set the current range comes from. At the end it keeps the index cm6's
+    /// cursor keeps (`state.RangeCursor.rank.B2`); `None` only for a cursor over sets none of which holds a range,
+    /// where cm6 gives -1 (`design.md` §2).
     ///
     /// cm6: RangeCursor.rank
-    pub fn rank(&self) -> usize {
+    pub fn rank(&self) -> Option<usize> {
         todo!()
     }
 }

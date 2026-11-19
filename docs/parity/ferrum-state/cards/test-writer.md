@@ -167,3 +167,24 @@ You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as b
 
 **Report:** the output of the check; counts (ops registered, ported cases, written tests); every `// passes against the skeleton:` and every `// literal` cause by decision id; the files outside chunk `rangeset` you changed and why; the questions; anything the tool reported that you had to fix before the commit; then the two lines of `CLAUDE.md` "Reporting from a card".
 
+
+## Step U3 checks, a round of "A check that is wrong" after Q96 to Q99
+
+The checks of fad6dce change as the consultant decided Q96 to Q99 (`docs/decisions/ferrum-state.md`, "Q96 to Q99"; read the entry whole). The orchestrator has already changed the skeleton: `RangeCursor::rank` returns `Option<usize>` (`design.md` §2), so the replayer does not compile until item 2 is done. The work:
+
+1. **`value.eq` has no counterpart**, reason `op` (`raw/replay.jsonl`, op `value.eq`, `how` `none`; row `state.cm6.171.d1`): F0003 becomes `none`, not `equal`. The literal test of the value log in `crates/ferrum-state/tests/replay/rangeset/harness.rs` (its case at line 77) must still drive the log through an op that runs.
+2. **A cursor's rank** (Q97): every op that writes a cursor's `rank` writes `None` as -1, cm6's value for a cursor over sets none of which holds a range (`rangeset.ts:712`); every other value is written as Ferrum gives it. The 5 fixtures F0097, F0161, F0164, F7008, F7009 stay compared.
+3. **`maxPoint` and `minPointSize`** convert by rule 11 of `docs/parity/ferrum-state/plan.md` "Positions" (Q99): a value that is the byte length of no point range of its scope is written as Ferrum gave it and is a `mismatch`; a scope that gives no single answer, and a `minPointSize` whose point ranges differ in length between the units, are no counterpart, reason `char`.
+4. **Q98**: `state.RangeSetBuilder.add.B7` is now named by `state.cm6.201.d1` (form); nothing to write for it.
+
+The test-writer's other choices in the report of fad6dce (an ended cursor's `from` and `to` unconverted, `eq`'s `to` 999,999,999, the `filter` defaults, `between`'s `undefined` as `true`, `set.nextLayer` giving the set itself) are endorsed by the entry and stay.
+
+You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as before.
+
+**Check:** `cargo fmt --all`, then `python3 tools/impl_check.py ferrum-state skeleton` and `python3 tools/impl_check.py ferrum-state checks rangeset`, until both pass; no fixture of chunk `rangeset` may be `equal` or `mismatch`.
+
+**Budget.** 60,000 tokens (a round, counted apart from the unit's steps). If you pass 90,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the checks of unit rangeset after Q96 to Q99' -- crates/ferrum-state/tests`.
+
+**Report:** the output of both checks; what you changed in each file and the decision each change follows; any file outside chunk `rangeset` you changed; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
