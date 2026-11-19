@@ -21,9 +21,11 @@ use crate::replay::change::shared::{self as cs, R, Stop, finish, known};
 use crate::replay::change::values::{ROW_JSON, ROW_MAIN, bad_sel_json, set_json_out, to_serde};
 use crate::replay::facet::scope::{
     F, Fault, build, by_type, check_split, create_extensions, define, ferrum, read_facet, reader, separator_for,
-    settle, snapshot, split_lines, state_json, state_json_in, to_ext,
+    settle, snapshot, split_lines, state_json, state_json_in, to_ext, unknown_counters,
 };
-use crate::replay::facet::values::{CompH, ExtH, FacetH, FacetK, FieldH, Pv, TrH, Unsync, js_get, js_truthy, thrown};
+use crate::replay::facet::values::{
+    CompH, ExtH, FacetH, FacetK, FieldH, ListRead, Pv, TrH, Unsync, js_get, js_truthy, thrown,
+};
 use crate::replay::lang::Language;
 use crate::replay::lang::eval::{Flow, Program, arg};
 use crate::replay::lang::json::from_serde_json;
@@ -39,7 +41,23 @@ pub fn reg(lang: &mut Language, name: &str, kinds: &[&'static str], body: Body) 
         let c = ctx(p)?;
         c.enter(p);
         snapshot(p, &c.sc, a);
-        finish(body(a, p, &c))
+        match body(a, p, &c) {
+            // a call not made, case 5 included (`design.md` section 10, "No counterpart"): a `try` or `capture` around
+            // it is no counterpart, and so are the counters a callback spec names and the variables the body of a
+            // function of the program writes, which its callbacks may have changed
+            Err(Stop::Nc(v)) => {
+                p.not_made(&v);
+                unknown_counters(&c.sc, &v);
+                let names: Vec<String> = c.fn_writes.borrow().iter().cloned().collect();
+                for n in names {
+                    if p.get(&n).is_ok() {
+                        p.set(n, v.clone());
+                    }
+                }
+                Ok(v)
+            }
+            r => finish(r),
+        }
     });
 }
 
@@ -119,6 +137,91 @@ pub fn register(lang: &mut Language) {
 fn fx<T>(p: &mut Program, c: &Ctx, op: &str, doc: &Form, f: impl FnOnce() -> F<T>) -> R<T> {
     let cc = c.clone();
     poisoned(c.call_of(op, || ferrum(p, &cc.sc, op, doc, f)))
+}
+
+/// A call of `update` (`fx`), whose messages' numbers are converted back through the argument rule 10 of `plan.md`
+/// "Positions" picks among those the call was given, with the documents rule 6 gives them: the one whose value is
+/// the message's position and whose document has the message's length. A message that fits no argument fails the
+/// fixture as the replayer's own (rule 8), unless every document of the call is ASCII, where no conversion depends on
+/// which it is.
+fn fx_update<T>(p: &mut Program, c: &Ctx, op: &str, _doc: &Form, f: impl FnOnce() -> F<T>) -> R<T> {
+    let cc = c.clone();
+    poisoned(c.call_of(op, || {
+        // the panic's numbers stay Ferrum's: filler converts each to itself
+        match ferrum(p, &cc.sc, op, &filler(), f) {
+            Err(Stop::Flow(Flow::Throw(e))) => Err(Stop::Flow(by_arguments(op, e)?)),
+            r => r,
+        }
+    }))
+}
+
+/// The error of `fx_update`, its numbers through the argument they fit.
+fn by_arguments(op: &str, e: crate::replay::lang::eval::JsError) -> Result<Flow, Flow> {
+    let m = String::from_utf16_lossy(&e.message);
+    // the message's numbers: (the positions, the length), and how to write it again
+    type Write = fn(&[String]) -> String;
+    let parse = |m: &str| -> Option<(Vec<usize>, usize, Write)> {
+        let n = |s: &str| s.parse::<usize>().ok();
+        if let Some(rest) = m.strip_prefix("Position ")
+            && let Some((pos, len)) = rest.split_once(" is out of range for changeset of length ")
+        {
+            return Some((vec![n(pos)?], n(len)?, |x| {
+                format!("Position {} is out of range for changeset of length {}", x[0], x[1])
+            }));
+        }
+        if let Some(rest) = m.strip_prefix("Invalid change range ")
+            && let Some((from, rest)) = rest.split_once(" to ")
+            && let Some((to, rest)) = rest.split_once(" (in doc of length ")
+            && let Some(len) = rest.strip_suffix(')')
+        {
+            return Some((vec![n(from)?, n(to)?], n(len)?, |x| {
+                format!("Invalid change range {} to {} (in doc of length {})", x[0], x[1], x[2])
+            }));
+        }
+        if let Some(rest) = m.strip_prefix("Invalid position ")
+            && let Some((pos, len)) = rest.split_once(" in document of length ")
+        {
+            return Some((vec![n(pos)?], n(len)?, |x| {
+                format!("Invalid position {} in document of length {}", x[0], x[1])
+            }));
+        }
+        None
+    };
+    let Some((positions, len, write)) = parse(&m) else { return Ok(Flow::Throw(e)) };
+    let args = super::values::current_args();
+    let key = |f: &Form| format!("{f:?}");
+    let mut candidates: Vec<&Form> = Vec::new();
+    for (_, f) in &args {
+        let fits = f.len8() == len && positions.iter().all(|p| args.iter().any(|(b, g)| b == p && key(g) == key(f)));
+        if fits && !candidates.iter().any(|g| key(g) == key(f)) {
+            candidates.push(f);
+        }
+    }
+    let convert = |f: &Form| -> Option<String> {
+        let mut xs: Vec<String> = Vec::new();
+        for b in positions.iter().chain(std::iter::once(&len)) {
+            xs.push(f.to_units(*b).ok()?.to_string());
+        }
+        Some(write(&xs))
+    };
+    let written: Vec<Option<String>> = candidates.iter().map(|f| convert(f)).collect();
+    let fail = || {
+        Flow::Fail(format!(
+            "{op}: the numbers of the message {m:?} fit no argument of the call (plan.md \"Positions\", rules 6, 8 and 10)"
+        ))
+    };
+    let message = match written.first() {
+        Some(Some(w)) if written.iter().all(|x| x.as_ref() == Some(w)) => w.clone(),
+        Some(_) => return Err(fail()),
+        None => {
+            let ascii = args.iter().all(|(_, f)| f.to_units(f.len8()) == Ok(f.len8()));
+            if !ascii {
+                return Err(fail());
+            }
+            m.clone()
+        }
+    };
+    Ok(Flow::throw(&e.name, &message))
 }
 
 /// The message of a panic of std when a `LazyLock` is read after its initializer panicked.
@@ -229,6 +332,9 @@ fn comp_of(p: &mut Program, c: &Ctx, x: &Value, op: &str) -> R<ferrum_state::Com
 fn type_of(p: &mut Program, c: &Ctx, x: &Value, op: &str) -> R<TypeH> {
     if let Value::Str(n) = x {
         let n = String::from_utf16_lossy(n);
+        if let Some(v) = c.missing_types.borrow().get(&n) {
+            return Err(Stop::Nc(v.clone()));
+        }
         let t = fx(p, c, op, &filler(), || Ok(c.type_named(&n)))?;
         return t.ok_or_else(|| Stop::Flow(Flow::error(&format!("interp: no type {n}"))));
     }
@@ -469,9 +575,28 @@ fn field_define(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
 /// values are positions; a falsy map is the absent one (`spec.map ||`, `mirrors/cm6/state/src/transaction.ts:62`;
 /// D12); a function of the program is called with the value and the mapping. Registered under `name` when given.
 fn effect_define(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
-    const OP: &str = "effect.define";
     let name = if a.has("name") { Some(s(&a.field("name"))) } else { None };
-    let (t, kind) = if !a.has("spec") {
+    let r = effect_type_define(a, p, c);
+    if let (Err(Stop::Nc(v)), Some(n)) = (&r, &name) {
+        // the name a definition not made defines stands for that no counterpart (case 5)
+        c.missing_types.borrow_mut().insert(n.clone(), v.clone());
+    }
+    let (t, kind) = r?;
+    if let Some(k) = kind {
+        c.pos_types.borrow_mut().push((t.clone(), k));
+    }
+    let h = TypeH::Eff(EffK::User(t));
+    c.defined.borrow_mut().push(h.clone());
+    if let Some(n) = name {
+        c.reg(&n, h.clone());
+    }
+    Ok(h.value())
+}
+
+/// The type `effect.define` makes, with what its values hold when its map is one of `MAPS`.
+fn effect_type_define(a: &Value, p: &mut Program, c: &Ctx) -> R<(ferrum_state::StateEffectType<Pv>, Option<PosKind>)> {
+    const OP: &str = "effect.define";
+    Ok(if !a.has("spec") {
         (fx(p, c, OP, &filler(), || Ok(StateEffect::define::<Pv>(StateEffectSpec::default())))?, None)
     } else {
         let m = a.field("spec").field("map");
@@ -493,16 +618,7 @@ fn effect_define(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
             })?;
             (t, None)
         }
-    };
-    if let Some(k) = kind {
-        c.pos_types.borrow_mut().push((t.clone(), k));
-    }
-    let h = TypeH::Eff(EffK::User(t));
-    c.defined.borrow_mut().push(h.clone());
-    if let Some(n) = name {
-        c.reg(&n, h.clone());
-    }
-    Ok(h.value())
+    })
 }
 
 type MapFn = Box<dyn Fn(&Pv, &ferrum_state::ChangeDesc) -> Option<Pv> + Send + Sync>;
@@ -709,7 +825,7 @@ fn state_update(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
     }
     let st = state_arg(p, OP, &st)?;
     let doc = doc_rc(&st);
-    let tr = fx(p, c, OP, &doc, || Ok(st.update(&update_specs(c, &st, &specs)?)))?;
+    let tr = fx_update(p, c, OP, &doc, || Ok(st.update(&update_specs(c, &st, &specs)?)))?;
     Ok(tr_value(&tr))
 }
 
@@ -762,9 +878,12 @@ fn state_facet(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
     let f = facet_of(p, c, &a.field("facet"), OP)?;
     let st = state_arg(p, OP, &st)?;
     let v = fx(p, c, OP, &doc_rc(&st), || read_facet(&st, &f))?;
-    if matches!(f.k, FacetK::Builtin(_)) {
-        // the list cm6's facet holds, which Ferrum's state returned
-        p.returned_by_ferrum(&v);
+    if let (FacetK::Builtin(_), Some(l)) = (&f.k, ListRead::of(&v)) {
+        // the members of the list cm6's facet holds, which Ferrum's state returned; the list itself has the
+        // identity of the slot's value (`design.md` section 10, "Identity")
+        for x in &l.items {
+            p.returned_by_ferrum(x);
+        }
     }
     Ok(v)
 }
@@ -920,7 +1039,7 @@ fn state_replace_selection(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
     };
     let doc = doc_rc(&st);
     let spec = fx(p, c, OP, &doc, || Ok(st.replace_selection(t)))?;
-    Ok(SpecH { spec }.value())
+    Ok(SpecH { spec, doc }.value())
 }
 
 /// `state.changeByRange(f)`: `f` is called with each range of the selection (on the state's document) and returns
@@ -1073,7 +1192,10 @@ fn get(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
             });
         }
         if let Some(x) = CbrH::of(&v) {
-            return x.get(c, prop);
+            return x.get(prop);
+        }
+        if let Some(x) = SpecH::of(&v) {
+            return x.get(prop);
         }
         if let Some(l) = LineV::of(&v) {
             return Ok(match prop {
@@ -1170,6 +1292,14 @@ fn is_instance(a: &Value, p: &mut Program, _c: &Ctx) -> R<Value> {
     }
     let v = p.ev(&a.field("of"))?;
     known(&v)?;
+    if class == "ChangeSet" && ChangesV::of(&v).is_some_and(|x| x.mapping) {
+        // `raw/replay.jsonl`, `isInstance` (`part`): Ferrum gives a `map` function the `ChangeDesc` cm6 declares
+        return Ok(cs::part(
+            p,
+            "isInstance",
+            "the class `ChangeSet` asked of the mapping Ferrum gives an effect type's `map` function",
+        ));
+    }
     let t = TypeH::of(&v);
     Ok(Value::Bool(match class.as_str() {
         "Annotation" => AnnH::of(&v).is_some(),

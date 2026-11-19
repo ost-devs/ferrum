@@ -23,7 +23,9 @@ use super::specs::{annotations_in, as_array, effects_in, filter_specs};
 use super::values::{ChangesV, PosKind, doc_rc};
 use crate::replay::change::form::Form;
 use crate::replay::facet::scope::{F, Fault, Sc, by_type, new_scope, settle};
-use crate::replay::facet::values::{BuiltinFacet, EffTypeH, FacetH, FacetK, Getter, Pv, TrH, Unsync, js_truthy};
+use crate::replay::facet::values::{
+    BuiltinFacet, EffTypeH, FacetH, FacetK, Getter, ListRead, Pv, TrH, Unsync, js_truthy,
+};
 use crate::replay::lang::eval::{Flow, Program};
 use crate::replay::lang::json::from_serde_json;
 use crate::replay::lang::value::{Host, Value, rust, truthy};
@@ -57,6 +59,10 @@ pub struct Chunk {
     types_ready: Cell<bool>,
     /// Every type `effect.define` and `annotation.define` made, registered under a name or not.
     pub defined: RefCell<Vec<TypeH>>,
+    /// The names whose definition was a call not made: each stands for that *no counterpart* (case 5).
+    pub missing_types: RefCell<std::collections::HashMap<String, Value>>,
+    /// The variables the body of a function of the program writes through a harness op (`as`, `array.push`).
+    pub fn_writes: RefCell<std::collections::BTreeSet<String>>,
 }
 
 pub type Ctx = Rc<Chunk>;
@@ -93,6 +99,8 @@ pub fn setup(p: &mut Program) -> Ctx {
         reading_language_data: Cell::new(false),
         types_ready: Cell::new(false),
         defined: RefCell::new(Vec::new()),
+        missing_types: RefCell::new(std::collections::HashMap::new()),
+        fn_writes: RefCell::new(std::collections::BTreeSet::new()),
     });
     c.enter(p);
     // the facets and types of Ferrum are read when an op first needs them, inside its call of Ferrum
@@ -135,10 +143,12 @@ impl Chunk {
         let known = self.known.replace(Vec::new());
         let ascii = self.ascii.replace(None);
         let was = self.op.replace(op.to_string());
+        let args = super::values::take_args();
         let r = f();
         self.known.replace(known);
         self.ascii.set(ascii);
         self.op.replace(was);
+        super::values::restore_args(args);
         r
     }
 
@@ -457,10 +467,9 @@ pub fn language_data(c: &Ctx, f: &Value) -> F<LanguageDataProvider> {
                 for item in items.borrow().iter() {
                     let Value::Object(o) = item else { return Err(by_type("languageData", &v)) };
                     let mut data = LanguageData::new();
+                    // every field is stored as given, `null` and `undefined` included: cm6's `languageDataAt` pushes
+                    // every own property (`mirrors/cm6/state/src/state.ts:357`; `state.cm6.029.d1`)
                     for (k, x) in o.borrow().entries() {
-                        if matches!(x, Value::Undefined | Value::Null) {
-                            continue;
-                        }
                         let stored: Arc<dyn Any + Send + Sync> = if k == "wordChars" && !c.reading_language_data.get() {
                             match x {
                                 Value::Str(s) => Arc::new(rust(s).ok_or_else(|| by_type("wordChars", x))?),
@@ -471,7 +480,8 @@ pub fn language_data(c: &Ctx, f: &Value) -> F<LanguageDataProvider> {
                                         value: x.clone(),
                                     });
                                 }
-                                _ => return Err(by_type("wordChars", x)),
+                                // not under the row: given to Ferrum as it is, whose reading of it is compared
+                                _ => Arc::new(Pv(x.clone())),
                             }
                         } else {
                             Arc::new(Pv(x.clone()))
@@ -696,27 +706,38 @@ impl BuiltinFacet for Builtin {
             BKind::Bool(f) => Value::Bool(*st.facet(f)),
             BKind::LineSep(f) => st.facet(f).as_deref().map_or(Value::Undefined, Value::str),
             BKind::TabSize(f) => Value::Num(*st.facet(f) as f64),
-            BKind::Phrases(f) => Value::array(
-                st.facet(f)
+            // a list read from a state has the identity of the slot's value (`design.md` section 10, "Identity")
+            BKind::Phrases(f) => {
+                let list = st.facet(f);
+                let items = list
                     .iter()
                     .map(|m| {
                         let o: serde_json::Map<String, serde_json::Value> =
                             m.iter().map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone()))).collect();
                         from_serde_json(&serde_json::Value::Object(o))
                     })
-                    .collect(),
-            ),
+                    .collect();
+                ListRead::of_addr(list as *const _ as *const (), items, Some(st.clone()))
+            }
             BKind::LanguageData(f) => {
-                Value::array(st.facet(f).iter().map(|b| fn_back(c, by_address(b))).collect::<F<Vec<_>>>()?)
+                let list = st.facet(f);
+                let items = list.iter().map(|b| fn_back(c, by_address(b))).collect::<F<Vec<_>>>()?;
+                ListRead::of_addr(list as *const _ as *const (), items, Some(st.clone()))
             }
             BKind::ChangeFilter(f) => {
-                Value::array(st.facet(f).iter().map(|b| fn_back(c, by_address(b))).collect::<F<Vec<_>>>()?)
+                let list = st.facet(f);
+                let items = list.iter().map(|b| fn_back(c, by_address(b))).collect::<F<Vec<_>>>()?;
+                ListRead::of_addr(list as *const _ as *const (), items, Some(st.clone()))
             }
             BKind::TransactionFilter(f) => {
-                Value::array(st.facet(f).iter().map(|b| fn_back(c, by_address(b))).collect::<F<Vec<_>>>()?)
+                let list = st.facet(f);
+                let items = list.iter().map(|b| fn_back(c, by_address(b))).collect::<F<Vec<_>>>()?;
+                ListRead::of_addr(list as *const _ as *const (), items, Some(st.clone()))
             }
             BKind::TransactionExtender(f) => {
-                Value::array(st.facet(f).iter().map(|b| fn_back(c, by_address(b))).collect::<F<Vec<_>>>()?)
+                let list = st.facet(f);
+                let items = list.iter().map(|b| fn_back(c, by_address(b))).collect::<F<Vec<_>>>()?;
+                ListRead::of_addr(list as *const _ as *const (), items, Some(st.clone()))
             }
         })
     }
@@ -903,7 +924,7 @@ pub fn mapping_value(c: &Chunk, d: &ChangeDesc) -> F<Value> {
             ))));
         }
     };
-    Ok(ChangesV::desc(d.clone(), a, b).value())
+    Ok(ChangesV { mapping: true, ..ChangesV::desc(d.clone(), a, b) }.value())
 }
 
 /// A value of the program used as an extension where the vocabulary of chunk `facet` is not involved.

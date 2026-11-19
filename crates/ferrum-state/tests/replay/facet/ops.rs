@@ -8,7 +8,7 @@ use super::config;
 use super::scope::{
     F, Fault, Sc, build, change_spec, check_split, create_extensions, define, doc_string, effect, facet, ferrum, field,
     field_map, number, read_facet, read_one, reader, selection_spec_on, separator_for, snapshot, split_lines,
-    state_json, state_json_in, text, tr_spec,
+    state_json, state_json_in, text, tr_spec, unknown_counters,
 };
 use super::values::{EffTypeH, EffectH, ExtH, FieldH, TrH, doc_form, js_get, rust_str, same_read};
 use crate::replay::change::form::Form;
@@ -75,7 +75,16 @@ pub fn register(lang: &mut Language) {
         lang.op(name, kinds, move |a, p| {
             let sc = scope(p)?;
             snapshot(p, &sc, a);
-            finish(body(a, p, &sc))
+            match body(a, p, &sc) {
+                // a call not made, case 5 included (`design.md` section 10, "No counterpart"): a `try` or `capture`
+                // around it is no counterpart, and so are the counters its callbacks may have written
+                Err(Stop::Nc(v)) => {
+                    p.not_made(&v);
+                    unknown_counters(&sc, &v);
+                    Ok(v)
+                }
+                r => finish(r),
+            }
         });
     }
 }
@@ -428,6 +437,9 @@ fn lsp_keep(a: &Value, p: &mut Program, sc: &Sc) -> R<Value> {
 
 fn counter(a: &Value, _p: &mut Program, sc: &Sc) -> R<Value> {
     let name = text(&a.field("name"));
+    if let Some(nc) = sc.borrow().nc_counters.get(&name) {
+        return Ok(nc.clone());
+    }
     Ok(Value::Num(sc.borrow().counters.get(&name).copied().unwrap_or(0.0)))
 }
 

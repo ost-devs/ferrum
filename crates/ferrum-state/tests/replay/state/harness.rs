@@ -58,7 +58,27 @@ fn flow(p: &mut Program, op: &str, part: &str) -> Stop {
 }
 
 /// `fn {params, do}`: a function that sets the program variable `params[i]` to its i-th argument and evaluates `do`.
-fn op_fn(a: &Value, _p: &mut Program, _c: &Ctx) -> R<Value> {
+/// The variables a body writes through a harness op: the `as` of its ops and the arrays `array.push` grows.
+fn writes(v: &Value, out: &mut std::collections::BTreeSet<String>) {
+    match v {
+        Value::Array(xs) => xs.borrow().iter().for_each(|x| writes(x, out)),
+        Value::Object(o) => {
+            if let Value::Str(s) = v.field("as") {
+                out.insert(String::from_utf16_lossy(&s));
+            }
+            if matches!(v.field("op"), Value::Str(ref s) if **s == *js("array.push"))
+                && let Value::Str(s) = v.field("of").field("$")
+            {
+                out.insert(String::from_utf16_lossy(&s));
+            }
+            o.borrow().entries().iter().for_each(|(_, x)| writes(x, out));
+        }
+        _ => {}
+    }
+}
+
+fn op_fn(a: &Value, _p: &mut Program, c: &Ctx) -> R<Value> {
+    writes(&a.field("do"), &mut c.fn_writes.borrow_mut());
     let params = match a.field("params") {
         Value::Array(xs) => xs
             .borrow()

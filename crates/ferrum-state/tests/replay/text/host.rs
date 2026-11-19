@@ -428,6 +428,15 @@ impl Iter {
             let nc = by_type(p, op, "skip", skip);
             return Err(self.mark(p, receiver, nc));
         };
+        let row = {
+            let st = self.st.borrow();
+            super::cursor::double_skip(&st.shadow, k, st.doc.ascii)
+        };
+        if row && p.condition(super::cursor::ROW_DOUBLE_SKIP) {
+            // the step is left out, and the cursor is no counterpart after it, as any receiver of a call not made
+            let nc = left_out(p, super::cursor::ROW_DOUBLE_SKIP, op, "skip", skip);
+            return Err(self.mark(p, receiver, nc));
+        }
         if !self.advance(k)? {
             let nc = left_out(p, "char", op, "skip", skip);
             return Err(self.mark(p, receiver, nc));

@@ -546,6 +546,15 @@ impl<'l> Program<'l> {
         }
     }
 
+    /// A call not made because an argument is itself no counterpart (`design.md` section 10, "No counterpart", case 5):
+    /// counted as a call not made, with the entry of the value it stands for, and no entry of its own.
+    pub fn not_made(&mut self, nc: &Value) {
+        if let Value::NoCounterpart(l) = nc {
+            self.not_called += 1;
+            self.last_not_called = Some(l.clone());
+        }
+    }
+
     /// How many calls to Ferrum were not made so far.
     pub fn not_called(&self) -> usize {
         self.not_called

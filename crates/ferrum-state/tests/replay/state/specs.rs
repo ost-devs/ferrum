@@ -250,7 +250,13 @@ fn one_spec(c: &Ctx, v: &Value, base: &Rc<Form>, sep: Option<&str>) -> F<(Transa
         Some(o) => produced(o, base)?,
         None => base.clone(),
     };
-    spec.selection = selection_in(&v.field("selection"), &after)?;
+    // a falsy `selection` other than `undefined` is kept by cm6 as it is (`sel && (…)`, `transaction.ts:336`) and read
+    // back by `tr.selection`: not the absent value, so excluded by type (D12; Q116 to Q118)
+    let sel = v.field("selection");
+    if !sel.is_undefined() && truth(&sel) == Some(false) {
+        return Err(by_type("selection", &sel));
+    }
+    spec.selection = selection_in(&sel, &after)?;
     spec.effects = effects_in(c, &v.field("effects"), &after)?;
     spec.annotations = annotations_in(&v.field("annotations"))?;
     // `if (spec.userEvent)` (`transaction.ts:330`): a falsy value is none

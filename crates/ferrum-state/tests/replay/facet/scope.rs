@@ -87,6 +87,39 @@ pub struct Scope {
     /// The log as an array of the program, which chunk `state` gives the program (`scope.log`) and which the program
     /// may push to: when set, the log's lines go there.
     pub log_array: Option<Value>,
+    /// The counters a callback spec names (`{"count"}`, a `{"seq"}`'s `counter`, `{"throwOnce"}`).
+    pub callback_counters: HashSet<String>,
+    /// The counters that are no counterpart: those a callback spec names, after a call not made (`design.md` section
+    /// 10, "No counterpart": what a callback of a call not made writes is unknown).
+    pub nc_counters: HashMap<String, Value>,
+}
+
+/// The counters a getter spec names anywhere inside it (`{"count"}`, a `counter` of `{"seq"}`).
+fn named_counters(sc: &Sc, g: &Value) {
+    match g {
+        Value::Array(xs) => xs.borrow().iter().for_each(|x| named_counters(sc, x)),
+        Value::Object(o) => {
+            for (k, x) in o.borrow().entries() {
+                match (k.as_str(), x) {
+                    ("count" | "counter", Value::Str(n)) => {
+                        sc.borrow_mut().callback_counters.insert(String::from_utf16_lossy(n));
+                    }
+                    _ => named_counters(sc, x),
+                }
+            }
+        }
+        _ => {}
+    }
+}
+
+/// After a call not made, the counters a callback spec names are no counterpart (`design.md` section 10, "No
+/// counterpart"; F7109, F7110).
+pub fn unknown_counters(sc: &Sc, nc: &Value) {
+    let mut s = sc.borrow_mut();
+    let names: Vec<String> = s.callback_counters.iter().cloned().collect();
+    for n in names {
+        s.nc_counters.entry(n).or_insert_with(|| nc.clone());
+    }
 }
 
 /// The call of a function of the program with a state (a getter `{"callVar"}`).
@@ -313,13 +346,17 @@ pub fn state_json(st: &EditorState, fields: &[(String, StateField<Pv>)]) -> F<Va
     let j = st.to_json(&list);
     let v = from_serde_json(&j);
     let form = doc_form(st);
-    if let Value::Object(o) = &v
-        && let Some(sel) = o.borrow().get("selection").cloned()
-    {
+    let sel = match &v {
+        Value::Object(o) => o.borrow().get("selection").cloned(),
+        _ => None,
+    };
+    if let Some(sel) = sel {
         for r in items(&sel.field("ranges")) {
             if let Value::Object(ro) = &r {
                 for k in ["anchor", "head"] {
-                    if let Some(Value::Num(n)) = ro.borrow().get(k).cloned() {
+                    // the value is read, and the borrow ends, before the converted value is written
+                    let read = ro.borrow().get(k).cloned();
+                    if let Some(Value::Num(n)) = read {
                         let u = units(&form, n as usize)?;
                         ro.borrow_mut().set(k.into(), u);
                     }
@@ -441,10 +478,14 @@ pub fn getter(sc: &Sc, g: &Value) -> F<G> {
                 Rc::new(move |_| Ok(copy_data(&v)))
             } else if k("count") {
                 let name = s(&g.field("count"));
+                sc.borrow_mut().callback_counters.insert(name.clone());
                 Rc::new(move |_| Ok(Value::Num(counter_add(&sc2, &name))))
             } else if k("seq") {
                 let (first, later) = (nth(&g.field("seq"), 0), nth(&g.field("seq"), 1));
                 let name = if g.field("counter").is_undefined() { None } else { Some(s(&g.field("counter"))) };
+                if let Some(c) = &name {
+                    sc.borrow_mut().callback_counters.insert(c.clone());
+                }
                 let n = Rc::new(Cell::new(0u32));
                 Rc::new(move |_| {
                     if let Some(name) = &name {
@@ -455,7 +496,9 @@ pub fn getter(sc: &Sc, g: &Value) -> F<G> {
                     Ok(if k > 0 { later.clone() } else { first.clone() })
                 })
             } else if k("set") || k("map") || k("generator") {
-                // a Set, a Map or a generator: no value of Ferrum's input types is one
+                // a Set, a Map or a generator: no value of Ferrum's input types is one; the counters its inner spec
+                // names are named by a callback spec all the same
+                named_counters(sc, g);
                 let spec = g.clone();
                 Rc::new(move |_| Err(by_type("getter", &spec)))
             } else if k("list") {
@@ -589,6 +632,7 @@ fn updater(sc: &Sc, u: &Value, name: &str) -> F<Upd> {
         }
         Value::Object(_) if u.has("throwOnce") => {
             let c = s(&u.field("throwOnce"));
+            sc.borrow_mut().callback_counters.insert(c.clone());
             Rc::new(move |v, _| {
                 let set = sc2.borrow().counters.get(&c).is_some_and(|x| *x != 0.0);
                 if !set {

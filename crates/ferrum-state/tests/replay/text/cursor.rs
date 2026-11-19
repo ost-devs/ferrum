@@ -176,6 +176,11 @@ impl Partial {
         self.cursor.line_break && !self.value.is_empty()
     }
 
+    /// Whether `next` has been called.
+    pub fn started(&self) -> bool {
+        self.started
+    }
+
     /// The position a skip counts from: `pos`, or before the first `next` the start of the range in its direction.
     pub fn start(&self) -> i64 {
         if self.started {
@@ -186,6 +191,16 @@ impl Partial {
             self.to
         }
     }
+}
+
+/// `state.cm6.225.d2`: its condition for the replayer, a negative skip given to a partial cursor before its first
+/// `next`, in a document that holds a character outside ASCII (cm6 moves such a cursor twice the distance to its range,
+/// `mirrors/cm6/state/src/text.ts:490-493`, `:507-511`, and the landing in bytes is another place than in code units).
+pub const ROW_DOUBLE_SKIP: &str = "state.cm6.225.d2";
+
+/// Whether a step of a cursor meets the condition of `state.cm6.225.d2`.
+pub fn double_skip(shadow: &Shadow, skip: i64, ascii: bool) -> bool {
+    matches!(shadow, Shadow::Partial(c) if !c.started()) && skip < 0 && !ascii
 }
 
 /// One of cm6's three cursors.

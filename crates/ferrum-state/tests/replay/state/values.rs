@@ -19,7 +19,7 @@ use crate::replay::change::values::Ch;
 use crate::replay::convert::Excluded;
 use crate::replay::facet::scope::{F, Fault, by_type};
 use crate::replay::facet::values::Pv;
-use crate::replay::lang::eval::Flow;
+use crate::replay::lang::eval::{Flow, Program};
 use crate::replay::lang::value::{Host, JsStr, Object, Value, js};
 
 /// The document of a state, in cm6's form.
@@ -30,11 +30,34 @@ pub fn doc_rc(st: &EditorState) -> Rc<Form> {
 /// A position of the program measured on `doc`, as bytes; a number that is no position is excluded by type, one
 /// inside a character `char` (rule 7).
 pub fn to_bytes(doc: &Form, v: &Value, arg: &str) -> F<usize> {
-    match v {
-        Value::NoCounterpart(_) => Err(Fault::Nc(v.clone())),
-        Value::Num(n) => doc.to_bytes(*n).map_err(|e| excluded(e, arg, v)),
-        _ => Err(by_type(arg, v)),
-    }
+    let b = match v {
+        Value::NoCounterpart(_) => return Err(Fault::Nc(v.clone())),
+        Value::Num(n) => doc.to_bytes(*n).map_err(|e| excluded(e, arg, v))?,
+        _ => return Err(by_type(arg, v)),
+    };
+    ARGS.with(|a| a.borrow_mut().push((b, doc.clone())));
+    Ok(b)
+}
+
+thread_local! {
+    /// The position arguments the call of Ferrum in progress was given, in bytes, each with the document it is
+    /// measured on: what rule 10 of `plan.md` "Positions" reads a message's numbers against.
+    static ARGS: std::cell::RefCell<Vec<(usize, Form)>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// The position arguments of the call in progress, which a new call starts without.
+pub fn take_args() -> Vec<(usize, Form)> {
+    ARGS.with(|a| std::mem::take(&mut *a.borrow_mut()))
+}
+
+/// The position arguments of the call that was in progress, given back when an inner call ends.
+pub fn restore_args(v: Vec<(usize, Form)>) {
+    ARGS.with(|a| *a.borrow_mut() = v);
+}
+
+/// The position arguments of the call in progress.
+pub fn current_args() -> Vec<(usize, Form)> {
+    ARGS.with(|a| a.borrow().clone())
 }
 
 /// A call not made for a position: its reason, the argument and its value.
@@ -287,16 +310,18 @@ pub enum SetSrc {
 pub struct ChangesV {
     pub ch: Rc<Ch>,
     pub src: Option<SetSrc>,
+    /// The mapping Ferrum gives an effect type's `map` function (`raw/replay.jsonl`, `isInstance`).
+    pub mapping: bool,
 }
 host_of!(ChangesV);
 
 impl ChangesV {
     pub fn set(s: ChangeSet, a: Rc<Form>) -> ChangesV {
-        ChangesV { ch: Rc::new(Ch::set(s, a)), src: None }
+        ChangesV { ch: Rc::new(Ch::set(s, a)), src: None, mapping: false }
     }
 
     pub fn desc(d: ChangeDesc, a: Rc<Form>, b: Rc<Form>) -> ChangesV {
-        ChangesV { ch: Rc::new(Ch::desc(d, a, b)), src: None }
+        ChangesV { ch: Rc::new(Ch::desc(d, a, b)), src: None, mapping: false }
     }
 
     pub fn is_set(&self) -> bool {
@@ -510,12 +535,56 @@ impl Host for AnnH {
 
 // ---- results of EditorState -----------------------------------------------------------------------------------------
 
-/// The spec `replaceSelection` returns.
+/// The spec `replaceSelection` returns, with the document of the state it was made on.
 #[derive(Clone)]
 pub struct SpecH {
     pub spec: TransactionSpec,
+    pub doc: Rc<Form>,
 }
 host_of!(SpecH);
+
+impl SpecH {
+    /// `spec[prop]` through its public fields: `changes` on the state's document, `selection` and `effects` on the
+    /// document the changes produce.
+    pub fn get(&self, prop: &str) -> F<Value> {
+        let changes = match &self.spec.changes {
+            ferrum_state::ChangeSpec::Set(s) => ChangesV::set(s.clone(), self.doc.clone()),
+            _ => return Err(Fault::Flow(Flow::Fail("a TransactionSpec whose changes are no ChangeSet".into()))),
+        };
+        let b = changes.ch.b().map_err(Fault::Flow)?;
+        Ok(match prop {
+            "changes" => changes.value(),
+            "selection" => match &self.spec.selection {
+                None => Value::Undefined,
+                Some(ferrum_state::SelectionSpec::Selection(sel)) => SelV::Bound { sel: sel.clone(), doc: b }.value(),
+                Some(_) => {
+                    return Err(Fault::Flow(Flow::Fail(
+                        "a TransactionSpec whose selection is no EditorSelection".into(),
+                    )));
+                }
+            },
+            "effects" => {
+                Value::array(self.spec.effects.iter().map(|e| EffectV::bound(e.clone(), b.clone()).value()).collect())
+            }
+            _ => Value::Undefined,
+        })
+    }
+}
+
+/// A property of a value whose reader gives a `Fault`, as the language's property read.
+fn as_property(r: F<Value>, p: &mut Program, key: &str) -> Result<Value, Flow> {
+    match r {
+        Ok(v) => {
+            if key == "effects" {
+                p.returned_by_ferrum(&v);
+            }
+            Ok(v)
+        }
+        Err(Fault::Flow(f)) => Err(f),
+        Err(Fault::Nc(v)) => Ok(v),
+        Err(Fault::Excluded { .. }) => Err(Flow::Fail(format!("the property {key} left out"))),
+    }
+}
 
 impl Host for SpecH {
     fn type_name(&self) -> String {
@@ -526,6 +595,9 @@ impl Host for SpecH {
     }
     fn encode(&self) -> Result<Value, Flow> {
         Err(Flow::Fail("a TransactionSpec in an output of chunk state".into()))
+    }
+    fn property(&self, key: &str, p: &mut Program) -> Result<Value, Flow> {
+        as_property(self.get(key), p, key)
     }
     fn as_any(&self) -> &dyn Any {
         self
@@ -543,14 +615,13 @@ host_of!(CbrH);
 impl CbrH {
     /// `result[prop]`: `changes` on the start document, `selection` and `effects` on the document the changes
     /// produce.
-    pub fn get(&self, c: &Chunk, prop: &str) -> F<Value> {
+    pub fn get(&self, prop: &str) -> F<Value> {
         let changes = ChangesV::set(self.cbr.changes.clone(), self.a.clone());
         let b = changes.ch.b().map_err(Fault::Flow)?;
         Ok(match prop {
             "changes" => changes.value(),
             "selection" => SelV::Bound { sel: self.cbr.selection.clone(), doc: b }.value(),
             "effects" => {
-                let _ = c;
                 Value::array(self.cbr.effects.iter().map(|e| EffectV::bound(e.clone(), b.clone()).value()).collect())
             }
             _ => Value::Undefined,
@@ -567,6 +638,9 @@ impl Host for CbrH {
     }
     fn encode(&self) -> Result<Value, Flow> {
         Err(Flow::Fail("a changeByRange result in an output of chunk state".into()))
+    }
+    fn property(&self, key: &str, p: &mut Program) -> Result<Value, Flow> {
+        as_property(self.get(key), p, key)
     }
     fn as_any(&self) -> &dyn Any {
         self

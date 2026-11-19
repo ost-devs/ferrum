@@ -16,11 +16,11 @@ use std::time::Duration;
 
 use ferrum_state::__test::same_extension;
 use ferrum_state::{
-    Annotation, AnnotationType, ByAddress, ChangeByRange, ChangeFilter, ChangeFilterOutput, ChangeSpec, CharCategory,
-    Compartment, EditorState, EditorStateConfig, Error, Extension, Facet, FacetConfig, FacetReader, LanguageData,
-    LanguageDataProvider, RangeChange, SelectionSpec, Slot, StateEffect, StateEffectType, StateField, StateFieldSpec,
-    Text, TextSpec, Transaction, TransactionExtender, TransactionExtenderOutput, TransactionFilter,
-    TransactionFilterOutput, TransactionSpec,
+    Annotation, AnnotationType, ByAddress, ChangeByRange, ChangeFilter, ChangeFilterOutput, ChangeSet, ChangeSpec,
+    CharCategory, Compartment, EditorSelection, EditorState, EditorStateConfig, Error, Extension, Facet, FacetConfig,
+    FacetReader, LanguageData, LanguageDataProvider, RangeChange, SelectionSpec, Slot, StateCommand,
+    StateCommandTarget, StateEffect, StateEffectType, StateField, StateFieldSpec, Text, TextSpec, Transaction,
+    TransactionExtender, TransactionExtenderOutput, TransactionFilter, TransactionFilterOutput, TransactionSpec,
 };
 use serde_json::json;
 
@@ -29,7 +29,7 @@ fn with_effects(effects: Vec<StateEffect>) -> TransactionSpec {
     TransactionSpec { effects, ..TransactionSpec::default() }
 }
 
-// covers: state.Compartment.get.B3
+// covers: state.Compartment.get.B3, state.Transaction.state.B7, state.cm6.059.d1
 // The input of F0136: a transaction whose compartment effect comes after an `appendConfig`. `state.cm6.059.d1`: a
 // transaction never changes its start state, so the start state keeps the compartment's content after it (cm6 writes
 // the new content into the start state's map, `mirrors/cm6/state/src/state.ts:97-111`), and a later transaction from
@@ -301,4 +301,187 @@ fn the_public_value_types_of_the_unit_are_send_and_sync() {
     send_sync::<TransactionExtender>();
     send_sync::<LanguageDataProvider>();
     send_sync::<LanguageData>();
+}
+
+// ---- the round after Q116 to Q118 --------------------------------------------------------------------------------
+
+/// A change set inserting `insert` at `from` in a document of `length`.
+fn insertion(from: usize, insert: &str, length: usize) -> ChangeSet {
+    ChangeSet::of(ChangeSpec::Change { from, to: None, insert: Some(insert.into()) }, length, None)
+}
+
+/// cm6's `selectAll` in the form of D5: the whole document selected, with the user event "select"
+/// (`mirrors/cm6/commands/src/commands.ts`, `selectAll`).
+fn select_all(target: StateCommandTarget<'_>) -> bool {
+    let all = SelectionSpec::Single { anchor: 0, head: Some(target.state.doc().len()) };
+    let spec = TransactionSpec { selection: Some(all), user_event: "select".into(), ..TransactionSpec::default() };
+    (target.dispatch)(target.state.update(&[spec]));
+    true
+}
+
+// covers: state.StateCommand.B1
+// D5's contract as cm6's commands use it: a function item and a closure are each a `StateCommand`; given a target
+// literal, one dispatches a transaction built from the target's state and returns `true`, the other returns `false`
+// without dispatching when `readOnly` is set (`mirrors/cm6/commands/src/commands.ts:667`).
+#[test]
+fn a_state_command_reads_the_state_may_dispatch_and_says_whether_it_applied() {
+    let st = state_of("héllo", vec![]);
+    let mut sent: Vec<Transaction> = Vec::new();
+    let command: &StateCommand = &select_all;
+    let applied = command(StateCommandTarget { state: st.clone(), dispatch: &mut |tr| sent.push(tr) });
+    assert!(applied);
+    assert_eq!(sent.len(), 1);
+    let main = sent[0].selection().expect("the command set a selection").main();
+    assert_eq!((main.anchor(), main.head()), (0, "héllo".len()));
+    assert!(sent[0].is_user_event("select"));
+
+    let unless_read_only: &StateCommand = &|target: StateCommandTarget<'_>| {
+        if target.state.read_only() {
+            return false;
+        }
+        select_all(target)
+    };
+    let read_only = state_of("héllo", vec![EditorState::READ_ONLY.of(true)]);
+    let mut sent: Vec<Transaction> = Vec::new();
+    let applied = unless_read_only(StateCommandTarget { state: read_only, dispatch: &mut |tr| sent.push(tr) });
+    assert!(!applied);
+    assert!(sent.is_empty());
+}
+
+// covers: state.Compartment.reconfigure.B1
+// The effect's type and value are private in Ferrum; what is public: the effect, mapped through changes, is still
+// there and still reconfigures the compartment, and the content is the extension given, not a copy.
+#[test]
+fn a_compartment_s_effect_mapped_through_changes_still_reconfigures_it_with_the_content_given() {
+    let f: Facet<i64, Vec<i64>> = Facet::define(FacetConfig::default());
+    let comp = Compartment::new();
+    let st = state_of("ab", vec![comp.of(f.of(1))]);
+    let content = f.of(2);
+    let effect = comp.reconfigure(content.clone());
+    let mapped = effect.map(&insertion(1, "x", "ab".len())).expect("an effect with no map is kept");
+    let next = st.update(&[with_effects(vec![mapped])]).state().clone();
+    assert_eq!(next.facet(&f), &vec![2]);
+    assert!(same_extension(&comp.get(&next).expect("the compartment is in the state"), &content));
+}
+
+// covers: state.EditorState.selection.B1
+// cm6 keeps the start selection object; Ferrum's selection is a value, whose counterpart is equality (`design.md`
+// section 10, "Identity"): after an empty update, and after a change that does not move it, the selection equals the
+// start selection.
+#[test]
+fn a_selection_unchanged_by_a_transaction_equals_the_start_selection() {
+    let st = EditorState::create(EditorStateConfig {
+        doc: "héllo".into(),
+        selection: SelectionSpec::Single { anchor: 1, head: Some("hé".len()) },
+        ..EditorStateConfig::default()
+    });
+    let same = st.update(&[TransactionSpec::default()]).state().clone();
+    assert_eq!(same.selection(), st.selection());
+    let after = TransactionSpec {
+        changes: ChangeSpec::Change { from: "héllo".len(), to: None, insert: Some("!".into()) },
+        ..TransactionSpec::default()
+    };
+    let moved = st.update(&[after]).state().clone();
+    assert_eq!(moved.selection(), st.selection());
+}
+
+// covers: state.Transaction.newSelection.B1
+// cm6 gives the selection object the spec held; the counterpart is a selection equal to it, every range and the main
+// index.
+#[test]
+fn the_new_selection_of_a_transaction_with_a_selection_equals_it() {
+    let st = state_of("héllo", vec![EditorState::ALLOW_MULTIPLE_SELECTIONS.of(true)]);
+    let given = EditorSelection::create(
+        &[EditorSelection::cursor(0, 1, None, None), EditorSelection::range("h".len(), "héll".len(), None, None, 0)],
+        1,
+    );
+    let spec =
+        TransactionSpec { selection: Some(SelectionSpec::Selection(given.clone())), ..TransactionSpec::default() };
+    let tr = st.update(&[spec]);
+    assert!(tr.new_selection().eq_including_assoc(&given));
+    assert_eq!(tr.new_selection().main_index(), 1);
+}
+
+// covers: state.StateEffect^mapEffects.B1
+// cm6 returns the empty array it was given; the counterpart is an empty list.
+#[test]
+fn map_effects_of_no_effect_is_empty() {
+    assert!(StateEffect::map_effects(&[], &insertion(0, "é", 3)).is_empty());
+}
+
+// covers: state.StateEffect^reconfigure.B4, state.StateEffect^appendConfig.B3
+// The two types have no map: an effect of either, mapped through changes, is given back with its value, the same
+// extension (`same_extension`).
+#[test]
+fn reconfigure_and_append_config_effects_are_kept_by_a_mapping() {
+    let f: Facet<i64, Vec<i64>> = Facet::define(FacetConfig::default());
+    let ext = f.of(5);
+    let changes = insertion(1, "é", 2);
+    let reconfigure = StateEffect::RECONFIGURE.of(ext.clone()).map(&changes).expect("kept");
+    assert!(same_extension(reconfigure.value(StateEffect::RECONFIGURE).expect("of its type"), &ext));
+    let append = StateEffect::APPEND_CONFIG.of(ext.clone()).map(&changes).expect("kept");
+    assert!(same_extension(append.value(StateEffect::APPEND_CONFIG).expect("of its type"), &ext));
+}
+
+/// A state whose one language-data provider gives `wordChars` the value `v` and `x` the number 5.
+fn with_word_chars(v: Arc<dyn std::any::Any + Send + Sync>) -> EditorState {
+    let provider: LanguageDataProvider = ByAddress::new(Arc::new(move |_: &EditorState, _: usize, _: i8| {
+        let mut data = LanguageData::new();
+        data.insert("wordChars".to_string(), v.clone());
+        data.insert("x".to_string(), Arc::new(5i64) as Arc<dyn std::any::Any + Send + Sync>);
+        vec![data]
+    }));
+    state_of("ab", vec![EditorState::LANGUAGE_DATA.of(provider)])
+}
+
+/// The message of `design.md` section 5 for a language-data value that is not of the type asked for.
+fn not_a<T: ?Sized>(name: &str) -> String {
+    format!("Language data field \"{name}\" holds a value that is not a {}", std::any::type_name::<T>())
+}
+
+// covers: state.EditorState.charCategorizer.B5, state.cm6.029.d1
+// `state.cm6.029.d1`: a `wordChars` that is not a string (F7221 to F7226: an array, a number, null) panics where
+// Ferrum's own code reads it as `String`, with the message of `design.md` section 5, which names the field and the
+// type asked for (Q116; `type_name` is not compared as a literal, its text may change between compilers).
+#[test]
+fn char_categorizer_panics_on_a_word_chars_that_is_not_a_string() {
+    let st = with_word_chars(Arc::new(vec!["-".to_string()]));
+    assert_eq!(panics(|| drop(st.char_categorizer(0))), not_a::<String>("wordChars"));
+    let st = with_word_chars(Arc::new(5i64));
+    assert_eq!(panics(|| drop(st.char_categorizer(0))), not_a::<String>("wordChars"));
+}
+
+// covers: state.cm6.029.d1
+// The same panic for a reader of any type: `language_data_at::<T>` with a value stored under the name that is not a
+// `T`; a value of the type asked for is given, in the order of the providers.
+#[test]
+fn language_data_at_panics_on_a_value_that_is_not_of_the_type_asked_for() {
+    let st = with_word_chars(Arc::new("$".to_string()));
+    assert_eq!(panics(|| drop(st.language_data_at::<String>("x", 0, -1))), not_a::<String>("x"));
+    let found = st.language_data_at::<i64>("x", 0, -1);
+    assert_eq!(found.iter().map(|v| **v).collect::<Vec<_>>(), vec![5]);
+}
+
+// covers: state.Facet.compute.B8
+// Q118 (`design.md` section 3): a provider computed from a facet without `combine` keeps its input only while that
+// facet's slot keeps its value. Reconfiguring a compartment recombines the facet to an equal list, but its `compare`
+// says unequal, so the slot takes the new list and the getter runs again, as cm6's `===` of the two arrays decides
+// (`mirrors/cm6/state/src/facet.ts:178-179`, `:244-252`).
+#[test]
+fn a_provider_runs_again_when_a_facet_without_combine_recombines_an_equal_list_its_compare_calls_unequal() {
+    let a: Facet<i64, Vec<i64>> =
+        Facet::define(FacetConfig { compare: Some(Box::new(|_, _| false)), ..FacetConfig::default() });
+    let b: Facet<i64, Vec<i64>> = Facet::define(FacetConfig::default());
+    let calls = Arc::new(AtomicUsize::new(0));
+    let (seen, read) = (calls.clone(), a.clone());
+    let provider = b.compute(&[Slot::from(&a)], move |st: &EditorState| {
+        seen.fetch_add(1, Ordering::SeqCst);
+        st.facet(&read).len() as i64
+    });
+    let comp = Compartment::new();
+    let st = state_of("", vec![comp.of(a.of(1)), provider]);
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
+    let next = st.update(&[with_effects(vec![comp.reconfigure(a.of(1))])]).state().clone();
+    assert_eq!(next.facet(&a), &vec![1]);
+    assert_eq!(calls.load(Ordering::SeqCst), 2);
 }

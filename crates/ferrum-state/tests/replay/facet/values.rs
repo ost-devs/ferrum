@@ -277,7 +277,7 @@ no_identity!(TrH, Transaction, "Transaction");
 pub struct ListRead {
     /// Keeps the slot's value, and so its address, alive.
     pub _state: Option<EditorState>,
-    pub addr: *const Vec<Pv>,
+    pub addr: *const (),
     pub items: Vec<Value>,
 }
 
@@ -285,10 +285,16 @@ impl ListRead {
     pub fn value(list: &Vec<Pv>, state: Option<EditorState>) -> Value {
         Value::Host(Rc::new(ListRead {
             _state: state,
-            addr: list as *const Vec<Pv>,
+            addr: list as *const Vec<Pv> as *const (),
             items: list.iter().map(|x| x.0.clone()).collect(),
         }))
     }
+    /// A list of a facet of chunk `state` read from a state: the address of the slot's value, and its members as the
+    /// program sees them.
+    pub fn of_addr(addr: *const (), items: Vec<Value>, state: Option<EditorState>) -> Value {
+        Value::Host(Rc::new(ListRead { _state: state, addr, items }))
+    }
+
     pub fn of(v: &Value) -> Option<ListRead> {
         match v {
             Value::Host(h) => h.as_any().downcast_ref::<ListRead>().cloned(),
@@ -521,6 +527,15 @@ const RANGE_ERRORS: [&str; 4] = [
 /// The error cm6 throws for the message of a panic of Ferrum: the unit's messages with their class, the messages of
 /// `change.ts` and `selection.ts` through `shared::thrown` (their positions converted back through `doc`, rule 10).
 pub fn thrown(m: &str, doc: &Form) -> Flow {
+    // `Invalid position P in document of length L` (`mirrors/cm6/state/src/text.ts:40`), its numbers through the
+    // document `lineAt` was called on (`plan.md` "Positions", rule 10)
+    if let Some(rest) = m.strip_prefix("Invalid position ")
+        && let Some((pos, len)) = rest.split_once(" in document of length ")
+        && let (Ok(pos), Ok(len)) = (pos.parse::<usize>(), len.parse::<usize>())
+    {
+        let u = |b: usize| doc.to_units(b).map_or(b.to_string(), |x| x.to_string());
+        return Flow::throw("RangeError", &format!("Invalid position {} in document of length {}", u(pos), u(len)));
+    }
     if RANGE_ERRORS.contains(&m) || m.starts_with("Invalid JSON representation for Selection") {
         return Flow::throw("RangeError", m);
     }
