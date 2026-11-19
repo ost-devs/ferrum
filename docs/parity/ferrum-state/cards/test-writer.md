@@ -388,3 +388,18 @@ The consultant approved `fixtures/no-counterpart.jsonl` by reason with four corr
 **Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the last round of the implementation stage' -- crates/ferrum-state/tests`.
 
 **Report:** the output of the check, whole; each file you changed with the rule each change restores, for the orchestrator's list; the written tests with their `// covers:`; the left-out entries that differ from the file, as the check reports them; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## The end of the implementation stage: a round after Q120
+
+The consultant decided Q120 and corrected a line of the sort (`docs/decisions/ferrum-state.md`, "Q120, the line `Line::is_empty`, and branch coverage at conformance", "What it requires", item 1; read the entry whole, and `design.md` §10 and `plan.md` "Hand-off" as now written). The work, under `crates/ferrum-state/tests/` only:
+
+1. An `error` entry names no op: `{"reason":"error","op":null,"part":"the uncaught error","value":null}`. Remove the code that only chose its op (`carried`, `Program::carry`, the renaming in `Program::not_made`, and what calls them for that); the counting of calls not made stays, since it decides whether a `try` or a `capture` is compared. The literal test of case 5 in `rules.rs` asserts the entry with no op.
+2. A written test of `Line::is_empty` in `tests/written_text.rs` (an empty line and a one-character line), from its doc comment in `cargo doc`.
+
+**Check:** `cargo fmt --all`, then `python3 tools/impl_check.py ferrum-state handoff --since text=c0ba180,change=ea896a1,rangeset=126dad7,state=efdebd2`, every check passing but "what the replayer leaves out equals no-counterpart.jsonl", whose only differences are the `op` of the 143 `error` entries, and its check that your files are listed, which the orchestrator does. The results per chunk stay as they are. Leave `no-counterpart.jsonl` as it is.
+
+**Budget.** 30,000 tokens (a round, counted apart). If you pass 45,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): an error entry names no op (Q120)' -- crates/ferrum-state/tests`.
+
+**Report:** the output of the check, whole; each file you changed with what it now does, for the orchestrator's list; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
