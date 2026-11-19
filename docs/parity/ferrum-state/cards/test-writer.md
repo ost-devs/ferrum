@@ -313,3 +313,23 @@ You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as b
 **Commit** with explicit paths, on the current branch, without pushing: `git add crates/ferrum-state/tests` then `git commit -m 'test(ferrum-state): the checks of unit state, chunk state' -- crates/ferrum-state/tests`.
 
 **Report:** the output of the check; counts (ops registered, ported cases, written tests); every `// passes against the skeleton:` and every `// literal` cause by decision id; the files outside chunk `state` you changed and why; the questions; anything the tool reported that you had to fix before the commit; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Step U4b checks, a round after Q111 to Q115
+
+The consultant decided Q111 to Q115 on the checks of chunk `state` (`docs/decisions/ferrum-state.md`, "Q111 to Q115: what the checks of chunk `state` infer, and the clock", its list "What it requires", item 1; read the entry whole). The work, under `crates/ferrum-state/tests/replay/` only:
+
+1. **A document split by the configuration being built** (Q111; `docs/parity/ferrum-state/plan.md` "Positions" rule 13): in `replay/state/ops.rs` `separator_of`, inputs that disagree, or a value of a form it cannot read, given together with a selection, fail the fixture as the replayer's own failure, naming the op; after `state.create` and `state.fromJSON`, wherever a position was converted through the replayer's split, its lines are compared with the lines of the created document (`Text::to_json`), a difference a mismatch with the message the rule gives. In chunk `facet`, `create`, `scenario` and `state.fromJSON` split with the separator their extensions give (including the name a chunk binds to the builtin facet), with the same failure and the same check.
+2. **The documents of a mapping given to a callback** (Q112; rule 14): the pairs (start, produced) are kept per call of Ferrum, never across calls; `update_specs` adds the pairs of each `mergeTransaction` merge as the rule lists them; `mapping_value` uses filler only when the state's document and every text the call inserts are ASCII, and otherwise fails the fixture as the replayer's own failure, naming the op and the two lengths.
+3. **The clock** (Q113; `design.md` §10 "Time"; row `state.cm6.105.d1`): `now` is whole milliseconds since the Unix epoch, truncated, read from `SystemTime`; `tr.annotation` gives Ferrum's value as it is (the branch above 1e12 in `tr_annotation` is removed, so F0511 is no longer left out); a literal test of `now` in the chunk's harness tests.
+4. **A value carried to another document** (Q114; rule 15): in `RangeV::to_doc`, an undirectional range is rebuilt with `undirectional_range`; after any rebuild every getter is compared with the original's, and for a selection the number of ranges and the main index; a difference fails the fixture as the replayer's own failure.
+5. **Nothing to write** for Q115 (row `state.cm6.160.d1`: the written test of `state.EditorState^fromJSON.B10` stands).
+
+You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as before.
+
+**Check:** `cargo fmt --all`, then `python3 tools/impl_check.py ferrum-state checks state`, whole, until it ends with "checks passed". Expected against the skeleton: no fixture of chunks `facet` or `state` `equal` and none `mismatch`; F0448 and F0511 `pending`, neither left out.
+
+**Budget.** 60,000 tokens (a round, counted apart). If you pass 90,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the checks of chunk state after Q111 to Q115' -- crates/ferrum-state/tests`. This commit is the one the U4 code step takes as `--since`.
+
+**Report:** the output of the check, whole; each file you changed with the rule each change restores (`plan.md` "Positions" rules 13 to 15; `design.md` §10 "Time"), for the orchestrator's list; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
