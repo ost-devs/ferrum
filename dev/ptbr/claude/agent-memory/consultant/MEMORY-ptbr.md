@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/agent-memory/consultant/MEMORY.md` (commit `9efcc73`). O original em inglês é o que vale.
+> Tradução para leitura de `.claude/agent-memory/consultant/MEMORY.md` (commit `d82c454`). O original em inglês é o que vale.
 
 # Memória do consultor
 
@@ -52,6 +52,10 @@
 - Ferramenta ou agente para um passo: perguntar para que o passo serve, depois se os dados determinam a sua resposta (ferramenta), se determinariam caso quem produz escrevesse um fato em vez de prosa (mover a estrutura para a origem), se muitas instâncias de uma forma têm dois leitores (linguagem pequena), senão agente com uma ferramenta em volta. Gerar a partir de uma declaração, nunca a partir de código ou prosa. `docs/workflow/evolution.md` §4; `docs/decisions/method.md`, 2026-11-14, "Each kind of work"
 - Uma ideia do mantenedor que o plano já contém: dizer isso, e então fazer a mesma pergunta a toda peça vizinha; era aí que estava o valor dela (avaliador sem referência feita por execução, triagem por argumento, verificações compostas à mão). Mesma entrada
 - A própria ferramenta da prova também precisa de valores esperados vindos de uma execução (casos de linguagem a partir de `program.ts`), e de uma ferramenta de triagem antes de um laço de verificar e corrigir começar, não depois de ele falhar em convergir. Mesma entrada
+- Aprovar assinaturas (um esqueleto): lê-las contra a forma como os chamadores do cm6 escrevem a chamada (contar as formas de chamada no mirror), não só contra a declaração; compilar toda forma antes de decidir. Um type guard do TS (`is`) vira uma leitura tipada, uma flag que torna o resultado ausente vira duas funções, um callback que nunca sobrevive à sua chamada não leva bounds de thread. `docs/decisions/ferrum-state.md`, "The skeleton approved"
+- Uma propriedade que o tipo em Rust não consegue guardar (a ordem dos membros de um objeto JSON): não reconstruí-la com uma feature de dependência que só os testes ligam; não prometer nada, e fazer a prova comparar o que o tipo guarda. Mesma entrada
+- Um "aceito, e listado para o consultor" de uma ferramenta é um buraco quando a lista pode conter o que o plano diz que precisa de verificação: fazer da isenção um fato da linha (a sua classe). Mesma entrada
+- Onde uma regra minha (D14) deixa o Ferrum abaixo do cm6 para o desenvolvedor, isso também é uma linha de melhoria, com o ponto em que as contagens a decidem.
 
 ## Calibração
 - 2026-11-13: Li paridade como imitação (rascunho de D2: "a regra Unicode seria melhor, mas nenhum objetivo pede isso"). O mantenedor: paridade é a qualidade, a capacidade e a estabilidade do cm6 ou melhor; o cm6 é o piso. Ele quer toda melhoria visível e o momento dela decidido por mim, não por ele; não quer mudanças drásticas feitas às pressas. Ele pesa a estabilidade do todo acima de um ganho antecipado.

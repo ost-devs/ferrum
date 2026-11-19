@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/evolution.md` (commit `9efcc73`). O original em inglês é o que vale; as seções citadas (§1, §5…) seguem a numeração do original.
+> Tradução para leitura de `docs/workflow/evolution.md` (commit `d82c454`). O original em inglês é o que vale; as seções citadas (§1, §5…) seguem a numeração do original.
 
 # Como o método evoluiu, e como evoluí-lo
 
@@ -6,7 +6,6 @@ Para o orquestrador e o consultor: os agentes que mudam o modo como o trabalho d
 
 Leia-o no início de uma etapa, numa revisão do método, quando um stop-loss dispara, e antes de escrever um cartão para um passo que nenhum crate rodou ainda. A evidência está em outros lugares e não é repetida: observações em [`docs/workflow/learnings.md`](learnings-ptbr.md) (`W<n>`), decisões com suas alternativas em [`docs/decisions/method.md`](../decisions/method-ptbr.md) e `docs/decisions/<crate>.md`, custos e expectativas em `python3 tools/ledger.py report` (`E<n>`). As ferramentas citadas aqui: [`tools/README.md`](../../tools/README-ptbr.md).
 
-<!-- refs:planned tools/impl_check.py -->
 ## 1. Os níveis até aqui
 
 Um nível é nomeado pelo que faz o trabalho e por como um erro é achado. Cada um foi deixado por causa de uma medição, não porque existisse uma ideia melhor.
@@ -41,7 +40,7 @@ Cada linha é uma mudança, com a medição que a causou. "Expected" marca uma m
 | Um teste por comportamento | 627 de 799 linhas de teste repetiam uma fixture e envelheceram | um comportamento é coberto pelo replay das suas fixtures; um teste escrito só onde nenhuma execução consegue mostrá-lo | uma cópia de dados não é uma verificação deles (W40) | [`docs/workflow/implementation.md`](implementation-ptbr.md) §2; E5 |
 | Ops compartilhadas | cerca de vinte ops do harness registradas por dois ou mais chunks | uma implementação de cada na linguagem, aceita quando reproduz toda fixture de todo chunk que usou o nome | a igualdade era provável por uma execução, então ninguém precisou comparar código | [`docs/decisions/method.md`](../decisions/method-ptbr.md), fim da etapa de especificação; E14 |
 | O que o trabalho custou | prosa no arquivo de progresso, 35 KB carregados por toda sessão | linhas num ledger, um relatório, expectativas com um resultado | a pergunta "qual passo fez os defeitos" não tinha resposta antes (W47) | [`tools/ledger.py`](../../../../tools/ledger.py) |
-| A linguagem do replayer (expected) | a testar em literais que o autor digita | 47 casos gravados de uma execução de `program.ts`, que o avaliador precisa reproduzir antes de existir qualquer op de um chunk | o avaliador é a única parte da prova que nenhuma fixture confere isoladamente | [`tools/cm6/lang-cases.ts`](../../../../tools/cm6/lang-cases.ts); E18 |
+| A linguagem do replayer (expected) | a testar em literais que o autor digita | 48 casos gravados de uma execução de `program.ts`, que o avaliador precisa reproduzir antes de existir qualquer op de um chunk | o avaliador é a única parte da prova que nenhuma fixture confere isoladamente | [`tools/cm6/lang-cases.ts`](../../../../tools/cm6/lang-cases.ts); E18 |
 | Uma fixture que falha (expected) | o implementador e o test-writer raciocinam cada um sobre de quem é o erro | `tools/trace_diff.py` nomeia a primeira avaliação em que o cm6 e o Ferrum diferem, e se essa op toca o crate de algum modo | o custo ilimitado do nível 2 era agentes discordando sobre o que uma ferramenta podia computar | E19 |
 | As verificações de um passo (expected) | comandos que o orquestrador compõe a cada vez | `tools/impl_check.py`, rodada pelo worker sobre a própria saída antes de relatar | passos cujo worker podia rodar a verificação inteira passaram na primeira incorporação e ficaram dentro de 1,5 vez o orçamento (E7) | [`docs/parity/ferrum-state/plan.md`](../../../../docs/parity/ferrum-state/plan.md) "Implementation"; E20 |
 

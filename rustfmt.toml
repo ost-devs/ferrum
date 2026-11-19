@@ -1,0 +1,5 @@
+# The width and line-filling the crates are written at (docs/decisions/method.md, 2026-11-15, "The pilot review of
+# the implementation of ferrum-state: what changes in the method"). `cargo fmt --all -- --check` runs in every
+# subcommand of tools/impl_check.py.
+max_width = 120
+use_small_heuristics = "Max"

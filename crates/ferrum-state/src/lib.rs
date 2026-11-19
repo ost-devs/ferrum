@@ -3,9 +3,6 @@
 //! One module per cm6 source file (`design.md` §1); every public item is also re-exported here, as cm6's package
 //! exports them from one entry point (`mirrors/cm6/state/src/index.ts`). Positions, lengths and offsets are UTF-8
 //! byte offsets in which every line break counts one (D1).
-//!
-//! This is the skeleton of the crate: every public signature, with `todo!()` as every body.
-#![allow(unused_variables, dead_code)]
 
 pub mod change;
 pub mod char;
@@ -36,8 +33,8 @@ pub use extension::{
     TransactionExtender, TransactionExtenderOutput, TransactionFilter, TransactionFilterOutput,
 };
 pub use facet::{
-    ByAddress, Compartment, Extension, Facet, FacetConfig, FacetEnables, FacetReader, Prec, Slot, StateField,
-    StateFieldSpec,
+    ByAddress, CombineFn, Compartment, Extension, Facet, FacetConfig, FacetEnables, FacetReader, Prec, Slot,
+    StateField, StateFieldSpec,
 };
 pub use rangeset::{
     Range, RangeComparator, RangeCursor, RangeSet, RangeSetBuilder, RangeSetUpdate, RangeValue, SpanIterator,

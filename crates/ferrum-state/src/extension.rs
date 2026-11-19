@@ -5,7 +5,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::sync::{Arc, LazyLock};
 
-use crate::facet::{ByAddress, Facet};
+use crate::facet::{BUILTINS, ByAddress, Facet};
 use crate::state::EditorState;
 use crate::transaction::{Annotation, StateEffect, Transaction, TransactionSpec};
 
@@ -114,10 +114,17 @@ pub type TransactionFilter = ByAddress<dyn Fn(&Transaction) -> TransactionFilter
 /// ferrum-only: the function input of EditorState.transactionExtender, see N17
 pub type TransactionExtender = ByAddress<dyn Fn(&Transaction) -> Option<TransactionExtenderOutput> + Send + Sync>;
 
-pub(crate) static LANGUAGE_DATA: LazyLock<Facet<LanguageDataProvider>> = LazyLock::new(|| todo!());
-pub(crate) static ALLOW_MULTIPLE_SELECTIONS: LazyLock<Facet<bool, bool>> = LazyLock::new(|| todo!());
-pub(crate) static LINE_SEPARATOR: LazyLock<Facet<String, Option<String>>> = LazyLock::new(|| todo!());
-pub(crate) static CHANGE_FILTER: LazyLock<Facet<ChangeFilter>> = LazyLock::new(|| todo!());
-pub(crate) static TRANSACTION_FILTER: LazyLock<Facet<TransactionFilter>> = LazyLock::new(|| todo!());
-pub(crate) static TRANSACTION_EXTENDER: LazyLock<Facet<TransactionExtender>> = LazyLock::new(|| todo!());
-pub(crate) static READ_ONLY: LazyLock<Facet<bool, bool>> = LazyLock::new(|| todo!());
+// The facets of cm6's `extension.ts`, defined with the crate's other built-in facets in cm6's order
+// (`crate::facet::BUILTINS`, `state.cm6.036.d2`).
+pub(crate) static LANGUAGE_DATA: LazyLock<Facet<LanguageDataProvider>> =
+    LazyLock::new(|| BUILTINS.language_data.clone());
+pub(crate) static ALLOW_MULTIPLE_SELECTIONS: LazyLock<Facet<bool, bool>> =
+    LazyLock::new(|| BUILTINS.allow_multiple_selections.clone());
+pub(crate) static LINE_SEPARATOR: LazyLock<Facet<String, Option<String>>> =
+    LazyLock::new(|| BUILTINS.line_separator.clone());
+pub(crate) static CHANGE_FILTER: LazyLock<Facet<ChangeFilter>> = LazyLock::new(|| BUILTINS.change_filter.clone());
+pub(crate) static TRANSACTION_FILTER: LazyLock<Facet<TransactionFilter>> =
+    LazyLock::new(|| BUILTINS.transaction_filter.clone());
+pub(crate) static TRANSACTION_EXTENDER: LazyLock<Facet<TransactionExtender>> =
+    LazyLock::new(|| BUILTINS.transaction_extender.clone());
+pub(crate) static READ_ONLY: LazyLock<Facet<bool, bool>> = LazyLock::new(|| BUILTINS.read_only.clone());

@@ -185,6 +185,7 @@
 //   text.toString {of: expr}  {api}  [value.toString()]
 //   text.toJSON {of: expr}  {api}    [value.toJSON()]
 //   text.lineAt {of: expr, pos: arg (pos)}  {api}   [value.lineAt(pos): a Line]
+//   text.append {of: expr, other: expr}  {api}   [value.append(other): a Text]
 //   changes.of {spec: arg, length: arg (pos)}  {api}   [ChangeSet.of(spec, length)]
 //   changes.empty {length: arg (pos)}  {api}   [ChangeSet.empty(length)]
 //   changes.toJSON {of: expr}  {api} [changes.toJSON(): change JSON, [len (pos) | [len (pos), ...inserted lines]],
@@ -434,6 +435,7 @@ o("text.empty", API, () => Text.empty)
 o("text.toString", API, (a, p) => p.ev(a.of).toString())
 o("text.toJSON", API, (a, p) => p.ev(a.of).toJSON())
 o("text.lineAt", API, (a, p) => p.ev(a.of).lineAt(A(p, a.pos)))
+o("text.append", API, (a, p) => p.ev(a.of).append(p.ev(a.other)))
 o("changes.of", API, (a, p) => ChangeSet.of(A(p, a.spec), A(p, a.length)))
 o("changes.empty", API, (a, p) => ChangeSet.empty(A(p, a.length)))
 o("changes.toJSON", API, (a, p) => p.ev(a.of).toJSON())

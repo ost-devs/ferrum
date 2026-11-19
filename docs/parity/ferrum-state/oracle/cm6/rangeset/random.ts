@@ -100,7 +100,7 @@ function runCase(k: number, nRanges: number, len: number, nVals: number, maxLen:
   let sf = queryPos(len, ranges), st = Math.max(sf, queryPos(len, ranges))
   let minPointSize = R.pick([-1, 0, 20])
   let item = "state.cm6.181"
-  let behaviors = ["state.RangeSet.B1", "state.RangeSet.B2", "state.RangeSet^of.B4", "state.RangeSet.map.B3", "state.RangeSet.update.B7",
+  let behaviors = ["state.RangeSet.B1", "state.RangeSet.B2", "state.RangeSet^of.B4", "state.RangeSet.map.B3", "state.RangeSet.map.B6", "state.RangeSet.update.B7",
                    "state.RangeSet.between.B2", "state.RangeSet.iter.B1", "state.RangeSet^iter.B1", "state.RangeSet^spans.B1",
                    "state.RangeSet^compare.B3", "state.RangeSet^eq.B4", "state.RangeSet^join.B3"]
   let set = $("set"), set2 = $("set2")

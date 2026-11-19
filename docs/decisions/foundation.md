@@ -353,3 +353,45 @@ mechanical conversion settles anyway) or misses cases implementers hit.
 **Confidence.** High on the reading of the intent (it is the maintainer's statement). Medium-high on the timing rule: it is reasoned, and no delta has run. The ledger's E10 says what will confirm it.
 
 **Reopens.** The first improvement delta costing more than making the improvement during the port would have (measured in the ledger); an improvement that turns out to need an API change after its crate's design was implemented; the maintainer finding the register does not show them what was passed over.
+
+## 2026-11-15 · D12: a `null` cm6 treats as absent is the absent value
+
+*Decided by the consultant (Q91 of `ferrum-state`; the crate's part: `docs/decisions/ferrum-state.md`, "Q86 to Q91"). Binding text: `.claude/rules/decisions.md` D12.*
+
+**Question.** D12 excludes by type "`null` for an object". cm6 sometimes gives `null` the meaning of "absent" on purpose: `EditorSelection.cursor` tests `bidiLevel == null` (`mirrors/cm6/state/src/selection.ts:203`) and `SelectionRange.bidiLevel` returns `null` for "no level" (`selection.ts:66`); `ChangeSet.of` tests `!insert` (`mirrors/cm6/state/src/change.ts:335`). Is such a `null` excluded?
+
+**Decision.** No. A `null` that cm6's code treats exactly as an absent value (`x == null`, or a falsy test whose result is the absent one) is the absent value: `None` of an `Option` parameter (D14). The replayer gives it to Ferrum as `None` and cites cm6's line. A `null` cm6 reads as an object, or compares with `===`, stays excluded.
+
+**Why.** D12's reason is that untyped input gives engine artifacts no caller relies on. A `null` cm6 tests on purpose is not an artifact, and cm6's own getters return it, so a caller passes it back without thinking of it as a different value. In Rust the caller writes `None`. The public API does not change; only which recorded cases are compared does.
+
+**Lost.** Keeping them excluded: cases compared nowhere, and the same question at every `null` option of `@codemirror/view`.
+
+**Confidence.** High for `ferrum-state`. **Reopens:** an argument cm6 tests with `== null` in one place and reads as an object in another.
+
+## 2026-11-19 · D12: a value cm6 handles only by a rule of the language is what that rule makes of it
+
+*Decided by the consultant (Q109 of `ferrum-state`; the crate's part: `docs/decisions/ferrum-state.md`, "Q105 to Q110"). Binding text: `.claude/rules/decisions.md` D12. It widens the entry of 2026-11-15 on Q91.*
+
+**Question.** D12 excludes "a value of the wrong type", and Q91 took out of that only a `null` cm6 treats as absent. cm6 reads other values only through truthiness (what a `compare` returns, `static`, `require`) or treats them exactly as absent (a falsy `combine`, a `toJSON` that is not a function). Are they excluded?
+
+**Decision.** No. A value cm6's code at that place treats exactly as the absent value (a `null` tested with `== null`, a falsy value whose falsy branch is the absent one, a non-function whose call throws the same error as the absent value's) is `None`. A value it reads only for truthiness, as an argument, a member of an object it is given or what a callback returns, is the `bool` of that test. A parameter's default applies first, to `undefined` only. Any other read keeps the value excluded.
+
+**Why.** D12's reason is that untyped input gives engine artifacts no caller relies on. Truthiness and absence are rules of the language, the same for every value, and JavaScript callers rely on them (`compare: (a, b) => a && b && …`, `static: flag`). A Rust caller writes the result of the rule. The public API does not change; only which recorded cases are compared does, and each such case is compared against cm6's own output, so a misread site fails visibly.
+
+**Lost.** Keeping the truthy values excluded while the falsy ones were already given as absent: an inconsistent rule, and cases compared nowhere, at every boolean option of `@codemirror/view` too.
+
+**Confidence.** High for `ferrum-state`, where every site was read. **Reopens:** a site where cm6 reads a value for truthiness and otherwise on the same path.
+
+## 2026-11-19 · D12: a primitive cm6 reads only through conversion to a string is that string
+
+*Decided by the consultant at the end of the implementation of `ferrum-state` (the crate's part: `docs/decisions/ferrum-state.md`, "The end of the implementation stage"). Binding text: `.claude/rules/decisions.md` D12. It widens the entry of 2026-11-19 on Q109.*
+
+**Question.** D12 as widened at Q109 gives a value cm6 handles only by truthiness or as absent the form that rule makes of it, and excludes every other read. cm6's `phrase` inserts its arguments through a `replace` callback, which converts them to strings (`mirrors/cm6/state/src/state.ts:327-331`), and every mirrored caller that passes an argument passes a number (`mirrors/cm6/search/src/search.ts:546`, `mirrors/cm6/merge/src/deco.ts:252`). Is such a number excluded?
+
+**Decision.** No. A primitive (number, boolean, `null`, `undefined`) cm6 reads only through JavaScript's conversion to a string (`String(x)`, a template, `+` with a string, what a `replace` callback returns) is the string that conversion gives. An object stays excluded: its conversion calls its own methods.
+
+**Why.** Q109's reason, one rule further: the language defines the conversion, JavaScript callers rely on it, and a Rust caller writes its result (`n.to_string()`, which for an integer is JavaScript's string). Ferrum's signatures do not change; only which recorded cases are compared does, each against cm6's own output.
+
+**Lost.** Keeping such values excluded: the call every real caller makes is compared nowhere, here and in `@codemirror/view`.
+
+**Confidence.** High. **Reopens:** a site where cm6 converts a primitive and also reads it otherwise on the same path.

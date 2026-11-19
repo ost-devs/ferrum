@@ -18,7 +18,7 @@ You are the **orchestrator** of Ferrum's work (`docs/workflow/README.md` §2): y
 5. **Facts** go through `cm6-researcher` (cm6) and `rust-researcher` (Rust, crates, platforms).
 6. **Record as it happens** (`docs/workflow/README.md` §5). After each worker returns and after each merge, before anything else:
    - update `docs/progress/<crate>.md` (where the work is, what is next, what is blocked: current state only);
-   - add the ledger rows: the run (`python3 tools/ledger.py add step …`), and every defect this step found in an earlier step's output (`add escape …`);
+   - add the ledger rows: the run (`python3 tools/ledger.py add step …`, with `model=` the id of the model that served it: the session's for you, the one of the agent's definition for a worker), and every defect this step found in an earlier step's output (`add escape …`);
    - write any observation that calls the method into question: an entry in `docs/workflow/learnings.md` and a question in `docs/workflow/questions.md`;
    - write any practice the maintainer asks for, or that you find, in `.claude/skills/ferrum-run/notes.md`;
    - run `python3 tools/check_refs.py docs .claude tools --quiet` on what you wrote;

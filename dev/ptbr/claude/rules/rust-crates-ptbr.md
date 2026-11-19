@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/rules/rust-crates.md` (commit `bd64bfd`). O original em inglês é o que vale. Carrega automaticamente quando o Claude toca em `crates/**` ou `Cargo.toml`.
+> Tradução para leitura de `.claude/rules/rust-crates.md` (commit `d82c454`). O original em inglês é o que vale. Carrega automaticamente quando o Claude toca em `crates/**` ou `Cargo.toml`.
 
 # Alterando os crates do Ferrum
 
@@ -39,6 +39,7 @@ Propósito e arquitetura: [`docs/foundation/ferrum-foundation.md`](../../docs/fo
 ## Anotações
 Todo item público leva uma linha de correspondência mais os qualificadores que se aplicam; nomes do cm6 exatamente como o cm6 os exporta. `<decision>` é o id de uma entrada em [`.claude/rules/decisions.md`](decisions-ptbr.md) (`D<n>`) ou em [`.claude/rules/rust-naming-decisions.md`](rust-naming-decisions-ptbr.md) (`N<n>`), ou o id de inventário da linha de especificação do item (`state.cm6.042`) quando a decisão é só sobre aquele item. Para uma diferença que é uma melhoria sobre o cm6, é o id da sua linha em `docs/parity/<crate>/raw/improvements.jsonl` (`state.imp.001`).
 - Correspondência: `/// cm6: EditorState.changeByRange`; `/// cm6 contract: <API do cm6 que substitui>` (métodos de trait que substituem uma consulta ao DOM ou ao Lezer); `/// ferrum-only: <motivo>, see <decision>`.
+- Um item do cm6 cuja forma em Rust é uma implementação de trait ou um supertrait (`Text.eq` → `impl PartialEq`, `RangeValue.eq` → `trait RangeValue: PartialEq`) é mapeado por uma linha `/// cm6 impl: <item do cm6>, see <decision>` no bloco `impl`, ou no trait quando é um supertrait. Ela é a contrapartida desse item, e é contada ao lado da única linha de correspondência do item que a carrega.
 - Qualificadores: `/// cm6 deviation: <o que difere>, see <decision>` (o comportamento observável ou a API pública difere); `/// placement: cm6 has this in <pacote>, see <decision>`; `/// name: see <decision>` (o nome em Rust não é a conversão mecânica do nome do cm6).
 
 ## Código

@@ -34,6 +34,36 @@ THE SOFTWARE.
 
 (Text copied from `LICENSE` in each of those packages; identical in `state`, `view`, `language` and `commands`.)
 
+## @marijn/find-cluster-break
+
+`ferrum-state` ports the algorithm and the table of extending characters of [`@marijn/find-cluster-break`](https://code.haverbeke.berlin/marijn/find-cluster-break) 1.0.4, by Marijn Haverbeke, which `@codemirror/state` uses to find grapheme cluster breaks (`crates/ferrum-state/src/char.rs`). That port is a derived work of the package and remains subject to its license, reproduced below.
+
+```
+MIT License
+
+Copyright (C) 2024 by Marijn Haverbeke <marijn@haverbeke.berlin>
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+```
+
+(Text copied from `LICENSE` of the package, version 1.0.4.)
+
 ## Dependencies
 
 Ferrum's crates use third-party Rust crates through Cargo; each keeps its own license, listed in its package metadata. Foundation crates take only dependencies licensed under MIT, Apache-2.0, or a choice that includes one of them (`.claude/rules/rust-crates.md`).

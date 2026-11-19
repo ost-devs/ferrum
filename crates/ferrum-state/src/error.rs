@@ -132,7 +132,37 @@ pub enum Error {
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        match self {
+            Error::InvalidSelectionRangeJson => f.write_str("Invalid JSON representation for SelectionRange"),
+            Error::InvalidEditorSelectionJson => f.write_str("Invalid JSON representation for EditorSelection"),
+            Error::EmptySelection => f.write_str("A selection needs at least one range"),
+            Error::SelectionOutsideDocument => f.write_str("Selection points outside of document"),
+            Error::PositionOutOfRange { pos, length } => {
+                write!(f, "Position {pos} is out of range for changeset of length {length}")
+            }
+            Error::InvalidChangeDescJson => f.write_str("Invalid JSON representation of ChangeDesc"),
+            Error::ApplyWrongLength => f.write_str("Applying change set to a document with the wrong length"),
+            Error::MismatchedChangeSetLength { got, expected } => {
+                write!(f, "Mismatched change set length (got {got}, expected {expected})")
+            }
+            Error::InvalidChangeRange { from, to, length } => {
+                write!(f, "Invalid change range {from} to {to} (in doc of length {length})")
+            }
+            Error::InvalidChangeSetJson => f.write_str("Invalid JSON representation of ChangeSet"),
+            Error::MismatchedChangeSetLengths => f.write_str("Mismatched change set lengths"),
+            Error::ConfigMergeConflict { field } => write!(f, "Config merge conflict for field {field}"),
+            Error::UnsortedRanges => f.write_str("Ranges must be added sorted by `from` position and `startSide`"),
+            Error::InvalidPosition { pos, length } => {
+                write!(f, "Invalid position {pos} in document of length {length}")
+            }
+            Error::InvalidLineNumber { n, lines } => write!(f, "Invalid line number {n} in {lines}-line document"),
+            Error::EmptyDocument => f.write_str("A document must have at least one line"),
+            Error::FieldNotPresent => f.write_str("Field is not present in this state"),
+            Error::InvalidEditorStateJson => f.write_str("Invalid JSON representation for EditorState"),
+            Error::ComputeStaticFacet => f.write_str("Can't compute a static facet"),
+            Error::DuplicateCompartment => f.write_str("Duplicate use of compartment in extensions"),
+            Error::CyclicDependency => f.write_str("Cyclic dependency between fields and/or facets"),
+        }
     }
 }
 
