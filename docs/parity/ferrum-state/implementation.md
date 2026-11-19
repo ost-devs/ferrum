@@ -198,3 +198,15 @@ A round on the checks of chunk `facet` after Q105 to Q110 (commit 9b78209; decid
 - `crates/ferrum-state/tests/replay/facet/ops.rs`
 - `crates/ferrum-state/tests/replay/facet/scope.rs`
 
+The checks of unit `state`, chunk `state` (commit b15086c; `docs/parity/ferrum-state/cards/test-writer.md` "Step U4b checks"; `plan.md` "Each unit", step 1: one call of Ferrum, one function). `tests/replay.rs` loses its `#![allow(dead_code, …)]`, and what the compiler then reported unused is removed (`back_on`, `argument`, `reason`, an unused `const OP`, `jsstr`, `error_at`, the text host's `pos_arg`, `num`, `conv_num`). Chunk `facet`: `FacetK::Builtin` and `ReaderK::Builtin` (trait `BuiltinFacet`, alias `Getter`) give the facets of `EditorState` to the scope; `read_facet` returns `F<Value>`; the getter `{"callVar"}` is bound through `Scope.call_var`; `Scope.log_array` holds the array `scope.log` returns; `ListRead.state` becomes `_state`. Chunk `text`: `state.create`, `state.doc` and `state.toText` go through `replay::state::ops::{create_state, state_doc, to_text}`; `categorizer` keeps the categorizer function (`state::values::categorizer_of`) and `categorize` goes through `state::ops::categorize_with`; the text host's `Categorizer` is removed. The test-writer compared the per-fixture reports of chunks `text`, `change`, `rangeset` and `facet` (3,886 fixtures) against the earlier commit: none differs. Files:
+- `crates/ferrum-state/tests/replay.rs`
+- `crates/ferrum-state/tests/replay/change/values.rs`
+- `crates/ferrum-state/tests/replay/facet/ops.rs`
+- `crates/ferrum-state/tests/replay/facet/scope.rs`
+- `crates/ferrum-state/tests/replay/facet/values.rs`
+- `crates/ferrum-state/tests/replay/rangeset/sets.rs`
+- `crates/ferrum-state/tests/replay/text/changes.rs`
+- `crates/ferrum-state/tests/replay/text/doc.rs`
+- `crates/ferrum-state/tests/replay/text/host.rs`
+- `crates/ferrum-state/tests/replay/text/strings.rs`
+
