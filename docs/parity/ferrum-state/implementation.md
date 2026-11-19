@@ -210,3 +210,12 @@ The checks of unit `state`, chunk `state` (commit b15086c; `docs/parity/ferrum-s
 - `crates/ferrum-state/tests/replay/text/host.rs`
 - `crates/ferrum-state/tests/replay/text/strings.rs`
 
+A round on the checks of chunk `state` after Q111 to Q115 (commit efdebd2, the checks commit of unit `state`; decided by the consultant: `docs/decisions/ferrum-state.md`, "Q111 to Q115", "What it requires", item 1). Rule 13 of `plan.md` "Positions" (Q111): chunk `facet` reads the line separator of the configuration being built (`scope.rs` `line_separator`, `separator_for`, `check_split`, `selection_spec_on`; `split_lines` moved there from `replay/state/specs.rs`; `state_json_in` splits with it), `create_config`, `create`, `scenario` and `from_json` split with it and compare the lines with the created document (`ops.rs` `create_checked`); chunk `state`'s `separator_of` is removed and `state.create` and `state.fromJSON` go through the same functions. Rule 14 (Q112): pairs of documents kept per call of Ferrum (`chunk.rs` `Chunk::call_of`, `pair`, `note`, `mapping_value`), with the pairs of `mergeTransaction` (`specs.rs` `update_specs`), of a change filter returning `false` and of the extender's sequential merge. `design.md` §10 "Time" (Q113): `now` is whole milliseconds of `SystemTime`, with a literal test; `tr_annotation` gives Ferrum's value. Rule 15 (Q114): `RangeV::to_doc` rebuilds an undirectional range with `undirectional_range` and compares every getter; `SelV::to_doc` compares the number of ranges and the main index. Files:
+- `crates/ferrum-state/tests/replay/facet/ops.rs`
+- `crates/ferrum-state/tests/replay/facet/scope.rs`
+- `crates/ferrum-state/tests/replay/facet/values.rs`
+- `crates/ferrum-state/tests/replay/state/chunk.rs`
+- `crates/ferrum-state/tests/replay/state/harness.rs`
+- `crates/ferrum-state/tests/replay/state/ops.rs`
+- `crates/ferrum-state/tests/replay/state/specs.rs`
+- `crates/ferrum-state/tests/replay/state/values.rs`
