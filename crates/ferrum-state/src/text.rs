@@ -500,7 +500,7 @@ impl Text {
     }
 
     /// The D1 precondition of a position of the document, `pos` being at most its length.
-    fn assert_boundary(&self, pos: usize) {
+    pub(crate) fn assert_boundary(&self, pos: usize) {
         if !self.is_char_boundary(pos) {
             not_a_boundary(pos);
         }

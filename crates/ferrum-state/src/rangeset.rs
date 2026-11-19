@@ -147,7 +147,9 @@ pub trait RangeComparator<T> {
     /// nothing, which no caller can tell from its absence.
     ///
     /// cm6: RangeComparator.boundChange
-    fn bound_change(&mut self, pos: usize) {}
+    fn bound_change(&mut self, pos: usize) {
+        let _ = pos;
+    }
 }
 
 /// The methods [`RangeSet::spans`] calls; together its calls cover the whole range iterated.

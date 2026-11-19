@@ -54,33 +54,3 @@ pub(crate) fn make_categorizer(word_chars: &str) -> Box<dyn Fn(&str) -> CharCate
         CharCategory::Other
     })
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    /// Values of the behavior rows of `CharCategory` (`raw/behaviors.jsonl`), which the fixtures reach only through
-    /// `EditorState::char_categorizer`.
-    #[test]
-    fn make_categorizer_gives_cm6s_categories() {
-        let plain = make_categorizer("");
-        let words =
-            ["a", "1", "_", "é", "e\u{301}", "²", "½", "Ⅻ", "\u{1D400}", "a b", " a", "!!1", "1\u{FE0F}\u{20E3}"];
-        for s in words {
-            assert_eq!(plain(s), CharCategory::Word, "{s:?}");
-        }
-        for s in ["", " ", "\t", "\r\n", "\u{A0}", "\u{2028}", "\u{3000}", "\u{FEFF}"] {
-            assert_eq!(plain(s), CharCategory::Space, "{s:?}");
-        }
-        let others =
-            ["/", "<", "-", "©", "😀", "\u{200B}", "\u{200D}", "\u{180E}", "\u{85}", "\u{301}", " -", "\u{203F}"];
-        for s in others {
-            assert_eq!(plain(s), CharCategory::Other, "{s:?}");
-        }
-        let emoji = make_categorizer("😀$");
-        assert_eq!(emoji("😃"), CharCategory::Word);
-        assert_eq!(emoji("$"), CharCategory::Word);
-        assert_eq!(emoji(" "), CharCategory::Space);
-        assert_eq!(emoji("/"), CharCategory::Other);
-    }
-}

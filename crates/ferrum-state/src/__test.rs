@@ -31,21 +31,21 @@ pub fn change_set_inserted(set: &ChangeSet) -> &[Text] {
 ///
 /// ferrum-only: the identity of Extension, see D15
 pub fn same_extension(a: &Extension, b: &Extension) -> bool {
-    todo!()
+    a.key() == b.key()
 }
 
 /// Whether two states are the same allocation.
 ///
 /// ferrum-only: the identity of EditorState, see D15
 pub fn same_state(a: &EditorState, b: &EditorState) -> bool {
-    todo!()
+    Arc::ptr_eq(&a.inner, &b.inner)
 }
 
 /// Whether two states share one configuration (cm6's `state.config`, `state.ts:44`; op `internal.get` of `config`).
 ///
 /// ferrum-only: the identity of cm6's internal EditorState.config, see D15
 pub fn same_config(a: &EditorState, b: &EditorState) -> bool {
-    todo!()
+    Arc::ptr_eq(&a.inner.config, &b.inner.config)
 }
 
 /// The annotations of a transaction, the time annotation included (cm6's `Transaction.annotations`,
@@ -53,7 +53,7 @@ pub fn same_config(a: &EditorState, b: &EditorState) -> bool {
 ///
 /// ferrum-only: cm6's internal Transaction.annotations, see D15
 pub fn transaction_annotations(tr: &Transaction) -> &[Annotation] {
-    todo!()
+    &tr.inner.annotations
 }
 
 /// Whether two range sets are the same allocation (the empty set is one).

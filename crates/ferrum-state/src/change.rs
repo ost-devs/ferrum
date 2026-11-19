@@ -594,9 +594,6 @@ impl ChangeDesc {
     }
 }
 
-/// cm6's `1e9` in `ChangeSet.filter` (`change.ts:273`): the position past every range.
-const FAR: isize = 1_000_000_000;
-
 impl ChangeSet {
     /// cm6's `@internal` `ChangeSet.createSet` (`change.ts:379`).
     pub(crate) fn create_set(sections: Vec<isize>, inserted: Vec<Text>) -> ChangeSet {
@@ -611,8 +608,10 @@ impl ChangeSet {
         let (mut i, mut pos) = (0, 0);
         // `ranges[i++]` past the end is `undefined` in cm6, for which every comparison is false: `None` here
         'done: loop {
+            // cm6 takes 1e9 after the last pair (`change.ts:273`); Ferrum keeps every change to the end, with no bound
+            // (`state.cm6.032.d3`)
             let next = if i == ranges.len() {
-                Some(FAR)
+                Some(isize::MAX)
             } else {
                 i += 1;
                 ranges.get(i - 1).map(|&n| n as isize)

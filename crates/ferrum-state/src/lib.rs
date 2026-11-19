@@ -3,10 +3,6 @@
 //! One module per cm6 source file (`design.md` §1); every public item is also re-exported here, as cm6's package
 //! exports them from one entry point (`mirrors/cm6/state/src/index.ts`). Positions, lengths and offsets are UTF-8
 //! byte offsets in which every line break counts one (D1).
-//!
-//! The modules of unit text (`text`, `char`, `column`, `charcategory`) are written; every other module is the
-//! skeleton: its public signatures, with `todo!()` as every body.
-#![allow(unused_variables, dead_code)]
 
 pub mod change;
 pub mod char;
