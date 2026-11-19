@@ -64,6 +64,14 @@ fn language() -> Language {
     l.op("t.noneWrong", api, |a, p| arg(p, &a.field("x")));
     l.op("t.skip", api, |_, _| Ok(Value::Undefined));
     l.op("t.call", api, |a, p| arg(p, &a.field("x")));
+    // a call whose argument is itself no counterpart (case 5): not made, counted by `Program::not_made`
+    l.op("t.case5", api, |a, p| {
+        let v = arg(p, &a.field("x"))?;
+        if let Value::NoCounterpart(_) = v {
+            p.not_made(&v);
+        }
+        Ok(v)
+    });
     l.op("t.make", api, |a, _| {
         let kind = if matches!(a.field("kind"), Value::Str(ref s) if **s == *super::lang::value::js("outside")) {
             "outside"
@@ -315,6 +323,61 @@ fn rule_a_recorded_error_with_a_call_not_made() {
     assert_eq!(run(throws, r#"{"ok":{"a":1}}"#).result, "mismatch");
     // every call made: an error that differs is a mismatch
     assert_eq!(run(r#"{"steps":[],"out":{}}"#, error).result, "mismatch");
+}
+
+#[test]
+fn rule_case_5_is_a_call_not_made_for_a_try_and_a_capture() {
+    for wrapper in [
+        r#"{"op":"try","mode":"okOrError","steps":[{"op":"t.case5","x":{"$":"a"}}],"as":"w"}"#,
+        r#"{"op":"capture","do":{"op":"t.case5","x":{"$":"a"}},"as":"w"}"#,
+    ] {
+        let input = format!(
+            r#"{{"steps":[{{"op":"let","value":2,"as":"before"}},{{"op":"t.type","x":1,"as":"a"}},{wrapper},{{"op":"let","value":1,"as":"k"}}],"out":{{"before":{{"$":"before"}},"w":{{"$":"w"}},"k":{{"$":"k"}}}}}}"#
+        );
+        // the wrapper is no counterpart, whatever cm6 recorded; the case-5 call adds no entry of its own
+        let r = run(&input, r#"{"ok":{"before":2,"w":{"error":"RangeError","message":"m"},"k":1}}"#);
+        assert_eq!(r.result, "part", "{wrapper}: {}", r.note);
+        assert_eq!(entries(&r), vec![e("type", "t.type")], "{wrapper}");
+        // a value the program wrote before the call is compared
+        let r = run(&input, r#"{"ok":{"before":3,"w":"ok","k":1}}"#);
+        assert_eq!(r.result, "mismatch", "{wrapper}");
+    }
+    // a recorded error after a case-5 call that Ferrum's run does not end in: `none`, the entry `error` naming the
+    // excluded argument's op, the last call not made
+    let r = run(
+        r#"{"steps":[{"op":"t.type","x":1,"as":"a"},{"op":"t.case5","x":{"$":"a"},"as":"b"}],"out":{"b":{"$":"b"}}}"#,
+        r#"{"error":{"name":"RangeError","message":"m"}}"#,
+    );
+    assert_eq!(r.result, "none");
+    assert_eq!(entries(&r), vec![e("type", "t.type"), e("error", "t.type")]);
+}
+
+/// One fixture `state:F1` run through chunk `state`'s language, which no call of Ferrum reaches.
+fn run_state(input: &str, output: &str) -> Run {
+    let mut lang = Language::new("state", &[]);
+    crate::replay::state::register(&mut lang);
+    let decisions = Decisions::default();
+    let ops = HashMap::new();
+    let ctx = Ctx { decisions: &decisions, chunk_ops: &ops, control: None, trace: None, trace_dir: "unused".into() };
+    let fixture = parse(&format!(r#"{{"id":"F1","input":{input},"output":{output}}}"#)).expect("the fixture is JSON");
+    run_one(&lang, &fixture, &ctx)
+}
+
+#[test]
+fn rule_the_variables_a_fn_writes_are_no_counterpart_after_a_call_not_made() {
+    // `before` is written by the program; the `fn`'s parameter `q`, its `as` `t1` and the array `log` its body grows
+    // are written by its calls, `log` never set before; `sel.cursor` at -1 is excluded by type (case 1) and
+    // `sel.create` of it is case 5
+    let input = r#"{"steps":[{"op":"let","value":1,"as":"before"},
+        {"op":"fn","params":["q"],"do":{"op":"block","steps":[{"op":"array.push","of":{"$":"log"},"value":1,"as":"t1"}],"result":"t1"},"as":"f"},
+        {"op":"sel.cursor","pos":-1,"as":"bad"},
+        {"op":"capture","do":{"op":"sel.create","ranges":{"op":"list","of":[{"$":"bad"}]}},"as":"c"}],
+        "out":{"before":{"$":"before"},"log":{"$":"log"},"t1":{"$":"t1"},"q":{"$":"q"},"c":{"$":"c"}}}"#;
+    let r = run_state(input, r#"{"ok":{"before":1,"log":[1],"t1":1,"q":0,"c":{"ok":"x"}}}"#);
+    assert_eq!(r.result, "part", "{}", r.note);
+    assert_eq!(entries(&r), vec![e("type", "sel.cursor")]);
+    // `before` is compared
+    assert_eq!(run_state(input, r#"{"ok":{"before":2,"log":[1],"t1":1,"q":0,"c":{"ok":"x"}}}"#).result, "mismatch");
 }
 
 #[test]

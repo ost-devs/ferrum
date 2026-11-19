@@ -48,11 +48,11 @@ pub fn reg(lang: &mut Language, name: &str, kinds: &[&'static str], body: Body) 
             Err(Stop::Nc(v)) => {
                 p.not_made(&v);
                 unknown_counters(&c.sc, &v);
+                // whether or not the name holds a value: a variable a callback writes first is read later (`design.md`
+                // section 10, "No counterpart"; Q119)
                 let names: Vec<String> = c.fn_writes.borrow().iter().cloned().collect();
                 for n in names {
-                    if p.get(&n).is_ok() {
-                        p.set(n, v.clone());
-                    }
+                    p.set(n, v.clone());
                 }
                 Ok(v)
             }

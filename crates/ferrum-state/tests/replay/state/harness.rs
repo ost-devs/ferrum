@@ -57,7 +57,6 @@ fn flow(p: &mut Program, op: &str, part: &str) -> Stop {
     }
 }
 
-/// `fn {params, do}`: a function that sets the program variable `params[i]` to its i-th argument and evaluates `do`.
 /// The variables a body writes through a harness op: the `as` of its ops and the arrays `array.push` grows.
 fn writes(v: &Value, out: &mut std::collections::BTreeSet<String>) {
     match v {
@@ -77,8 +76,18 @@ fn writes(v: &Value, out: &mut std::collections::BTreeSet<String>) {
     }
 }
 
+/// `fn {params, do}`: a function that sets the program variable `params[i]` to its i-th argument and evaluates `do`.
+/// Its `params` and the variables its body writes are the ones a call not made makes no counterpart (`design.md`
+/// section 10, "No counterpart"; Q119).
 fn op_fn(a: &Value, _p: &mut Program, c: &Ctx) -> R<Value> {
     writes(&a.field("do"), &mut c.fn_writes.borrow_mut());
+    if let Value::Array(xs) = a.field("params") {
+        for x in xs.borrow().iter() {
+            if let Value::Str(s) = x {
+                c.fn_writes.borrow_mut().insert(String::from_utf16_lossy(s));
+            }
+        }
+    }
     let params = match a.field("params") {
         Value::Array(xs) => xs
             .borrow()
