@@ -280,3 +280,8 @@ A round of "A check that is wrong" on the checks of unit `state` after Q116 to Q
 - `crates/ferrum-state/tests/replay/text/cursor.rs`
 - `crates/ferrum-state/tests/replay/text/host.rs`
 - `crates/ferrum-state/tests/written_state.rs`
+
+A round after Q119 on the checks of unit `state` (commit d4e9efc; a change the consultant decided, not a check found wrong: `docs/decisions/ferrum-state.md`, "Q119 and what remains after U4", "What it requires", item 2, the rule restored being `design.md` §10 "No counterpart" as that entry wrote it). `rules.rs`: literal tests of case 5 through `Program::not_made` (a test op `t.case5`; a `try` and a `capture` around a call whose argument is no counterpart, a value written before such a call compared, an uncaught recorded error after it `none` with its `error` entry naming the excluded argument's op) and of the variables a `fn` writes (its parameter, its `as` and an array its body grows, unset before, no counterpart after a call not made). Chunk `state`: `fn` adds its `params` to that set (`harness.rs`), and the `reg` wrapper makes every variable of the set no counterpart whether or not it holds a value (`ops.rs`). Files:
+- `crates/ferrum-state/tests/replay/rules.rs`
+- `crates/ferrum-state/tests/replay/state/harness.rs`
+- `crates/ferrum-state/tests/replay/state/ops.rs`
