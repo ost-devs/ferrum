@@ -99,7 +99,7 @@
 {"chunk": "state", "op": "field.define", "how": "run", "parts": [], "note": ""}
 {"chunk": "state", "op": "fn", "how": "run", "parts": [], "note": ""}
 {"chunk": "state", "op": "internal.get", "how": "test", "parts": ["prop `map`, `facet`, `value`"], "note": "`config` and `annotations` through `__test`; `type` of an effect is the registry entry for which `effect.is(type)` holds; a function field and the fields of an extension object have no counterpart"}
-{"chunk": "state", "op": "isInstance", "how": "run", "parts": [], "note": "whether the replayer's value is of that Rust type"}
+{"chunk": "state", "op": "isInstance", "how": "part", "parts": ["the class `ChangeSet` asked of the mapping Ferrum gives an effect type's `map` function"], "note": "whether the replayer's value is of that Rust type; Ferrum gives a `map` function the `ChangeDesc` cm6 declares (transaction.ts:43, :79) where cm6 passes a `ChangeSet`, and dispatch is by the static type (design.md section 3, Q87): which class cm6's object has there has no counterpart (F0813, F0814)"}
 {"chunk": "state", "op": "json.ann", "how": "test", "parts": [], "note": "the annotation list of a transaction through `__test`; an effect's type name is the registry entry for which `effect.is(type)` holds"}
 {"chunk": "state", "op": "json.eff", "how": "test", "parts": [], "note": "the annotation list of a transaction through `__test`; an effect's type name is the registry entry for which `effect.is(type)` holds"}
 {"chunk": "state", "op": "json.effs", "how": "test", "parts": [], "note": "the annotation list of a transaction through `__test`; an effect's type name is the registry entry for which `effect.is(type)` holds"}
