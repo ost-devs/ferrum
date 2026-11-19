@@ -312,7 +312,7 @@ const spansFx = (P: Spec[], sets: any[], from: number, to: number, min?: number,
     op("same", {a: update(empty, {filter: filter({const: false})}), b: empty}, "filterOnly"),
   ], {unsorted: $("unsorted"), sorted: $("sorted"), filterOnly: $("filterOnly")}))
   for (let a of [[[10, 11, 0], [2, 3, 1]], [[20, 30, 0], [2, 3, 1], [25, 26, 2]]] as R[])
-    fx(ID.update, [...B("RangeSet.update", 4), ...B("RangeSetUpdate.add", 2)], prog(P, [
+    fx(ID.update, [...B("RangeSet.update", 4), ...B("RangeSet.update", 6), ...B("RangeSetUpdate.add", 2)], prog(P, [
       op("set.update", {set: of([[50, 51, 2]]), spec: {add: a}}, "u"), op("set.list", {set: $("u")}, "list"), op("set.dump", {set: $("u")}, "dump"),
     ], {list: $("list"), dump: $("dump")}))
   fx(ID.update, [...B("RangeSet.update", 5), ...B("RangeSetUpdate.add", 1)], prog(P, [
@@ -389,7 +389,7 @@ const spansFx = (P: Spec[], sets: any[], from: number, to: number, min?: number,
   // cross-chunk spill: a touched chunk's first range falls before the previous chunk's last end
   let X: Spec[] = [{name: "r", startSide: 1, endSide: 1}, pt("pb", {startSide: -1, endSide: -1, mapMode: MapMode.Simple})]
   let xr: R = []; for (let i = 0; i < 250; i++) xr.push([i, i + 1, 0]); xr.push([260, 260, 1], [270, 271, 0])
-  fx(ID.map, B("RangeSet.map", 9), prog(X, [
+  fx(ID.map, [...B("RangeSet.map", 6), ...B("RangeSet.map", 9)], prog(X, [
     op("set.map", {set: of(xr), changes: chOf({from: 250, to: 260}, 300)}, "m"),
     op("set.dumpSummary", {set: $("m")}, "layers"), op("slice", {of: op("set.list", {set: $("m")}), start: -3}, "tail"),
   ], {layers: $("layers"), tail: $("tail")}))
