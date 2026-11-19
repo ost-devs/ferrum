@@ -207,8 +207,6 @@ pub struct Program<'l> {
     /// The last *no counterpart* made by a call to Ferrum that was not made.
     last_not_called: Option<Rc<LeftOut>>,
     not_called: usize,
-    /// The excluded values a call not made for case 5 has already stood for (`not_made`).
-    carried: Vec<Rc<LeftOut>>,
     /// Rows of `raw/decisions.jsonl` with a condition that list this fixture.
     pub listed: HashSet<String>,
     /// The rows whose condition a call met, in order.
@@ -237,7 +235,6 @@ impl<'l> Program<'l> {
             left_out: Vec::new(),
             last_not_called: None,
             not_called: 0,
-            carried: Vec::new(),
             listed: HashSet::new(),
             met: Vec::new(),
             marked: Vec::new(),
@@ -552,32 +549,12 @@ impl<'l> Program<'l> {
         }
     }
 
-    /// A call of `op` not made because an argument is itself no counterpart (`design.md` section 10, "No
-    /// counterpart", case 5): counted as a call not made, with no entry of its own. The last call not made is then
-    /// this one, named by `op` (an `error` entry after it names the call cm6 may have thrown in), with the reason and
-    /// value of the entry its argument stands for.
-    ///
-    /// Only the first call not made for a given excluded value is named so: an argument excluded by type is one cm6
-    /// takes and stores, and it throws, if anywhere, at the first call that reads it, not at the later ones, which
-    /// Ferrum's run goes on to. An entry `carry` named is named by its own call.
-    pub fn not_made(&mut self, op: &str, nc: &Value) {
+    /// A call not made because an argument is itself no counterpart (`design.md` section 10, "No counterpart", case 5):
+    /// counted as a call not made, with no entry of its own, so that a `try` or `capture` around it is no counterpart.
+    pub fn not_made(&mut self, nc: &Value) {
         if let Value::NoCounterpart(l) = nc {
             self.not_called += 1;
-            if !self.carried.iter().any(|c| Rc::ptr_eq(c, l)) {
-                self.carried.push(l.clone());
-                self.last_not_called = Some(Rc::new(LeftOut { op: op.into(), ..(**l).clone() }));
-            }
-        }
-    }
-
-    /// An entry whose call is where cm6 would throw, if anywhere: a call of Ferrum during which a callback returned a
-    /// value the signature cannot hold, which cm6's call consumes. A later call not made for case 5 that the value
-    /// reaches does not name it again (`not_made`).
-    pub fn carry(&mut self, nc: &Value) {
-        if let Value::NoCounterpart(l) = nc
-            && !self.carried.iter().any(|c| Rc::ptr_eq(c, l))
-        {
-            self.carried.push(l.clone());
+            self.last_not_called = Some(l.clone());
         }
     }
 

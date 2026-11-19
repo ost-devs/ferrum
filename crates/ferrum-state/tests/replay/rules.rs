@@ -68,7 +68,7 @@ fn language() -> Language {
     l.op("t.case5", api, |a, p| {
         let v = arg(p, &a.field("x"))?;
         if let Value::NoCounterpart(_) = v {
-            p.not_made("t.case5", &v);
+            p.not_made(&v);
         }
         Ok(v)
     });
@@ -307,13 +307,13 @@ fn rule_a_try_or_capture_around_a_call_not_made_is_no_counterpart() {
 #[test]
 fn rule_a_recorded_error_with_a_call_not_made() {
     let error = r#"{"error":{"name":"RangeError","message":"m"}}"#;
-    // Ferrum's run does not end in the recorded error: none, with the entry `error` and the last call not made
+    // Ferrum's run does not end in the recorded error: none, with the entry `error`, which names no op (Q120)
     let r = run(
         r#"{"steps":[{"op":"t.type","x":1,"as":"a"},{"op":"t.char","x":1,"as":"b"}],"out":{"a":{"$":"a"}}}"#,
         error,
     );
     assert_eq!(r.result, "none");
-    assert_eq!(entries(&r), vec![e("type", "t.type"), e("char", "t.char"), e("error", "t.char")]);
+    assert_eq!(entries(&r), vec![e("type", "t.type"), e("char", "t.char"), e("error", "")]);
     // it ends in the recorded error: part
     let throws = r#"{"steps":[{"op":"t.type","x":1,"as":"a"},{"op":"t.throw","message":"m"}],"out":{"a":{"$":"a"}}}"#;
     let r = run(throws, error);
@@ -342,14 +342,19 @@ fn rule_case_5_is_a_call_not_made_for_a_try_and_a_capture() {
         let r = run(&input, r#"{"ok":{"before":3,"w":"ok","k":1}}"#);
         assert_eq!(r.result, "mismatch", "{wrapper}");
     }
-    // a recorded error after a case-5 call that Ferrum's run does not end in: `none`, the entry `error` naming the
-    // case-5 call, the last call not made, in which cm6 may have thrown (end of the implementation stage)
+    // a recorded error after a case-5 call that Ferrum's run does not end in: `none`, with the entry `error`, which names
+    // no op (`design.md` section 10; Q120)
     let r = run(
         r#"{"steps":[{"op":"t.type","x":1,"as":"a"},{"op":"t.case5","x":{"$":"a"},"as":"b"}],"out":{"b":{"$":"b"}}}"#,
         r#"{"error":{"name":"RangeError","message":"m"}}"#,
     );
     assert_eq!(r.result, "none");
-    assert_eq!(entries(&r), vec![e("type", "t.type"), e("error", "t.case5")]);
+    assert_eq!(entries(&r), vec![e("type", "t.type"), e("error", "")]);
+    let error = r.left_out.iter().find(|l| l.reason == "error").expect("an error entry");
+    assert_eq!(
+        super::lang::to_json(&super::driver::left_out_value(error)),
+        r#"{"reason":"error","op":null,"part":"the uncaught error","value":null}"#
+    );
 }
 
 /// One fixture `state:F1` run through chunk `state`'s language, which no call of Ferrum reaches.

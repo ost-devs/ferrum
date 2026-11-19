@@ -361,12 +361,15 @@ fn op_names(v: &Value, out: &mut Vec<String>) {
     }
 }
 
-fn left_out_value(l: &LeftOut) -> Value {
+/// An entry as the report and `fixtures/no-counterpart.jsonl` write it. An `error` entry names no op: the uncaught error
+/// may come from any call not made before it (`design.md` section 10; Q120).
+pub fn left_out_value(l: &LeftOut) -> Value {
     let what = match &l.what {
         What::Argument(a) => ("argument", Value::str(a)),
         What::Part(p) => ("part", Value::str(p)),
     };
-    Value::record([("reason", Value::str(&l.reason)), ("op", Value::str(&l.op)), what, ("value", l.value.clone())])
+    let op = if l.reason == "error" { Value::Null } else { Value::str(&l.op) };
+    Value::record([("reason", Value::str(&l.reason)), ("op", op), what, ("value", l.value.clone())])
 }
 
 /// Run one fixture of a chunk and give its result with the report's entries (`design.md` section 10).
@@ -469,15 +472,13 @@ pub fn run_one(lang: &Language, fixture: &Value, ctx: &Ctx) -> Run {
                     };
                     run.control = Some((path, passes));
                 }
-            } else if recorded.has("error")
-                && let Some(last) = p.last_not_called()
-            {
+            } else if recorded.has("error") && p.last_not_called().is_some() {
                 // the recorded output is an uncaught error, Ferrum's run does not end in it, and a call Ferrum did not
                 // make may be the one that threw
                 run.result = "none";
                 run.left_out.push(Rc::new(LeftOut {
                     reason: "error".into(),
-                    op: last.op.clone(),
+                    op: String::new(),
                     what: What::Part("the uncaught error".into()),
                     value: Value::Null,
                     not_called: false,

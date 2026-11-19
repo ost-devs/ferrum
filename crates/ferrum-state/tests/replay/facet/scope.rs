@@ -158,8 +158,6 @@ pub fn ferrum<T>(p: &mut Program, sc: &Sc, op: &str, doc: &Form, f: impl FnOnce(
     sc.borrow_mut().fault = None;
     let r = call(f)?;
     let fault = sc.borrow_mut().fault.take();
-    // a fault of a callback: what it returned is consumed by cm6's call itself
-    let from_callback = fault.is_some();
     let r = match (fault, r) {
         (Some(fault), _) | (None, Ok(Err(fault))) => Err(fault),
         (None, Ok(Ok(v))) => return Ok(v),
@@ -168,13 +166,7 @@ pub fn ferrum<T>(p: &mut Program, sc: &Sc, op: &str, doc: &Form, f: impl FnOnce(
     };
     match r {
         Err(Fault::Flow(fl)) => Err(Stop::Flow(fl)),
-        Err(Fault::Excluded { reason, arg, value }) => {
-            let stop = left_out(p, &reason, op, &arg, &value);
-            if let (true, Stop::Nc(v)) = (from_callback, &stop) {
-                p.carry(v);
-            }
-            Err(stop)
-        }
+        Err(Fault::Excluded { reason, arg, value }) => Err(left_out(p, &reason, op, &arg, &value)),
         Err(Fault::Nc(v)) => Err(Stop::Nc(v)),
         Ok(()) => unreachable!(),
     }

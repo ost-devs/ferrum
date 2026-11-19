@@ -359,3 +359,13 @@ fn the_value_types_of_the_unit_are_send_and_sync() {
     send_sync::<IterDirection>();
     send_sync::<CharCategory>();
 }
+
+// `Line::is_empty`: whether the line is empty (`len() == 0`), its doc comment; a public form nothing else calls
+// (`implementation.md` "Lines no check reaches").
+#[test]
+fn a_line_is_empty_when_its_length_is_zero() {
+    let doc = Text::of(&["", "é"]);
+    assert!(doc.line(1).is_empty());
+    assert!(!doc.line(2).is_empty());
+    assert_eq!(doc.line(2).len(), "é".len());
+}
