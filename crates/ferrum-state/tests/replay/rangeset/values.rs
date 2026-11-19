@@ -656,10 +656,19 @@ pub fn flag(p: &mut Program, op: &str, arg: &str, v: &Value) -> R<bool> {
     }
 }
 
+/// The length of a range in cm6's unit on `doc`.
+fn units_len(doc: &Doc, from: usize, to: usize) -> Result<f64, Flow> {
+    match crate::replay::change::values::back_len(&doc.form, from, to.saturating_sub(from))? {
+        Value::Num(n) => Ok(n),
+        _ => Err(Flow::Fail("a length that is no number".into())),
+    }
+}
+
 /// `minPointSize` of `spans` and `compare`: absent and cm6's default -1 are `None` (`design.md` section 2: the
-/// sentinel -1 is `None`; `mirrors/cm6/state/src/rangeset.ts:374`, `:420`, the parameter's default); a length on
-/// `doc` otherwise.
-pub fn min_point(p: &mut Program, op: &str, a: &Value, doc: &Doc) -> R<Option<usize>> {
+/// sentinel -1 is `None`; `mirrors/cm6/state/src/rangeset.ts:374`, `:420`, the parameter's default). Another value is
+/// the same number in both units when every point range of the sets iterated (each with its document) has the same
+/// length in both; otherwise the call has no counterpart, reason `char` (`plan.md` "Positions", rule 11; Q99).
+pub fn min_point(p: &mut Program, op: &str, a: &Value, sets: &[(&RangeSet<Rv>, &Doc)]) -> R<Option<usize>> {
     if !a.has("minPointSize") {
         return Ok(None);
     }
@@ -668,34 +677,57 @@ pub fn min_point(p: &mut Program, op: &str, a: &Value, doc: &Doc) -> R<Option<us
     match v {
         Value::Undefined => Ok(None),
         Value::Num(-1.0) => Ok(None),
-        Value::Num(_) if !doc.ascii => Err(Stop::Flow(Flow::Fail(format!(
-            "{op}: a minPointSize on a document of non-ASCII text, a length with no position (a question, plan.md \
-             \"Positions\" rule 8)"
-        )))),
-        _ => Ok(Some(doc.pos(p, op, "minPointSize", &v)?)),
+        _ => {
+            let n = crate::replay::change::shared::pos_arg(p, op, "minPointSize", &v, &Form::filler())?;
+            for (set, doc) in sets {
+                if doc.ascii {
+                    continue;
+                }
+                for (from, to, point) in layer_ranges(set)? {
+                    if point && units_len(doc, from, to)? != to.saturating_sub(from) as f64 {
+                        return Err(left_out(p, "char", op, "minPointSize", &v));
+                    }
+                }
+            }
+            Ok(Some(n))
+        }
     }
 }
 
-/// A `maxPoint` Ferrum gave (`-1`: no point), as the program's number. It is a length with no position of its own:
-/// on a document that converts as filler it is the same number; on another it is the length of the point ranges of
-/// `scope` (absolute byte positions) whose byte length it is, when they agree. A case where they do not is no case
-/// the rows settle (rule 8).
-pub fn max_point_back(n: i64, doc: &Doc, scope: &[(usize, usize, bool)]) -> Result<Value, Flow> {
+/// A `maxPoint` Ferrum gave (`-1`: no point), as the program's number (`plan.md` "Positions", rule 11; Q99): -1, 0
+/// and every value on a document that converts as filler are the same number. Otherwise it must be the byte length
+/// of a point range of `scope` (absolute byte positions): one that is not is written as Ferrum gave it (a
+/// `mismatch`). It converts to that range's length in cm6's unit when the scope gives one answer: every point range
+/// of that byte length has the same length in cm6's unit, and none of the scope's point ranges no longer than it in
+/// bytes is longer in cm6's unit. Otherwise D1 changes which range is the largest: no counterpart, reason `char`.
+/// The scope of a layer holds the layers below it too, so a range of theirs can only make the answer `char`, never
+/// another number.
+pub fn max_point_back(p: &mut Program, op: &str, n: i64, doc: &Doc, scope: &[(usize, usize, bool)]) -> R<Value> {
     if n <= 0 || doc.ascii {
         return Ok(Value::Num(n as f64));
     }
-    let mut units = None;
+    let mut at_n: Option<f64> = None;
+    let mut one = true;
+    let mut longest = f64::MIN;
     for &(from, to, point) in scope {
-        if point && to >= from && (to - from) as i64 == n {
-            let u = crate::replay::change::values::back_len(&doc.form, from, to - from)?;
-            match (&units, &u) {
-                (None, _) => units = Some(u),
-                (Some(Value::Num(a)), Value::Num(b)) if a == b => {}
-                _ => return Err(Flow::Fail("a maxPoint whose point ranges convert to different lengths".into())),
+        if !point || to < from || (to - from) as i64 > n {
+            continue;
+        }
+        let u = units_len(doc, from, to)?;
+        longest = longest.max(u);
+        if (to - from) as i64 == n {
+            match at_n {
+                None => at_n = Some(u),
+                Some(x) if x == u => {}
+                Some(_) => one = false,
             }
         }
     }
-    units.ok_or_else(|| Flow::Fail(format!("a maxPoint {n} that no point range of its scope has")))
+    match at_n {
+        None => Ok(Value::Num(n as f64)),
+        Some(u) if one && u == longest => Ok(Value::Num(u)),
+        Some(_) => Ok(p.no_counterpart("char", op, What::Part("maxPoint".into()), Value::Num(n as f64), false)),
+    }
 }
 
 /// The ranges of a chunk at `pos`: absolute byte positions and whether each value is a point.
@@ -796,8 +828,27 @@ fn doc_agreement() {
     assert!(!f.agrees(&t));
     assert!(Doc::common([&f, &t, &t], "x").is_err());
     assert!(!Doc::common([&t, &t.clone()], "x").map(|d| d.ascii).unwrap_or(true));
-    // a maxPoint on a non-ASCII document is the unit length of the point ranges of its byte length
-    assert_eq!(format!("{:?}", max_point_back(2, &t, &[(0, 2, true)]).ok()), "Some(1)");
-    assert_eq!(format!("{:?}", max_point_back(-1, &t, &[]).ok()), "Some(-1)");
-    assert!(max_point_back(3, &t, &[(0, 2, true)]).is_err());
+    // rule 11: a maxPoint on a non-ASCII document is the unit length of the point range of its byte length
+    let lang = crate::replay::lang::Language::new("t", &[]);
+    let mut p = Program::new(&lang);
+    let mut mp = |n: i64, doc: &Doc, scope: &[(usize, usize, bool)]| match max_point_back(&mut p, "x", n, doc, scope) {
+        Ok(Value::Num(x)) => format!("{x}"),
+        Ok(Value::NoCounterpart(l)) => l.reason.clone(),
+        _ => "other".into(),
+    };
+    // "é" is 2 bytes and 1 unit; "ab" 2 bytes and 2 units; "😀" 4 bytes and 2 units; "abc" 3 bytes and 3 units
+    assert_eq!(mp(2, &t, &[(0, 2, true)]), "1");
+    assert_eq!(mp(-1, &t, &[]), "-1");
+    assert_eq!(mp(0, &t, &[]), "0");
+    assert_eq!(mp(5, &f, &[]), "5");
+    // the byte length of no point range: written as Ferrum gave it
+    assert_eq!(mp(3, &t, &[(0, 2, true)]), "3");
+    assert_eq!(mp(2, &t, &[(0, 2, false)]), "2");
+    let two = Doc { form: Rc::new(Form::text("éab")), ascii: false };
+    // ranges of that byte length that differ in units
+    assert_eq!(mp(2, &two, &[(0, 2, true), (2, 4, true)]), "char");
+    let wide = Doc { form: Rc::new(Form::text("😀abc")), ascii: false };
+    // the longest in bytes is not the longest in units
+    assert_eq!(mp(4, &wide, &[(0, 4, true), (4, 7, true)]), "char");
+    assert_eq!(mp(4, &wide, &[(0, 4, true), (4, 6, true)]), "2");
 }

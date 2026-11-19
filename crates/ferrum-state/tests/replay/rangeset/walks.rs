@@ -26,7 +26,7 @@ struct At {
     value: Option<Rv>,
     from: usize,
     to: usize,
-    rank: usize,
+    rank: Option<usize>,
 }
 
 fn at(c: &RangeCursor<Rv>) -> At {
@@ -35,6 +35,12 @@ fn at(c: &RangeCursor<Rv>) -> At {
 
 fn read_at(cur: &RefCell<RangeCursor<Rv>>, doc: &Doc) -> R<At> {
     ferrum(&doc.form, || at(&cur.borrow()))
+}
+
+/// A cursor's rank: `None`, a cursor over sets none of which holds a range, is cm6's -1
+/// (`mirrors/cm6/state/src/rangeset.ts:712`; `design.md` section 2, Q97).
+fn rank(a: &At) -> Value {
+    Value::Num(a.rank.map_or(-1.0, |r| r as f64))
 }
 
 fn pos_out(a: &At, doc: &Doc, n: usize) -> Result<Value, Flow> {
@@ -64,7 +70,7 @@ fn read_fields(p: &mut Program, op: &str, a: &At, doc: &Doc, fields: &Value) -> 
         out.push(match name.as_str() {
             "from" => pos_out(a, doc, a.from)?,
             "to" => pos_out(a, doc, a.to)?,
-            "rank" => Value::Num(a.rank as f64),
+            "rank" => rank(a),
             "value" => a.value.clone().map_or(Value::Null, |v| hv(RvV(v))),
             "index" => idx(a.value.as_ref()),
             _ => {
@@ -108,7 +114,7 @@ pub fn set_list(a: &Value, p: &mut Program) -> R<Value> {
 }
 
 fn walk_entry(a: &At, doc: &Doc) -> Result<Value, Flow> {
-    Ok(Value::array(vec![doc.back(a.from)?, doc.back(a.to)?, idx(a.value.as_ref()), Value::Num(a.rank as f64)]))
+    Ok(Value::array(vec![doc.back(a.from)?, doc.back(a.to)?, idx(a.value.as_ref()), rank(a)]))
 }
 
 /// `set.listMany {sets, from?}`: `[from, to, index, rank]` of each range of `RangeSet.iter(sets, from)`.
@@ -420,7 +426,7 @@ pub fn spans(a: &Value, p: &mut Program) -> R<Value> {
         let (sets, doc) = sets_of(&hs, OP)?;
         let from = doc.pos(p, OP, "from", &a.field("from"))?;
         let to = doc.pos(p, OP, "to", &a.field("to"))?;
-        let min = min_point(p, OP, a, &doc)?;
+        let min = min_point(p, OP, a, &sets.iter().map(|s| (s, &doc)).collect::<Vec<_>>())?;
         let mut iter = Spans { doc: &doc, mode, met: Met::default() };
         let open = ferrum(&doc.form, || RangeSet::spans(&sets, from, to, &mut iter, min))?;
         iter.met.end(p, OP, "iterator")?;
@@ -504,7 +510,9 @@ pub fn compare(a: &Value, p: &mut Program) -> R<Value> {
                     .into(),
             )));
         }
-        let min = min_point(p, OP, a, &Doc::filler())?;
+        let filler = Doc::filler();
+        let iterated: Vec<_> = o.iter().map(|s| (s, &filler)).chain(n.iter().map(|s| (s, &b))).collect();
+        let min = min_point(p, OP, a, &iterated)?;
         let mut cmp = Cmp { doc: &b, mode, met: Met::default() };
         ferrum(&b.form, || RangeSet::compare(&o, &n, ch.d(), &mut cmp, min))?;
         cmp.met.end(p, OP, "comparator")?;

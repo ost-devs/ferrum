@@ -57,12 +57,13 @@ pub fn value_set(_a: &Value, _p: &mut Program) -> R<Value> {
     Ok(Value::Undefined)
 }
 
-/// `value.eq {v, other}`: `v.eq(other)`, which is `==` of Ferrum's value type (N10).
+/// `value.eq {v, other}`: `raw/replay.jsonl` gives it `none` (`state.cm6.171.d1`, Q96): `v.eq(other)` is `==` of the
+/// replayer's own value type (N10), which no code of Ferrum runs. Its arguments are evaluated as `interp.ts` does.
 pub fn value_eq(a: &Value, p: &mut Program) -> R<Value> {
-    const OP: &str = "value.eq";
-    let v = val_arg(p, OP, "v", &a.field("v"))?;
-    let o = val_arg(p, OP, "other", &a.field("other"))?;
-    Ok(Value::Bool(v == o))
+    // a lookup can throw as in cm6; a spec Ferrum's type cannot hold changes nothing, the call being made in no case
+    let _ = val(p, &a.field("v"))?;
+    let _ = val(p, &a.field("other"))?;
+    Ok(p.op_none("value.eq"))
 }
 
 fn num(p: &mut Program, op: &str, arg: &str, v: &Value) -> R<f64> {
@@ -483,7 +484,7 @@ pub fn set_prop(a: &Value, p: &mut Program) -> R<Value> {
         "length" => s.doc.back(ferrum(f, || __test::range_set_length(&s.set))?)?,
         "maxPoint" => {
             let n = ferrum(f, || __test::range_set_max_point(&s.set))?;
-            max_point_back(n, &s.doc, &layer_ranges(&s.set)?)?
+            max_point_back(p, OP, n, &s.doc, &layer_ranges(&s.set)?)?
         }
         "chunkPos" => {
             let ps = ferrum(f, || __test::range_set_chunk_pos(&s.set))?;
@@ -551,7 +552,10 @@ pub fn set_chunk_stats(a: &Value, p: &mut Program) -> R<Value> {
     let mut out = Vec::new();
     for (c, at) in cs.iter().zip(pos) {
         let (n, mp) = ferrum(&s.doc.form, || (c.len(), c.max_point()))?;
-        out.push(Value::array(vec![Value::Num(n as f64), max_point_back(mp, &s.doc, &chunk_ranges(c, at)?)?]));
+        out.push(Value::array(vec![
+            Value::Num(n as f64),
+            max_point_back(p, "set.chunkStats", mp, &s.doc, &chunk_ranges(c, at)?)?,
+        ]));
     }
     Ok(Value::array(out))
 }
@@ -596,7 +600,7 @@ pub fn set_layer_sources(a: &Value, p: &mut Program) -> R<Value> {
 
 /// `Prog.dump`: one entry per layer, `{maxPoint, chunks: [{pos, maxPoint, from, to, v}]}`, `from` and `to` relative to
 /// the chunk's position, each converted as the distance from it on the set's document.
-fn dump(s: &SetV) -> R<Value> {
+fn dump(p: &mut Program, op: &str, s: &SetV) -> R<Value> {
     let doc = &s.doc;
     let mut out = Vec::new();
     for l in layers(s)? {
@@ -615,14 +619,14 @@ fn dump(s: &SetV) -> R<Value> {
             };
             chunks_out.push(record(vec![
                 ("pos".into(), doc.back(at)?),
-                ("maxPoint".into(), max_point_back(cmp, doc, &chunk_ranges(c, at)?)?),
+                ("maxPoint".into(), max_point_back(p, op, cmp, doc, &chunk_ranges(c, at)?)?),
                 ("from".into(), Value::array(from.iter().map(|x| rel(*x)).collect::<Result<_, _>>()?)),
                 ("to".into(), Value::array(to.iter().map(|x| rel(*x)).collect::<Result<_, _>>()?)),
                 ("v".into(), idxs(&vals)),
             ]));
         }
         out.push(record(vec![
-            ("maxPoint".into(), max_point_back(mp, doc, &layer_ranges(&l)?)?),
+            ("maxPoint".into(), max_point_back(p, op, mp, doc, &layer_ranges(&l)?)?),
             ("chunks".into(), Value::array(chunks_out)),
         ]));
     }
@@ -632,7 +636,7 @@ fn dump(s: &SetV) -> R<Value> {
 /// `set.dump {set}`.
 pub fn set_dump(a: &Value, p: &mut Program) -> R<Value> {
     let h = set_arg(p, "set.dump", "set", &a.field("set"))?;
-    dump(as_::<SetV>(&h))
+    dump(p, "set.dump", as_::<SetV>(&h))
 }
 
 fn last(v: &Value) -> Value {
@@ -645,7 +649,7 @@ fn last(v: &Value) -> Value {
 /// `set.dumpSummary {set}`: the dump with each chunk as `{pos, n, last: [from, to, v]}` of its last range.
 pub fn set_dump_summary(a: &Value, p: &mut Program) -> R<Value> {
     let h = set_arg(p, "set.dumpSummary", "set", &a.field("set"))?;
-    let d = dump(as_::<SetV>(&h))?;
+    let d = dump(p, "set.dumpSummary", as_::<SetV>(&h))?;
     let Value::Array(layers) = d else { unreachable!("a dump is an array") };
     let mut out = Vec::new();
     for l in layers.borrow().iter() {
@@ -771,7 +775,7 @@ pub fn chunk_max_point(a: &Value, p: &mut Program) -> R<Value> {
     let h = chunk_arg(p, "chunk.maxPoint", a)?;
     let c = as_::<ChunkV>(&h);
     let n = ferrum(&c.doc.form, || c.chunk.max_point())?;
-    Ok(max_point_back(n, &c.doc, &chunk_ranges(&c.chunk, c.pos)?)?)
+    max_point_back(p, "chunk.maxPoint", n, &c.doc, &chunk_ranges(&c.chunk, c.pos)?)
 }
 
 /// `chunk.poison {chunk}`: Ferrum's mark, which panics with "NO TOUCH" where cm6's getter throws it.

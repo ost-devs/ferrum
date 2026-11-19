@@ -64,6 +64,16 @@ fn run(input: &str) -> String {
     use crate::replay::lang::{Language, Outcome, Program, decode, parse, to_json};
     let mut lang = Language::new("rangeset", &[]);
     super::register(&mut lang);
+    // `value.eq` is `none` (`state.cm6.171.d1`): the test's own op `t.eq` drives the log through `==` of the value type,
+    // as `RangeSet::eq` and `RangeSet::compare` do
+    lang.op("t.eq", &["harness"], |a, p| {
+        let v = super::values::val(p, &a.field("v"))?;
+        let o = super::values::val(p, &a.field("other"))?;
+        match (v, o) {
+            (Ok(v), Ok(o)) => Ok(Value::Bool(v == o)),
+            _ => Err(crate::replay::lang::eval::Flow::Fail("t.eq of a spec the value type cannot hold".into())),
+        }
+    });
     let inp = decode(&parse(input).expect("JSON"));
     let mut p = Program::new(&lang);
     match p.evaluate(&inp) {
@@ -74,10 +84,10 @@ fn run(input: &str) -> String {
 
 #[test]
 fn eqlog_clear_empties_the_log_the_value_type_writes() {
-    // `value.eq` of two V values logs one pair; `eqlog.clear` empties it; `eqlog.take` then gives none
+    // `==` of two V values logs one pair; `eqlog.clear` empties it; `eqlog.take` then gives none
     let out = run(
-        r#"{"values":[{"name":"a"},{"name":"b"},{}],"steps":[{"op":"value.eq","v":0,"other":1,"as":"e"},{"op":"value.eq","v":2,"other":0},
-        {"op":"eqlog.count","as":"n"},{"op":"eqlog.take","as":"t"},{"op":"value.eq","v":0,"other":1},{"op":"eqlog.clear","as":"c"},
+        r#"{"values":[{"name":"a"},{"name":"b"},{}],"steps":[{"op":"t.eq","v":0,"other":1,"as":"e"},{"op":"t.eq","v":2,"other":0},
+        {"op":"eqlog.count","as":"n"},{"op":"eqlog.take","as":"t"},{"op":"t.eq","v":0,"other":1},{"op":"eqlog.clear","as":"c"},
         {"op":"eqlog.take","as":"u"}],"out":{"e":{"$":"e"},"n":{"$":"n"},"t":{"$":"t"},"c":{"$":"c"},"u":{"$":"u"}}}"#,
     );
     assert_eq!(out, r#"{"ok":{"e":false,"n":2,"t":[["a","b"],[null,"a"]],"c":{"js_undefined":true},"u":[]}}"#);
