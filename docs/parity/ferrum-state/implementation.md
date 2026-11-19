@@ -190,3 +190,6 @@ A round on the checks of unit `rangeset` after Q100 to Q104 (commit 9203665; `do
 - `crates/ferrum-state/tests/replay/rangeset/values.rs`
 - `crates/ferrum-state/tests/replay/rangeset/walks.rs`
 
+The checks of unit `state`, chunk `facet` (commit c777c75; `docs/parity/ferrum-state/plan.md` "Each unit", step 1: where an op of the unit's chunk makes the same call of Ferrum as an earlier chunk, both go through one function): `mod host` of chunk `text` becomes `pub mod host`, so chunk `facet` holds states and change sets as the same `State` and `Set` values. Nothing else changed there. Files:
+- `crates/ferrum-state/tests/replay/text.rs`
+
