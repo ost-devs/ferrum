@@ -15,7 +15,7 @@ use crate::replay::change::shared;
 use crate::replay::lang::eval::{Flow, Program};
 use crate::replay::lang::json::encode;
 use crate::replay::lang::value::{
-    Host, JsStr, Object, Value, array_index, js, json_stringify, strict_equal, to_number, to_string, truthy,
+    Host, JsStr, Object, Value, What, array_index, js, json_stringify, strict_equal, to_number, to_string, truthy,
 };
 
 // ---- program values given to Ferrum ---------------------------------------------------------------------------------
@@ -158,7 +158,32 @@ impl ExtH {
         }
     }
 }
-host!(ExtH, "Extension", |a, b| __test::same_extension(&a.0, &b.0));
+impl Host for ExtH {
+    fn type_name(&self) -> String {
+        "Extension".into()
+    }
+    fn same(&self, other: &dyn Host) -> Option<bool> {
+        let o = other.as_any().downcast_ref::<ExtH>()?;
+        crate::replay::driver::catch(|| __test::same_extension(&self.0, &o.0)).ok()
+    }
+    fn encode(&self) -> Result<Value, Flow> {
+        Err(Flow::Fail("an Extension in an output of chunk facet".into()))
+    }
+    /// A member of an extension (`count`, `item`: cm6's `field.init` returns an array): `Extension` is opaque
+    /// (`design.md` section 3), so what it holds has no counterpart.
+    fn property(&self, key: &str, p: &mut Program) -> Result<Value, Flow> {
+        Ok(p.no_counterpart(
+            "type",
+            "Extension",
+            What::Part(format!("the member {key} of an `Extension`")),
+            Value::Null,
+            false,
+        ))
+    }
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+}
 
 #[derive(Clone)]
 pub struct CompH(pub Compartment);
