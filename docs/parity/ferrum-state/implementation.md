@@ -193,6 +193,97 @@ The output of `python3 tools/impl_check.py ferrum-state code state --since efdeb
 - **F0179 is listed by `state.cm6.036.d1`, which states no condition, and Ferrum's output equals the record.** The scenario reads `tr.state()` once, so the deviation (a second `tr.state()` builds the state again) does not show; the replayer fails the run because the row leaves out a fixture Ferrum reproduces (`design.md` §10). Trace: "1 evaluations, all equal. cm6's output equals the recorded one: True".
 - **text F6034: a negative skip before a partial cursor's first `next`.** cm6's `PartialTextCursor.next` raises a negative skip to `from - pos` (`text.ts:507-511`) and `nextInner` adds `from - pos` again (`text.ts:490-493`), so the cursor of `iterRange(2, 14)` steps `2 * (from - pos)` = 4 positions from 0. On "one\u2028two…" that is 4 code units, after U+2028, and 4 bytes, inside it (U+2028 is the bytes 3 to 5): Ferrum's port, the same arithmetic in bytes (`crate::text::PartialCursor::next`), lands inside a character and panics `Position 4 is inside a character of the string`. The replayer converts the skip -1 from the start of the range (`tests/replay/text/cursor.rs:179-188`), which the doubled `from - pos` does not follow. Trace: first difference at evaluation 21 of 23; the replayer's evaluation 19 (`iter.steps`) threw. The fixture was `pending` until this unit (it creates its document with `state.create`). Raised as a question in the report.
 
+## Lines no check reaches
+
+Written by the orchestrator after U4 (`docs/parity/ferrum-state/plan.md` "Hand-off"), at commit 6c0b48d, for the consultant to sort each line into a line no input reaches or a case that needs a fixture or a written test. Command: `cargo llvm-cov -p ferrum-state --features __test --no-fail-fast`, then `cargo llvm-cov report --show-missing-lines`; the plan's form with `--ignore-run-fail` as well is refused by cargo-llvm-cov 0.9.1 ("--ignore-run-fail may not be used together with --no-fail-fast"), and every test passed, so either flag alone gives the same profile. Branches are not instrumented by this command (the report's branch columns are empty), so the list holds lines only. Totals of the report: 4,446 lines, 78 missed (98.25%); 636 functions, 14 missed; its list of missing lines, below, names 77. Every test target of the crate ran, the `replay` target with it.
+
+- `crates/ferrum-state/src/__test.rs`:
+  - 135: `pub fn is_empty(&self) -> bool {`
+  - 136: `self.chunk.value.is_empty()`
+  - 137: `}`
+- `crates/ferrum-state/src/change.rs`:
+  - 585: `fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {`
+  - 586: `fmt::Debug::fmt(&self.desc, f)`
+  - 587: `}`
+  - 640: `}`
+  - 661: `}`
+  - 1068: `Text::empty()`
+- `crates/ferrum-state/src/char.rs`:
+  - 30: `const fn count_numbers(s: &[u8]) -> usize {`
+  - 31: `let (mut n, mut i) = (1, 0);`
+  - 32: `while i < s.len() {`
+  - 33: `if s[i] == b',' {`
+  - 34: `n += 1;`
+  - 35: `}`
+  - 36: `i += 1;`
+  - 38: `n`
+  - 39: `}`
+  - 104: `None => unreachable!("char_at is called before the end of the string"),`
+  - 248: `return pos;`
+- `crates/ferrum-state/src/facet.rs`:
+  - 53: `None => unreachable!("a slot holds the type its definition gives it"),`
+  - 181: `fn eq(&self, other: &ByAddress<T>) -> bool {`
+  - 182: `Arc::ptr_eq(&self.value, &other.value)`
+  - 183: `}`
+  - 489: `fn eq(&self, other: &Facet<I, O>) -> bool {`
+  - 490: `Arc::ptr_eq(&self.reader.inner, &other.reader.inner)`
+  - 491: `}`
+  - 546: `Slot::Doc | Slot::Selection => None,`
+  - 601: `ProviderValue::Static(value) => value.clone(),`
+  - 755: `fn from(field: StateField<T>) -> StateField<dyn Any + Send + Sync> {`
+  - 756: `field.erased()`
+  - 757: `}`
+  - 830: `fn from(field: StateField<T>) -> Extension {`
+  - 831: `Extension::new(ExtensionKind::Field(field.erased()))`
+  - 832: `}`
+  - 913: `fn default() -> Compartment {`
+  - 914: `Compartment::new()`
+  - 915: `}`
+  - 1019: `None => unreachable!("every slot of a configuration has an address"),`
+  - 1121: `_ => unreachable!("every provider of this facet is static"),`
+  - 1301: `None => unreachable!("a slot is read after it is computed"),`
+  - 1342: `None => unreachable!("an updated slot has a value in the state it starts from"),`
+- `crates/ferrum-state/src/rangeset.rs`:
+  - 71: `fn point(&self) -> bool {`
+  - 72: `false`
+  - 73: `}`
+  - 296: `drop(state);`
+  - 297: `panic!("NO TOUCH");`
+  - 658: `}`
+  - 1139: `}`
+  - 1157: `}`
+  - 1584: `}`
+- `crates/ferrum-state/src/selection.rs`:
+  - 438: `fn from(selection: EditorSelection) -> SelectionSpec {`
+  - 439: `SelectionSpec::Selection(selection)`
+  - 440: `}`
+- `crates/ferrum-state/src/state.rs`:
+  - 668: `None => unreachable!("every slot of a state is computed before its constructor returns"),`
+  - 676: `None => None,`
+- `crates/ferrum-state/src/text.rs`:
+  - 92: `None => target.push(piece),`
+  - 535: `unreachable!("line_inner is called with a position or line number inside the document")`
+  - 554: `unreachable!("the pieces at an open seam are leaves")`
+  - 787: `fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {`
+  - 788: `let mut lines = Vec::with_capacity(self.lines());`
+  - 789: `self.flatten(&mut lines);`
+  - 790: `f.debug_tuple("Text").field(&lines).finish()`
+  - 791: `}`
+  - 855: `pub fn is_empty(&self) -> bool {`
+  - 856: `self.len() == 0`
+  - 857: `}`
+  - 899: `Value::Empty => Value::Empty,`
+  - 902: `Value::Break`
+  - 1208: `Cursor::Lines(c) => c.value.clone(),`
+  - 1269: `fn from(t: Text) -> TextSpec {`
+  - 1270: `TextSpec::Text(t)`
+  - 1271: `}`
+- `crates/ferrum-state/src/transaction.rs`:
+  - 509: `Err(e) => -(e.duration().as_millis() as i64),`
+  - 555: `}`
+  - 556: `return None;`
+  - 579: `return state;`
+
 ## Changes to checks after their code
 
 Formatting only (`cargo fmt --all` with `rustfmt.toml`, decided at the pilot review: `docs/decisions/method.md`, 2026-11-15, "The pilot review of the implementation"); no line of a check changed in what it does. It restores `.claude/rules/rust-crates.md` Code 5. Files:

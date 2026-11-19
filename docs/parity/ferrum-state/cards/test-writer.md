@@ -351,7 +351,7 @@ The work, under `crates/ferrum-state/tests/` only, as item 1 lists it: the repla
 A change the consultant decided, not a check found wrong (`docs/decisions/ferrum-state.md`, "Q119 and what remains after U4", "What it requires", item 2; read the entry whole, and `design.md` §10 "No counterpart" as now written). The work, under `crates/ferrum-state/tests/` only:
 
 1. In `tests/replay/rules.rs`, literal tests of case 5 through `Program::not_made`: a `try` and a `capture` around a call whose argument is no counterpart give the result and entries the rule gives; a value the program wrote before such a call is compared, and one a `fn` writes is not.
-2. In chunk `state`, the variables of a `fn` as §10 now says: its `params` belong to the set, and a name is made no counterpart whether or not it already holds a value.
+2. In chunk `state`, the variables of a `fn` as `design.md` §10 now says: its `params` belong to the set, and a name is made no counterpart whether or not it already holds a value.
 
 You do not read `crates/ferrum-state/src/`.
 
