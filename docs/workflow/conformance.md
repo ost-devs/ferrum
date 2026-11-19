@@ -111,7 +111,7 @@ Mechanical gates run first, for the whole crate, by the orchestrator, each as a 
   - every item with a hazard;
   - every `CONTRACT` item;
   - every item a deviation touches;
-  - every item with a behavior row that has the key `added` (written during implementation, after the specification's own verification: `specification.md` §4).
+  - every item with a behavior row that has the key `added` (written or corrected during implementation, after the specification's own verification: `specification.md` §4).
 - A `verifier` that ran no gate then re-checks at least 10% of the verdicts (minimum 20). It re-runs their reproductions, and appends to `verification.md` the mismatches and their rate. The gate scripts are tools the orchestrator runs; no worker rewrites them.
 - A wrong verdict is corrected as a class: the condition a correct verdict meets is tested on every verdict of that kind, not on the sampled ones. The sample is a measurement and is not repeated until clean; a second one is drawn only when the first found a verdict that passed a failing item, after the gate that let it pass is fixed for every item (`docs/workflow/specification.md` §8 items 4–5 give the reason).
 
