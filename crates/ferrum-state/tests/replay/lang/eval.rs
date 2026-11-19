@@ -211,14 +211,17 @@ pub struct Program<'l> {
     pub listed: HashSet<String>,
     /// The rows whose condition a call met, in order.
     pub met: Vec<String>,
-    /// Values of Ferrum that a call not made would have changed: no counterpart in every later use.
-    marked: Vec<(*const (), Rc<LeftOut>)>,
+    /// Values of Ferrum that a call not made would have changed: no counterpart in every later use. Each is known by
+    /// its address and kept with a reference to it, so that the address is not given to another value during the run
+    /// (a value dropped and its address reused would be read as marked).
+    marked: Vec<(*const (), Rc<LeftOut>, Value)>,
     /// The arrays and objects of lists and JSON values Ferrum returned (`returned_by_ferrum`), by address, with a
     /// reference to each that keeps the address from being reused during the run.
     from_ferrum: HashSet<*const ()>,
     from_ferrum_kept: Vec<Value>,
-    /// The messages of engine errors (`engine_error`), by the address of the string, with their entry.
-    engine: Vec<(*const (), Rc<LeftOut>)>,
+    /// The messages of engine errors (`engine_error`), by the address of the string, with their entry and the string,
+    /// kept so that its address is not reused during the run.
+    engine: Vec<(*const (), Rc<LeftOut>, JsStr)>,
 }
 
 impl<'l> Program<'l> {
@@ -256,8 +259,8 @@ impl<'l> Program<'l> {
     pub fn mark(&mut self, receiver: &Value, nc: &Value) {
         if let (Value::Host(h), Value::NoCounterpart(l)) = (receiver, nc) {
             let ptr = Rc::as_ptr(h) as *const ();
-            if !self.marked.iter().any(|(p, _)| *p == ptr) {
-                self.marked.push((ptr, l.clone()));
+            if !self.marked.iter().any(|(p, _, _)| *p == ptr) {
+                self.marked.push((ptr, l.clone(), receiver.clone()));
             }
         }
     }
@@ -310,7 +313,7 @@ impl<'l> Program<'l> {
     pub fn masked(&self, v: &Value) -> Value {
         if let Value::Host(h) = v {
             let ptr = Rc::as_ptr(h) as *const ();
-            if let Some((_, l)) = self.marked.iter().find(|(p, _)| *p == ptr) {
+            if let Some((_, l, _)) = self.marked.iter().find(|(p, _, _)| *p == ptr) {
                 return Value::NoCounterpart(l.clone());
             }
         }
@@ -519,15 +522,15 @@ impl<'l> Program<'l> {
         let l = self.no_counterpart("engine", op, What::Part("the message".into()), Value::str(message), false);
         let Value::NoCounterpart(l) = l else { unreachable!("no_counterpart gives no counterpart") };
         let message = js(message);
-        self.engine.push((Rc::as_ptr(&message) as *const u16 as *const (), l));
+        self.engine.push((Rc::as_ptr(&message) as *const u16 as *const (), l, message.clone()));
         Flow::Throw(JsError { name: "TypeError".into(), message })
     }
 
     /// `e.message` as the program sees it: no counterpart for the message of an engine error (`engine_error`).
     pub fn message_value(&self, e: &JsError) -> Value {
         let ptr = Rc::as_ptr(&e.message) as *const u16 as *const ();
-        match self.engine.iter().find(|(p, _)| *p == ptr) {
-            Some((_, l)) => Value::NoCounterpart(l.clone()),
+        match self.engine.iter().find(|(p, _, _)| *p == ptr) {
+            Some((_, l, _)) => Value::NoCounterpart(l.clone()),
             None => Value::Str(e.message.clone()),
         }
     }
