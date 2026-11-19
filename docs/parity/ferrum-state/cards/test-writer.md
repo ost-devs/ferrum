@@ -188,3 +188,22 @@ You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as b
 **Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the checks of unit rangeset after Q96 to Q99' -- crates/ferrum-state/tests`.
 
 **Report:** the output of both checks; what you changed in each file and the decision each change follows; any file outside chunk `rangeset` you changed; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Step U3 checks, a round after Q100 to Q104
+
+The consultant decided Q100 to Q104 on the code of unit `rangeset` (`docs/decisions/ferrum-state.md`, "Q100 to Q104", its list "What it requires", item 2; read the entry whole), and the implementer has made `__test::Chunk::from` and `to` return `&[isize]` (Q100, `design.md` §2), so the `replay` target does not compile until item 1 is done. The work, under `crates/ferrum-state/tests/` only:
+
+1. **Signed offsets** (Q100): the replayer reads `__test::Chunk::from` and `to` as `&[isize]`: `chunk_ranges` in `replay/rangeset/values.rs`, `dump` in `replay/rangeset/sets.rs`, and every other reader.
+2. **`maxPoint`** (Q101): rule 11 of `docs/parity/ferrum-state/plan.md` "Positions" as it now stands: when the chunk or layer has no point range of the byte length Ferrum gives, the scope widens to every point range of the set; a value that matches no point range of the set stays a `mismatch`.
+3. **`compare`** (Q104): rule 12 of `plan.md` "Positions": a set built by `set.of` and given as a new set is built through the document `changes` produces (`RangeSet::of` on the same ranges, positions converted); a set bound to another document that converts differently is no counterpart, reason `char`. Add a literal test of rule 12 to the chunk's harness tests.
+4. **Nothing to write** for Q102 (`state.cm6.188.d2` lists F5046; the core marks it `none`) and Q103 (`state.cm6.211.d1`, class `form`).
+
+You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as before.
+
+**Check:** `cargo fmt --all`, then `python3 tools/impl_check.py ferrum-state code rangeset --since 126dad7`, until it passes whole but for its check that the tests are unchanged since 126dad7, which reports your files until the orchestrator lists them in `implementation.md` "Changes to checks after their code". Expected: F0087, F0088 and F0235 compared; F5017 and F6040 to F6046 `equal`; F5046 `none` under `state.cm6.188.d2`; `state.SpanIterator.point.B2` accepted under `state.cm6.211.d1`; `state.RangeValue.range.B2`, `state.RangeSetBuilder.B2` and `state.RangeSetBuilder.add.B6` named by a check that runs. A fixture that ends otherwise: trace it (`FERRUM_REPLAY_CHUNKS=rangeset FERRUM_REPLAY_TRACE=rangeset:<id> cargo test -p ferrum-state --test replay`, then `python3 tools/trace_diff.py ferrum-state rangeset <id> target/replay/ferrum-state/trace/rangeset-<id>.jsonl`) and bring it as a question with the trace.
+
+**Budget.** 80,000 tokens (a round, counted apart). If you pass 120,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the checks of unit rangeset after Q100 to Q104' -- crates/ferrum-state/tests`.
+
+**Report:** the output of the check, whole; each file you changed with the rule each change restores (`design.md` §2; `plan.md` "Positions" rules 11 and 12), for the orchestrator's list; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".

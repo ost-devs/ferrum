@@ -24,3 +24,23 @@ Step 3 of a unit ("What the unit found", `docs/parity/ferrum-state/plan.md` "Eac
 **Commit** with explicit paths, on the current branch, without pushing: `git commit -m 'spec(ferrum-state): step 3 of unit change, the change filter on a set of 1e9 positions' -- docs/parity/ferrum-state` (add new files with `git add <path>` first; never `git add -A`).
 
 **Report:** the output of the check; the row's id and the fixture's id; the length of the document and the build time from the probe; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Step 3 of U3: two rows of `rangeset.ts` corrected
+
+**The cases** (`docs/decisions/ferrum-state.md`, "Q100 to Q104", the table of the seven cases and "What it requires", item 3). The consultant ran cm6 with each listed case changed and found that the fixtures already pin them; what is wrong is the text of two behavior rows, which you correct from cm6's code, not from the decision's wording:
+- `state.RangeSet.map.B6`: where `Chunk.map`'s backward scan stops (`mirrors/cm6/state/src/rangeset.ts:164`, `:170`; F5080 shows it), and that the chunk's `maxPoint` counts every mapped point before the keep-or-spill decision (`:153`, `:155`; F0133, F0135, F0137 show it).
+- `state.RangeSet.update.B6`: a chunk is reused whole only when it holds two ranges or more (`:284`, `:646-652`; F0106, F0107 show it).
+
+**Read:** the two rows in `docs/parity/ferrum-state/raw/behaviors.jsonl`; `mirrors/cm6/state/src/rangeset.ts` around the lines cited; the fixtures cited, under `docs/parity/ferrum-state/fixtures/` (chunk `rangeset`); `docs/workflow/specification.md` §4 (the fields, and `added`, which now also marks a corrected row).
+
+**Write:** the two rows only, in `raw/behaviors.jsonl`: their `text` (and `cm6`, `fixtures` where the correction needs it), each with `"added": "implementation rangeset"`. No fixture, generator or op is added. If a cited fixture does not show its statement, say so in the report and add none.
+
+**Do not write:** `raw/decisions.jsonl`, `raw/replay.jsonl`, `raw/improvements.jsonl` (the consultant's), anything under `crates/`. A fact that does not fit this card goes in the report as a question in the shape of `CLAUDE.md` "Raising a question".
+
+**Check, run by you before you report:** `python3 tools/spec_check.py ferrum-state` ends with "checks passed". Never run `tools/impl_check.py`.
+
+**Budget.** 60,000 tokens. If you pass 90,000, stop and report where you are.
+
+**Commit** with explicit paths, on the current branch, without pushing: `git commit -m 'spec(ferrum-state): step 3 of unit rangeset, two rows corrected' -- docs/parity/ferrum-state/raw/behaviors.jsonl`.
+
+**Report:** the output of the check; each row's text before and after, with the fixture that shows each statement; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
