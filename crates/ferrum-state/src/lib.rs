@@ -33,8 +33,8 @@ pub use extension::{
     TransactionExtender, TransactionExtenderOutput, TransactionFilter, TransactionFilterOutput,
 };
 pub use facet::{
-    ByAddress, Compartment, Extension, Facet, FacetConfig, FacetEnables, FacetReader, Prec, Slot, StateField,
-    StateFieldSpec,
+    ByAddress, CombineFn, Compartment, Extension, Facet, FacetConfig, FacetEnables, FacetReader, Prec, Slot,
+    StateField, StateFieldSpec,
 };
 pub use rangeset::{
     Range, RangeComparator, RangeCursor, RangeSet, RangeSetBuilder, RangeSetUpdate, RangeValue, SpanIterator,

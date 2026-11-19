@@ -8,8 +8,7 @@
 //! The configuration a state resolves its extensions into (cm6's `Configuration`), its dynamic slots and the slot
 //! computation (`ensureAddr`, `getAddr`) live here too, as in cm6.
 
-use std::any::Any;
-use std::cell::Cell;
+use std::any::{Any, TypeId};
 use std::collections::{BTreeMap, HashMap};
 use std::marker::PhantomData;
 use std::ops::Deref;
@@ -26,7 +25,6 @@ pub(crate) static NEXT_ID: AtomicUsize = AtomicUsize::new(0);
 
 // Private names of the boxed callback types of the public specs, which clippy's `type_complexity` asks for; rustdoc
 // shows the types they stand for.
-pub(crate) type CombineFn<I, O> = Box<dyn Fn(&[I]) -> O + Send + Sync>;
 pub(crate) type CompareFn<T> = Box<dyn Fn(&T, &T) -> bool + Send + Sync>;
 pub(crate) type EnablesFn<I, O> = Box<dyn FnOnce(&Facet<I, O>) -> Extension>;
 pub(crate) type ProvideFn<T> = Box<dyn FnOnce(&StateField<T>) -> Extension>;
@@ -56,21 +54,41 @@ pub(crate) fn down<T: 'static>(v: &AnyValue) -> &T {
     }
 }
 
-thread_local! {
-    /// Set while the crate's built-in facets are defined, on the thread that defines them.
-    static IN_BUILTINS: Cell<bool> = const { Cell::new(false) };
-    /// Set by the `combine` of `FacetConfig::default()` when it runs: `Facet::define` reads it around its one call of
-    /// `combine([])` to know whether the facet has cm6's default `combine` (Q118).
-    static DEFAULT_COMBINE_RAN: Cell<bool> = const { Cell::new(false) };
-}
-
 /// A new id from the process-wide counter. The crate's built-in facets are defined first, whichever definition comes
 /// first in the program, so that they take the lowest ids in the order cm6's modules define them (`state.cm6.036.d2`).
 pub(crate) fn new_id() -> usize {
-    if !IN_BUILTINS.with(Cell::get) {
-        LazyLock::force(&BUILTINS);
-    }
+    LazyLock::force(&BUILTINS);
+    builtin_id()
+}
+
+/// The next id of the counter, for a built-in facet: [`BUILTINS`] takes its ids here, in cm6's order, without forcing
+/// itself.
+fn builtin_id() -> usize {
     NEXT_ID.fetch_add(1, Ordering::SeqCst)
+}
+
+/// The function of a facet's `combine`, which `FacetConfig.combine` holds: any `Fn(&[I]) -> O` that is `Send + Sync`
+/// and `'static`, implemented for every such closure. Its `Any` supertrait lets [`Facet::define`] tell the `combine`
+/// of `FacetConfig::default()` from one the caller wrote, as cm6 tells a `combine` from its absence (`facet.ts:73`;
+/// `design.md` §3, Q119).
+///
+/// ferrum-only: the type of FacetConfig.combine, see N17
+pub trait CombineFn<I, O>: Fn(&[I]) -> O + Any + Send + Sync {}
+
+impl<I, O, F: Fn(&[I]) -> O + Any + Send + Sync> CombineFn<I, O> for F {}
+
+/// The `combine` of `FacetConfig::default()`: the list of inputs. One closure type for each `I`, which
+/// [`Facet::define`] recognises by its `TypeId`.
+fn default_combine<I: Clone>() -> impl Fn(&[I]) -> Vec<I> + Send + Sync + 'static {
+    |values: &[I]| values.to_vec()
+}
+
+/// The `TypeId` of the closure [`default_combine`] gives for `I`.
+fn default_combine_type<I: Clone + 'static>() -> TypeId {
+    fn type_of<T: Any>(_: &T) -> TypeId {
+        TypeId::of::<T>()
+    }
+    type_of(&default_combine::<I>())
 }
 
 /// The facets cm6 defines when its modules load, in that order: `initField` (`facet.ts:292`), the facets of
@@ -89,22 +107,28 @@ pub(crate) struct Builtins {
 }
 
 pub(crate) static BUILTINS: LazyLock<Builtins> = LazyLock::new(|| {
-    IN_BUILTINS.with(|b| b.set(true));
-    let init_field = Facet::define(FacetConfig { is_static: true, ..FacetConfig::default() });
-    let language_data = Facet::define(FacetConfig::default());
-    let allow_multiple_selections =
-        Facet::define(FacetConfig { is_static: true, ..FacetConfig::new(|values: &[bool]| values.iter().any(|&v| v)) });
-    let line_separator =
-        Facet::define(FacetConfig { is_static: true, ..FacetConfig::new(|values: &[String]| values.first().cloned()) });
-    let change_filter = Facet::define(FacetConfig::default());
-    let transaction_filter = Facet::define(FacetConfig::default());
-    let transaction_extender = Facet::define(FacetConfig::default());
-    let read_only = Facet::define(FacetConfig::new(|values: &[bool]| values.first().copied().unwrap_or(false)));
-    let tab_size = Facet::define(FacetConfig::new(|values: &[usize]| values.first().copied().unwrap_or(4)));
+    let init_field = Facet::define_with_id(builtin_id(), FacetConfig { is_static: true, ..FacetConfig::default() });
+    let language_data = Facet::define_with_id(builtin_id(), FacetConfig::default());
+    let allow_multiple_selections = Facet::define_with_id(
+        builtin_id(),
+        FacetConfig { is_static: true, ..FacetConfig::new(|values: &[bool]| values.iter().any(|&v| v)) },
+    );
+    let line_separator = Facet::define_with_id(
+        builtin_id(),
+        FacetConfig { is_static: true, ..FacetConfig::new(|values: &[String]| values.first().cloned()) },
+    );
+    let change_filter = Facet::define_with_id(builtin_id(), FacetConfig::default());
+    let transaction_filter = Facet::define_with_id(builtin_id(), FacetConfig::default());
+    let transaction_extender = Facet::define_with_id(builtin_id(), FacetConfig::default());
+    let read_only = Facet::define_with_id(
+        builtin_id(),
+        FacetConfig::new(|values: &[bool]| values.first().copied().unwrap_or(false)),
+    );
+    let tab_size =
+        Facet::define_with_id(builtin_id(), FacetConfig::new(|values: &[usize]| values.first().copied().unwrap_or(4)));
     // cm6's `compare` of `phrases` compares the two output arrays by length and element (`state.ts:310-313`), which
     // is the default comparison of a list of inputs; the inputs are maps compared by content (`state.cm6.026.d1`)
-    let phrases = Facet::define(FacetConfig::default());
-    IN_BUILTINS.with(|b| b.set(false));
+    let phrases = Facet::define_with_id(builtin_id(), FacetConfig::default());
     Builtins {
         init_field,
         language_data,
@@ -193,7 +217,7 @@ pub(crate) trait FacetOps: Send + Sync {
 }
 
 struct TypedFacet<I, O> {
-    combine: CombineFn<I, O>,
+    combine: Box<dyn CombineFn<I, O>>,
     compare: Option<CompareFn<O>>,
     compare_input: Option<CompareFn<I>>,
     /// Whether the facet has no `combine` of its own (`FacetConfig::default()`): its output is the list Ferrum builds
@@ -296,7 +320,7 @@ pub struct FacetConfig<I, O = Vec<I>> {
     /// output. cm6's default, the list of inputs as the output, is the `combine` of `FacetConfig::default()`.
     ///
     /// cm6: Facet^define config FacetConfig.combine
-    pub combine: CombineFn<I, O>,
+    pub combine: Box<dyn CombineFn<I, O>>,
     /// Compares two outputs, called as `(new, old)` (`state.cm6.046.d1`). Default: `O`'s `==`, element-wise for the
     /// list of inputs.
     ///
@@ -331,10 +355,7 @@ impl<I: Clone> Default for FacetConfig<I, Vec<I>> {
     /// cm6's defaults: the output is the list of inputs, compared element-wise; the facet is not static and enables
     /// nothing.
     fn default() -> FacetConfig<I, Vec<I>> {
-        FacetConfig::new(|values: &[I]| {
-            DEFAULT_COMBINE_RAN.with(|ran| ran.set(true));
-            values.to_vec()
-        })
+        FacetConfig::new(default_combine::<I>())
     }
 }
 
@@ -369,11 +390,16 @@ where
     ///
     /// cm6: Facet^define
     pub fn define(config: FacetConfig<I, O>) -> Facet<I, O> {
+        Facet::define_with_id(new_id(), config)
+    }
+
+    /// `Facet.define` with the id it takes: a built-in facet's comes from [`builtin_id`].
+    fn define_with_id(id: usize, config: FacetConfig<I, O>) -> Facet<I, O> {
         // cm6's order (`facet.ts:45`, `:61-62`): the id, then the default from `combine([])`, then `enables`
-        let id = new_id();
-        let outer = DEFAULT_COMBINE_RAN.with(|ran| ran.replace(false));
         let default: Val = Arc::new((config.combine)(&[]));
-        let no_combine = DEFAULT_COMBINE_RAN.with(|ran| ran.replace(outer));
+        // cm6's `!config.combine` (`facet.ts:73`): the `combine` of `FacetConfig::default()`, told by its type
+        let combine: &dyn Any = &*config.combine;
+        let no_combine = combine.type_id() == default_combine_type::<I>();
         let ops = TypedFacet {
             combine: config.combine,
             compare: config.compare,
