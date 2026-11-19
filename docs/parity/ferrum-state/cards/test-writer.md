@@ -333,3 +333,19 @@ You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as b
 **Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the checks of chunk state after Q111 to Q115' -- crates/ferrum-state/tests`. This commit is the one the U4 code step takes as `--since`.
 
 **Report:** the output of the check, whole; each file you changed with the rule each change restores (`plan.md` "Positions" rules 13 to 15; `design.md` §10 "Time"), for the orchestrator's list; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Step U4 code, a round of "A check that is wrong" after Q116 to Q118
+
+The code of unit `state` is written (commit 9ee7049, and the implementer's round after Q116 to Q118). Its check found 87 mismatches, which the consultant sorted (`docs/decisions/ferrum-state.md`, "Q116 to Q118 and the checks the code of unit state found wrong"; read the entry whole: its list "What it requires", item 1, is your work list, each item with the rule it restores). The traces are named in `docs/parity/ferrum-state/implementation.md` "Checks believed wrong", unit state; run any again with `FERRUM_REPLAY_CHUNKS=<chunk> FERRUM_REPLAY_TRACE=<chunk>:<id> cargo test -p ferrum-state --test replay`, then `python3 tools/trace_diff.py ferrum-state <chunk> <id> target/replay/ferrum-state/trace/<chunk>-<id>.jsonl`. Read the rows the decision changed: `raw/decisions.jsonl` `state.cm6.029.d1`, `.036.d1`, `.059.d1`, `.225.d2`, and the new rows of class `form` it names; `raw/replay.jsonl`, the `isInstance` row of chunk `state`; `design.md` §3 (Q118), §5 (the panic of `language_data_at`), §10 ("No counterpart", case 5 and what a callback of a call not made writes; "Identity", "a value read from a state").
+
+The work, under `crates/ferrum-state/tests/` only, as item 1 lists it: the replayer's fixes in chunks `facet` and `state`; the condition of `state.cm6.225.d2` in chunk `text`'s cursor op (`replay/text/cursor.rs`; F6034); the written tests in `tests/written_state.rs`, each with its `// covers:`; and the `// covers:` lines added to the test of F0136. You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as before.
+
+**A case the entry does not settle** (a recorded message that fits no argument under rule 10; the variables a `fn` body writes that cannot be found simply from its program) fails the fixture as the replayer's own (rule 8) or is a question in your report, never a guess.
+
+**Check:** `cargo fmt --all`, then `python3 tools/impl_check.py ferrum-state code state --since efdebd2`. Its replay must report no mismatch, and every test must pass; the behaviors it still lists with no check are reported as it prints them, not worked around. It also reports your files as changed since efdebd2 until the orchestrator lists them in `implementation.md` "Changes to checks after their code".
+
+**Budget.** 140,000 tokens (a round, counted apart; it carries ten written tests and one row condition). If you pass 210,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the checks of unit state after Q116 to Q118' -- crates/ferrum-state/tests`.
+
+**Report:** the output of the check, whole; each file you changed with the rule each change restores, for the orchestrator's list; the written tests with their `// covers:`; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".

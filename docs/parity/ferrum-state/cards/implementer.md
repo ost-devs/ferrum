@@ -194,3 +194,21 @@ Nothing else changes; the public API does not.
 **Commit** with explicit paths, on the current branch, without pushing: `git commit -m 'feat(ferrum-state): unit state' -- crates/ferrum-state/src docs/parity/ferrum-state/implementation.md`. A long step may be committed in parts with the same paths, each part compiling (`feat(ferrum-state): unit state, <part>`).
 
 **Report:** the output of the check; the counts of the report for every chunk by result; each round on a failing fixture (the id, the evaluation `tools/trace_diff.py` named, whether the cause was there); the three lists of `implementation.md`; anything of the done units' modules you changed; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Step U4 code, a round after Q116 to Q118
+
+The consultant decided Q116 to Q118 and the checks your code found wrong (`docs/decisions/ferrum-state.md`, "Q116 to Q118 and the checks the code of unit state found wrong", "What it requires", item 2; read the entry whole). The work, in the code of 9ee7049:
+
+1. **Q118** (`design.md` §3): `FacetOps::same_output` compares an output only by `Arc` when the facet has no `combine`, and otherwise by `Arc` or `O`'s `==`, whatever `O` is; it no longer tests whether `O` is a `Vec<I>`. Field values stay as they are (one `Arc`, or `T`'s `==`).
+2. **Q116** (`design.md` §5): the `# Panics` of `EditorState::language_data_at` says the message names the field and the type asked for; the message stays `Language data field "<name>" holds a value that is not a <T>`, `<T>` from `std::any::type_name::<T>()`.
+3. In `docs/parity/ferrum-state/implementation.md`, unit state: the "Native mechanisms" line on `===` and `==` as now decided, and, among the implicit throws, `charcategory.ts:32` as the one Ferrum does not reach (`state.cm6.029.d1`: `char_categorizer` panics first).
+
+Nothing else changes; no public signature does. The test-writer's round that follows carries a test of item 1, which fails until this round is in.
+
+**Check, run by you before you report:** `cargo fmt --all`, then `python3 tools/impl_check.py ferrum-state code state --since efdebd2`. It still fails on the replayer's mismatches until the test-writer's round; say which checks fail, and that no test of the unit fails.
+
+**Budget.** 40,000 tokens (a round, counted apart). If you pass 60,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'feat(ferrum-state): unit state after Q116 to Q118' -- crates/ferrum-state/src docs/parity/ferrum-state/implementation.md`.
+
+**Report:** the output of the check; what you changed; then the two lines of `CLAUDE.md` "Reporting from a card".

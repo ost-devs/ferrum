@@ -44,3 +44,25 @@ Step 3 of a unit ("What the unit found", `docs/parity/ferrum-state/plan.md` "Eac
 **Commit** with explicit paths, on the current branch, without pushing: `git commit -m 'spec(ferrum-state): step 3 of unit rangeset, two rows corrected' -- docs/parity/ferrum-state/raw/behaviors.jsonl`.
 
 **Report:** the output of the check; each row's text before and after, with the fixture that shows each statement; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Step 3 of U4: the order in which a provider's dependencies are computed
+
+**The case** (`docs/decisions/ferrum-state.md`, "Q116 to Q118 and the checks the code of unit state found wrong", "What it requires", item 3). On a reconfiguration, a dynamic provider checks its dependencies with `every` (`mirrors/cm6/state/src/facet.ts:177-179`), which stops at the first dependency that is not the same, so a later dependency's slot is computed later, when the getter or its own place in the order reaches it. No fixture pins it; the consultant's probe on cm6 and on a patched copy shows it is observable (getter order `["P getter", "B getter"]` on cm6, the reverse on the copy).
+
+**Read:** `docs/parity/ferrum-state/oracle/cm6/facet/interp.ts` (its header, and the ops it uses for facets, computed providers, compartments, a reconfiguration and a log); `oracle/cm6/facet/s4-fix6.ts` and `oracle/cm6/state/impl-change.ts`, the pattern of a generator; `oracle/cm6/order.json`; the row `state.Facet.compute.B8` in `raw/behaviors.jsonl`; `mirrors/cm6/state/src/facet.ts` around `:160-200`; `docs/workflow/specification.md` §4 (the fields, and `added`).
+
+**Write:**
+- *The row* `state.Facet.compute.B8` corrected from `facet.ts:177-179` as the case above states it, with `"added": "implementation state"`, its `fixtures` listing the new fixture.
+- *The generator* `oracle/cm6/facet/impl-state.ts`, appended at the end of chunk `facet`'s list in `oracle/cm6/order.json`; ids from F7400 to F7499, its range dropped first as the pattern does; a header in the pattern's form.
+- *One fixture* of chunk `facet`, through the chunk's interpreter: facets defined in the order A, P, B; P computed from `[A, B]` with a getter that does not read B; B computed from `[A]`; A in a compartment; the compartment reconfigured; the order of the two getters logged. Its `behaviors` name the row.
+- An op you add to `interp.ts` gets its header line and, if it takes a position, its rows of `raw/positions.jsonl`; name it in the report (the U4b `test-writer` registers it).
+
+**Do not write:** `raw/decisions.jsonl`, `raw/replay.jsonl`, `raw/improvements.jsonl` (the consultant's), anything under `crates/`. A fact that does not fit this card goes in the report as a question in the shape of `CLAUDE.md` "Raising a question".
+
+**Check, run by you before you report:** `python3 tools/spec_check.py ferrum-state` ends with "checks passed". Never run `tools/impl_check.py`.
+
+**Budget.** 80,000 tokens. If you pass 120,000, stop and report where you are.
+
+**Commit** with explicit paths, on the current branch, without pushing: `git commit -m 'spec(ferrum-state): step 3 of unit state, the order of a provider's dependencies' -- docs/parity/ferrum-state` (add new files with `git add <path>` first; never `git add -A`).
+
+**Report:** the output of the check; the row's text before and after; the fixture's id and its recorded log; any op added; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
