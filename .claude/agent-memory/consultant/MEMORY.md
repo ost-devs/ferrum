@@ -73,6 +73,10 @@
 - A replayer's reason `type` is read against D12 at approval: when a worker files under it a value cm6 handles by a language rule (truthiness, absence), a call Ferrum's form moves to the caller (no field to merge), or reflection on a JS object, give each the reason its reader can check (D12 widened, a `replay.jsonl` row), and verify an equivalence claim by patching the harness's cm6 (unwrap `{extension}`, swap combineConfig's loops) over every chunk. `docs/decisions/ferrum-state.md` "Q105 to Q110"
 - A form that moves a loop of cm6 into the caller (per-field merge) may change which of several true errors is reported: keep the form, list the computed fixtures under a `form` row, and put a `cm6 deviation` line where the crates above will read it. Same entry
 
+- Approving a left-out file or widening a rule like D12: group every entry by chunk, op and argument with its distinct values and read each group against the code that reads it; "I read every site" from memory missed two (Q109). A tool's count line ("99 of 143") is re-derived before acting on a summary of it. `docs/decisions/ferrum-state.md`, "The end of the implementation stage"
+- A language rule callers rely on (truthiness, absence, a primitive's conversion to a string) is applied as its result; an object's conversion is not (it calls methods). Same entry; D12
+- Ledger `tokens` is the run's final request, not its consumption (hooks.md `totalTokens`): compare runs in it, never state a total cost from it. `docs/decisions/method.md`, 2026-11-19
+
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.
 - They confirm drafts readily when the draft states costs; what they push back on is a value judgment of mine presented as a technical one.

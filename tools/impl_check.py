@@ -557,7 +557,7 @@ def error_entries(c, crate, got):
             if not any(l.get("op") == op and nc(l) for l in sub):
                 bad.append(f"{ch} {fid}: the entry names {op}, which Ferrum's trace does not hold as not made in evaluation {o['n']} ({o['op']}) or inside it"); continue
             ok_ += 1
-    c.need(not bad, f"fixtures left out with the reason `error` whose cm6 throw is at an evaluation Ferrum did not make: {ok_} of {len(errs)}", bad)
+    c.need(not bad, f"fixtures left out with the reason `error` whose cm6 throw is at an evaluation Ferrum did not make: {ok_} of {len(errs)} hold, {len(bad)} do not", bad)
 
 def skeleton(c, crate, args):
     cargo(c, "cargo build", ["build", "--workspace"])
@@ -769,7 +769,8 @@ def handoff(c, crate, args):
     cond = [d for d in rows(spec(crate, "raw", "decisions.jsonl")) if "Condition for the replayer" in d["decision"]]
     for d in cond:
         if met[d["id"]] != set(d["fixtures"]):
-            off.append(f"{d['id']}: row lists {len(d['fixtures'])}, the replayer met it in {len(met[d['id']])}; only in the row {sorted(set(d['fixtures']) - met[d['id']])[:5]}, only in the run {sorted(met[d['id']] - set(d['fixtures']))[:5]}")
+            row_only, run_only = sorted(set(d["fixtures"]) - met[d["id"]]), sorted(met[d["id"]] - set(d["fixtures"]))
+            off.append(f"{d['id']}: row lists {len(d['fixtures'])}, the replayer met it in {len(met[d['id']])}; only in the row {len(row_only)} {row_only}, only in the run {len(run_only)} {run_only}")
     c.need(not off, f"decision rows that state a condition: {len(cond)}, the fixtures in which the replayer met each equal its list: {len(cond) - len(off)}", off)
     # every behavior named by a check that runs
     tested = {b for r_ in mine if len(found.get(case_name(r_), [])) == 1 for b in r_["behaviors"]}

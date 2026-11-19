@@ -381,3 +381,17 @@ mechanical conversion settles anyway) or misses cases implementers hit.
 **Lost.** Keeping the truthy values excluded while the falsy ones were already given as absent: an inconsistent rule, and cases compared nowhere, at every boolean option of `@codemirror/view` too.
 
 **Confidence.** High for `ferrum-state`, where every site was read. **Reopens:** a site where cm6 reads a value for truthiness and otherwise on the same path.
+
+## 2026-11-19 · D12: a primitive cm6 reads only through conversion to a string is that string
+
+*Decided by the consultant at the end of the implementation of `ferrum-state` (the crate's part: `docs/decisions/ferrum-state.md`, "The end of the implementation stage"). Binding text: `.claude/rules/decisions.md` D12. It widens the entry of 2026-11-19 on Q109.*
+
+**Question.** D12 as widened at Q109 gives a value cm6 handles only by truthiness or as absent the form that rule makes of it, and excludes every other read. cm6's `phrase` inserts its arguments through a `replace` callback, which converts them to strings (`mirrors/cm6/state/src/state.ts:327-331`), and every mirrored caller that passes an argument passes a number (`mirrors/cm6/search/src/search.ts:546`, `mirrors/cm6/merge/src/deco.ts:252`). Is such a number excluded?
+
+**Decision.** No. A primitive (number, boolean, `null`, `undefined`) cm6 reads only through JavaScript's conversion to a string (`String(x)`, a template, `+` with a string, what a `replace` callback returns) is the string that conversion gives. An object stays excluded: its conversion calls its own methods.
+
+**Why.** Q109's reason, one rule further: the language defines the conversion, JavaScript callers rely on it, and a Rust caller writes its result (`n.to_string()`, which for an integer is JavaScript's string). Ferrum's signatures do not change; only which recorded cases are compared does, each against cm6's own output.
+
+**Lost.** Keeping such values excluded: the call every real caller makes is compared nowhere, here and in `@codemirror/view`.
+
+**Confidence.** High. **Reopens:** a site where cm6 converts a primitive and also reads it otherwise on the same path.

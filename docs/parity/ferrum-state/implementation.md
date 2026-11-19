@@ -284,6 +284,20 @@ Written by the orchestrator after U4 (`docs/parity/ferrum-state/plan.md` "Hand-o
   - 556: `return None;`
   - 579: `return state;`
 
+Sorted by the consultant (`docs/decisions/ferrum-state.md`, "The end of the implementation stage"); conformance G2 reads a line it lists again against this sort.
+
+*A line no input reaches* (39):
+- an `unreachable!` whose condition the code before it rules out: `char.rs` 104; `facet.rs` 53, 1019, 1121, 1301, 1342; `state.rs` 668; `text.rs` 535, 554;
+- an arm a construction excludes: `facet.rs` 546 (`Slot::Doc` and `Slot::Selection` are matched before `id` is called, 1031-1032), 601 (a static provider has no dynamic slot, so its `get` is never called); `state.rs` 676 (`start_value` is called only while a state is built); `text.rs` 92 (every caller gives `append_text` a target of at least one line, as cm6's default `[""]`, `text.ts:384`), 899 and 902 (a value is sliced only when it is longer than the limit, and an empty value or a break, of length 0 or 1, never is), 1208 (a partial cursor never wraps a line cursor); `change.rs` 640 and 661 (the `None` of `ranges.get` inside its bounds, the list being of pairs), 1068 (cm6's own `change.ts:562`, which cm6's recorded runs do not reach either, `verification.md` "Coverage"); `rangeset.rs` 1139 and 1157 (`compare` drops empty sets before `find_shared_chunks`), 1584 (the `None` of `cursor.value()` is taken by the branch before it), 658 (the brace of a let-chain whose two outcomes are both reached: 657 for a spill, every kept range for the other);
+- code the compiler runs or a test owns: `char.rs` 30-39 (`const fn count_numbers`, evaluated at compile time), 248 (a branch of a unit test's own reference loop);
+- a failure path of a check: `rangeset.rs` 296-297 (`__test` poison: reached only if Ferrum reads a chunk cm6 leaves unread, which would fail the fixture);
+- the environment: `transaction.rs` 509 (a system clock before 1970);
+- test support under `__test`: `__test.rs` 135-137 (`Chunk::is_empty`, the companion clippy requires of `len`).
+
+*A case that needs a written test* (38), each in the round named by that entry:
+- public forms nothing calls: `Debug` of `ChangeSet` (`change.rs` 585-587); `PartialEq` of `ByAddress` (`facet.rs` 181-183) and of `Facet` (489-491); `From<StateField<T>>` for the erased field (755-757) and for `Extension` (830-832); `Default` of `Compartment` (913-915); `RangeValue::point`'s default (`rangeset.rs` 71-73); `From<EditorSelection>` for `SelectionSpec` (`selection.rs` 438-440); `Debug` of `Text` (`text.rs` 787-791); `Text::is_empty` (855-857); `From<Text>` for `TextSpec` (1269-1271);
+- two threads reading the state of one transaction at once (`transaction.rs` 555-556, 579): D6's lazy state seen from a thread that is not building it, and built once.
+
 ## Changes to checks after their code
 
 Formatting only (`cargo fmt --all` with `rustfmt.toml`, decided at the pilot review: `docs/decisions/method.md`, 2026-11-15, "The pilot review of the implementation"); no line of a check changed in what it does. It restores `.claude/rules/rust-crates.md` Code 5. Files:
