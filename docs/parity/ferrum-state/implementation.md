@@ -193,3 +193,8 @@ A round on the checks of unit `rangeset` after Q100 to Q104 (commit 9203665; `do
 The checks of unit `state`, chunk `facet` (commit c777c75; `docs/parity/ferrum-state/plan.md` "Each unit", step 1: where an op of the unit's chunk makes the same call of Ferrum as an earlier chunk, both go through one function): `mod host` of chunk `text` becomes `pub mod host`, so chunk `facet` holds states and change sets as the same `State` and `Set` values. Nothing else changed there. Files:
 - `crates/ferrum-state/tests/replay/text.rs`
 
+A round on the checks of chunk `facet` after Q105 to Q110 (commit 9b78209; decided by the consultant: `docs/decisions/ferrum-state.md`, "Q105 to Q110", "What each later step does", item 1). `scope.rs`: `to_ext` gives an object whose `extension` is truthy and not the object itself as its content's `Extension` (`design.md` §3, the `Extension` row; Q105); what a compare returns and `static` are given as their truthiness (D12; Q109); the comments of `falsy_value` and `from` cite `facet.ts:109`. `ops.rs`: `require` of `state.field` is `true` for `undefined` and its truthiness otherwise (D12; Q109); `prec.keys` is no counterpart, reason `op` (`raw/replay.jsonl`; Q108). `config.rs`: a merge with no key is no counterpart, reason `op` (`raw/replay.jsonl` `combineConfig.entries`, `combineConfig.call`; Q107). Files:
+- `crates/ferrum-state/tests/replay/facet/config.rs`
+- `crates/ferrum-state/tests/replay/facet/ops.rs`
+- `crates/ferrum-state/tests/replay/facet/scope.rs`
+
