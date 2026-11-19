@@ -61,6 +61,12 @@ pub fn indexes(a: &Value, p: &mut Program) -> R<Value> {
 
 #[cfg(test)]
 fn run(input: &str) -> String {
+    run_left_out(input).0
+}
+
+/// The output of a program and the entries of what it left out, as `(reason, op)`.
+#[cfg(test)]
+fn run_left_out(input: &str) -> (String, Vec<(String, String)>) {
     use crate::replay::lang::{Language, Outcome, Program, decode, parse, to_json};
     let mut lang = Language::new("rangeset", &[]);
     super::register(&mut lang);
@@ -76,10 +82,11 @@ fn run(input: &str) -> String {
     });
     let inp = decode(&parse(input).expect("JSON"));
     let mut p = Program::new(&lang);
-    match p.evaluate(&inp) {
+    let out = match p.evaluate(&inp) {
         Outcome::Output(v) => to_json(&v),
         _ => "no output".into(),
-    }
+    };
+    (out, p.left_out.iter().map(|l| (l.reason.clone(), l.op.clone())).collect())
 }
 
 #[test]
@@ -99,4 +106,49 @@ fn indexes_replace_value_objects_at_any_depth() {
         {"op":"indexes","of":{"op":"list","of":[{"op":"value","v":1},{"op":"list","of":[{"op":"value","v":0},{"op":"value","v":{"other":0}}]},null,"x",3]},"as":"i"}],
         "out":{"$":"i"}}"#);
     assert_eq!(out, r#"{"ok":[1,[0,-1],null,"x",3]}"#);
+}
+
+/// `plan.md` "Positions", rule 12, on an insertion of "😀" (2 code units, 4 bytes) at 0 of a document of 10.
+#[cfg(test)]
+fn rule_12(new: &str) -> (String, Vec<(String, String)>) {
+    run_left_out(&format!(
+        r#"{{"values":[{{"name":"a"}}],"steps":[
+        {{"op":"changes.of","spec":{{"from":0,"insert":"😀"}},"length":10,"as":"cs"}},
+        {{"op":"changes.of","spec":{{"from":0,"insert":"é"}},"length":10,"as":"other"}},
+        {{"op":"set.of","ranges":[[4,6,0]],"sort":false,"as":"s"}},
+        {{"op":"compare","old":[{{"op":"set.empty"}}],"new":[{new}],"changes":{{"$":"cs"}},
+          "comparator":{{"fn":"cmpRecord","into":"calls","boundChange":false}}}}],"out":{{"$":"calls"}}}}"#
+    ))
+}
+
+#[test]
+fn rule_12_a_set_of_numbers_given_as_new_is_built_through_the_new_document() {
+    // [4, 6] after the emoji: bytes 6 to 8 of the new document, reported back as 4 and 6
+    let (out, left) = rule_12(r#"{"op":"set.of","ranges":[[4,6,0]],"sort":false}"#);
+    assert_eq!(out, r#"{"ok":[["range",4,6,[],[0]]]}"#);
+    assert!(left.is_empty(), "{left:?}");
+    // an ASCII insertion converts as filler: the set is given as it is
+    let (out, left) = run_left_out(
+        r#"{"values":[{"name":"a"}],"steps":[{"op":"changes.of","spec":{"from":0,"insert":"xx"},"length":10,"as":"cs"},
+        {"op":"compare","old":[{"op":"set.empty"}],"new":[{"op":"set.of","ranges":[[4,6,0]],"sort":false}],"changes":{"$":"cs"},
+        "comparator":{"fn":"cmpRecord","into":"calls","boundChange":false}}],"out":{"$":"calls"}}"#,
+    );
+    assert_eq!(out, r#"{"ok":[["range",4,6,[],[0]]]}"#);
+    assert!(left.is_empty(), "{left:?}");
+}
+
+#[test]
+fn rule_12_a_set_bound_to_another_document_has_no_counterpart_char() {
+    let char_compare = vec![("char".to_string(), "compare".to_string())];
+    // a set given to both sides: one set of Ferrum cannot hold the positions of both documents
+    let (_, left) = run_left_out(
+        r#"{"values":[{"name":"a"}],"steps":[{"op":"changes.of","spec":{"from":0,"insert":"😀"},"length":10,"as":"cs"},
+        {"op":"set.of","ranges":[[4,6,0]],"sort":false,"as":"s"},
+        {"op":"compare","old":[{"$":"s"}],"new":[{"$":"s"}],"changes":{"$":"cs"},
+        "comparator":{"fn":"cmpRecord","into":"calls","boundChange":false}}],"out":{"$":"calls"}}"#,
+    );
+    assert_eq!(left, char_compare);
+    // a set `map` built for another change set, whose document converts differently
+    let (_, left) = rule_12(r#"{"op":"set.map","set":{"$":"s"},"changes":{"$":"other"}}"#);
+    assert_eq!(left, char_compare);
 }

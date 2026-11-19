@@ -12,9 +12,9 @@ use ferrum_state::__test;
 use ferrum_state::{RangeSet, RangeSetBuilder, RangeSetUpdate, RangeValue};
 
 use super::values::{
-    BuilderV, ChangesV, ChunkV, Doc, Hits, MAP_MODES, RangeV, RangesIn, Rv, RvV, SetV, as_, changes_arg, check_sets,
-    chunk_ranges, ctx, flag, host, hv, idxs, layer_ranges, max_point_back, produced, ranges_in, ranges_on, set_arg,
-    set_value, sets_arg, sets_of, unmade, val, val_arg,
+    BuilderV, ChangesV, ChunkV, Doc, Hits, MAP_MODES, OfSpec, RangeV, RangesIn, Rv, RvV, SetV, abs, as_, changes_arg,
+    check_sets, chunk_ranges, ctx, flag, host, hv, idxs, layer_ranges, max_point_back, produced, ranges_in, ranges_on,
+    set_arg, set_value, set_value_of, sets_arg, sets_of, unmade, val, val_arg,
 };
 use crate::replay::change::form::Form;
 use crate::replay::change::shared::{
@@ -210,13 +210,31 @@ pub fn set_of_op(a: &Value, p: &mut Program) -> R<Value> {
     let doc = Doc::filler();
     if a.has("range") {
         let h = range_arg(p, OP, &a.field("range"))?;
-        let r = as_::<RangeV>(&h).range.clone();
-        return Ok(set_value(ferrum(&doc.form, || RangeSet::of(&[r], false))?, doc));
+        let rv = as_::<RangeV>(&h);
+        let r = rv.range.clone();
+        let of = OfSpec { ranges: vec![(rv.from, rv.to, r.value().clone())], sort: false };
+        return Ok(set_value_of(ferrum(&doc.form, || RangeSet::of(&[r], false))?, doc, of));
     }
-    let rs = ranges_in(p, &a.field("ranges"))?;
+    let given = ranges_in(p, &a.field("ranges"))?;
     let sort = if a.has("sort") { flag(p, OP, "sort", &a.field("sort"))? } else { false };
-    let rs = ranges_on(p, OP, "ranges", &rs, &doc)?;
-    Ok(set_value(ferrum(&doc.form, || RangeSet::of(&rs, sort))?, doc))
+    let rs = ranges_on(p, OP, "ranges", &given, &doc)?;
+    // the numbers of each range, kept for a call that measures the set on another document (rule 12)
+    let units: Vec<(f64, f64, Rv)> = match &given {
+        RangesIn::Built(ts) => ts.iter().zip(&rs).map(|((f, t, _, _), r)| (*f, *t, r.value().clone())).collect(),
+        RangesIn::Given(vs) => vs
+            .iter()
+            .zip(&rs)
+            .map(|(v, r)| match v {
+                Value::Host(h) => {
+                    let x = as_::<RangeV>(h);
+                    (x.from, x.to, r.value().clone())
+                }
+                _ => unreachable!("checked by ranges_on"),
+            })
+            .collect(),
+    };
+    let set = ferrum(&doc.form, || RangeSet::of(&rs, sort))?;
+    Ok(set_value_of(set, doc, OfSpec { ranges: units, sort }))
 }
 
 /// `set.empty {}`.
@@ -484,7 +502,8 @@ pub fn set_prop(a: &Value, p: &mut Program) -> R<Value> {
         "length" => s.doc.back(ferrum(f, || __test::range_set_length(&s.set))?)?,
         "maxPoint" => {
             let n = ferrum(f, || __test::range_set_max_point(&s.set))?;
-            max_point_back(p, OP, n, &s.doc, &layer_ranges(&s.set)?)?
+            let all = layer_ranges(&s.set)?;
+            max_point_back(p, OP, n, &s.doc, &all, &all)?
         }
         "chunkPos" => {
             let ps = ferrum(f, || __test::range_set_chunk_pos(&s.set))?;
@@ -514,7 +533,7 @@ pub fn set_chunk(a: &Value, p: &mut Program) -> R<Value> {
     Ok(match uint(&a.field("index")).filter(|i| *i < cs.len()) {
         Some(i) => {
             let chunk = cs.into_iter().nth(i).expect("below the number of chunks");
-            hv(ChunkV { chunk, pos: pos[i], doc: s.doc.clone() })
+            hv(ChunkV { chunk, pos: pos[i], doc: s.doc.clone(), set: s.set.clone() })
         }
         None => Value::Undefined,
     })
@@ -549,12 +568,13 @@ pub fn set_chunk_stats(a: &Value, p: &mut Program) -> R<Value> {
     let h = set_arg(p, "set.chunkStats", "set", &a.field("set"))?;
     let s = as_::<SetV>(&h);
     let (pos, cs) = chunks(s)?;
+    let all = layer_ranges(&s.set)?;
     let mut out = Vec::new();
     for (c, at) in cs.iter().zip(pos) {
         let (n, mp) = ferrum(&s.doc.form, || (c.len(), c.max_point()))?;
         out.push(Value::array(vec![
             Value::Num(n as f64),
-            max_point_back(p, "set.chunkStats", mp, &s.doc, &chunk_ranges(c, at)?)?,
+            max_point_back(p, "set.chunkStats", mp, &s.doc, &chunk_ranges(c, at)?, &all)?,
         ]));
     }
     Ok(Value::array(out))
@@ -602,6 +622,7 @@ pub fn set_layer_sources(a: &Value, p: &mut Program) -> R<Value> {
 /// the chunk's position, each converted as the distance from it on the set's document.
 fn dump(p: &mut Program, op: &str, s: &SetV) -> R<Value> {
     let doc = &s.doc;
+    let all = layer_ranges(&s.set)?;
     let mut out = Vec::new();
     for l in layers(s)? {
         let (mp, pos, cs) = ferrum(&doc.form, || {
@@ -611,22 +632,22 @@ fn dump(p: &mut Program, op: &str, s: &SetV) -> R<Value> {
         for (c, at) in cs.iter().zip(pos.iter().copied()) {
             let (from, to, vals, cmp) =
                 ferrum(&doc.form, || (c.from().to_vec(), c.to().to_vec(), c.values().to_vec(), c.max_point()))?;
-            let rel = |x: usize| -> Result<Value, Flow> {
-                match (doc.back(at + x)?, doc.back(at)?) {
+            let rel = |x: isize| -> Result<Value, Flow> {
+                match (doc.back(abs(at, x)?)?, doc.back(at)?) {
                     (Value::Num(a), Value::Num(b)) => Ok(Value::Num(a - b)),
                     _ => Err(Flow::Fail("a position that is no number".into())),
                 }
             };
             chunks_out.push(record(vec![
                 ("pos".into(), doc.back(at)?),
-                ("maxPoint".into(), max_point_back(p, op, cmp, doc, &chunk_ranges(c, at)?)?),
+                ("maxPoint".into(), max_point_back(p, op, cmp, doc, &chunk_ranges(c, at)?, &all)?),
                 ("from".into(), Value::array(from.iter().map(|x| rel(*x)).collect::<Result<_, _>>()?)),
                 ("to".into(), Value::array(to.iter().map(|x| rel(*x)).collect::<Result<_, _>>()?)),
                 ("v".into(), idxs(&vals)),
             ]));
         }
         out.push(record(vec![
-            ("maxPoint".into(), max_point_back(p, op, mp, doc, &layer_ranges(&l)?)?),
+            ("maxPoint".into(), max_point_back(p, op, mp, doc, &layer_ranges(&l)?, &all)?),
             ("chunks".into(), Value::array(chunks_out)),
         ]));
     }
@@ -775,7 +796,8 @@ pub fn chunk_max_point(a: &Value, p: &mut Program) -> R<Value> {
     let h = chunk_arg(p, "chunk.maxPoint", a)?;
     let c = as_::<ChunkV>(&h);
     let n = ferrum(&c.doc.form, || c.chunk.max_point())?;
-    max_point_back(p, "chunk.maxPoint", n, &c.doc, &chunk_ranges(&c.chunk, c.pos)?)
+    let all = layer_ranges(&c.set)?;
+    max_point_back(p, "chunk.maxPoint", n, &c.doc, &chunk_ranges(&c.chunk, c.pos)?, &all)
 }
 
 /// `chunk.poison {chunk}`: Ferrum's mark, which panics with "NO TOUCH" where cm6's getter throws it.

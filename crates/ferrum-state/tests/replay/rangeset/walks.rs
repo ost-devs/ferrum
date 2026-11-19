@@ -5,13 +5,14 @@
 use std::cell::RefCell;
 use std::rc::Rc;
 
-use ferrum_state::{RangeComparator, RangeCursor, RangeSet, SpanIterator};
+use ferrum_state::__test::same_range_set;
+use ferrum_state::{RangeComparator, RangeCursor, RangeSet, RangeValue, SpanIterator};
 
 use super::values::{
-    ChangesV, CursorV, Doc, Rv, RvV, SetV, as_, check_sets, host, hv, idx, idxs, min_point, produced, set_arg,
+    ChangesV, CursorV, Doc, OfSpec, Rv, RvV, SetV, as_, check_sets, host, hv, idx, idxs, min_point, produced, set_arg,
     sets_arg, sets_of, unmade, val,
 };
-use crate::replay::change::shared::{R, Stop, by_type, ferrum, known};
+use crate::replay::change::shared::{R, Stop, by_type, ferrum, known, left_out};
 use crate::replay::lang::eval::{Flow, Program};
 use crate::replay::lang::value::{Host, Value, What, json_stringify, property_key, to_string};
 
@@ -476,6 +477,18 @@ impl RangeComparator<Rv> for Cmp<'_> {
     }
 }
 
+/// A set `set.of` built from numbers, built again through `doc` for a call that measures it there (`plan.md`
+/// "Positions", rule 12): `RangeSet::of` on the same ranges and the same `sort`, each position converted through it.
+fn rebuilt(p: &mut Program, op: &str, of: &OfSpec, doc: &Doc, whole: &Value) -> R<RangeSet<Rv>> {
+    let mut rs = Vec::new();
+    for (from, to, v) in &of.ranges {
+        let f = doc.form.to_bytes(*from).map_err(|e| left_out(p, e.reason(), op, "new", whole))?;
+        let t = doc.form.to_bytes(*to).map_err(|e| left_out(p, e.reason(), op, "new", whole))?;
+        rs.push(ferrum(&doc.form, || v.range(f, t))?);
+    }
+    ferrum(&doc.form, || RangeSet::of(&rs, of.sort))
+}
+
 /// `compare {old, new, changes, comparator, minPointSize?}`: the old sets on the start document of `changes`, the new
 /// ones and every recorded position on the document it produces (`raw/positions.jsonl`, `compare`).
 pub fn compare(a: &Value, p: &mut Program) -> R<Value> {
@@ -500,15 +513,29 @@ pub fn compare(a: &Value, p: &mut Program) -> R<Value> {
         let new = check_sets(p, OP, "new", &nv)?;
         let c = host::<ChangesV>(p, OP, "changes", &cv)?;
         let ch = &as_::<ChangesV>(&c).ch;
-        let (o, old_doc) = sets_of(&old, OP)?;
-        let (n, new_doc) = sets_of(&new, OP)?;
         let b = produced(ch)?;
-        if !old_doc.agrees(&Doc::filler()) || !new_doc.agrees(&b) {
-            return Err(Stop::Flow(Flow::Fail(
-                "compare: sets measured on other documents than the start and the result of `changes` (a question, \
-                 plan.md \"Positions\" rule 8)"
-                    .into(),
-            )));
+        let filler = Doc::filler();
+        // rule 12: the old sets on the start document of `changes` (filler), the new ones on the document it produces
+        let mut o = Vec::new();
+        for (h, v) in old.iter().zip(&ov) {
+            let s = as_::<SetV>(h);
+            if !s.doc.agrees(&filler) {
+                return Err(left_out(p, "char", OP, "old", v));
+            }
+            o.push(s.set.clone());
+        }
+        let mut n = Vec::new();
+        for (h, v) in new.iter().zip(&nv) {
+            let s = as_::<SetV>(h);
+            if s.doc.agrees(&b) {
+                n.push(s.set.clone());
+                continue;
+            }
+            let on_both = o.iter().any(|x| same_range_set(x, &s.set));
+            match &s.of {
+                Some(of) if !on_both && s.doc.agrees(&filler) => n.push(rebuilt(p, OP, of, &b, v)?),
+                _ => return Err(left_out(p, "char", OP, "new", v)),
+            }
         }
         let filler = Doc::filler();
         let iterated: Vec<_> = o.iter().map(|s| (s, &filler)).chain(n.iter().map(|s| (s, &b))).collect();
