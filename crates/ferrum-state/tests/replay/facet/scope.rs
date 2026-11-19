@@ -1340,7 +1340,12 @@ pub fn change_spec(doc: &str, c: &Value) -> F<(ChangeSpec, String)> {
 
 /// A selection `{anchor, head?}` of the input, measured on `doc`.
 pub fn selection_spec(doc: &str, v: &Value) -> F<SelectionSpec> {
-    let form = Form::text(doc);
+    selection_spec_on(&Form::text(doc), v)
+}
+
+/// A selection `{anchor, head?}` of the input, measured on `form`.
+pub fn selection_spec_on(form: &Form, v: &Value) -> F<SelectionSpec> {
+    let form = form.clone();
     if !matches!(v, Value::Object(_)) {
         return Err(by_type("selection", v));
     }
@@ -1374,23 +1379,164 @@ pub fn tr_spec(sc: &Sc, doc: &str, t: &Value) -> F<TransactionSpec> {
     Ok(spec)
 }
 
-/// The JSON of `EditorState.fromJSON` as Ferrum takes it: its selection's positions converted through `json.doc`.
-pub fn state_json_in(json: &Value) -> F<serde_json::Value> {
+/// The JSON of `EditorState.fromJSON` as Ferrum takes it: its selection's positions converted through `json.doc` as
+/// `EditorState.create` splits it with the separator the configuration's Node `node` gives (`plan.md` "Positions",
+/// rule 13), with the lines split when a position was converted through them, for `check_split`.
+pub fn state_json_in(
+    sc: &Sc,
+    json: &Value,
+    node: Option<&Value>,
+    op: &str,
+) -> F<(serde_json::Value, Option<Vec<String>>)> {
     let mut j = to_serde(json).ok_or_else(|| by_type("json", json))?;
+    let mut used = None;
     if let Some(doc) = j.get("doc").and_then(|d| d.as_str()).map(|d| d.to_string()) {
-        let form = Form::text(&doc);
-        if let Some(ranges) = j.get_mut("selection").and_then(|s| s.get_mut("ranges")).and_then(|r| r.as_array_mut()) {
-            for r in ranges {
-                for k in ["anchor", "head"] {
-                    if let Some(n) = r.get(k).and_then(|x| x.as_f64()) {
-                        let b = pos(&form, &Value::Num(n), "json.selection")?;
-                        r[k] = serde_json::Value::from(b);
+        let positions = j.get("selection").and_then(|s| s.get("ranges")).and_then(|r| r.as_array()).is_some_and(|rs| {
+            rs.iter().any(|r| ["anchor", "head"].iter().any(|k| r.get(k).is_some_and(|x| x.is_number())))
+        });
+        if positions {
+            let sep = separator_for(sc, node, op)?;
+            let lines = split_lines(&doc, sep.as_deref());
+            let form = Form::lines(&lines);
+            if let Some(ranges) =
+                j.get_mut("selection").and_then(|s| s.get_mut("ranges")).and_then(|r| r.as_array_mut())
+            {
+                for r in ranges {
+                    for k in ["anchor", "head"] {
+                        if let Some(n) = r.get(k).and_then(|x| x.as_f64()) {
+                            let b = pos(&form, &Value::Num(n), "json.selection")?;
+                            r[k] = serde_json::Value::from(b);
+                        }
                     }
                 }
             }
+            used = Some(lines);
         }
     }
-    Ok(j)
+    Ok((j, used))
+}
+
+// ---- the document `EditorState.create` makes of a string (`plan.md` "Positions", rule 13) -------------------------
+
+/// The lines `EditorState.create` makes of a string (`mirrors/cm6/state/src/state.ts:245-246`): split at the line
+/// separator when one is given, else at `/\r\n?|\n/`, as JavaScript's `split` does.
+pub fn split_lines(doc: &str, sep: Option<&str>) -> Vec<String> {
+    match sep {
+        Some("") => {
+            // `"abc".split("")`: one string per UTF-16 code unit; an empty string gives no member
+            let units: Vec<u16> = doc.encode_utf16().collect();
+            units.iter().map(|u| String::from_utf16_lossy(&[*u])).collect()
+        }
+        Some(s) => doc.split(s).map(|x| x.to_string()).collect(),
+        None => {
+            let mut out = Vec::new();
+            let mut cur = String::new();
+            let mut it = doc.chars().peekable();
+            while let Some(ch) = it.next() {
+                match ch {
+                    '\r' => {
+                        if it.peek() == Some(&'\n') {
+                            it.next();
+                        }
+                        out.push(std::mem::take(&mut cur));
+                    }
+                    '\n' => out.push(std::mem::take(&mut cur)),
+                    _ => cur.push(ch),
+                }
+            }
+            out.push(cur);
+            out
+        }
+    }
+}
+
+/// Whether a facet of the Scope is `EditorState.lineSeparator` (under its own name or one a `builtin` def binds).
+fn is_line_separator(h: &FacetH) -> bool {
+    match &h.k {
+        FacetK::LineSep(_) => true,
+        FacetK::Builtin(b) => b.is_line_separator(),
+        _ => false,
+    }
+}
+
+/// The separator a configuration's Node gives the line-separator facet, read from the input (rule 13): no input is
+/// `None`; inputs that all hold one string, each given by `of` or by `ofVar` of a variable holding a string, give it,
+/// whatever precedence or compartment holds them. `Err` names any other configuration.
+pub fn line_separator(sc: &Sc, node: &Value) -> Result<Option<String>, String> {
+    fn walk(sc: &Sc, n: &Value, out: &mut Vec<Result<String, String>>) {
+        match n {
+            Value::Array(xs) => xs.borrow().iter().for_each(|x| walk(sc, x, out)),
+            Value::Object(o) => {
+                let entries = o.borrow().entries().to_vec();
+                for (k, x) in &entries {
+                    let named = |x: &Value| match nth(x, 0) {
+                        Value::Str(name) => facet(sc, &String::from_utf16_lossy(&name)).ok().filter(is_line_separator),
+                        _ => None,
+                    };
+                    match k.as_str() {
+                        "of" if named(x).is_some() => out.push(match nth(x, 1) {
+                            Value::Str(s) => rust(&s).ok_or_else(|| "a string with a lone surrogate".to_string()),
+                            v => Err(format!("the value {v:?}")),
+                        }),
+                        "ofVar" if named(x).is_some() => {
+                            let v = match nth(x, 1) {
+                                Value::Str(name) => var(sc, &String::from_utf16_lossy(&name)).ok(),
+                                _ => None,
+                            };
+                            out.push(match v {
+                                Some(Value::Str(s)) => rust(&s).ok_or_else(|| "a string with a lone surrogate".into()),
+                                v => Err(format!("the variable's value {v:?}")),
+                            });
+                        }
+                        "compute" | "computeN" | "from" if named(x).is_some() => {
+                            out.push(Err(format!("a `{k}` input")));
+                        }
+                        "of" | "value" | "raw" | "const" | "fresh" => {}
+                        _ => walk(sc, x, out),
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+    let mut found = Vec::new();
+    walk(sc, node, &mut found);
+    let mut sep: Option<String> = None;
+    for f in found {
+        let s = f?;
+        match &sep {
+            Some(x) if *x != s => return Err(format!("inputs {x:?} and {s:?}")),
+            _ => sep = Some(s),
+        }
+    }
+    Ok(sep)
+}
+
+/// The separator of rule 13 for a call that converts a position through the document it splits: a configuration
+/// the rule does not read is the replayer's own failure, naming the op (rule 8).
+pub fn separator_for(sc: &Sc, node: Option<&Value>, op: &str) -> F<Option<String>> {
+    match node.map(|n| line_separator(sc, n)) {
+        None => Ok(None),
+        Some(Ok(s)) => Ok(s),
+        Some(Err(why)) => Err(Fault::Flow(Flow::Fail(format!(
+            "{op}: a selection on a document split by a line separator the replayer does not read from the \
+             configuration ({why}; plan.md \"Positions\", rule 13)"
+        )))),
+    }
+}
+
+/// After a call that converted a position through the lines the replayer split (rule 13), those lines against the
+/// lines of the document of the state Ferrum created.
+pub fn check_split(st: &EditorState, lines: Option<&Vec<String>>) -> F<()> {
+    match lines {
+        Some(l) if *l != st.doc().to_json() => Err(Fault::Flow(Flow::Fail(format!(
+            "the created document is not split as the replayer read the configuration: {:?} against {:?} \
+             (plan.md \"Positions\", rule 13)",
+            l,
+            st.doc().to_json()
+        )))),
+        _ => Ok(()),
+    }
 }
 
 /// The text of a string the program gives as a document.

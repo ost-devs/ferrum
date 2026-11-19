@@ -275,10 +275,16 @@ fn is_integer(a: &Value, p: &mut Program, _c: &Ctx) -> R<Value> {
     Ok(Value::Bool(matches!(v, Value::Num(n) if n.is_finite() && n.fract() == 0.0)))
 }
 
-/// `Date.now()`: not replayed (`state.cm6.105.d1`; `design.md` section 10, "Time"): a result computed from the clock
-/// has no counterpart.
-fn now(_a: &Value, p: &mut Program, _c: &Ctx) -> R<Value> {
-    Ok(p.no_counterpart("op", "now", What::Part("the wall clock (state.cm6.105.d1)".into()), Value::Null, false))
+/// `Date.now()`: whole milliseconds since the Unix epoch, truncated, read from `SystemTime` (`design.md` section 10,
+/// "Time"; `state.cm6.105.d1`).
+fn now(_a: &Value, _p: &mut Program, _c: &Ctx) -> R<Value> {
+    Ok(Value::Num(clock_ms()))
+}
+
+/// The milliseconds since the Unix epoch, truncated, as `Date.now()` gives them.
+fn clock_ms() -> f64 {
+    let d = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap_or_default();
+    d.as_millis() as f64
 }
 
 /// `new Set(value)`: a value no input type of Ferrum is; `undefined` and `null` give an empty set.
@@ -440,14 +446,14 @@ mod tests {
     }
 
     #[test]
-    fn now_is_no_counterpart() {
-        let mut lang = Language::new("state", &[]);
-        crate::replay::state::register(&mut lang);
-        let inp = decode(&parse(r#"{"op":"now"}"#).expect("JSON"));
-        let mut p = Program::new(&lang);
-        let _ = p.evaluate(&inp);
-        assert_eq!(p.left_out.len(), 1);
-        assert_eq!(p.left_out[0].op, "now");
+    fn now_is_whole_milliseconds_of_the_clock() {
+        let before = super::clock_ms();
+        let out = run(r#"{"op":"now"}"#);
+        let after = super::clock_ms();
+        let n: f64 = out.trim_start_matches(r#"{"ok":"#).trim_end_matches('}').parse().expect("a number");
+        assert_eq!(n.fract(), 0.0);
+        assert!(before <= n && n <= after, "{before} {n} {after}");
+        assert!(n > 1e12);
     }
 
     #[test]

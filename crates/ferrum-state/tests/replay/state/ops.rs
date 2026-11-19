@@ -20,14 +20,14 @@ use crate::replay::change::form::Form;
 use crate::replay::change::shared::{self as cs, R, Stop, finish, known};
 use crate::replay::change::values::{ROW_JSON, ROW_MAIN, bad_sel_json, set_json_out, to_serde};
 use crate::replay::facet::scope::{
-    F, Fault, build, by_type, create_extensions, define, ferrum, read_facet, reader, settle, snapshot, state_json,
-    to_ext,
+    F, Fault, build, by_type, check_split, create_extensions, define, ferrum, read_facet, reader, separator_for,
+    settle, snapshot, split_lines, state_json, state_json_in, to_ext,
 };
 use crate::replay::facet::values::{CompH, ExtH, FacetH, FacetK, FieldH, Pv, TrH, Unsync, js_get, js_truthy, thrown};
 use crate::replay::lang::Language;
 use crate::replay::lang::eval::{Flow, Program, arg};
 use crate::replay::lang::json::from_serde_json;
-use crate::replay::lang::value::{Value, What, rust};
+use crate::replay::lang::value::{Value, rust};
 use crate::replay::text::host::{CATEGORIES, Doc, LineV, State, category_name};
 
 pub type Body = fn(&Value, &mut Program, &Ctx) -> R<Value>;
@@ -117,7 +117,8 @@ pub fn register(lang: &mut Language) {
 /// A call of Ferrum (`f` makes it): its value, the error cm6 throws for a panic (numbers through `doc`), or the call
 /// left out.
 fn fx<T>(p: &mut Program, c: &Ctx, op: &str, doc: &Form, f: impl FnOnce() -> F<T>) -> R<T> {
-    poisoned(ferrum(p, &c.sc, op, doc, f))
+    let cc = c.clone();
+    poisoned(c.call_of(op, || ferrum(p, &cc.sc, op, doc, f)))
 }
 
 /// The message of a panic of std when a `LazyLock` is read after its initializer panicked.
@@ -259,38 +260,6 @@ fn fields_arg(p: &mut Program, c: &Ctx, f: &Value, op: &str) -> R<Vec<(String, S
     match bad {
         Some(v) => Err(cs::by_type(p, op, "fields", &v)),
         None => Ok(out),
-    }
-}
-
-/// The line separator a configuration's extensions give, read from the input's Node: an `{"of": ["lineSeparator",
-/// s]}` or `{"ofVar": ["lineSeparator", v]}` holding a string. The document of `EditorState.create` is split with it
-/// (`raw/positions.jsonl`, `state.create`), and the Node is built only inside the call that creates the state.
-fn separator_of(p: &Program, node: &Value) -> Option<String> {
-    match node {
-        Value::Array(xs) => xs.borrow().iter().find_map(|x| separator_of(p, x)),
-        Value::Object(_) => {
-            for k in ["of", "ofVar"] {
-                if let Value::Array(xs) = node.field(k) {
-                    let xs = xs.borrow();
-                    if matches!(xs.first(), Some(Value::Str(n)) if rust(n).as_deref() == Some("lineSeparator")) {
-                        let v = match (k, xs.get(1)) {
-                            ("of", Some(v)) => v.clone(),
-                            (_, Some(Value::Str(n))) => p.get(&String::from_utf16_lossy(n)).ok()?,
-                            _ => return None,
-                        };
-                        if let Value::Str(x) = v {
-                            return rust(&x);
-                        }
-                    }
-                }
-            }
-            if let Value::Object(o) = node {
-                o.borrow().entries().iter().find_map(|(_, x)| separator_of(p, x))
-            } else {
-                None
-            }
-        }
-        _ => None,
     }
 }
 
@@ -601,12 +570,16 @@ fn state_create(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
         return Ok(state_value(&st));
     }
     let cfg = a.field("config");
-    let (ext, doc, sel, sep) = config(p, c, &cfg, OP)?;
+    let (ext, doc, sel, node) = config(p, c, &cfg, OP)?;
     let st = fx(p, c, OP, &filler(), || {
         let mut config = EditorStateConfig::default();
         if let Some(e) = ext {
             config.extensions = e?;
         }
+        // the selection is measured on the document `create` makes of `doc`, split with the separator the
+        // configuration gives (`plan.md` "Positions", rule 13): read only when a selection is given
+        let mut split = sel.as_ref().is_some_and(|v| truth(v) != Some(false));
+        let mut text = String::new();
         let mut form = created_doc("", None);
         if let Some(d) = &doc {
             // `config.doc || ""`, a `Text` as it is (`mirrors/cm6/state/src/state.ts:245`)
@@ -614,48 +587,58 @@ fn state_create(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
                 (None, _) => return Err(Fault::Nc(d.clone())),
                 (Some(false), _) => {}
                 (Some(true), Value::Str(x)) => {
-                    let text = rust(x).ok_or_else(|| by_type("doc", d))?;
-                    form = created_doc(&text, sep.as_deref());
-                    config.doc = TextSpec::String(text);
+                    text = rust(x).ok_or_else(|| by_type("doc", d))?;
+                    config.doc = TextSpec::String(text.clone());
                 }
                 (Some(true), _) => match Doc::of(d) {
                     Some(t) => {
                         form = Rc::new(Form::lines(&t.t.to_json()));
                         config.doc = TextSpec::Text(t.t);
+                        split = false;
                     }
                     None => return Err(by_type("doc", d)),
                 },
             }
+        }
+        let mut lines = None;
+        if split {
+            let sep = separator_for(&c.sc, node.as_ref(), OP)?;
+            let l = split_lines(&text, sep.as_deref());
+            form = Rc::new(Form::lines(&l));
+            lines = Some(l);
         }
         if let Some(sv) = &sel
             && let Some(x) = selection_in(sv, &form)?
         {
             config.selection = x;
         }
-        Ok(create_state(config))
+        let st = create_state(config);
+        check_split(&st, lines.as_ref())?;
+        Ok(st)
     })?;
     Ok(state_value(&st))
 }
 
 /// The configuration of `state.create` and `state.fromJSON` (`config` of `interp.ts`): its keys in their order, the
-/// extensions built in a call of Ferrum, `doc` and `selection` evaluated; any other key throws.
+/// extensions built in a call of Ferrum, `doc` and `selection` evaluated; any other key throws. The Node of the
+/// extensions is kept, for the separator it gives (rule 13).
 #[allow(clippy::type_complexity, reason = "the parts of one configuration, each as the input gives it")]
 fn config(
     p: &mut Program,
     c: &Ctx,
     cfg: &Value,
     op: &str,
-) -> R<(Option<F<ferrum_state::Extension>>, Option<Value>, Option<Value>, Option<String>)> {
+) -> R<(Option<F<ferrum_state::Extension>>, Option<Value>, Option<Value>, Option<Value>)> {
     let keys: Vec<String> = match cfg {
         Value::Object(o) => o.borrow().keys().map(|k| k.to_string()).collect(),
         _ => Vec::new(),
     };
-    let (mut ext, mut doc, mut sel, mut sep) = (None, None, None, None);
+    let (mut ext, mut doc, mut sel, mut node_of) = (None, None, None, None);
     for k in keys {
         match k.as_str() {
             "extensions" => {
                 let node = cfg.field("extensions");
-                sep = separator_of(p, &node);
+                node_of = Some(node.clone());
                 let r = fx(p, c, op, &filler(), || Ok(build(&c.sc, &node).and_then(|v| create_extensions(&c.sc, &v))));
                 ext = Some(r?);
             }
@@ -664,7 +647,7 @@ fn config(
             other => return Err(Flow::error(&format!("interp: bad config key {other}")).into()),
         }
     }
-    Ok((ext, doc, sel, sep))
+    Ok((ext, doc, sel, node_of))
 }
 
 /// `EditorState.create(config)`, the one call chunks `text` and `state` make.
@@ -678,11 +661,11 @@ pub fn create_state(config: EditorStateConfig) -> EditorState {
 fn state_from_json(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
     const OP: &str = "state.fromJSON";
     let json = arg(p, &a.field("json"))?;
-    let (mut ext, mut sep) = (None, None);
+    let (mut ext, mut node) = (None, None);
     if a.has("config") {
-        let (e, _, _, s) = config(p, c, &a.field("config"), OP)?;
+        let (e, _, _, n) = config(p, c, &a.field("config"), OP)?;
         ext = e;
-        sep = s;
+        node = n;
     }
     let fields = if a.has("fields") { fields_arg(p, c, &a.field("fields"), OP)? } else { Vec::new() };
     known(&json)?;
@@ -694,25 +677,13 @@ fn state_from_json(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
         if let Some(e) = ext {
             cfg.extensions = e?;
         }
-        let mut j = to_serde(&json).ok_or_else(|| by_type("json", &json))?;
-        if let Some(doc) = j.get("doc").and_then(|d| d.as_str()).map(|d| d.to_string()) {
-            let form = created_doc(&doc, sep.as_deref());
-            if let Some(ranges) =
-                j.get_mut("selection").and_then(|s| s.get_mut("ranges")).and_then(|r| r.as_array_mut())
-            {
-                for r in ranges {
-                    for k in ["anchor", "head"] {
-                        if let Some(n) = r.get(k).and_then(|x| x.as_f64()) {
-                            let b = to_bytes(&form, &Value::Num(n), "json.selection")?;
-                            r[k] = serde_json::Value::from(b);
-                        }
-                    }
-                }
-            }
-        }
+        // `json.selection` on `json.doc` as `create` splits it (rule 13), through the one conversion of chunk `facet`
+        let (j, lines) = state_json_in(&c.sc, &json, node.as_ref(), OP)?;
         let list: Vec<(&str, StateField<dyn std::any::Any + Send + Sync>)> =
             fields.iter().map(|(k, f)| (k.as_str(), f.into())).collect();
-        EditorState::from_json(&j, cfg, &list).map_err(|e| Fault::Flow(thrown(&e.to_string(), &filler())))
+        let st = EditorState::from_json(&j, cfg, &list).map_err(|e| Fault::Flow(thrown(&e.to_string(), &filler())))?;
+        check_split(&st, lines.as_ref())?;
+        Ok(st)
     })?;
     Ok(state_value(&st))
 }
@@ -965,6 +936,7 @@ fn state_change_by_range(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
     }
     let doc = doc_rc(&st);
     let cbr = fx(p, c, OP, &doc, || {
+        c.note(&doc);
         let sep = st.facet(EditorState::LINE_SEPARATOR).clone();
         Ok(st.change_by_range(|r| {
             let v = call(c, &f, vec![RangeV::Bound { r, doc: doc.clone() }.value()]);
@@ -1166,13 +1138,9 @@ fn tr_annotation(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
     let t = type_of(p, c, &a.field("type"), OP)?;
     let tr = tr_arg(p, OP, &tr)?;
     let TypeH::Ann(k) = t else { return Ok(Value::Undefined) };
+    // a time Ferrum read from the clock is its value like any other (`design.md` section 10, "Time"; Q113)
     let v = fx(p, c, OP, &filler(), || Ok(k.of_tr(&tr)))?;
-    match (&k, v) {
-        (AnnK::Time(_), Some(Value::Num(n))) if n > 1e12 => {
-            Ok(p.no_counterpart("op", OP, What::Part("the wall clock (state.cm6.105.d1)".into()), Value::Null, false))
-        }
-        (_, v) => Ok(v.unwrap_or(Value::Undefined)),
-    }
+    Ok(v.unwrap_or(Value::Undefined))
 }
 
 fn tr_is_user_event(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
@@ -1551,8 +1519,10 @@ fn effect_map(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
     let e = EffectV::of(&e).ok_or_else(|| cs::by_type(p, OP, "effect", &e))?;
     let cv = changes_arg(p, OP, &ch)?;
     let (pa, b) = (cv.ch.a.clone(), cv.ch.b()?);
-    c.known.borrow_mut().push((pa.clone(), b.clone()));
-    let r = fx(p, c, OP, &pa, || Ok(e.to_doc(c, &pa)?.map(cv.ch.d())))?;
+    let r = fx(p, c, OP, &pa, || {
+        c.pair(pa.clone(), b.clone());
+        Ok(e.to_doc(c, &pa)?.map(cv.ch.d()))
+    })?;
     Ok(r.map_or(Value::Undefined, |x| EffectV::bound(x, b).value()))
 }
 
@@ -1563,10 +1533,10 @@ fn effect_map_effects(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
     known(&es)?;
     let cv = changes_arg(p, OP, &ch)?;
     let (pa, b) = (cv.ch.a.clone(), cv.ch.b()?);
-    c.known.borrow_mut().push((pa.clone(), b.clone()));
     let Value::Array(xs) = &es else { return Err(cs::by_type(p, OP, "effects", &es)) };
     let xs = xs.borrow().clone();
     let r = fx(p, c, OP, &pa, || {
+        c.pair(pa.clone(), b.clone());
         let list = xs.iter().map(|x| effect_in(c, x, &pa)).collect::<F<Vec<_>>>()?;
         Ok(StateEffect::map_effects(&list, cv.ch.d()))
     })?;

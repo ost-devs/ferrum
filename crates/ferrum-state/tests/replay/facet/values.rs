@@ -105,6 +105,10 @@ pub trait BuiltinFacet {
     fn compute(&self, deps: &[Slot], get: Getter, multi: bool) -> Extension;
     /// `state.facet(facet)` as the program sees it.
     fn read(&self, st: &EditorState) -> super::scope::F<Value>;
+    /// Whether the facet is `EditorState.lineSeparator`.
+    fn is_line_separator(&self) -> bool {
+        false
+    }
 }
 
 /// The reader of a facet (`facet.reader`), of the facet's type.

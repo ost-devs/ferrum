@@ -44,8 +44,13 @@ pub struct Chunk {
     fns: RefCell<Vec<FnEntry>>,
     /// The functions of the program given to Ferrum, by their address.
     fn_values: RefCell<Vec<(*const (), Value)>>,
-    /// The documents of the changes the run has resolved (start, produced), for a mapping Ferrum gives a callback.
+    /// The pairs of documents (start, produced) of the mappings cm6's code forms in the call of Ferrum in progress,
+    /// for a mapping Ferrum gives a callback (`plan.md` "Positions", rule 14).
     pub known: RefCell<Vec<(Rc<Form>, Rc<Form>)>>,
+    /// Whether every document the call in progress starts from or produces is ASCII; `None`: none is known yet.
+    pub ascii: Cell<Option<bool>>,
+    /// The op whose call of Ferrum is in progress.
+    pub op: RefCell<String>,
     /// Set while `languageDataAt` runs: every language-data value is then read as a value of the program.
     pub reading_language_data: Cell<bool>,
     /// Whether the registry holds its first entries.
@@ -83,6 +88,8 @@ pub fn setup(p: &mut Program) -> Ctx {
         fns: RefCell::new(Vec::new()),
         fn_values: RefCell::new(Vec::new()),
         known: RefCell::new(Vec::new()),
+        ascii: Cell::new(None),
+        op: RefCell::new(String::new()),
         reading_language_data: Cell::new(false),
         types_ready: Cell::new(false),
         defined: RefCell::new(Vec::new()),
@@ -109,6 +116,32 @@ pub fn ctx(p: &Program) -> Result<Ctx, Flow> {
 }
 
 impl Chunk {
+    /// A document of the call in progress (the state's, or one a change of the call produces).
+    pub fn note(&self, f: &Form) {
+        let ascii = f.to_units(f.len8()) == Ok(f.len8());
+        self.ascii.set(Some(self.ascii.get().unwrap_or(true) && ascii));
+    }
+
+    /// A pair of documents a mapping of the call in progress goes between.
+    pub fn pair(&self, a: Rc<Form>, b: Rc<Form>) {
+        self.note(&a);
+        self.note(&b);
+        self.known.borrow_mut().push((a, b));
+    }
+
+    /// A call of Ferrum by `op`: its pairs of documents are its own, never an earlier call's (rule 14); a call made
+    /// inside a callback has its own, and the outer call's are back when it returns.
+    pub fn call_of<T>(&self, op: &str, f: impl FnOnce() -> T) -> T {
+        let known = self.known.replace(Vec::new());
+        let ascii = self.ascii.replace(None);
+        let was = self.op.replace(op.to_string());
+        let r = f();
+        self.known.replace(known);
+        self.ascii.set(ascii);
+        self.op.replace(was);
+        r
+    }
+
     /// Lend the running op's `Program` to the callbacks Ferrum calls during the op.
     pub fn enter(&self, p: &mut Program) {
         self.prog.set(p as *mut Program as *mut ());
@@ -292,7 +325,13 @@ pub fn change_filter(c: &Ctx, f: &Value) -> F<ChangeFilter> {
             run(c, || {
                 let v = call(c, f, vec![tr_value(tr)])?;
                 Ok(match &v {
-                    Value::Bool(false) => ChangeFilterOutput::False,
+                    Value::Bool(false) => {
+                        // `transaction.ts:369-370`: the effects mapped back, from the new document to the start one
+                        let start = doc_rc(tr.start_state());
+                        let new_doc = ChangesV::set(tr.changes().clone(), start.clone()).ch.b().map_err(Fault::Flow)?;
+                        c.pair(new_doc, start);
+                        ChangeFilterOutput::False
+                    }
                     Value::Array(xs) => {
                         let xs = xs.borrow().clone();
                         if xs.len() % 2 != 0 {
@@ -379,6 +418,8 @@ pub fn transaction_extender(c: &Ctx, f: &Value) -> F<TransactionExtender> {
                     return Err(by_type("transactionExtender", &v));
                 }
                 let doc = doc_rc(tr.state());
+                // `transaction.ts:396`: a sequential merge on the new document, whose mappings go from it to itself
+                c.pair(doc.clone(), doc.clone());
                 Ok(Some(TransactionExtenderOutput {
                     effects: effects_in(c, &v.field("effects"), &doc)?,
                     annotations: annotations_in(&v.field("annotations"))?,
@@ -645,6 +686,10 @@ impl BuiltinFacet for Builtin {
         }
     }
 
+    fn is_line_separator(&self) -> bool {
+        self.name == "lineSeparator"
+    }
+
     fn read(&self, st: &EditorState) -> F<Value> {
         let c = &self.ctx;
         Ok(match self.kind() {
@@ -833,17 +878,29 @@ pub fn truth(v: &Value) -> Option<bool> {
     }
 }
 
-/// A mapping Ferrum gives a callback, with the documents of the change the run resolved that has its lengths; one
-/// that no resolved change has is on documents the replayer does not know, which are filler only when every known
-/// document is ASCII.
+/// A mapping Ferrum gives a callback, with its documents (`plan.md` "Positions", rule 14): the pair of the call in
+/// progress whose byte lengths are the description's. Where no pair has them, or pairs that have them hold different
+/// texts, the documents are filler only when every document of the call is ASCII, so that no conversion depends on
+/// which it is; otherwise the replayer fails, naming the op and the two lengths (rule 8).
 pub fn mapping_value(c: &Chunk, d: &ChangeDesc) -> F<Value> {
     let (len, new_len) = (d.length(), d.new_length());
-    let found = c.known.borrow().iter().rev().find(|(a, b)| a.len8() == len && b.len8() == new_len).cloned();
-    let (a, b) = match found {
-        Some(x) => x,
-        None => {
+    let found: Vec<(Rc<Form>, Rc<Form>)> =
+        c.known.borrow().iter().filter(|(a, b)| a.len8() == len && b.len8() == new_len).cloned().collect();
+    let same = |x: &(Rc<Form>, Rc<Form>), y: &(Rc<Form>, Rc<Form>)| {
+        format!("{:?}{:?}", x.0, x.1) == format!("{:?}{:?}", y.0, y.1)
+    };
+    let (a, b) = match found.first() {
+        Some(first) if found.iter().all(|x| same(x, first)) => first.clone(),
+        _ if c.ascii.get() == Some(true) => {
             let filler = Rc::new(Form::filler());
             (filler.clone(), filler)
+        }
+        _ => {
+            return Err(Fault::Flow(Flow::Fail(format!(
+                "{}: the documents of a mapping of lengths {len} and {new_len} given to a callback are not known \
+                 (plan.md \"Positions\", rule 14)",
+                c.op.borrow()
+            ))));
         }
     };
     Ok(ChangesV::desc(d.clone(), a, b).value())

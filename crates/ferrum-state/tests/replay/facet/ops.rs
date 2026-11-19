@@ -6,8 +6,9 @@ use ferrum_state::{EditorState, EditorStateConfig, StateField, TextSpec};
 
 use super::config;
 use super::scope::{
-    F, Fault, Sc, build, change_spec, create_extensions, define, doc_string, effect, facet, ferrum, field, field_map,
-    number, read_facet, read_one, reader, selection_spec, snapshot, state_json, state_json_in, text, tr_spec,
+    F, Fault, Sc, build, change_spec, check_split, create_extensions, define, doc_string, effect, facet, ferrum, field,
+    field_map, number, read_facet, read_one, reader, selection_spec_on, separator_for, snapshot, split_lines,
+    state_json, state_json_in, text, tr_spec,
 };
 use super::values::{EffTypeH, EffectH, ExtH, FieldH, TrH, doc_form, js_get, rust_str, same_read};
 use crate::replay::change::form::Form;
@@ -120,9 +121,16 @@ fn caught<T>(p: &Program, r: R<T>) -> Result<Result<T, Value>, Stop> {
 
 // ---- states ----------------------------------------------------------------------------------------------------------------
 
-/// `EditorState.create(config)` from the input's `ext` (built), `doc` and `selection` (positions on `doc`), each only
-/// when the input has it. The state is created in a call of Ferrum the caller makes.
-pub fn create_config(sc: &Sc, ext: Option<&Value>, doc: Option<&Value>, sel: Option<&Value>) -> F<EditorStateConfig> {
+/// `EditorState.create(config)` from the input's `ext` (built), `doc` and `selection` (positions on `doc` as `create`
+/// splits it with the separator `ext` gives, `plan.md` "Positions", rule 13), each only when the input has it, with
+/// the lines split when a position was converted through them. The state is created in a call of Ferrum the caller
+/// makes, through `create_checked`.
+pub fn create_config(
+    sc: &Sc,
+    ext: Option<&Value>,
+    doc: Option<&Value>,
+    sel: Option<&Value>,
+) -> F<(EditorStateConfig, Option<Vec<String>>)> {
     let mut cfg = EditorStateConfig::default();
     if let Some(n) = ext {
         cfg.extensions = create_extensions(sc, &build(sc, n)?)?;
@@ -135,13 +143,24 @@ pub fn create_config(sc: &Sc, ext: Option<&Value>, doc: Option<&Value>, sel: Opt
             cfg.doc = TextSpec::String(text_of_doc.clone());
         }
     }
+    let mut used = None;
     if let Some(s) = sel {
         // `!config.selection` (`state.ts:247`): a falsy selection is the default
         if !matches!(crate::replay::lang::value::truthy(s), Some(false)) {
-            cfg.selection = selection_spec(&text_of_doc, s)?;
+            let sep = separator_for(sc, ext, "create")?;
+            let lines = split_lines(&text_of_doc, sep.as_deref());
+            cfg.selection = selection_spec_on(&Form::lines(&lines), s)?;
+            used = Some(lines);
         }
     }
-    Ok(cfg)
+    Ok((cfg, used))
+}
+
+/// `EditorState.create(config)`, then the lines the replayer split against the created document (rule 13).
+pub fn create_checked(cfg: EditorStateConfig, lines: Option<Vec<String>>) -> F<EditorState> {
+    let st = EditorState::create(cfg);
+    check_split(&st, lines.as_ref())?;
+    Ok(st)
 }
 
 fn opt(a: &Value, key: &str) -> Option<Value> {
@@ -151,8 +170,8 @@ fn opt(a: &Value, key: &str) -> Option<Value> {
 fn op_create(a: &Value, p: &mut Program, sc: &Sc) -> R<Value> {
     let (ext, doc, sel) = (opt(a, "ext"), opt(a, "doc"), opt(a, "selection"));
     let st = ferrum(p, sc, "create", &none_doc(), || {
-        let cfg = create_config(sc, ext.as_ref(), doc.as_ref(), sel.as_ref())?;
-        Ok(EditorState::create(cfg))
+        let (cfg, lines) = create_config(sc, ext.as_ref(), doc.as_ref(), sel.as_ref())?;
+        create_checked(cfg, lines)
     })?;
     Ok(host(State(st)))
 }
@@ -255,10 +274,13 @@ pub fn from_json(sc: &Sc, json: &Value, node: Option<&Value>, fields: &Value) ->
         cfg.extensions = create_extensions(sc, &build(sc, n)?)?;
     }
     let fields = field_map(sc, fields)?;
-    let j = state_json_in(json)?;
+    let (j, lines) = state_json_in(sc, json, node, "state.fromJSON")?;
     let list: Vec<(&str, StateField<dyn std::any::Any + Send + Sync>)> =
         fields.iter().map(|(k, f)| (k.as_str(), f.into())).collect();
-    EditorState::from_json(&j, cfg, &list).map_err(|e| Fault::Flow(Flow::throw("RangeError", &e.to_string())))
+    let st =
+        EditorState::from_json(&j, cfg, &list).map_err(|e| Fault::Flow(Flow::throw("RangeError", &e.to_string())))?;
+    check_split(&st, lines.as_ref())?;
+    Ok(st)
 }
 
 fn state_from_json(a: &Value, p: &mut Program, sc: &Sc) -> R<Value> {
@@ -518,13 +540,13 @@ fn scenario(a: &Value, p: &mut Program, sc: &Sc) -> R<Value> {
     let rs = items(&a.field("reads"));
     let (ext, doc, sel) = (a.field("ext"), opt(a, "doc"), opt(a, "selection"));
     let created = ferrum(p, sc, "scenario", &none_doc(), || {
-        let cfg = create_config(
+        let (cfg, lines) = create_config(
             sc,
             Some(&ext),
             doc.as_ref().filter(|d| !d.is_undefined()),
             sel.as_ref().filter(|s| !s.is_undefined()),
         )?;
-        Ok(EditorState::create(cfg))
+        create_checked(cfg, lines)
     });
     let first = match caught(p, created)? {
         Ok(st) => st,

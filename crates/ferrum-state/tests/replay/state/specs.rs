@@ -139,6 +139,7 @@ const SPEC_KEYS: [&str; 8] =
 /// mapping Ferrum gives a callback.
 pub fn update_specs(c: &Ctx, st: &EditorState, specs: &[Value]) -> F<Vec<TransactionSpec>> {
     let start = doc_rc(st);
+    c.note(&start);
     let sep = st.facet(ferrum_state::EditorState::LINE_SEPARATOR).clone();
     let mut merged: Option<ChangeSet> = None;
     let mut out = Vec::new();
@@ -150,13 +151,32 @@ pub fn update_specs(c: &Ctx, st: &EditorState, specs: &[Value]) -> F<Vec<Transac
         };
         let (spec, own) = one_spec(c, v, &base, sep.as_deref())?;
         if let Some(own) = &own {
-            let after = produced(own, &base)?;
-            c.known.borrow_mut().push((base.clone(), after));
+            let own_after = produced(own, &base)?;
+            c.note(&base);
+            c.note(&own_after);
+            let earlier = match &merged {
+                Some(m) => Some(produced(m, &start)?),
+                None => None,
+            };
             merged = Some(match (merged, seq) {
                 (None, _) => own.clone(),
                 (Some(m), true) => resolved(|| m.compose(own)).unwrap_or(m),
                 (Some(m), false) => resolved(|| m.compose(&own.map(&m, false))).unwrap_or(m),
             });
+            // the mappings of `mergeTransaction` (`mirrors/cm6/state/src/transaction.ts:310-324`; `plan.md`
+            // "Positions", rule 14): the earlier specs' effects from the document they produce to the merged one; a
+            // non-sequential spec's own effects from the document its own changes produce to the merged one; a
+            // sequential spec's own through `ChangeSet.empty`, on the document the earlier specs produce
+            if let (Some(a), Some(m)) = (earlier, &merged) {
+                let merged_doc = produced(m, &start)?;
+                let mut known = c.known.borrow_mut();
+                known.push((a.clone(), merged_doc.clone()));
+                if seq {
+                    known.push((a.clone(), a));
+                } else {
+                    known.push((own_after, merged_doc));
+                }
+            }
         }
         out.push(spec);
     }
@@ -269,6 +289,8 @@ pub fn range_change(c: &Chunk, v: &Value, a: &Rc<Form>, sep: Option<&str>) -> F<
         Some(own) => produced(&own, a)?,
         None => a.clone(),
     };
+    c.note(a);
+    c.note(&after);
     let r = v.field("range");
     let range = match RangeV::of(&r) {
         Some(x) => x.to_doc(&after)?,
@@ -280,46 +302,14 @@ pub fn range_change(c: &Chunk, v: &Value, a: &Rc<Form>, sep: Option<&str>) -> F<
     Ok(RangeChange { range, changes, effects: effects_in(c, &v.field("effects"), &after)? })
 }
 
-/// The lines `EditorState.create` makes of a string (`state.ts:245-246`): split at the line separator when one is
-/// given, else at `/\r\n?|\n/`, as JavaScript's `split` does.
-pub fn split_lines(doc: &str, sep: Option<&str>) -> Vec<String> {
-    match sep {
-        Some("") => {
-            // `"abc".split("")`: one string per UTF-16 code unit; an empty string gives no member
-            let units: Vec<u16> = doc.encode_utf16().collect();
-            units.iter().map(|u| String::from_utf16_lossy(&[*u])).collect()
-        }
-        Some(s) => doc.split(s).map(|x| x.to_string()).collect(),
-        None => {
-            let mut out = Vec::new();
-            let mut cur = String::new();
-            let mut it = doc.chars().peekable();
-            while let Some(ch) = it.next() {
-                match ch {
-                    '\r' => {
-                        if it.peek() == Some(&'\n') {
-                            it.next();
-                        }
-                        out.push(std::mem::take(&mut cur));
-                    }
-                    '\n' => out.push(std::mem::take(&mut cur)),
-                    _ => cur.push(ch),
-                }
-            }
-            out.push(cur);
-            out
-        }
-    }
-}
-
 /// The document `EditorState.create` makes of a string, in cm6's form.
 pub fn created_doc(doc: &str, sep: Option<&str>) -> Rc<Form> {
-    Rc::new(Form::lines(&split_lines(doc, sep)))
+    Rc::new(Form::lines(&crate::replay::facet::scope::split_lines(doc, sep)))
 }
 
 #[cfg(test)]
 mod tests {
-    use super::split_lines;
+    use crate::replay::facet::scope::split_lines;
 
     #[test]
     fn split_lines_follows_javascript_split() {

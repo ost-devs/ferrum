@@ -102,12 +102,36 @@ impl RangeV {
                 let a = to_bytes(doc, &a16, "anchor")?;
                 let h = to_bytes(doc, &h16, "head")?;
                 if a == r.anchor() && h == r.head() {
-                    *r
+                    return Ok(*r);
+                }
+                // `plan.md` "Positions", rule 15: the public constructor that gives back every getter, then each
+                // getter compared with the original's
+                let built = if r.undirectional() {
+                    EditorSelection::undirectional_range(a.min(h), a.max(h))
                 } else if r.is_empty() {
                     EditorSelection::cursor(a, r.assoc(), r.bidi_level(), r.goal_column())
                 } else {
                     EditorSelection::range(a, h, r.goal_column(), r.bidi_level(), r.assoc())
+                };
+                let getters = |x: &SelectionRange, d: &Form| -> F<Vec<Value>> {
+                    Ok(vec![
+                        units(d, x.anchor())?,
+                        units(d, x.head())?,
+                        Value::Num(f64::from(x.assoc())),
+                        x.bidi_level().map_or(Value::Null, |b| Value::Num(f64::from(b))),
+                        x.goal_column().map_or(Value::Undefined, Value::Num),
+                        Value::Bool(x.undirectional()),
+                    ])
+                };
+                let (before, after) = (getters(r, d0)?, getters(&built, doc)?);
+                if before.iter().zip(&after).any(|(x, y)| crate::replay::lang::value::strict_equal(x, y) != Some(true))
+                {
+                    return Err(Fault::Flow(Flow::Fail(format!(
+                        "a range carried to another document is not built back with its getters: {before:?} against \
+                         {after:?} (plan.md \"Positions\", rule 15)"
+                    ))));
                 }
+                built
             }
         })
     }
@@ -189,7 +213,20 @@ impl SelV {
                 if rs.iter().zip(sel.ranges()).all(|(a, b)| a.anchor() == b.anchor() && a.head() == b.head()) {
                     sel.clone()
                 } else {
-                    EditorSelection::create(&rs, sel.main_index())
+                    // rule 15: the ranges so built, and `create` with the main index; the count and the main index
+                    // compared with the original's
+                    let built = EditorSelection::create(&rs, sel.main_index());
+                    if built.ranges().len() != sel.ranges().len() || built.main_index() != sel.main_index() {
+                        return Err(Fault::Flow(Flow::Fail(format!(
+                            "a selection carried to another document is not built back: {} ranges, main {} against {} \
+                             ranges, main {} (plan.md \"Positions\", rule 15)",
+                            sel.ranges().len(),
+                            sel.main_index(),
+                            built.ranges().len(),
+                            built.main_index()
+                        ))));
+                    }
+                    built
                 }
             }
         })
