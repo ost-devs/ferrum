@@ -525,12 +525,14 @@ def error_entries(c, crate, got):
     make (plan "Hand-off"). The throw's origin is the evaluation of cm6's trace (tools/cm6/replay.ts --trace) that threw
     and began last: an uncaught error ends the run, so the evaluations of its chain began after every caught one, and
     the innermost of them began last. Ferrum's trace of the same fixture (FERRUM_REPLAY_TRACE) must hold, at the same
-    index, the same op with the value *no counterpart*, and the op the entry names must hold that value there or in an
-    evaluation inside it (an op's arguments begin after it, at a greater depth): the call not made is the origin
-    itself, or a call whose value the origin consumes (text F1014: `iter.drain` of a `text.iter` with direction 0)."""
+    index, the same op with the value *no counterpart*. The entry names no op (Q120): which call not made cm6 threw in
+    is not in the fixture, and no rule of the chain's shape gives it (`docs/decisions/ferrum-state.md`, "Q120"); the
+    origins are printed grouped by chunk, op and the reason Ferrum's trace gives there, for the reader of the
+    left-out file."""
     pkg = crate.replace("ferrum-", "")
-    errs = [(f["chunk"], f["fixture"], e["op"]) for f in got for e in f.get("left_out", []) if e.get("reason") == "error"]
+    errs = [(f["chunk"], f["fixture"], e.get("op")) for f in got for e in f.get("left_out", []) if e.get("reason") == "error"]
     bad, ok_ = [], 0
+    origins = collections.Counter()
     for ch in sorted({x[0] for x in errs}):
         tdir = target(crate, "trace")
         run_tests(crate, "replay", {"FERRUM_REPLAY_CHUNKS": ch, "FERRUM_REPLAY_TRACE": ch})
@@ -550,14 +552,13 @@ def error_entries(c, crate, got):
             if at is None or at.get("op") != o["op"] or not nc(at):
                 bad.append(f"{ch} {fid}: cm6 throws at evaluation {o['n']} ({o['op']}: {o['threw'].get('message', '')[:60]}); "
                            f"Ferrum's trace there: {json.dumps(at)[:120] if at else 'nothing'}"); continue
-            sub = [at]
-            for l in ours[o["n"] + 1:]:
-                if l.get("depth", -1) <= at.get("depth", -1): break
-                sub.append(l)
-            if not any(l.get("op") == op and nc(l) for l in sub):
-                bad.append(f"{ch} {fid}: the entry names {op}, which Ferrum's trace does not hold as not made in evaluation {o['n']} ({o['op']}) or inside it"); continue
+            if op is not None:
+                bad.append(f"{ch} {fid}: the entry names the op {op}; an `error` entry names none (Q120)"); continue
+            origins[(ch, o["op"], at["value"]["no_counterpart"])] += 1
             ok_ += 1
     c.need(not bad, f"fixtures left out with the reason `error` whose cm6 throw is at an evaluation Ferrum did not make: {ok_} of {len(errs)} hold, {len(bad)} do not", bad)
+    c.say(f"`error` entries by chunk, the op cm6 throws in and the reason Ferrum's trace gives there: {len(origins)} group(s)")
+    for (ch, op, why), n in sorted(origins.items()): c.say(f"        {ch} {op} ({why}): {n}")
 
 def skeleton(c, crate, args):
     cargo(c, "cargo build", ["build", "--workspace"])
