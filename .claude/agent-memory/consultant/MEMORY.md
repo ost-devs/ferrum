@@ -69,6 +69,7 @@
 
 - An implementer's list of "cases with no row" is triaged by me before a spec-auditor runs: re-derive reachability from every writer of the data (Q94: the `change.ts:388` case was unreachable). A flag on a row is a key on that row, aimed at whoever must read it (`added` → conformance). `docs/decisions/ferrum-state.md` Q94.
 - A card of a round after a unit's code must not ask a pre-code check (`checks <unit>`); my own Q92/Q93 text did. Check each check I name against the state it will run in. Q94.
+- A fact written twice in the data (row `fixtures` and fixture `behaviors`) is checked both ways by a tool; a card's "no X is added" must not forbid the edit that keeps such a link whole (`docs/decisions/ferrum-state.md`, "Step 3 of U3 read").
 
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.
