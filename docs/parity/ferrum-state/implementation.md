@@ -402,3 +402,12 @@ The last round of the implementation stage (commit 06065fa; decided by the consu
 - `crates/ferrum-state/tests/replay/state/ops.rs`
 - `crates/ferrum-state/tests/replay/rangeset/sets.rs`
 - `crates/ferrum-state/tests/written_state.rs`
+
+A round after Q120 (commit a8a1ae8; decided by the consultant: `docs/decisions/ferrum-state.md`, "Q120, the line `Line::is_empty`, and branch coverage at conformance", "What it requires", item 1; `design.md` §10 and `plan.md` "Hand-off"). An `error` entry names no op: `driver.rs` `left_out_value` writes `{"reason":"error","op":null,"part":"the uncaught error","value":null}`; `carried`, `Program::carry`, the renaming in `Program::not_made` and `made_here` are removed, `not_made` only counting a case-5 call as not made; the literal tests in `rules.rs` assert the entry with no op. `written_text.rs`: a written test of `Line::is_empty` from its doc comment (the sort's `text.rs` 855-857). Files:
+- `crates/ferrum-state/tests/replay/driver.rs`
+- `crates/ferrum-state/tests/replay/lang/eval.rs`
+- `crates/ferrum-state/tests/replay/rules.rs`
+- `crates/ferrum-state/tests/replay/facet/ops.rs`
+- `crates/ferrum-state/tests/replay/facet/scope.rs`
+- `crates/ferrum-state/tests/replay/state/ops.rs`
+- `crates/ferrum-state/tests/written_text.rs`
