@@ -184,3 +184,9 @@ The checks of unit `rangeset` (commit fad6dce; `docs/parity/ferrum-state/plan.md
 - `crates/ferrum-state/tests/replay/change/shared.rs`
 - `crates/ferrum-state/tests/replay/change/values.rs`
 
+A round on the checks of unit `rangeset` after Q100 to Q104 (commit 9203665; `docs/parity/ferrum-state/plan.md` "A check that is wrong"; decided by the consultant: `docs/decisions/ferrum-state.md`, "Q100 to Q104", "What it requires", item 2). The replayer reads `__test::Chunk::from` and `to` as `&[isize]`, a chunk's signed offsets, and turns each into an absolute position with a checked signed addition (`values.rs` `abs`, used by `chunk_ranges` and `sets.rs` `dump`; restores `design.md` §2, Q100). A `maxPoint` whose chunk or layer has no point range of the byte length Ferrum gives is converted through every point range of the set (`max_point_back`, called from `set.prop maxPoint`, `set.chunkStats`, `set.dump`, `set.dumpSummary`, `chunk.maxPoint`; restores `plan.md` "Positions" rule 11, Q101). `compare` builds a set made by `set.of` and given as new through the document `changes` produces, and gives no counterpart, reason `char`, for a set bound to another document that converts differently, where the replayer stopped at rule 8 before (`walks.rs` `rebuilt`, `values.rs` `OfSpec`, `sets.rs` `set.of`; two literal tests in `harness.rs`; restores `plan.md` "Positions" rule 12, Q104). Files:
+- `crates/ferrum-state/tests/replay/rangeset/harness.rs`
+- `crates/ferrum-state/tests/replay/rangeset/sets.rs`
+- `crates/ferrum-state/tests/replay/rangeset/values.rs`
+- `crates/ferrum-state/tests/replay/rangeset/walks.rs`
+
