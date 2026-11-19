@@ -175,7 +175,7 @@ fn state_facet(a: &Value, p: &mut Program, sc: &Sc) -> R<Value> {
     let v = p.ev(&a.field("state"))?;
     let st = state_arg(p, "state.facet", &v)?;
     let name = text(&a.field("facet"));
-    ferrum(p, sc, "state.facet", &doc_form(&st), || Ok(read_facet(&st, &facet(sc, &name)?)))
+    ferrum(p, sc, "state.facet", &doc_form(&st), || read_facet(&st, &facet(sc, &name)?))
 }
 
 /// `none` (`raw/replay.jsonl`): a duck-typed `FacetReader` (D12).
@@ -462,14 +462,6 @@ fn items(v: &Value) -> Vec<Value> {
         Value::Array(a) => a.borrow().clone(),
         _ => Vec::new(),
     }
-}
-
-fn error_at(p: &Program, e: &JsError, at: Value) -> Value {
-    let base = err(p, e);
-    if let Value::Object(o) = &base {
-        o.borrow_mut().set("at".into(), at);
-    }
-    base
 }
 
 /// The reads of a scenario on one state: `{v, same}` or `{error}` each, with the raw values for the next state's

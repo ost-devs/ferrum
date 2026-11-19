@@ -867,13 +867,3 @@ pub fn json_out(p: &mut Program, j: &serde_json::Value) -> Value {
     p.returned_by_ferrum(&v);
     v
 }
-
-/// `What` of an argument, for ops that name one.
-pub fn argument(name: &str) -> What {
-    What::Argument(name.into())
-}
-
-/// An `Excluded` as the reason written in `left_out`.
-pub fn reason(e: Excluded) -> &'static str {
-    e.reason()
-}

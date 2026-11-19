@@ -1,5 +1,5 @@
 //! What the ops of chunk `text` share: the values of Ferrum a program holds (`Doc`, `LineV`, `Iter`, `State`, `Set`,
-//! `Desc`, `Categorizer`), the reading of an argument into Ferrum's type with what is left out when it cannot be
+//! `Desc`), the reading of an argument into Ferrum's type with what is left out when it cannot be
 //! (`docs/parity/ferrum-state/design.md` section 10, "No counterpart" 1 to 5), the conversion of positions through a
 //! text (`plan.md` "Positions"), and the error an op throws for a panic of Ferrum (rule 10).
 
@@ -10,11 +10,11 @@ use std::rc::Rc;
 use ferrum_state::{__test, ChangeDesc, ChangeSet, CharCategory, EditorState, Line, Text, TextIterator};
 
 use super::cursor::{Shadow, Token, tokens};
-use crate::replay::convert::{Converted, Excluded, utf8_to_utf16, utf16_to_utf8};
+use crate::replay::convert::{Excluded, utf8_to_utf16, utf16_to_utf8};
 use crate::replay::driver::call;
 use crate::replay::lang::eval::{Flow, Program};
 use crate::replay::lang::json::{encode, encode_str, shown};
-use crate::replay::lang::value::{Host, JsStr, Object, Value, What, js, number_to_string, rust};
+use crate::replay::lang::value::{Host, JsStr, Object, Value, What, js, rust};
 
 // ---- how an op ends ---------------------------------------------------------------------------------------------
 
@@ -166,11 +166,6 @@ pub fn to_bytes(p: &mut Program, op: &str, arg: &str, v: &Value, text: &str) -> 
         Ok(c) => Ok(c.get()),
         Err(e) => Err(left_out(p, e.reason(), op, arg, v)),
     }
-}
-
-/// A position argument, checked for its type only (the char check is `to_bytes`).
-pub fn pos_arg(p: &mut Program, op: &str, arg: &str, v: &Value) -> R<usize> {
-    uint_arg(p, op, arg, v)
 }
 
 /// A position Ferrum gave, measured on `text`, as the program sees it. One inside a character is Ferrum's failure.
@@ -575,17 +570,6 @@ impl Host for Desc {
     }
 }
 
-/// The function `EditorState::char_categorizer(0)` returns, held as the state it came from: a function of the program
-/// (`{"js_function": true}`, as cm6's). The `impl Fn` the skeleton returns borrows the state (edition 2024 captures
-/// `&self` in it), so the replayer keeps the state and asks it again for each call; the function is pure.
-pub struct Categorizer(pub EditorState);
-
-impl Categorizer {
-    pub fn value(s: EditorState) -> Value {
-        Value::Function(Rc::new(Categorizer(s)))
-    }
-}
-
 /// The categories in cm6's order, with their names (`CharCategory` of `mirrors/cm6/state/src/charcategory.ts:4`, an
 /// enum of TypeScript: a member's value is its index).
 pub const CATEGORIES: [(CharCategory, &str); 3] =
@@ -594,14 +578,4 @@ pub const CATEGORIES: [(CharCategory, &str); 3] =
 /// `CharCategory[c]`: the name of a category.
 pub fn category_name(c: CharCategory) -> &'static str {
     CATEGORIES.iter().find(|(x, _)| *x == c).map_or("", |(_, n)| n)
-}
-
-/// A number as `String(n)` writes it, for messages.
-pub fn num(n: f64) -> String {
-    number_to_string(n)
-}
-
-/// A converted position as a number of the program.
-pub fn conv_num(c: Converted) -> Value {
-    Value::Num(c.get() as f64)
 }

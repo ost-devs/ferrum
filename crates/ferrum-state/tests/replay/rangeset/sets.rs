@@ -355,7 +355,6 @@ struct FilterState {
 /// `set.update {set, spec}`: the update built from the keys of `spec` in their order (`add` a range list, `filter` a
 /// function spec), then the set evaluated, then `update` called; positions on the set's document.
 pub fn set_update(a: &Value, p: &mut Program) -> R<Value> {
-    const OP: &str = "set.update";
     let spec = a.field("spec");
     known(&spec)?;
     let entries: Vec<(String, Value)> = match &spec {

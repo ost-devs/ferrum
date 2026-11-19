@@ -79,12 +79,32 @@ macro_rules! host {
 
 /// A facet of the run: one of the three Rust types a facet of the vocabulary has. A facet without `combine` outputs
 /// the list of its inputs (`FacetConfig::default()`); one with `combine` outputs a program value; the built-in
-/// `EditorState.lineSeparator` is Ferrum's own.
+/// `EditorState.lineSeparator` is Ferrum's own. Chunk `state` adds the other facets of `EditorState`
+/// (`Builtin`), whose inputs and outputs are Ferrum's own types.
 #[derive(Clone)]
 pub enum FacetK {
     List(Facet<Pv, Vec<Pv>>),
     Comb(Facet<Pv, Pv>),
     LineSep(Facet<String, Option<String>>),
+    Builtin(Rc<dyn BuiltinFacet>),
+}
+
+/// A getter of the vocabulary: the program value it gives for a state.
+pub type Getter = Rc<dyn Fn(&EditorState) -> super::scope::F<Value>>;
+
+/// A facet of `EditorState` whose input and output types are Ferrum's own (`allowMultipleSelections`, `tabSize`,
+/// `phrases`, `languageData`, the filters, `readOnly`): chunk `state` gives the conversions of its values between the
+/// program and Ferrum (`docs/parity/ferrum-state/oracle/cm6/state/interp.ts`, the setup of the Scope). A facet is its
+/// own reader.
+pub trait BuiltinFacet {
+    /// The facet as a dependency of `compute`.
+    fn slot(&self) -> Slot;
+    /// `facet.of(value)`: the program value as Ferrum's input, or the input excluded by type.
+    fn of(&self, value: Value) -> super::scope::F<Extension>;
+    /// `facet.compute(deps, get)` or `computeN`, `get` giving program values.
+    fn compute(&self, deps: &[Slot], get: Getter, multi: bool) -> Extension;
+    /// `state.facet(facet)` as the program sees it.
+    fn read(&self, st: &EditorState) -> super::scope::F<Value>;
 }
 
 /// The reader of a facet (`facet.reader`), of the facet's type.
@@ -93,6 +113,7 @@ pub enum ReaderK {
     List(FacetReader<Vec<Pv>>),
     Comb(FacetReader<Pv>),
     LineSep(FacetReader<Option<String>>),
+    Builtin(Rc<dyn BuiltinFacet>),
 }
 
 /// A facet as the program holds it: the facet, or its reader when `facet.reader` gave it.
@@ -115,6 +136,7 @@ impl FacetH {
             (Some(ReaderK::List(r)), _) => Slot::from(r),
             (Some(ReaderK::Comb(r)), _) => Slot::from(r),
             (Some(ReaderK::LineSep(r)), _) => Slot::from(r),
+            (Some(ReaderK::Builtin(b)), _) | (None, FacetK::Builtin(b)) => b.slot(),
             (None, FacetK::List(x)) => Slot::from(x),
             (None, FacetK::Comb(x)) => Slot::from(x),
             (None, FacetK::LineSep(x)) => Slot::from(x),
@@ -249,7 +271,8 @@ no_identity!(TrH, Transaction, "Transaction");
 /// call.
 #[derive(Clone)]
 pub struct ListRead {
-    pub state: Option<EditorState>,
+    /// Keeps the slot's value, and so its address, alive.
+    pub _state: Option<EditorState>,
     pub addr: *const Vec<Pv>,
     pub items: Vec<Value>,
 }
@@ -257,7 +280,7 @@ pub struct ListRead {
 impl ListRead {
     pub fn value(list: &Vec<Pv>, state: Option<EditorState>) -> Value {
         Value::Host(Rc::new(ListRead {
-            state,
+            _state: state,
             addr: list as *const Vec<Pv>,
             items: list.iter().map(|x| x.0.clone()).collect(),
         }))

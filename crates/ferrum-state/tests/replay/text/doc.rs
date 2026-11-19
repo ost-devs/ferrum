@@ -8,7 +8,7 @@ use ferrum_state::{__test, IterDirection, Text};
 
 use super::cursor::{Partial, Raw, Shadow};
 use super::host::{
-    Doc, Iter, LineV, R, Stop, back, by_type, ferrum, finish, jstr, jstrs, known, str_arg, to_bytes, uint, uint_arg,
+    Doc, Iter, LineV, R, Stop, by_type, ferrum, finish, jstr, jstrs, known, str_arg, to_bytes, uint, uint_arg,
 };
 use crate::replay::lang::eval::{Flow, Language, Program, arg};
 use crate::replay::lang::value::{Object, Value, json_stringify, property_key, to_number, to_string};
@@ -604,9 +604,4 @@ pub fn register(l: &mut Language) {
     l.op("iter.read", API, |a, p| finish(iter_read(a, p)));
     l.op("iter.steps", API, |a, p| finish(iter_steps(a, p)));
     l.op("iter.drain", API, |a, p| finish(iter_drain(a, p)));
-}
-
-/// A position read from a document, for the model checks.
-pub fn back_on(d: &Doc, b: usize) -> R<Value> {
-    Ok(back(&d.form()?.text, b)?)
 }

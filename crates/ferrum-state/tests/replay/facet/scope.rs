@@ -29,7 +29,7 @@ use crate::replay::change::values::to_serde;
 use crate::replay::driver::call;
 use crate::replay::lang::eval::{Flow, Program};
 use crate::replay::lang::json::from_serde_json;
-use crate::replay::lang::value::{Object, Value, js, rust, strict_equal, to_number, to_string};
+use crate::replay::lang::value::{Object, Value, rust, strict_equal, to_number, to_string};
 
 /// Where the vocabulary stops: cm6's throw (or the replayer's own failure), or an input Ferrum's signatures cannot
 /// hold, with the reason, the argument and its value.
@@ -82,7 +82,15 @@ pub struct Scope {
     /// The names whose definition was a call not made: what the program later names by them is that *no
     /// counterpart* (rule 5).
     pub missing: HashMap<String, Value>,
+    /// How a getter `{"callVar"}` calls the function a variable holds with a state: chunk `state` sets it.
+    pub call_var: Option<CallVar>,
+    /// The log as an array of the program, which chunk `state` gives the program (`scope.log`) and which the program
+    /// may push to: when set, the log's lines go there.
+    pub log_array: Option<Value>,
 }
+
+/// The call of a function of the program with a state (a getter `{"callVar"}`).
+pub type CallVar = Rc<dyn Fn(&Value, &EditorState) -> F<Value>>;
 
 pub type Sc = Rc<RefCell<Scope>>;
 
@@ -252,23 +260,29 @@ fn counter_add(sc: &Sc, name: &str) -> f64 {
 }
 
 fn log(sc: &Sc, line: String) {
-    sc.borrow_mut().log.push(line);
+    let array = sc.borrow().log_array.clone();
+    match array {
+        Some(Value::Array(a)) => a.borrow_mut().push(rust_str(&line)),
+        _ => sc.borrow_mut().log.push(line),
+    }
 }
 
 // ---- reads of a state ---------------------------------------------------------------------------------------------------
 
 /// `state.facet(facet)` as the program sees it: the default output as the list read from the state, a combined output
-/// as the program value it is, the line separator as a string or `undefined`.
-pub fn read_facet(st: &EditorState, f: &FacetH) -> Value {
+/// as the program value it is, the line separator as a string or `undefined`, a facet of `EditorState` as chunk
+/// `state` reads it.
+pub fn read_facet(st: &EditorState, f: &FacetH) -> F<Value> {
     let keep = || Some(st.clone());
-    match (&f.reader, &f.k) {
+    Ok(match (&f.reader, &f.k) {
+        (Some(ReaderK::Builtin(b)), _) | (None, FacetK::Builtin(b)) => return b.read(st),
         (Some(ReaderK::List(r)), _) => ListRead::value(st.facet(r), keep()),
         (Some(ReaderK::Comb(r)), _) => st.facet(r).0.clone(),
         (Some(ReaderK::LineSep(r)), _) => st.facet(r).as_deref().map(rust_str).unwrap_or(Value::Undefined),
         (None, FacetK::List(x)) => ListRead::value(st.facet(x), keep()),
         (None, FacetK::Comb(x)) => st.facet(x).0.clone(),
         (None, FacetK::LineSep(x)) => st.facet(x).as_deref().map(rust_str).unwrap_or(Value::Undefined),
-    }
+    })
 }
 
 fn slot(f: &FacetH) -> Slot {
@@ -281,6 +295,7 @@ pub fn reader(f: &FacetH) -> FacetH {
         FacetK::List(x) => ReaderK::List(x.reader()),
         FacetK::Comb(x) => ReaderK::Comb(x.reader()),
         FacetK::LineSep(x) => ReaderK::LineSep(x.reader()),
+        FacetK::Builtin(b) => ReaderK::Builtin(b.clone()),
     };
     FacetH { k: f.k.clone(), reader: Some(r) }
 }
@@ -341,10 +356,10 @@ pub fn read_one(sc: &Sc, st: &EditorState, r: &Value) -> F<Value> {
         _ => {}
     }
     if r.has("facet") {
-        return Ok(read_facet(st, &facet(sc, &s(&r.field("facet")))?));
+        return read_facet(st, &facet(sc, &s(&r.field("facet")))?);
     }
     if r.has("reader") {
-        return Ok(read_facet(st, &reader(&facet(sc, &s(&r.field("reader")))?)));
+        return read_facet(st, &reader(&facet(sc, &s(&r.field("reader")))?));
     }
     if r.has("field") {
         return Ok(st.field(&field(sc, &s(&r.field("field")))?).0.clone());
@@ -454,7 +469,17 @@ pub fn getter(sc: &Sc, g: &Value) -> F<G> {
                 sc.borrow_mut().var_names.insert(name.clone());
                 Rc::new(move |_| var(&sc2, &name))
             } else if k("callVar") {
-                Rc::new(|_| Err(Fault::Flow(Flow::Fail("a getter {\"callVar\"} in chunk facet".into()))))
+                // the function held in the variable, called with the state (chunk `state`, whose `fn` op builds it)
+                let name = s(&g.field("callVar"));
+                sc.borrow_mut().var_names.insert(name.clone());
+                Rc::new(move |st| {
+                    let f = var(&sc2, &name)?;
+                    let call = sc2.borrow().call_var.clone();
+                    match call {
+                        Some(call) => call(&f, st),
+                        None => Err(Fault::Flow(Flow::Fail("a getter {\"callVar\"} outside chunk state".into()))),
+                    }
+                })
             } else if k("facet") || k("facetJoin") || k("facetJoinLength") || k("facetLength") || k("facetString") {
                 let key = ["facet", "facetJoin", "facetJoinLength", "facetLength", "facetString"]
                     .into_iter()
@@ -462,7 +487,7 @@ pub fn getter(sc: &Sc, g: &Value) -> F<G> {
                     .unwrap_or("facet");
                 let name = s(&g.field(key));
                 Rc::new(move |st| {
-                    let v = read_facet(st, &facet(&sc2, &name)?);
+                    let v = read_facet(st, &facet(&sc2, &name)?)?;
                     Ok(match key {
                         "facet" => v,
                         "facetJoin" => js_join(&v, ",")?,
@@ -474,7 +499,7 @@ pub fn getter(sc: &Sc, g: &Value) -> F<G> {
             } else if k("facetFirst") {
                 let (name, d) = (s(&nth(&g.field("facetFirst"), 0)), nth(&g.field("facetFirst"), 1));
                 Rc::new(move |st| {
-                    let v = js_get(&read_facet(st, &facet(&sc2, &name)?), "0")?;
+                    let v = js_get(&read_facet(st, &facet(&sc2, &name)?)?, "0")?;
                     Ok(if matches!(v, Value::Undefined | Value::Null) { d.clone() } else { v })
                 })
             } else if k("field") {
@@ -556,11 +581,11 @@ fn updater(sc: &Sc, u: &Value, name: &str) -> F<Upd> {
         }
         Value::Object(_) if u.has("trFacet") => {
             let f = s(&u.field("trFacet"));
-            Rc::new(move |_, tr| Ok(read_facet(tr.state(), &facet(&sc2, &f)?)))
+            Rc::new(move |_, tr| read_facet(tr.state(), &facet(&sc2, &f)?))
         }
         Value::Object(_) if u.has("startFacet") => {
             let f = s(&u.field("startFacet"));
-            Rc::new(move |_, tr| Ok(read_facet(tr.start_state(), &facet(&sc2, &f)?)))
+            Rc::new(move |_, tr| read_facet(tr.start_state(), &facet(&sc2, &f)?))
         }
         Value::Object(_) if u.has("throwOnce") => {
             let c = s(&u.field("throwOnce"));
@@ -966,7 +991,7 @@ fn dep(sc: &Sc, d: &Value) -> F<Slot> {
 /// The program value a facet input is, for the facet's type: a string for the line separator.
 fn input_of(k: &FacetK, v: Value, arg: &str) -> F<Pv> {
     match k {
-        FacetK::LineSep(_) => Err(by_type(arg, &v)),
+        FacetK::LineSep(_) | FacetK::Builtin(_) => Err(by_type(arg, &v)),
         _ => Ok(Pv(v)),
     }
 }
@@ -1008,6 +1033,9 @@ fn compute(sc: &Sc, n: &Value, multi: bool) -> F<Value> {
             },
         }
     };
+    if let FacetK::Builtin(b) = &f.k {
+        return Ok(Value::Host(Rc::new(ExtH(b.compute(&slots, Rc::new(call), multi)))));
+    }
     let sc2 = Unsync(sc.clone());
     let e = match (&f.k, multi) {
         (FacetK::List(x), false) => x.compute(&slots, move |st| Pv(settle(sc2.get(), call(st)))),
@@ -1027,6 +1055,7 @@ fn compute(sc: &Sc, n: &Value, multi: bool) -> F<Value> {
                 call(st).and_then(list).and_then(|vs| vs.iter().map(|v| string_input(v, "get")).collect()),
             )
         }),
+        (FacetK::Builtin(_), _) => unreachable!("a facet of EditorState computes through chunk state"),
     };
     Ok(Value::Host(Rc::new(ExtH(e))))
 }
@@ -1054,6 +1083,8 @@ fn from(sc: &Sc, n: &Value) -> F<Value> {
         FacetK::LineSep(x) => x.from(&fld, move |v: &Pv| {
             settle(&cell.get().0, (cell.get().1)(&v.0).and_then(|v| string_input(&v, "get")))
         }),
+        // no input of the fixtures writes `from` on a facet of `EditorState`
+        FacetK::Builtin(_) => return Err(by_type("from", &nth(&spec, 0))),
     };
     Ok(Value::Host(Rc::new(ExtH(e))))
 }
@@ -1192,6 +1223,7 @@ fn of(f: &FacetH, data: Value) -> F<Value> {
         FacetK::List(x) => x.of(input_of(&f.k, data, "value")?),
         FacetK::Comb(x) => x.of(input_of(&f.k, data, "value")?),
         FacetK::LineSep(x) => x.of(string_input(&data, "value")?),
+        FacetK::Builtin(b) => b.of(data)?,
     };
     Ok(Value::Host(Rc::new(ExtH(e))))
 }
@@ -1374,9 +1406,4 @@ pub fn number(v: &Value) -> F<f64> {
 /// A string of the program, for messages.
 pub fn text(v: &Value) -> String {
     s(v)
-}
-
-/// `js` re-exported for the ops.
-pub fn jsstr(x: &str) -> Value {
-    Value::Str(js(x))
 }

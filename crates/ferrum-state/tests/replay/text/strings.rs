@@ -10,11 +10,13 @@ use ferrum_state::{
 };
 
 use super::host::{
-    CATEGORIES, Categorizer, R, Stop, back, by_type, category_name, ferrum, finish, flag, known, left_out, str_arg,
-    to_bytes, uint, uint_arg,
+    CATEGORIES, R, Stop, back, by_type, category_name, ferrum, finish, flag, known, left_out, str_arg, to_bytes, uint,
+    uint_arg,
 };
 use crate::replay::lang::eval::{Flow, Language, Program, arg};
 use crate::replay::lang::value::{Value, property_key};
+use crate::replay::state::ops::{categorize_with, create_state};
+use crate::replay::state::values::{cat_fn, categorizer_of};
 
 const API: &[&str] = &["api"];
 const INT: &[&str] = &["internal"];
@@ -319,12 +321,8 @@ fn language_data(p: &mut Program, op: &str, arg_name: &str, v: &Value) -> R<Vec<
 fn categorizer(a: &Value, p: &mut Program) -> R<Value> {
     const OP: &str = "categorizer";
     if !a.has("wordChars") && !a.has("languageData") {
-        let s = ferrum(None, || {
-            let s = EditorState::create(EditorStateConfig::default());
-            let _ = s.char_categorizer(0);
-            s
-        })?;
-        return Ok(Categorizer::value(s));
+        // the function `charCategorizer` returns, kept without its state (`plan.md` "Ported tests and written tests")
+        return ferrum(None, || categorizer_of(&create_state(EditorStateConfig::default()), 0));
     }
     let data = if a.has("languageData") {
         let v = arg(p, &a.field("languageData"))?;
@@ -337,16 +335,13 @@ fn categorizer(a: &Value, p: &mut Program) -> R<Value> {
         data.insert("wordChars".to_string(), Arc::new(w));
         vec![data]
     };
-    let s = ferrum(None, move || {
+    ferrum(None, move || {
         let provider: LanguageDataProvider =
             ByAddress::new(Arc::new(move |_: &EditorState, _: usize, _: i8| data.clone()));
         let config =
             EditorStateConfig { extensions: EditorState::LANGUAGE_DATA.of(provider), ..EditorStateConfig::default() };
-        let s = EditorState::create(config);
-        let _ = s.char_categorizer(0);
-        s
-    })?;
-    Ok(Categorizer::value(s))
+        categorizer_of(&create_state(config), 0)
+    })
 }
 
 fn categorize(a: &Value, p: &mut Program) -> R<Value> {
@@ -354,15 +349,15 @@ fn categorize(a: &Value, p: &mut Program) -> R<Value> {
     let cat = p.ev(&a.field("cat"))?;
     let ch = arg(p, &a.field("char"))?;
     known(&cat)?;
-    let Value::Function(f) = &cat else {
+    if !matches!(cat, Value::Function(_)) {
         return Err(Flow::Fail("categorize: cat is not a categorizer".into()).into());
-    };
-    let Some(f) = f.downcast_ref::<Categorizer>() else {
+    }
+    if cat_fn(&cat).is_none() {
         return Err(Flow::Fail("categorize: cat is a function the program built".into()).into());
-    };
+    }
     let s = str_arg(p, OP, "char", &ch)?;
-    let c: CharCategory = ferrum(None, || (f.0.char_categorizer(0))(&s))?;
-    Ok(Value::str(category_name(c)))
+    let c: Option<CharCategory> = ferrum(None, || categorize_with(&cat, &s))?;
+    Ok(Value::str(category_name(c.expect("a categorizer"))))
 }
 
 /// `Object.keys(CharCategory)`: the keys of an object of TypeScript, which a Rust enum has not (`raw/replay.jsonl`

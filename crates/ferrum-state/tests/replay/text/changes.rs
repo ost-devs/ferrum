@@ -1,6 +1,8 @@
 //! The ops of chunk `text` that build a state or a change set (`state.create`, `state.doc`, `state.toText`,
 //! `changes.*`, `desc.iterChangedRangesArg`). They bind to the API of units `change` and `state`, so a fixture that
-//! runs one stays `pending` until that unit's code exists (`docs/parity/ferrum-state/plan.md` "Units").
+//! runs one stays `pending` until that unit's code exists (`docs/parity/ferrum-state/plan.md` "Units"). Where chunk
+//! `state` makes the same call (`EditorState::create`, `doc`, `to_text`), both go through its one function
+//! (`crate::replay::state::ops`).
 //!
 //! The change sets of the chunk (fixture F7169) have no text in the input but the ASCII `doc` of `changes.invert`:
 //! their positions are converted as over ASCII filler, the same number in both units (`plan.md` "Positions", rule 5).
@@ -17,6 +19,7 @@ use crate::replay::change::form::Form;
 use crate::replay::change::shared::{self as cs, Insert, SpecIn};
 use crate::replay::lang::eval::{Language, Program, arg};
 use crate::replay::lang::value::{Value, What};
+use crate::replay::state::ops::{self as state_ops, create_state, to_text};
 
 const API: &[&str] = &["api"];
 const INT: &[&str] = &["internal"];
@@ -40,7 +43,7 @@ fn state_create(a: &Value, p: &mut Program) -> R<Value> {
     const OP: &str = "state.create";
     if !a.has("doc") && !a.has("lineSeparator") {
         // cm6's `EditorState.create()`: the default configuration (D14)
-        return Ok(state_value(ferrum(None, || EditorState::create(EditorStateConfig::default()))?));
+        return Ok(state_value(ferrum(None, || create_state(EditorStateConfig::default()))?));
     }
     let doc_v = arg(p, &a.field("doc"))?;
     let sep_v = if a.has("lineSeparator") { Some(arg(p, &a.field("lineSeparator"))?) } else { None };
@@ -66,7 +69,7 @@ fn state_create(a: &Value, p: &mut Program) -> R<Value> {
         if let Some(sep) = sep {
             config.extensions = Extension::from(vec![EditorState::LINE_SEPARATOR.of(sep)]);
         }
-        EditorState::create(config)
+        create_state(config)
     })?;
     Ok(state_value(s))
 }
@@ -74,7 +77,7 @@ fn state_create(a: &Value, p: &mut Program) -> R<Value> {
 fn state_doc(a: &Value, p: &mut Program) -> R<Value> {
     let s = p.ev(&a.field("state"))?;
     let s = state_arg(p, "state.doc", &s)?;
-    Ok(Doc::value(ferrum(None, || s.doc().clone())?))
+    Ok(Doc::value(ferrum(None, || state_ops::state_doc(&s))?))
 }
 
 fn state_to_text(a: &Value, p: &mut Program) -> R<Value> {
@@ -83,7 +86,7 @@ fn state_to_text(a: &Value, p: &mut Program) -> R<Value> {
     let string = arg(p, &a.field("string"))?;
     let s = state_arg(p, OP, &s)?;
     let string = str_arg(p, OP, "string", &string)?;
-    Ok(Doc::value(ferrum(None, || s.to_text(&string))?))
+    Ok(Doc::value(ferrum(None, || to_text(&s, &string))?))
 }
 
 /// A change spec of the program as the chunk `change`'s `SpecIn` (`state.cm6.135.d1`): an object `{from, to?,
