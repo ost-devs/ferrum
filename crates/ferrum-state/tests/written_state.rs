@@ -18,9 +18,10 @@ use ferrum_state::__test::same_extension;
 use ferrum_state::{
     Annotation, AnnotationType, ByAddress, ChangeByRange, ChangeFilter, ChangeFilterOutput, ChangeSet, ChangeSpec,
     CharCategory, Compartment, EditorSelection, EditorState, EditorStateConfig, Error, Extension, Facet, FacetConfig,
-    FacetReader, LanguageData, LanguageDataProvider, RangeChange, SelectionSpec, Slot, StateCommand,
-    StateCommandTarget, StateEffect, StateEffectType, StateField, StateFieldSpec, Text, TextSpec, Transaction,
-    TransactionExtender, TransactionExtenderOutput, TransactionFilter, TransactionFilterOutput, TransactionSpec,
+    FacetReader, LanguageData, LanguageDataProvider, MapMode, RangeChange, RangeValue, SelectionSpec, Slot,
+    StateCommand, StateCommandTarget, StateEffect, StateEffectType, StateField, StateFieldSpec, Text, TextSpec,
+    Transaction, TransactionExtender, TransactionExtenderOutput, TransactionFilter, TransactionFilterOutput,
+    TransactionSpec,
 };
 use serde_json::json;
 
@@ -484,4 +485,149 @@ fn a_provider_runs_again_when_a_facet_without_combine_recombines_an_equal_list_i
     let next = st.update(&[with_effects(vec![comp.reconfigure(a.of(1))])]).state().clone();
     assert_eq!(next.facet(&a), &vec![1]);
     assert_eq!(calls.load(Ordering::SeqCst), 2);
+}
+
+// ---- the end of the implementation stage ----------------------------------------------------------------------------
+
+// covers: state.EditorState.toJSON.B3
+// The half of B3 Ferrum can express (its one fixture passes `42`, excluded by type): a field of `fields` the state does
+// not hold is skipped, and the JSON holds the document and the selection only.
+#[test]
+fn to_json_skips_a_field_the_state_does_not_hold() {
+    let f = plain_field();
+    let st = state_of("ab", vec![]);
+    let j = st.to_json(&[("f", (&f).into())]);
+    assert_eq!(j.get("f"), None);
+    assert_eq!(j["doc"], json!("ab"));
+    assert!(j.get("selection").is_some());
+}
+
+// The public forms nothing else calls (`implementation.md` "Lines no check reaches"), each asserting what its doc
+// comment says.
+
+/// `Debug` of a `ChangeSet`: cm6's `toString`, which `ChangeSet` inherits from `ChangeDesc` (`change.ts:157`).
+#[test]
+fn the_debug_of_a_change_set_is_that_of_its_description() {
+    let set = insertion(1, "xy", 4);
+    assert_eq!(format!("{set:?}"), format!("{:?}", set.desc()));
+    assert_eq!(format!("{set:?}"), "1 0:2 3");
+}
+
+/// `Debug` of a `Text` writes its lines, in order.
+#[test]
+fn the_debug_of_a_text_writes_its_lines() {
+    let t = Text::of(&["one", "two \"q\"", "é"]);
+    let shown = format!("{t:?}");
+    let mut at = 0;
+    for line in t.to_json() {
+        let l = format!("{line:?}");
+        let found = shown[at..].find(&l).unwrap_or_else(|| panic!("{l} in {shown}"));
+        at += found + l.len();
+    }
+}
+
+/// `ByAddress` compares by pointer: equal for clones of one `Arc`, unequal for two closures of the same code.
+#[test]
+fn by_address_is_equal_for_one_arc_and_unequal_for_two_closures() {
+    fn make() -> ByAddress<dyn Fn(i32) -> i32 + Send + Sync> {
+        ByAddress::new(Arc::new(|x| x + 1))
+    }
+    let a = make();
+    assert!(a == a.clone());
+    assert!(a != make());
+    assert_eq!((*a)(1), 2);
+}
+
+/// `Facet` compares by definition: equal to itself and its clone, unequal to another facet of the same config.
+#[test]
+fn a_facet_is_equal_to_its_clone_and_not_to_another_of_the_same_config() {
+    let f: Facet<i64, Vec<i64>> = Facet::define(FacetConfig::default());
+    let g: Facet<i64, Vec<i64>> = Facet::define(FacetConfig::default());
+    assert!(f == f.clone());
+    assert!(f != g);
+}
+
+/// `From<StateField<T>>` for the erased field and for `Extension`: the value the conversion of a reference and
+/// `StateField::extension` give.
+#[test]
+fn the_conversions_of_an_owned_field_give_what_the_other_constructors_give() {
+    let f = plain_field();
+    let erased: StateField<dyn std::any::Any + Send + Sync> = f.clone().into();
+    let by_ref: StateField<dyn std::any::Any + Send + Sync> = (&f).into();
+    assert!(erased == by_ref);
+    let ext: Extension = f.clone().into();
+    assert!(same_extension(&ext, &f.extension()));
+    let st = state_of("", vec![ext]);
+    assert_eq!(*st.field(&f), 0);
+}
+
+/// `Default` of `Compartment` is `Compartment::new` (N15): a compartment distinct from every other.
+#[test]
+fn the_default_compartment_is_a_new_one() {
+    let a = Compartment::default();
+    let b = Compartment::default();
+    assert!(a == a.clone());
+    assert!(a != b);
+    assert!(a != Compartment::new());
+}
+
+/// A range value that does not override it is no point: `RangeValue::point`'s default is `false`.
+#[test]
+fn a_range_value_is_no_point_by_default() {
+    #[derive(PartialEq)]
+    struct V;
+    impl RangeValue for V {}
+    assert!(!V.point());
+    assert_eq!((V.start_side(), V.end_side(), V.map_mode()), (0, 0, MapMode::TrackDel));
+}
+
+/// `From<EditorSelection>` for `SelectionSpec` and `From<Text>` for `TextSpec`: the variant that holds the value.
+#[test]
+fn the_conversions_into_the_spec_types_hold_the_value() {
+    let sel = EditorSelection::single(1, 2);
+    let SelectionSpec::Selection(s) = SelectionSpec::from(sel.clone()) else { panic!("a selection spec") };
+    assert_eq!(s, sel);
+    let t = Text::of(&["a", "é"]);
+    let TextSpec::Text(u) = TextSpec::from(t.clone()) else { panic!("a text spec") };
+    assert_eq!(u, t);
+}
+
+/// `Text::is_empty`: `len() == 0`.
+#[test]
+fn a_text_is_empty_when_its_length_is_zero() {
+    assert!(Text::empty().is_empty());
+    assert!(Text::of(&[""]).is_empty());
+    assert!(!Text::of(&["é"]).is_empty());
+}
+
+// D6: a transaction's state is built once, lazily, and shared. Two threads read `tr.state()` of one transaction while
+// a field's `update` of that transaction is still running on the first (the second starts once the callback signals it
+// has begun, and the callback waits long enough for the second to ask): both get the same state, and `update` ran
+// once.
+#[test]
+fn two_threads_reading_the_state_of_one_transaction_get_one_state_built_once() {
+    let calls = Arc::new(AtomicUsize::new(0));
+    let (started, begun) = std::sync::mpsc::channel::<()>();
+    let started = std::sync::Mutex::new(started);
+    let seen = calls.clone();
+    let field = StateField::define(StateFieldSpec::new(
+        |_: &EditorState| 0i64,
+        move |v: &i64, _: &Transaction| {
+            seen.fetch_add(1, Ordering::SeqCst);
+            let _ = started.lock().map(|s| s.send(()));
+            std::thread::sleep(Duration::from_millis(300));
+            v + 1
+        },
+    ));
+    let st = state_of("", vec![field.extension()]);
+    let tr = st.update(&[TransactionSpec::default()]);
+    std::thread::scope(|s| {
+        let first = s.spawn(|| tr.state().clone());
+        begun.recv_timeout(Duration::from_secs(60)).expect("the field's update began");
+        let second = s.spawn(|| tr.state().clone());
+        let (a, b) = (first.join().expect("the first thread"), second.join().expect("the second thread"));
+        assert!(ferrum_state::__test::same_state(&a, &b));
+        assert_eq!(*a.field(&field), 1);
+    });
+    assert_eq!(calls.load(Ordering::SeqCst), 1);
 }

@@ -75,11 +75,15 @@ pub fn register(lang: &mut Language) {
         lang.op(name, kinds, move |a, p| {
             let sc = scope(p)?;
             snapshot(p, &sc, a);
+            let before = p.left_out.len();
             match body(a, p, &sc) {
                 // a call not made, case 5 included (`design.md` section 10, "No counterpart"): a `try` or `capture`
                 // around it is no counterpart, and so are the counters its callbacks may have written
                 Err(Stop::Nc(v)) => {
-                    p.not_made(&v);
+                    // case 5 only: a call not made for cases 1 to 4 made its own entry during this op
+                    if !crate::replay::state::ops::made_here(p, before, &v) {
+                        p.not_made(name, &v);
+                    }
                     unknown_counters(&sc, &v);
                     Ok(v)
                 }

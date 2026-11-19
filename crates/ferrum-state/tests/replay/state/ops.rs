@@ -37,16 +37,21 @@ pub type Body = fn(&Value, &mut Program, &Ctx) -> R<Value>;
 /// Register an op of the chunk: its body runs with the run's context, the program lent to the callbacks Ferrum
 /// calls, and the variables the vocabulary's getters read noted (`snapshot`).
 pub fn reg(lang: &mut Language, name: &str, kinds: &[&'static str], body: Body) {
+    let op = name.to_string();
     lang.op(name, kinds, move |a, p| {
         let c = ctx(p)?;
         c.enter(p);
         snapshot(p, &c.sc, a);
+        let before = p.left_out.len();
         match body(a, p, &c) {
             // a call not made, case 5 included (`design.md` section 10, "No counterpart"): a `try` or `capture` around
             // it is no counterpart, and so are the counters a callback spec names and the variables the body of a
             // function of the program writes, which its callbacks may have changed
             Err(Stop::Nc(v)) => {
-                p.not_made(&v);
+                // case 5 only: a call not made for cases 1 to 4 made its own entry during this op
+                if !made_here(p, before, &v) {
+                    p.not_made(&op, &v);
+                }
                 unknown_counters(&c.sc, &v);
                 // whether or not the name holds a value: a variable a callback writes first is read later (`design.md`
                 // section 10, "No counterpart"; Q119)
@@ -59,6 +64,15 @@ pub fn reg(lang: &mut Language, name: &str, kinds: &[&'static str], body: Body) 
             r => finish(r),
         }
     });
+}
+
+/// Whether the value *no counterpart* an op returns is an entry the op itself made (a call not made for cases 1 to 4
+/// of `design.md` section 10), and not one an argument stands for (case 5).
+pub fn made_here(p: &Program, before: usize, v: &Value) -> bool {
+    match v {
+        Value::NoCounterpart(l) => p.left_out[before.min(p.left_out.len())..].iter().any(|x| Rc::ptr_eq(x, l)),
+        _ => true,
+    }
 }
 
 const API: &[&str] = &["api"];
@@ -941,7 +955,20 @@ fn state_phrase(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
     }
     let st = state_arg(p, OP, &st)?;
     let phrase = str_arg(p, OP, "phrase", &phrase)?;
-    let args = args.iter().map(|x| str_arg(p, OP, "args", x)).collect::<R<Vec<_>>>()?;
+    // a primitive cm6 reads only through JavaScript's conversion to a string, what a `replace` callback returns
+    // (`mirrors/cm6/state/src/state.ts:327-331`): the string that conversion gives, through the language's own (the
+    // one `concat` uses); an object stays excluded (D12 as widened)
+    let mut strs = Vec::new();
+    for x in &args {
+        known(x)?;
+        strs.push(match x {
+            Value::Num(_) | Value::Bool(_) | Value::Null | Value::Undefined => {
+                String::from_utf16_lossy(&crate::replay::lang::value::to_string(x)?)
+            }
+            _ => str_arg(p, OP, "args", x)?,
+        });
+    }
+    let args = strs;
     let refs: Vec<&str> = args.iter().map(|x| x.as_str()).collect();
     Ok(Value::str(&fx(p, c, OP, &filler(), || Ok(st.phrase(&phrase, &refs)))?))
 }

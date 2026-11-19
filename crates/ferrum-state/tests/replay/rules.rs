@@ -68,7 +68,7 @@ fn language() -> Language {
     l.op("t.case5", api, |a, p| {
         let v = arg(p, &a.field("x"))?;
         if let Value::NoCounterpart(_) = v {
-            p.not_made(&v);
+            p.not_made("t.case5", &v);
         }
         Ok(v)
     });
@@ -343,13 +343,13 @@ fn rule_case_5_is_a_call_not_made_for_a_try_and_a_capture() {
         assert_eq!(r.result, "mismatch", "{wrapper}");
     }
     // a recorded error after a case-5 call that Ferrum's run does not end in: `none`, the entry `error` naming the
-    // excluded argument's op, the last call not made
+    // case-5 call, the last call not made, in which cm6 may have thrown (end of the implementation stage)
     let r = run(
         r#"{"steps":[{"op":"t.type","x":1,"as":"a"},{"op":"t.case5","x":{"$":"a"},"as":"b"}],"out":{"b":{"$":"b"}}}"#,
         r#"{"error":{"name":"RangeError","message":"m"}}"#,
     );
     assert_eq!(r.result, "none");
-    assert_eq!(entries(&r), vec![e("type", "t.type"), e("error", "t.type")]);
+    assert_eq!(entries(&r), vec![e("type", "t.type"), e("error", "t.case5")]);
 }
 
 /// One fixture `state:F1` run through chunk `state`'s language, which no call of Ferrum reaches.

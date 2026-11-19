@@ -446,10 +446,12 @@ fn update_call(
             Keep::NotSpan(a, b) => Value::Bool(!(f16 == *a && t16 == *b)),
             Keep::Mod(m, r) => Value::Bool((f16 + 2.0 * t16) % m != *r),
         };
-        match got {
-            Value::Bool(b) => b,
-            other => {
-                st.bad.get_or_insert(other);
+        // what a filter returns cm6 reads only in a `||` (`mirrors/cm6/state/src/rangeset.ts:290`): its truthiness
+        // (D12, Q109; F0122)
+        match crate::replay::lang::value::truthy(&got) {
+            Some(b) => b,
+            None => {
+                st.bad.get_or_insert(got);
                 true
             }
         }
