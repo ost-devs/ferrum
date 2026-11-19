@@ -71,6 +71,8 @@
 {"chunk": "rangeset", "op": "value.fields", "how": "part", "parts": ["ownKeys"], "note": "which fields are own properties of a JavaScript object"}
 {"chunk": "rangeset", "op": "value.set", "how": "skip", "parts": [], "note": "writes a field of a range value after it was given to a set (state.cm6.229.d1)"}
 {"chunk": "facet", "op": "allSame", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
+{"chunk": "facet", "op": "combineConfig.call", "how": "part", "parts": ["the result of a merge in which no config and no default has a key"], "note": "such a merge has no field, so Ferrum's caller makes no call of `combine_config` and the empty result is the replayer's own (state.cm6.134.d1; Q107)"}
+{"chunk": "facet", "op": "combineConfig.entries", "how": "part", "parts": ["the result of a merge in which no config and no default has a key"], "note": "such a merge has no field, so Ferrum's caller makes no call of `combine_config` and the empty result is the replayer's own (state.cm6.134.d1; Q107)"}
 {"chunk": "facet", "op": "compartment.effectValue", "how": "none", "parts": [], "note": "internals of the reconfiguration effect"}
 {"chunk": "facet", "op": "compartment.reconfigureType", "how": "none", "parts": [], "note": "internals of the reconfiguration effect"}
 {"chunk": "facet", "op": "counter", "how": "run", "parts": [], "note": "`same` of a read: design.md §10; the log is compared whole (D14)"}
@@ -80,6 +82,7 @@
 {"chunk": "facet", "op": "isArray", "how": "part", "parts": ["an operand that is an `Extension`"], "note": "`Extension` is opaque"}
 {"chunk": "facet", "op": "isFieldInstance", "how": "none", "parts": [], "note": "`instanceof` against a second copy of the package"}
 {"chunk": "facet", "op": "prec.level", "how": "none", "parts": [], "note": "the shape of a JavaScript extension object; `Extension` is opaque (design.md §3)"}
+{"chunk": "facet", "op": "prec.keys", "how": "none", "parts": [], "note": "the own keys of a JavaScript object of functions; `Prec` is an uninhabited enum whose five associated functions the skeleton check counts (N16; Q108)"}
 {"chunk": "facet", "op": "same", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
 {"chunk": "facet", "op": "sameItems", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
 {"chunk": "facet", "op": "scenario", "how": "run", "parts": [], "note": "`same` of a read: design.md §10; the log is compared whole (D14)"}

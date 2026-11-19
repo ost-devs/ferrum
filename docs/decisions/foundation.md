@@ -367,3 +367,17 @@ mechanical conversion settles anyway) or misses cases implementers hit.
 **Lost.** Keeping them excluded: cases compared nowhere, and the same question at every `null` option of `@codemirror/view`.
 
 **Confidence.** High for `ferrum-state`. **Reopens:** an argument cm6 tests with `== null` in one place and reads as an object in another.
+
+## 2026-11-19 · D12: a value cm6 handles only by a rule of the language is what that rule makes of it
+
+*Decided by the consultant (Q109 of `ferrum-state`; the crate's part: `docs/decisions/ferrum-state.md`, "Q105 to Q110"). Binding text: `.claude/rules/decisions.md` D12. It widens the entry of 2026-11-15 on Q91.*
+
+**Question.** D12 excludes "a value of the wrong type", and Q91 took out of that only a `null` cm6 treats as absent. cm6 reads other values only through truthiness (what a `compare` returns, `static`, `require`) or treats them exactly as absent (a falsy `combine`, a `toJSON` that is not a function). Are they excluded?
+
+**Decision.** No. A value cm6's code at that place treats exactly as the absent value (a `null` tested with `== null`, a falsy value whose falsy branch is the absent one, a non-function whose call throws the same error as the absent value's) is `None`. A value it reads only for truthiness, as an argument, a member of an object it is given or what a callback returns, is the `bool` of that test. A parameter's default applies first, to `undefined` only. Any other read keeps the value excluded.
+
+**Why.** D12's reason is that untyped input gives engine artifacts no caller relies on. Truthiness and absence are rules of the language, the same for every value, and JavaScript callers rely on them (`compare: (a, b) => a && b && …`, `static: flag`). A Rust caller writes the result of the rule. The public API does not change; only which recorded cases are compared does, and each such case is compared against cm6's own output, so a misread site fails visibly.
+
+**Lost.** Keeping the truthy values excluded while the falsy ones were already given as absent: an inconsistent rule, and cases compared nowhere, at every boolean option of `@codemirror/view` too.
+
+**Confidence.** High for `ferrum-state`, where every site was read. **Reopens:** a site where cm6 reads a value for truthiness and otherwise on the same path.
