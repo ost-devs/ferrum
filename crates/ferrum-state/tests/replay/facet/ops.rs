@@ -196,10 +196,14 @@ fn state_field(a: &Value, p: &mut Program, sc: &Sc) -> R<Value> {
     };
     let v = p.ev(&a.field("state"))?;
     let st = state_arg(p, "state.field", &v)?;
+    // `require: boolean = true` read by `if (require)` (`mirrors/cm6/state/src/state.ts:68-71`): `true` for
+    // `undefined`, the truthiness of anything else (D12, Q109)
     let require = match a.field("require") {
         Value::Undefined => true,
-        Value::Bool(b) => b,
-        other => return Err(crate::replay::change::shared::by_type(p, "state.field", "require", &other)),
+        other => {
+            known(&other)?;
+            super::values::js_truthy(&other)?
+        }
     };
     ferrum(p, sc, "state.field", &doc_form(&st), || {
         Ok(if require {
@@ -356,10 +360,10 @@ fn prec_level(a: &Value, p: &mut Program, _sc: &Sc) -> R<Value> {
     Ok(p.op_none("prec.level"))
 }
 
-/// `Object.keys(Prec)`: Rust's `Prec` (N16) has its five functions and no list of them a program can read; the result
-/// has no counterpart, by type (a question of the step's report).
+/// `none` (`raw/replay.jsonl`, Q108): the own keys of a JavaScript object of functions; `Prec` is an uninhabited enum
+/// (N16).
 fn prec_keys(_a: &Value, p: &mut Program, _sc: &Sc) -> R<Value> {
-    Ok(p.no_counterpart("type", "prec.keys", What::Part("Object.keys(Prec)".into()), Value::Null, true))
+    Ok(p.op_none("prec.keys"))
 }
 
 /// `skip` (`raw/replay.jsonl`): the driver stops the fixture before the op runs.

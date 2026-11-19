@@ -85,9 +85,10 @@ fn merge(
         }
     }
     if keys.is_empty() {
-        // no field to merge: Ferrum's `combine_config` merges one field (`state.cm6.134.d1`), and a merge of none
-        // makes no call of it, so the empty result is the replayer's own and shows nothing of Ferrum
-        let v = p.no_counterpart("type", op, What::Argument("configs".into()), Value::array(Vec::new()), true);
+        // `part` (`raw/replay.jsonl`, Q107): Ferrum's `combine_config` merges one field (`state.cm6.134.d1`), and a
+        // merge of none makes no call of it, so the empty result is the replayer's own
+        let part = What::Part("the result of a merge in which no config and no default has a key".into());
+        let v = p.no_counterpart("op", op, part, Value::Null, false);
         return Err(Stop::Nc(v));
     }
     let mut out = Vec::new();

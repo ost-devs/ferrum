@@ -200,7 +200,7 @@ fn items(v: &Value) -> Vec<Value> {
 
 /// A slot of a definition written `{"value": x}` whose `x` cm6's code tests for falsiness and replaces by its default
 /// (`config.combine ||`, `config.compare ||`, `config.provide` tested, `if (!get)`: `mirrors/cm6/state/src/facet.ts:71`,
-/// `:73`, `:118`, `:312`, `:313`): the absent value (D12, Q91). `None`: the slot holds something else.
+/// `:73`, `:109`, `:312`, `:313`): the absent value (D12, Q91). `None`: the slot holds something else.
 fn falsy_value(v: &Value) -> Option<bool> {
     if v.is_undefined() {
         return Some(true);
@@ -693,26 +693,18 @@ fn comparer(c: &Value, arg: &str) -> F<Option<Cmp>> {
     Ok(Some(f))
 }
 
-/// The `bool` Ferrum's comparison returns, from what the comparer gave: a value that is no boolean cannot be returned
-/// through the signature (`design.md` section 10, "A value a callback returns").
-fn as_bool(v: Value, arg: &str) -> F<bool> {
-    match v {
-        Value::Bool(b) => Ok(b),
-        other => Err(by_type(arg, &other)),
-    }
+/// The `bool` Ferrum's comparison returns, from what the comparer gave: its truthiness, the only way cm6 reads what a
+/// `compare` or `compareInput` returns (`if`, `!`, `||`, `?:` at `mirrors/cm6/state/src/facet.ts:166`, `:180`, `:198`,
+/// `:238`, `:250`, `:333`, `:498`; D12, Q109).
+fn as_bool(v: Value) -> F<bool> {
+    Ok(js_truthy(&v)?)
 }
 
 /// A comparison as Ferrum's configurations hold it.
 type CompareBox<T> = Box<dyn Fn(&T, &T) -> bool + Send + Sync>;
 
 /// A comparer as Ferrum's `Fn(&T, &T) -> bool`, logging `<tag> <name> <a> <b>` when the spec logs.
-fn compare_fn<T: 'static>(
-    sc: &Sc,
-    c: Cmp,
-    log_as: Option<(String, String)>,
-    arg: &'static str,
-    view: fn(&T) -> Value,
-) -> CompareBox<T> {
+fn compare_fn<T: 'static>(sc: &Sc, c: Cmp, log_as: Option<(String, String)>, view: fn(&T) -> Value) -> CompareBox<T> {
     let cell = Unsync((sc.clone(), c, log_as));
     Box::new(move |a: &T, b: &T| {
         let (sc, c, log_as) = cell.get();
@@ -721,7 +713,7 @@ fn compare_fn<T: 'static>(
             if let Some((tag, name)) = log_as {
                 log(sc, format!("{tag} {name} {} {}", show(&a)?, show(&b)?));
             }
-            as_bool(c(&a, &b)?, arg)
+            as_bool(c(&a, &b)?)
         })();
         settle(sc, r)
     })
@@ -811,23 +803,18 @@ fn define_facet(sc: &Sc, name: &str, spec: &Value) -> F<Value> {
     let compare = if spec.has("compare") { comparer(&spec.field("compare"), "compare")? } else { None };
     let compare_input =
         if spec.has("compareInput") { comparer(&spec.field("compareInput"), "compareInput")? } else { None };
-    // `!!config.static` (`mirrors/cm6/state/src/facet.ts:74`): a falsy value is the default
-    let st = spec.field("static");
-    let is_static = match st {
-        Value::Bool(b) => b,
-        _ if !matches!(crate::replay::lang::value::truthy(&st), Some(true)) => false,
-        other => return Err(by_type("static", &other)),
-    };
+    // `!!config.static` (`mirrors/cm6/state/src/facet.ts:74`): the value's truthiness (D12, Q109)
+    let is_static = js_truthy(&spec.field("static"))?;
     // a slot written {"value": f} is passed as it is, unlogged (`Scope.logged`)
     let logged = |kind: &str| logs && !is_value(&spec.field(kind));
     let en = enables(sc, spec)?;
     let name_s = name.to_string();
     let tag = |kind: &str| if logged(kind) { Some((kind.to_string(), name_s.clone())) } else { None };
-    let ci = compare_input.map(|c| compare_fn::<Pv>(sc, c, tag("compareInput"), "compareInput", pv_view));
+    let ci = compare_input.map(|c| compare_fn::<Pv>(sc, c, tag("compareInput"), pv_view));
     let h = match combine {
         None => {
             let cfg: FacetConfig<Pv, Vec<Pv>> = FacetConfig {
-                compare: compare.map(|c| compare_fn::<Vec<Pv>>(sc, c, tag("compare"), "compare", list_view)),
+                compare: compare.map(|c| compare_fn::<Vec<Pv>>(sc, c, tag("compare"), list_view)),
                 compare_input: ci,
                 is_static,
                 enables: match en {
@@ -854,7 +841,7 @@ fn define_facet(sc: &Sc, name: &str, spec: &Value) -> F<Value> {
                 })();
                 Pv(settle(sc, r))
             });
-            cfg.compare = compare.map(|c| compare_fn::<Pv>(sc, c, tag("compare"), "compare", pv_view));
+            cfg.compare = compare.map(|c| compare_fn::<Pv>(sc, c, tag("compare"), pv_view));
             cfg.compare_input = ci;
             cfg.is_static = is_static;
             cfg.enables = match en {
@@ -926,7 +913,7 @@ fn define_field(sc: &Sc, name: &str, spec: &Value) -> F<Value> {
         } else {
             None
         };
-        compare_fn::<Pv>(sc, c, tag, "compare", pv_view)
+        compare_fn::<Pv>(sc, c, tag, pv_view)
     });
     if let Some(node) = provide {
         let (sc2, name2) = (sc.clone(), name.to_string());
@@ -1047,7 +1034,7 @@ fn compute(sc: &Sc, n: &Value, multi: bool) -> F<Value> {
 /// A function of a program value to another.
 type Map = Rc<dyn Fn(&Value) -> F<Value>>;
 
-/// `facet.from(field, get)`: `get` absent or falsy is the identity (`mirrors/cm6/state/src/facet.ts:118`).
+/// `facet.from(field, get)`: `get` absent or falsy is the identity (`mirrors/cm6/state/src/facet.ts:109`).
 fn from(sc: &Sc, n: &Value) -> F<Value> {
     let spec = n.field("from");
     let f = facet(sc, &s(&nth(&spec, 0)))?;
@@ -1232,6 +1219,15 @@ pub fn to_ext(sc: &Sc, v: &Value) -> F<Extension> {
         let e: Extension = xs.iter().map(|x| to_ext(sc, x)).collect::<F<Vec<_>>>()?.into();
         sc.borrow_mut().lists.push((v.clone(), e.clone()));
         return Ok(e);
+    }
+    if let Value::Object(_) = v {
+        // an object with an `extension` property is the extension of its content (`flatten`,
+        // `mirrors/cm6/state/src/facet.ts:549-552`; `design.md` section 3, Q105); one whose `extension` is falsy or is
+        // the object itself is cm6's "Unrecognized extension value", which Ferrum has no case for
+        let content = js_get(v, "extension")?;
+        if js_truthy(&content)? && strict_equal(&content, v) != Some(true) {
+            return to_ext(sc, &content);
+        }
     }
     Err(by_type("extension", v))
 }
