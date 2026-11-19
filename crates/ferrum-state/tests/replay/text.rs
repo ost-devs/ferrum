@@ -16,7 +16,7 @@ mod checks;
 mod cursor;
 mod doc;
 mod harness;
-mod host;
+pub mod host;
 mod strings;
 
 use super::lang::Language;
