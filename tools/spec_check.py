@@ -18,6 +18,10 @@ mapping the compiled code back to the source: read the function before treating 
 Once verification.md has a `## Coverage` section, every site still unreached must be named there as
 `<file>:<line>` in backticks (its fixture was not added, so its reason is owed: specification.md §8 item 1).
 
+It fails when a behavior row's `fixtures` and the fixtures' `behaviors` do not name each other both ways: they are one
+relation written twice, the replayer and tools/impl_check.py report per behavior through the fixture's list and a
+reader of the row goes through the row's. A fixture's list comes from its generator, so a link is added there.
+
 With --same-outputs-as <git ref>, every fixture file is also compared with its version at that commit: the same ids,
 and for each id the same item, behaviors and output. It is the check of a change that may rewrite inputs only.
 Outputs are compared as values, so that a chunk may move to the one encoding of tools/cm6/oracle-lib.ts
@@ -218,6 +222,17 @@ def main():
             if fid not in fx_ids.get(fc, ()): dangling.append(f"{b['id']}->{f}")
     if no_fx: bad.append(f"{len(no_fx)} behaviors with neither fixtures nor golden_note: {no_fx[:10]}")
     if dangling: bad.append(f"{len(dangling)} fixture ids cited by behaviors that do not exist: {dangling[:10]}")
+    # A behavior row's fixtures and a fixture's behaviors are one relation written twice: the replayer and
+    # tools/impl_check.py report per behavior through the fixture's list, a reader of the row through the row's.
+    fx_beh = {(c, r["id"]): set(r.get("behaviors", [])) for c, v in fx.items() for r in v}
+    row_fx = collections.defaultdict(set)
+    for b in beh:
+        for f in b.get("fixtures") or []:
+            row_fx[b["id"]].add((f.split(":")[0], f.split(":")[1]) if ":" in f else (chunk_of.get(b["item_id"]), f))
+    not_back = [f"{b}->{c}:{i}" for b, s in row_fx.items() for c, i in sorted(s) if (c, i) in fx_beh and b not in fx_beh[(c, i)]]
+    not_listed = [f"{c}:{i}->{b}" for (c, i), s in fx_beh.items() for b in sorted(s) if b in beh_ids and (c, i) not in row_fx[b]]
+    if not_back: bad.append(f"{len(not_back)} fixtures a behavior row lists that do not name the behavior: {not_back[:10]}")
+    if not_listed: bad.append(f"{len(not_listed)} fixtures naming a behavior whose row does not list them: {not_listed[:10]}")
     orphan = [f"{c}:{r['id']}->{b}" for c, v in fx.items() for r in v for b in r.get("behaviors", []) if b not in beh_ids]
     if orphan: bad.append(f"{len(orphan)} behavior ids cited by fixtures that do not exist: {orphan[:10]}")
     unclassified = [t["id"] for t in tests if not t.get("class")]
