@@ -248,3 +248,23 @@ You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as b
 **Commit** with explicit paths, on the current branch, without pushing: `git add crates/ferrum-state/tests` then `git commit -m 'test(ferrum-state): the checks of unit state, chunk facet' -- crates/ferrum-state/tests`.
 
 **Report:** the output of the check; counts (ops registered, ported cases, written tests); every `// passes against the skeleton:` and every `// literal` cause by decision id; the functions chunk `state` can call; the files outside chunk `facet` you changed and why; the questions; anything the tool reported that you had to fix before the commit; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Step U4a checks, a round after Q105 to Q110
+
+The consultant decided Q105 to Q110 on the checks of chunk `facet` (`docs/decisions/ferrum-state.md`, "Q105 to Q110", its list "What each later step does", item 1; read the entry whole). The work, under `crates/ferrum-state/tests/replay/facet/` only:
+
+1. **A wrapper is its content** (Q105; `design.md` §3, the `Extension` row): a `{"wrap": N}` object given where an extension is expected becomes its content's `Extension`, with a comment citing `mirrors/cm6/state/src/facet.ts:549-552` (`flatten`). A wrapper whose `extension` is falsy or is the wrapper itself stays excluded, reason `type`.
+2. **The merge with no key** (Q107): `combineConfig.entries` and `combineConfig.call` now have rows of `raw/replay.jsonl`, `part`; F0159 is left out with reason `op`, not `type`.
+3. **`prec.keys`** (Q108): its row of `raw/replay.jsonl` is `none`; the result is left out with reason `op`.
+4. **Values read by a rule of the language** (Q109; `.claude/rules/decisions.md` D12 as now written; `design.md` §10 "No counterpart" case 1, "A value a callback returns"): a `{"returns": r}` compare gives Ferrum the truthiness of `r`; `static` gives its truthiness; `require` gives `true` for `undefined` and the truthiness of anything else. Each conversion cites its cm6 line (`facet.ts:166`, `:180`, `:198`, `:238`, `:250`, `:333`, `:498` for what a compare returns; `facet.ts:74` for `static`; `mirrors/cm6/state/src/state.ts:68-71` for `require`). The comment of `falsy_value` in `scope.rs` cites `facet.ts:109`, not `:118`.
+5. **Nothing to write** for Q106 (`raw/decisions.jsonl` `state.cm6.134.d2`, class `form`, lists its eight fixtures; the core handles it) and Q110 (the getters stay excluded by type).
+
+You do not read `crates/ferrum-state/src/`: the signatures from `cargo doc` as before.
+
+**Check:** `cargo fmt --all`, then `python3 tools/impl_check.py ferrum-state checks state --chunk facet`, until it ends with "checks passed". Expected against the skeleton: still no fixture of chunk `facet` `equal` and none `mismatch`; fewer left out by `type`, F0159 and the `prec.keys` leaf of F0119 left out by `op`.
+
+**Budget.** 60,000 tokens (a round, counted apart). If you pass 90,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the checks of chunk facet after Q105 to Q110' -- crates/ferrum-state/tests`.
+
+**Report:** the output of the check, whole; each file you changed with the rule each change restores (`design.md` §3; `raw/replay.jsonl`; D12), for the orchestrator's list; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
