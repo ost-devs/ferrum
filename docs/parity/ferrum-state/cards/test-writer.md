@@ -362,3 +362,17 @@ You do not read `crates/ferrum-state/src/`.
 **Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): case 5 and the variables of a fn (Q119)' -- crates/ferrum-state/tests`.
 
 **Report:** the output of both checks, whole; each file you changed with what it now does, for the orchestrator's list; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## After U4: what is left out differs between two runs of the same code
+
+`fixtures/no-counterpart.jsonl` was written by the replayer on the five chunks (`FERRUM_REPLAY_WRITE_NO_COUNTERPART=1`, commit 54a4395, the tree at e11a07f). Replayed again against it with nothing changed, `cargo test -p ferrum-state --features __test --test replay` fails in `driver.rs:731` ("what is left out differs"), and which fixtures differ changes from run to run: of three runs, one named F7127, F7132 and F7138 of chunk `text`, one F7127 alone, one F7127 and F7132. In each, the file and the run hold the same reasons and values but not the same number of entries of the same value: in F7127 the file holds `{"reason":"type","op":"iter.steps","argument":"skip","value":7.5}` twice and `7.7` once, the run `7.5` once and `7.7` twice; in F7132 and F7138 an entry `{"reason":"char","op":"iter.next",…}` appears or not. The three are fixtures of `state.TextIterator.next.B11` whose program maps a grid of fractional skips over `iter.steps` (`fixtures/text.jsonl`); their results are `part` in every run. The replay at one run is a function of the code and the fixtures; that what is left out is not is the defect. The hand-off requires the replayer to pass against the file (`docs/parity/ferrum-state/plan.md` "Hand-off").
+
+The work, under `crates/ferrum-state/tests/` only: find why the entries left out of these fixtures depend on the run, and make them a function of the program, without changing what is compared or any fixture's result. You do not read `crates/ferrum-state/src/`. Say the cause in your report, with the file and line. If the cause is not in the replayer, say what it is and change nothing.
+
+**Check:** `cargo fmt --all`; then `FERRUM_REPLAY_WRITE_NO_COUNTERPART=1 cargo test -q -p ferrum-state --features __test --test replay`, followed by five runs of `cargo test -q -p ferrum-state --features __test --test replay`, each passing; then `python3 tools/impl_check.py ferrum-state code state --since efdebd2`, passing whole but for its check that your files are listed. Leave the rewritten `no-counterpart.jsonl` uncommitted: the orchestrator writes and commits it from its own run.
+
+**Budget.** 60,000 tokens (a round, counted apart). If you pass 90,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): what the replayer leaves out, the same at every run' -- crates/ferrum-state/tests`.
+
+**Report:** the cause; the outputs of the checks; each file you changed with what it now does, for the orchestrator's list; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
