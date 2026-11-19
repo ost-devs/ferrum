@@ -266,3 +266,17 @@ A round on the checks of chunk `state` after Q111 to Q115 (commit efdebd2, the c
 - `crates/ferrum-state/tests/replay/state/ops.rs`
 - `crates/ferrum-state/tests/replay/state/specs.rs`
 - `crates/ferrum-state/tests/replay/state/values.rs`
+
+A round of "A check that is wrong" on the checks of unit `state` after Q116 to Q118 (commit 4386fc7; decided by the consultant: `docs/decisions/ferrum-state.md`, "Q116 to Q118 and the checks the code of unit state found wrong", "What it requires", item 1). The core gains `Program::not_made`, which counts a call not made for case 5 of `design.md` §10 "No counterpart" so that a `try` or `capture` around it is no counterpart (F0116). Chunk `facet`: `state_json` holds no borrow across its write (19 fixtures; the op's header); the counters a callback spec names are no counterpart after a call not made (F7109, F7110; §10); `thrown` names and converts `Invalid position P in document of length L` (rule 10); `ListRead` takes any slot's address (F0232; §10 "Identity"). Chunk `state`: the messages of `update` are converted through the position argument rule 10 picks with the documents rule 6 gives (F1166, F2063), a message that fits none failing as the replayer's own unless every document is ASCII (rule 8); `get` of `changes`, `selection` and `effects` of a `TransactionSpec` and a `ChangeByRange` (47 fixtures); a falsy `selection` other than `undefined` excluded by type (F0457, F0529, F0530; D12); the name an excluded `effect.define` defines is no counterpart (F7259; case 5); a facet of `EditorState` read as a list with its slot's identity (F0232); `isInstance(…, "ChangeSet")` of an effect's mapping `part` (F0813, F0814; `raw/replay.jsonl`); the language-data provider stores `null` and `undefined` as given and a non-string `wordChars` meets `state.cm6.029.d1` (F0263, F7224 to F7226); `fn` records the variables its body writes (an `as` or an `array.push` target), no counterpart after a call not made (§10). Chunk `text`: the condition of `state.cm6.225.d2` in the cursor op (F6034). `written_state.rs`: ten written tests with their `// covers:` (`state.StateCommand.B1`, `state.Compartment.reconfigure.B1`, `state.EditorState.selection.B1`, `state.Transaction.newSelection.B1`, `state.StateEffect^mapEffects.B1`, `state.StateEffect^reconfigure.B4`, `state.StateEffect^appendConfig.B3`, `state.EditorState.charCategorizer.B5` and `state.cm6.029.d1` twice, `state.Facet.compute.B8`), and the test of F0136 also covers `state.Transaction.state.B7` and `state.cm6.059.d1`. Files:
+- `crates/ferrum-state/tests/replay/lang/eval.rs`
+- `crates/ferrum-state/tests/replay/facet/ops.rs`
+- `crates/ferrum-state/tests/replay/facet/scope.rs`
+- `crates/ferrum-state/tests/replay/facet/values.rs`
+- `crates/ferrum-state/tests/replay/state/chunk.rs`
+- `crates/ferrum-state/tests/replay/state/harness.rs`
+- `crates/ferrum-state/tests/replay/state/ops.rs`
+- `crates/ferrum-state/tests/replay/state/specs.rs`
+- `crates/ferrum-state/tests/replay/state/values.rs`
+- `crates/ferrum-state/tests/replay/text/cursor.rs`
+- `crates/ferrum-state/tests/replay/text/host.rs`
+- `crates/ferrum-state/tests/written_state.rs`
