@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/decisions/foundation.md` (commit `bd64bfd`). O original em inglês é o que vale.
+> Tradução para leitura de `docs/decisions/foundation.md` (commit `b7b261c`). O original em inglês é o que vale.
 
 # Decisões: foundation
 
@@ -365,3 +365,45 @@ os implementadores esbarram.
 **Confiança.** Alta na leitura da intenção (é a declaração do mantenedor). Média-alta na regra de momento: é raciocinada, e nenhum delta rodou. O E10 do ledger diz o que a confirmará.
 
 **Reabre.** O primeiro delta de melhoria custando mais do que fazer a melhoria durante o porte teria custado (medido no ledger); uma melhoria que se revele precisar de uma mudança de API depois de o projeto do seu crate ter sido implementado; o mantenedor achando que o registro não lhes mostra o que foi deixado passar.
+
+## 2026-11-15 · D12: um `null` que o cm6 trata como ausente é o valor ausente
+
+*Decidido pelo consultor (Q91 do `ferrum-state`; a parte do crate: [`docs/decisions/ferrum-state.md`](ferrum-state-ptbr.md), "Q86 a Q91"). Texto que obriga: [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) D12.*
+
+**Pergunta.** D12 exclui por tipo "`null` para um objeto". O cm6 às vezes dá de propósito a `null` o significado de "ausente": `EditorSelection.cursor` testa `bidiLevel == null` (`mirrors/cm6/state/src/selection.ts:203`) e `SelectionRange.bidiLevel` retorna `null` para "sem nível" (`selection.ts:66`); `ChangeSet.of` testa `!insert` (`mirrors/cm6/state/src/change.ts:335`). Tal `null` é excluído?
+
+**Decisão.** Não. Um `null` que o código do cm6 trata exatamente como um valor ausente (`x == null`, ou um teste falsy cujo resultado é o ausente) é o valor ausente: `None` de um parâmetro `Option` (D14). O replayer o dá ao Ferrum como `None` e cita a linha do cm6. Um `null` que o cm6 lê como objeto, ou compara com `===`, continua excluído.
+
+**Por quê.** A razão de D12 é que entrada sem tipo dá artefatos do motor em que nenhum chamador confia. Um `null` que o cm6 testa de propósito não é um artefato, e os próprios getters do cm6 o retornam, então um chamador o passa de volta sem pensar nele como um valor diferente. Em Rust o chamador escreve `None`. A API pública não muda; muda só quais casos gravados são comparados.
+
+**Perdido.** Mantê-los excluídos: casos comparados em lugar nenhum, e a mesma pergunta em todo `null` de opção de `@codemirror/view`.
+
+**Confiança.** Alta para o `ferrum-state`. **Reabre:** um argumento que o cm6 testa com `== null` num lugar e lê como objeto em outro.
+
+## 2026-11-19 · D12: um valor que o cm6 trata só por uma regra da linguagem é o que essa regra faz dele
+
+*Decidido pelo consultor (Q109 do `ferrum-state`; a parte do crate: [`docs/decisions/ferrum-state.md`](ferrum-state-ptbr.md), "Q105 a Q110"). Texto que obriga: [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) D12. Amplia a entrada de 2026-11-15 sobre Q91.*
+
+**Pergunta.** D12 exclui "um valor do tipo errado", e Q91 tirou disso só um `null` que o cm6 trata como ausente. O cm6 lê outros valores só por truthiness (o que um `compare` retorna, `static`, `require`) ou os trata exatamente como ausentes (um `combine` falsy, um `toJSON` que não é função). Eles são excluídos?
+
+**Decisão.** Não. Um valor que o código do cm6 naquele lugar trata exatamente como o valor ausente (um `null` testado com `== null`, um valor falsy cujo ramo falsy é o ausente, uma não-função cuja chamada lança o mesmo erro que a do valor ausente) é `None`. Um valor que ele lê só pela truthiness, como argumento, como membro de um objeto que recebe ou como o que um callback retorna, é o `bool` desse teste. O padrão de um parâmetro se aplica primeiro, só a `undefined`. Qualquer outra leitura mantém o valor excluído.
+
+**Por quê.** A razão de D12 é que entrada sem tipo dá artefatos do motor em que nenhum chamador confia. Truthiness e ausência são regras da linguagem, iguais para todo valor, e chamadores JavaScript dependem delas (`compare: (a, b) => a && b && …`, `static: flag`). Um chamador Rust escreve o resultado da regra. A API pública não muda; muda só quais casos gravados são comparados, e cada caso assim é comparado contra a saída do próprio cm6, então um site mal lido falha visivelmente.
+
+**Perdido.** Manter os valores truthy excluídos enquanto os falsy já eram dados como ausentes: uma regra inconsistente, e casos comparados em lugar nenhum, também em toda opção booleana de `@codemirror/view`.
+
+**Confiança.** Alta para o `ferrum-state`, onde todo site foi lido. **Reabre:** um site onde o cm6 lê um valor pela truthiness e de outro modo no mesmo caminho.
+
+## 2026-11-19 · D12: um primitivo que o cm6 lê só por conversão para string é essa string
+
+*Decidido pelo consultor no fim da implementação do `ferrum-state` (a parte do crate: [`docs/decisions/ferrum-state.md`](ferrum-state-ptbr.md), "O fim do estágio de implementação"). Texto que obriga: [`.claude/rules/decisions.md`](../../claude/rules/decisions-ptbr.md) D12. Amplia a entrada de 2026-11-19 sobre Q109.*
+
+**Pergunta.** D12 como ampliada em Q109 dá a um valor que o cm6 trata só por truthiness ou como ausente a forma que essa regra faz dele, e exclui toda outra leitura. O `phrase` do cm6 insere seus argumentos por um callback `replace`, que os converte em strings (`mirrors/cm6/state/src/state.ts:327-331`), e todo chamador espelhado que passa um argumento passa um número (`mirrors/cm6/search/src/search.ts:546`, `mirrors/cm6/merge/src/deco.ts:252`). Tal número é excluído?
+
+**Decisão.** Não. Um primitivo (número, booleano, `null`, `undefined`) que o cm6 lê só pela conversão do JavaScript para string (`String(x)`, um template, `+` com uma string, o que um callback `replace` retorna) é a string que essa conversão dá. Um objeto continua excluído: a sua conversão chama os seus próprios métodos.
+
+**Por quê.** A razão de Q109, uma regra adiante: a linguagem define a conversão, chamadores JavaScript dependem dela, e um chamador Rust escreve o seu resultado (`n.to_string()`, que para um inteiro é a string do JavaScript). As assinaturas do Ferrum não mudam; muda só quais casos gravados são comparados, cada um contra a saída do próprio cm6.
+
+**Perdido.** Manter tais valores excluídos: a chamada que todo chamador real faz é comparada em lugar nenhum, aqui e em `@codemirror/view`.
+
+**Confiança.** Alta. **Reabre:** um site onde o cm6 converte um primitivo e também o lê de outro modo no mesmo caminho.

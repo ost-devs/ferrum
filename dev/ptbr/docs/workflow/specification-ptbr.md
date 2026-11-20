@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/specification.md` (commit `9efcc73`). O original em inglês é o que vale; as seções citadas (§5, §9…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
+> Tradução para leitura de `docs/workflow/specification.md` (commit `b7b261c`). O original em inglês é o que vale; as seções citadas (§5, §9…) seguem a numeração do original. Os modelos de cartão (apêndices) também estão traduzidos; o orquestrador usa os do original, em inglês.
 
 # Etapa de especificação
 
@@ -81,7 +81,7 @@ verification.md            §8: o que foi conferido, as divergências, as taxas
 Esquemas (um objeto JSON por linha; `[]` marca arrays):
 
 - `raw/inventory.jsonl`: `id, item, kind, file, line, chunk, does, platform, used_by[], disposition, reason`. O S1 escreve os fatos: `does` (o que o item faz, pelo código dele), `platform` (o que ele tira do DOM, do CSS, do navegador, do Lezer ou do sistema de tipos do TypeScript, com `file:line`, ou `none`), `used_by` (os pacotes e itens do cm6 que o chamam). O consultor escreve `disposition` e `reason`.
-- `raw/behaviors.jsonl`: `id, item_id, text, cm6, hazards[], stack[], consumer_values[], cost, cm6_tests[], fixtures[], golden_note`
+- `raw/behaviors.jsonl`: `id, item_id, text, cm6, hazards[], stack[], consumer_values[], cost, cm6_tests[], fixtures[], golden_note`; e `added` numa linha escrita, ou cujo texto foi corrigido, depois de a especificação ser aprovada: a etapa e a unidade que achou o caso (`implementation change`). A conformidade lê toda linha assim ([`conformance.md`](conformance-ptbr.md) §3), porque nem a leitura de completude nem a amostra da §8 de `specification.md` a viu como ela está agora
 - `raw/files.jsonl`: `file, chunk, does, platform, used_by[], disposition, reason`
 - `raw/throws.jsonl`: `cm6, kind, error, condition, protects, checkable, public_entry, behaviors[], fixtures[], tests[]`; e `positions` numa linha cujo `error` interpola um valor: quais dos valores interpolados são posições, offsets ou comprimentos e o texto sobre o qual cada um é medido nos termos da própria função que lança, ou `none` (de `ferrum-view` em diante, escrito com a linha; para `ferrum-state` as quatro mensagens assim estão em [`docs/parity/ferrum-state/plan.md`](../../../../docs/parity/ferrum-state/plan.md) "Positions", regra 10). A saída de uma fixture guarda essas mensagens, então o replayer converte os números delas como qualquer outra posição
 - `raw/names.jsonl`: `id, item, signature, does, case` (qual tipo de caso de `names` da §7 é)
