@@ -1,4 +1,4 @@
-> Tradução para leitura de `docs/workflow/conformance.md` (commit `bd64bfd`). O original em inglês é o que vale; as seções citadas (§2, G5…) seguem a numeração do original. O modelo de cartão (apêndice) também está traduzido; o orquestrador usa o do original, em inglês.
+> Tradução para leitura de `docs/workflow/conformance.md` (commit `b7b261c`). O original em inglês é o que vale; as seções citadas (§2, G5…) seguem a numeração do original. O modelo de cartão (apêndice) também está traduzido; o orquestrador usa o do original, em inglês.
 
 # Etapa de conformidade
 
@@ -112,7 +112,8 @@ Os portões mecânicos rodam primeiro, para o crate inteiro, pelo orquestrador, 
 - As verificações por leitura cobrem todo item quando o crate tem menos de 100 itens no escopo. Senão cobrem pelo menos 25%, escolhidos com uma semente registrada, mais:
   - todo item com um risco;
   - todo item `CONTRACT`;
-  - todo item que um desvio toca.
+  - todo item que um desvio toca;
+  - todo item com uma linha de comportamento que tem a chave `added` (escrita ou corrigida durante a implementação, depois da verificação própria da especificação: [`specification.md`](specification-ptbr.md#4-entregáveis-e-esquemas) §4).
 - Um `verifier` que não rodou nenhum portão então reconfere pelo menos 10% dos veredictos (mínimo 20). Ele roda de novo as reproduções deles, e acrescenta a `verification.md` as divergências e sua taxa. Os scripts dos portões são ferramentas que o orquestrador roda; nenhum worker os reescreve.
 - Um veredicto errado é corrigido como uma classe: a condição que um veredicto correto cumpre é testada em todo veredicto desse tipo, não nos amostrados. A amostra é uma medição e não é repetida até voltar limpa; uma segunda só é tirada quando a primeira achou um veredicto que deixou passar um item que falha, depois que o portão que o deixou passar é corrigido para todo item ([`docs/workflow/specification.md`](specification-ptbr.md) §8 itens 4–5 dão o motivo).
 

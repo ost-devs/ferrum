@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/ferrum-run/notes.md` (commit `ae094f2`). O original em inglês é o que vale.
+> Tradução para leitura de `.claude/skills/ferrum-run/notes.md` (commit `995ef2e`). O original em inglês é o que vale.
 
 # Notas de operação do orquestrador
 
@@ -9,3 +9,6 @@ Práticas para conduzir o trabalho do Ferrum que o mantenedor pediu ou que o orq
 - Dois workers mudando as mesmas linhas ao mesmo tempo: um edita os arquivos integrados no lugar; todos os outros escrevem só em `.scratch/` uma linha por mudança, com o id da linha, o campo, o valor antes e depois, e o motivo; a integração confere cada valor anterior contra a linha e para numa diferença (170 mudanças integradas assim sem conflito, W36) (2026-11-12).
 - Um worker que deriva um campo do zero recebe suas linhas com esse campo removido, e só compara com os valores existentes depois de escrever os seus (W28) (2026-11-10).
 - Um prompt de criação de worker nomeia as chaves das linhas exatamente como os arquivos as têm; uma chave que o arquivo não tem para o worker no meio da execução (W36) (2026-11-12).
+- Um script que edita um arquivo substituindo um texto afirma que o texto é encontrado uma vez: uma substituição que não casa com nada não muda nada e não relata nada; as perguntas enfileiradas Q92, Q93 e Q95 se perderam assim, porque um consultor tinha mudado a linha que o script procurava (2026-11-16).
+- O que o trabalho precisa e o ambiente não tem (um toolchain, uma ferramenta, um host) é instalado para a sessão quando isso é rápido e escrito em [`dev/maintainer/ambiente.md`](../../../../maintainer/ambiente.md) para o mantenedor acrescentar ao ambiente; uma verificação ou critério nunca é escolhido porque o ambiente não tem algo (o mantenedor, [`dev/maintainer/instructions/2026-11-19-ambiente-nao-e-criterio.md`](../../../../maintainer/instructions/2026-11-19-ambiente-nao-e-criterio.md)) (2026-11-19).
+- `str.splitlines()` do Python separa em U+2028 e em outros separadores: um arquivo JSONL com tal caractere num valor é lido com `split('\n')` (um diff de `no-counterpart.jsonl` falhou ao ser lido assim) (2026-11-19).
