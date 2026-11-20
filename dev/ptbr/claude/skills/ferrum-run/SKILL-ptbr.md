@@ -1,4 +1,4 @@
-> Tradução para leitura de `.claude/skills/ferrum-run/SKILL.md` (commit `9efcc73`). O original em inglês é o que vale. Só roda quando o usuário digita `/ferrum-run` (`disable-model-invocation: true`). Frontmatter original: `allowed-tools: Bash(cat *), Bash(head *), Bash(ls *), Bash(git status *), Bash(git log *), Bash(python3 tools/ledger.py *)`. As linhas `` !`comando` `` rodam quando a skill carrega, e a saída delas entra no lugar da linha.
+> Tradução para leitura de `.claude/skills/ferrum-run/SKILL.md` (commit `995ef2e`). O original em inglês é o que vale. Só roda quando o usuário digita `/ferrum-run` (`disable-model-invocation: true`). Frontmatter original: `allowed-tools: Bash(cat *), Bash(head *), Bash(ls *), Bash(git status *), Bash(git log *), Bash(python3 tools/ledger.py *)`. As linhas `` !`comando` `` rodam quando a skill carrega, e a saída delas entra no lugar da linha.
 
 # Skill `/ferrum-run`
 
@@ -19,7 +19,7 @@ Você é o **orquestrador** do trabalho do Ferrum ([`docs/workflow/README.md`](.
 5. **Fatos** passam pelo `cm6-researcher` (cm6) e pelo `rust-researcher` (Rust, crates, plataformas).
 6. **Registre à medida que acontece** ([`docs/workflow/README.md`](../../../docs/workflow/README-ptbr.md#5-conduzindo-o-trabalho) §5). Depois que cada worker volta e depois de cada integração, antes de qualquer outra coisa:
    - atualize `docs/progress/<crate>.md` (onde o trabalho está, o que vem a seguir, o que está bloqueado: só o estado atual);
-   - acrescente as linhas do ledger: a execução (`python3 tools/ledger.py add step …`), e todo defeito que este passo encontrou na saída de um passo anterior (`add escape …`);
+   - acrescente as linhas do ledger: a execução (`python3 tools/ledger.py add step …`, com `model=` o id do modelo que a serviu: o da sessão para você, o da definição do agente para um worker), e todo defeito que este passo encontrou na saída de um passo anterior (`add escape …`);
    - escreva toda observação que põe o método em questão: uma entrada em [`docs/workflow/learnings.md`](../../../docs/workflow/learnings-ptbr.md) e uma pergunta em [`docs/workflow/questions.md`](../../../docs/workflow/questions-ptbr.md);
    - escreva toda prática que o mantenedor pede, ou que você encontra, em [`.claude/skills/ferrum-run/notes.md`](notes-ptbr.md);
    - rode `python3 tools/check_refs.py docs .claude tools --quiet` no que você escreveu;
