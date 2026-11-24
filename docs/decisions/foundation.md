@@ -395,3 +395,39 @@ mechanical conversion settles anyway) or misses cases implementers hit.
 **Lost.** Keeping such values excluded: the call every real caller makes is compared nowhere, here and in `@codemirror/view`.
 
 **Confidence.** High. **Reopens:** a site where cm6 converts a primitive and also reads it otherwise on the same path.
+
+## 2026-11-24 · Q128: who protects the person editing from a panic of the engine
+
+*Decided by the consultant (Q128 of `ferrum-state`, raised by the maintainer on 2026-11-20). Binding text: `.claude/rules/decisions.md` D13 (amended); `docs/parity/ferrum-view/questions.md` Q3, where the design of `ferrum-view` takes it up.*
+
+**Question.** D13 makes Ferrum panic where cm6 throws on a broken precondition. An application embeds Ferrum: who can cause such a panic, and how are the application's author and the person editing protected from losing their session?
+
+**What I found.** cm6 throws, but nothing it throws ends the editor. `@codemirror/view` catches every exception of code an application supplies (plugins, update listeners, measure callbacks, input handlers, tooltips) and routes it to `logException` and `EditorView.exceptionSink` (`mirrors/cm6/view/src/extension.ts:91`, with ten callers, among them `extension.ts:238`, `input.ts:235`, `editorview.ts:336`); a crashed plugin is switched off. What it does not catch, a command that throws during a key press, is contained by the browser: the handler's exception is reported and the page goes on. In Rust a panic unwinds to the top of the thread; a panic that reaches a callback of the operating system (the surface's event handler, an `extern "C"` function) aborts the process since Rust 1.81, and the person editing loses whatever was not saved. So D13 as written was below cm6's floor of stability for the layers above, though right for `ferrum-state`.
+
+**Who can cause the panic.** Code that passes the engine a value it did not take from the state it holds: an application's or a plugin's own code (a bug, as in cm6); and data from outside the program, which no caller can check first: serialized state (already a `Result`, D13), a peer's changes in collaboration (they arrive serialized), a position an input method gives in UTF-16 units, an LSP position. Commands and the view derive their positions from the state, as cm6's do.
+
+**Decision.** D13 keeps the panic for a broken precondition and adds three rules for the layers above. (1) Data from outside the program enters through a reader that returns `Result`, and the conversion of a platform's or a protocol's position to D1's unit is such a reader. (2) Where cm6 catches an exception of an application's code, Ferrum catches the unwinding panic at the same place, with the same consequence, and reports it the same way. (3) A panic that escapes an entry point through which a surface hands the engine an event does not end the application; the engine goes on as cm6 goes on after an uncaught exception in a handler, and `ferrum-view`'s design derives what that leaves. Immutable states (D6) are what makes this safe: the state before the call is intact.
+
+**Why.** It is the maintainer's floor read literally: the same stability as cm6 or better. (2) is parity of behavior `ferrum-view` must port anyway; (1) and (3) are what makes the same experience reach the person editing on a native stack. The panic stays for a caller's bug because the alternative, a `Result` at every call, is what D13 already weighed and rejected, and the fallible variants that would serve a caller with outside positions are the candidate `state.imp.009`, evaluated at `ferrum-view`'s specification.
+
+**What the application's author must know, for the facade's documentation.** The protection of (2) and (3) needs panics to unwind, which is Rust's default; an application built with `panic = "abort"` gives it up. That sentence belongs in the facade's documentation when it is written (`docs/parity/ferrum-view/questions.md` Q3 carries it until then).
+
+**Lost.** *Change D13 to `Result` everywhere*: every caller unwraps values it took from the state, and a bug hides as a quiet `Err`. *Leave protection to each surface*: each surface would reinvent where cm6 catches, and differently. *Decide now how `ferrum-view` catches* (`catch_unwind` at which functions, what its plugins become): that is its design, made with its specification.
+
+**Confidence.** High on the rules: they follow from cm6's code and from what an abort costs the person editing. Medium on (3) until `ferrum-view`'s design shows what state the view keeps after a panic mid-update (cm6 has the same question, `editorview.ts:303`). **Reopens.** A surface whose toolkit cannot unwind through its event loop; a case where cm6 catches and the state before the call is not the right one to keep.
+
+## 2026-11-24 · Q129: the public API during the foundation
+
+*Decided by the consultant (Q129 of `ferrum-state`, asked by the maintainer on 2026-11-20). Binding text: `docs/workflow/README.md` §4, "The public API during the foundation". The goal it reads, unchanged: `ferrum-foundation.md` §1, "A stable public API for applications, reached through the facade crate `ferrum` once the foundation is complete".*
+
+**The maintainer's four questions, answered.**
+1. *Are the public APIs of the foundation crates provisional until the foundation is complete and validated?* Yes. The goal places stability at the facade, once the foundation is complete, and nothing is released before. A conforming crate's API is proven to give cm6's behavior; it is not yet proven to be the right shape for the crates above, which are its first real callers.
+2. *Are breaking revisions allowed when a clearly better design appears?* Yes, each as a decision of mine with what the caller gains and what it costs, made as a step of its own on that crate, after which its gates run again and its verdict is restated. The best moment is before the crate above writes code against the old form, which is why the skeleton of each crate is approved by reading how the crate above calls it.
+3. *When does stability become binding?* At the first release of the facade `ferrum`: from then its API follows semantic versioning, and the crates behind it change only behind it.
+4. *What justifies keeping a declared API over a better one now?* Only its cost, never the fact that it is written: the call sites in tests and in the crates above, what a developer who knows cm6 stops recognizing (a goal of its own), and the risk of a change in the middle of a stage. An API improvement that has those costs is a row of the crate's register (D16), weighed and timed like any other (`state.imp.011` is one).
+
+**Why not freeze earlier.** Freezing `ferrum-state`'s API at its verdict would make every awkward form `ferrum-view` finds permanent, with no outside user to protect. *Why not leave it open with no rule.* A change made silently would invalidate the verdict without anyone running its gates again.
+
+**What I assumed about the maintainer's wishes.** That no application, their own Markdown editor included, depends on a foundation crate before the facade is released (`ferrum-foundation.md` §5 says nothing else starts before). If they want one to, the point at which stability binds moves to that day for the crates it uses, and that is their call.
+
+**Confidence.** High. **Reopens.** An outside consumer before the facade; a change under this rule that costs more than its record estimated.

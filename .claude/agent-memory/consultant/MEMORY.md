@@ -79,6 +79,11 @@
 - Before deciding a rule a tool will check, run it against every case the check covers (cm6's traces of all 143: 30 seconds); a rule generalized from the failing cases was wrong for 26. A label the producer cannot compute is dropped, not guessed; the tool that sees the truth prints it. `docs/decisions/ferrum-state.md`, "Q120, the line `Line::is_empty`, and branch coverage"
 - A check is never chosen or replaced because the environment lacks a tool: ask the maintainer for it, then weigh it on what it shows. Line, branch and mutation coverage answer different questions (not run, condition never true/false, change not forbidden); none stands for another. Run it before deciding. Same entry
 
+- A reviewer's broad "could the checks hide X" question: ask where a divergence of that kind goes unseen with the plan as written and change only there; reading the plan against its own register found G10 never run and an improvement's evaluation point missing. `docs/decisions/ferrum-state.md` "Q121 to Q129"
+- Tool versions: pin what runs Ferrum's own checks (lints, rustdoc format, Rust's Unicode), since their meaning drifts; never pin the engine that writes the reference: make the data hold only what results depend on, so regeneration alarms on a real change. Try the pin before deciding. `docs/decisions/method.md` M22
+- A panic in an embedded engine: the floor is cm6's stability (the view catches extension code, the browser contains the rest); catch where cm6 catches, outside data through `Result`, keep the panic for a caller's bug. `docs/decisions/foundation.md` Q128
+- API stability before the facade: provisional; only the cost of a change (call sites, cm6 familiarity, mid-stage risk) keeps a form, never that it is written. Same file, Q129
+
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.
 - They confirm drafts readily when the draft states costs; what they push back on is a value judgment of mine presented as a technical one.

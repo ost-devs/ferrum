@@ -23,3 +23,18 @@ Open questions only (`docs/workflow/README.md` §3). Ids are stable and never re
 - **Bears on it.** `Decoration` is the `RangeValue` of the view's range sets, so its equality is what `RangeSet::compare` calls. Separately, the built-in facets of this crate need ids in cm6's definition order after `ferrum-state`'s (`docs/parity/ferrum-state/raw/decisions.jsonl`, `state.cm6.036.d2`).
 - **Blocks.** The design of `ferrum-view` (S5).
 - **Raised by.** The consultant, from Q6 of `ferrum-state`, 2026-11-13.
+
+## Q3. Contracts of `ferrum-state` that its design left to `ferrum-view`
+- **Found.** Points where `ferrum-state`'s design stops at the boundary and names `ferrum-view` (or the facade) as where they are settled:
+  - field values, facet inputs and facet outputs are `PartialEq`, and `RangeSet<T>` is not, so a field or facet that holds a decoration set has no form yet (`docs/parity/ferrum-state/design.md` §3);
+  - a function given as a facet input is a `ByAddress<T>`; whether the view's function-valued facets (about fifteen) are written often enough to want a shorter constructor (`docs/decisions/ferrum-state.md`, "The skeleton approved with changes", Q63, "Reopens");
+  - an effect's or annotation's value is read only through the type that made it (`effect.value(&ty)`); ported view code that must read one without its type reopens Q64 (same entry);
+  - through a base reference (`Deref` of a subclass) Rust calls the base's `map_desc` and `to_json`, cm6 the override (Q65, same entry; `design.md` §3);
+  - the view-receiving `Command` of D5 (`.claude/rules/decisions.md` D5; `ferrum-foundation.md` §6 D5);
+  - modules are public beside the flat exports, two paths per item, decided with the facade (same entry, "Raised by me");
+  - the candidates `state.imp.009` (calls that take a position from outside the program, without a panic) and `state.imp.011` (short forms of calls whose cm6 defaults are the common case), whose `when` is this crate's specification or later (`docs/parity/ferrum-state/raw/improvements.jsonl`);
+  - D13 as amended on 2026-11-24 (Q128 of `ferrum-state`): where `@codemirror/view` catches exceptions of extension code (`logException`, `mirrors/cm6/view/src/extension.ts:91`; its callers at `extension.ts:238`, `:249`, `:261`, `input.ts:235`, `editorview.ts:336`, `:408`, `:460`, `:478`, `docview.ts:527`, `tooltip.ts:712`) Ferrum catches the panic, and what state the view keeps when a panic escapes an entry point of an event; an application built with `panic = "abort"` gets neither, which the facade's documentation must say.
+- **Open because.** Each was left to the crate whose callers decide it; none is decided.
+- **Bears on it.** Each is read against how `@codemirror/view`'s code calls `@codemirror/state` (`docs/parity/ferrum-state/raw/xc.jsonl`, 184 rows for this crate). A change to `ferrum-state`'s API that one of them needs follows `docs/workflow/README.md` §4 "The public API during the foundation".
+- **Blocks.** The design of `ferrum-view` (S5); the skeleton approval of `ferrum-view`.
+- **Raised by.** The consultant, from Q121 and Q128 of `ferrum-state`, 2026-11-24.

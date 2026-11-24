@@ -1,0 +1,6 @@
+# The Rust every check runs on (docs/workflow/README.md §5 "Versions"; M22, docs/decisions/method.md).
+# Changed only by a commit of its own that runs every finished crate's checks again.
+[toolchain]
+channel = "1.97.0"
+profile = "minimal"
+components = ["clippy", "rustfmt"]
