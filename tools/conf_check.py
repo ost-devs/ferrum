@@ -24,6 +24,11 @@
                                                                 .scratch/conformance/<crate>/mutants.toml (`examine_re`,
                                                                 one exact name per mutant of those functions) for
                                                                 `cargo mutants -p <crate> --features __test --config <it>`
+    python3 tools/conf_check.py <crate> coverage [<dir>]         G2's coverage, from the llvm-cov reports in <dir> (default
+                                                                .scratch/conformance/<crate>/coverage): the uncovered lines
+                                                                not sorted in implementation.md, the missed branch outcomes
+    python3 tools/conf_check.py <crate> costs                    G8's input: every behavior with the class its cost text
+                                                                gives by pattern, or `unsorted`; conformance/costs.jsonl
     (--root <dir>: another tree than the repository, for trying the tool on a copy)
 
 Output files go to .scratch/conformance/<crate>/ (never committed: regenerated from the recorded commit).
@@ -597,11 +602,101 @@ def mutants(c, crate, args):
     c.need(bool(pick), f"mutants of those functions: {len(pick)} of {len(ms)} in the crate; written {os.path.relpath(path, REPO)} and {os.path.relpath(listing, REPO)}")
 
 
+# ---- G2, coverage of the crate's code by its checks ------------------------------------------------------------------
+
+def coverage(c, crate, args):
+    """Reads the output of `cargo +<nightly> llvm-cov -p <crate> --features __test --no-fail-fast --branch` (its
+    `report --branch --show-missing-lines` text and `report --branch --json`, in the directory given): lists every
+    uncovered line not sorted in implementation.md "Lines no check reaches" and every missed branch outcome, by unit."""
+    d = args[0] if args else os.path.join(REPO, ".scratch", "conformance", crate, "coverage")
+    text, data = ic.read(os.path.join(d, "report.txt")), json.load(open(os.path.join(d, "report.json")))
+    src = ic.crate_dir(crate, "src")
+    us = ic.units(crate)
+    unit_of = lambda f: next((f"{u['id']} {n}" for n, u in us.items() if os.path.basename(f)[:-3] in u["modules"]), "crate-wide")
+    # lines: the "Uncovered Lines" of the text report
+    lines = collections.defaultdict(set)
+    for m in re.finditer(r"^(\S+\.rs): ([\d, -]+)$", text.split("Uncovered Lines:")[-1], re.M):
+        f = os.path.relpath(m.group(1) if os.path.isabs(m.group(1)) else os.path.join(ic.ROOT, m.group(1)), src)
+        for part in m.group(2).split(","):
+            a, _, b = part.strip().partition("-")
+            for n in range(int(a), int(b or a) + 1): lines[f].add(n)
+    impl = ic.read(ic.spec(crate, "implementation.md"))
+    sect = re.search(r"^## Lines no check reaches(.*?)(?=^## )", impl, re.M | re.S).group(1)
+    sorted_ = set()
+    cur = None
+    for l in sect.split("\n"):
+        m = re.match(r"^- `crates/[\w-]+/src/(\S+)`:", l)
+        if m: cur = m.group(1); continue
+        m = re.match(r"^\s+- (\d+): `(.*)`", l)
+        if m and cur: sorted_.add((cur, m.group(2).strip()))
+    files = {f: ic.read(os.path.join(src, f)).split("\n") for f in lines if os.path.exists(os.path.join(src, f))}
+    unsorted, accepted = [], 0
+    for f in sorted(lines):
+        for n in sorted(lines[f]):
+            t = files.get(f, [""] * n)[n - 1].strip() if f in files and n <= len(files[f]) else ""
+            if (f, t) in sorted_: accepted += 1
+            else: unsorted.append((unit_of(f), f"src/{f}:{n} `{t}`"))
+    total = sum(len(v) for v in lines.values())
+    c.say(f"uncovered lines: {total}; sorted in implementation.md \"Lines no check reaches\" (same file and text): {accepted}; not sorted: {len(unsorted)} (each to its unit's verifier)")
+    for u, x in sorted(unsorted): c.say(f"        {u}: {x}")
+    # branches: summed over the instantiations of each function, by file, line and column
+    outcomes = collections.defaultdict(lambda: [0, 0])
+    for fn in data["data"][0]["functions"]:
+        for b in fn.get("branches", []):
+            fname = fn["filenames"][b[6]] if len(b) > 6 and b[6] < len(fn["filenames"]) else fn["filenames"][0]
+            k = (fname, b[0], b[1])
+            outcomes[k][0] += b[4]; outcomes[k][1] += b[5]
+    missed = []
+    for (fname, line, col), (t, f_) in sorted(outcomes.items()):
+        if not fname.startswith(src): continue
+        rel = os.path.relpath(fname, src)
+        if t and f_: continue
+        side = "never true" if not t else "never false"
+        if not t and not f_: side = "never evaluated"
+        src_line = ic.read(fname).split("\n")[line - 1].strip()
+        missed.append((unit_of(rel), f"src/{rel}:{line}:{col} {side}: `{src_line}`"))
+    c.say(f"branch conditions: {len([k for k in outcomes if k[0].startswith(src)])}; with a missed outcome (summed over instantiations): {len(missed)} (each to its unit's verifier)")
+    for u, x in missed: c.say(f"        {u}: {x}")
+    summ = data["data"][0]["totals"]
+    c.say(f"totals: lines {summ['lines']['covered']}/{summ['lines']['count']}, branches {summ['branches']['covered']}/{summ['branches']['count']}, functions {summ['functions']['covered']}/{summ['functions']['count']}")
+
+
+# ---- G8, the behaviors whose cost row says local or logarithmic ------------------------------------------------------
+
+def cost_class(b, by, depth=0):
+    t = b.get("cost") or ""
+    m = re.match(r"\s*[Aa]s (B\d+)", t)
+    if m and depth < 3:
+        ref = b["id"].rsplit(".", 1)[0] + "." + m.group(1)
+        if ref in by: return cost_class(by[ref], by, depth + 1)
+    tl = t.lower()
+    if "log" in tl: return "logarithmic"
+    if re.search(r"o\(1\)|constant", tl) and not re.search(r"o\((n|sections|len|lines|doc|length)", tl): return "local"
+    if re.search(r"o\(n\)|linear|o\(sections|o\(number|o\(len|o\(length|whole|every|o\(lines", tl): return "linear or more"
+    return "unsorted"
+
+
+def costs(c, crate, args):
+    """Every behavior with the class its `cost` text gives by pattern (`local`, `logarithmic`, `linear or more`), or
+    `unsorted` where no pattern settles it (a reader sorts those); written to docs/parity/<crate>/conformance/costs.jsonl."""
+    B = ic.rows(ic.spec(crate, "raw", "behaviors.jsonl"))
+    by = {b["id"]: b for b in B}
+    inv = {r["id"]: r["item"] for r in ic.rows(ic.spec(crate, "raw", "inventory.jsonl"))}
+    path = ic.spec(crate, "conformance", "costs.jsonl")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf8") as f:
+        for b in B:
+            f.write(json.dumps({"id": b["id"], "item_id": b["item_id"], "item": inv.get(b["item_id"]), "cost": b.get("cost"), "class": cost_class(b, by)}, ensure_ascii=False) + "\n")
+    n = collections.Counter(cost_class(b, by) for b in B)
+    items = {b["item_id"] for b in B if cost_class(b, by) in ("local", "logarithmic")}
+    c.say(f"behaviors by the class their cost text gives: {dict(n)}; items with a local or logarithmic behavior: {len(items)}; written {os.path.relpath(path, REPO)}")
+
+
 def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ic.ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants}
+    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = ic.Check()

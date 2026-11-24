@@ -82,8 +82,9 @@ function replayOne(lang: Language, input: any): One {
 }
 
 const interpPath = (crate: string, chunk: string) => resolve("docs", "parity", crate, "oracle", "cm6", chunk, "interp.ts")
+// REPLAY_FIXTURES=<dir>: the fixture files of that directory (the fresh cases of tools/oracle_fresh.py), not the crate's
 const fixtures = (crate: string, chunk: string): any[] =>
-  readFileSync(resolve("docs", "parity", crate, "fixtures", chunk + ".jsonl"), "utf8").split("\n").filter(l => l.trim()).map(l => JSON.parse(l))
+  readFileSync(process.env.REPLAY_FIXTURES ? resolve(process.env.REPLAY_FIXTURES, chunk + ".jsonl") : resolve("docs", "parity", crate, "fixtures", chunk + ".jsonl"), "utf8").split("\n").filter(l => l.trim()).map(l => JSON.parse(l))
 
 async function chunkReport(crate: string, chunk: string) {
   const file = interpPath(crate, chunk)

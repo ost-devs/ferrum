@@ -2,7 +2,7 @@
 
 Open questions only (`docs/workflow/README.md` §3): a decided entry is removed in the commit that records the decision. Ids are stable and never reused.
 
-The next id is Q133.
+The next id is Q135.
 
 ## Q130. Five public types are neither `Send` nor `Sync`, where D6 says every public value is
 - **Found.** `python3 tools/conf_check.py ferrum-state g1` (G1, `docs/parity/ferrum-state/plan.md` "Conformance" step 1) reads the synthetic auto-trait implementations of rustdoc JSON at c08e6da: of 47 public types, 22 generic ones are `Send` and `Sync` under the bounds of their parameters, and five are `!Send` and `!Sync` with no condition. Each holds a callback that a decision leaves without `Send` and `Sync`:
@@ -28,5 +28,22 @@ The next id is Q133.
 - **Open because.** The plan's list is the consultant's, and the name does not say which of these code paths it meant; `docs/decisions/ferrum-state.md` "Q121 to Q129" does not name it either.
 - **Bears on it.** The 1,316 mutants of the other eighteen (with the private functions they call, selected by the tool: `.scratch/conformance/ferrum-state/mutant-functions.txt` lists 161 functions) run now in the background. `EditorState::update` (`crates/ferrum-state/src/state.rs:220`) is among them, but the tool's selection reaches another file's helper only by a free call to a name no other private function has, so the reconfiguration code in `facet.rs` that `update` reaches through methods is not selected. The mutants of whatever the name means can run afterwards as a second run, at no cost in tokens.
 - **Blocks.** That second mutation run, and so the verdict of G2's mutation; nothing else.
+- **Raised by.** The orchestrator, 2026-11-24.
+
+## Q133. A fresh case that a decision covers fails as a mismatch, because the replayer applies a decision only to the fixtures its row lists
+- **Found.** The trial of G5 on one salt (`python3 tools/oracle_fresh.py ferrum-state --salts 1 --min 1` at c08e6da; output `docs/parity/ferrum-state/conformance/g5-trial/salt1.txt`) ran 1,747 new cases: 124 mismatch (text 119, facet 4, rangeset 1), none pending. Each was located with `tools/trace_diff.py` (with the new `REPLAY_FIXTURES` of `tools/cm6/replay.ts`) and the replayer's note:
+  - the 119 of chunk text are fixtures of `gen-char.ts` whose program calls `findClusterBreak` with `pos` equal to the string's length plus one (`outside.fwdLenPlus1`); Ferrum panics with "Position N is beyond the end of a string of length N-1", cm6 returns a number. Row `state.cm6.212.d1` (class `deviation-c`) decides exactly this and states a condition for the replayer; it lists 136 committed fixtures;
+  - the 4 of chunk facet (S1.F5130, S1.F5136, S1.F5146, S1.F5177) end in "Config merge conflict for field …" naming another field than cm6 names: row `state.cm6.134.d2` (class `form`, no condition, 8 fixtures listed) decides which field the panic names.
+  - the rangeset one (S1.F5019) is no decided difference: all 26 traced evaluations agree with cm6, and the output differs in the calls `RangeSet::compare` makes to the comparator's `boundChange` (Ferrum `[13, 37, 55]`, cm6 `[13, 55]`), which the trace does not record. A finding for the verifier of U3; the program is `docs/parity/ferrum-state/conformance/g5-trial/rangeset-S1.F5019.json`.
+- **Open because.** The replayer applies a row's condition only in the fixtures the row lists (`crates/ferrum-state/tests/replay/lang/eval.rs:538`, `Program::condition`; `driver.rs:431`), and a row without a condition only to the fixtures it lists (`design.md` §10, "No counterpart", the item "when a row of `raw/decisions.jsonl` that states no condition lists it"). A fresh case is listed by no row, so a decided difference is reported as a mismatch. `plan.md` "Conformance" step 1 requires "0 mismatch" of the fresh run and says what a new no-counterpart entry is, but not how a fresh case that a decision covers is told from a difference no decision explains. `docs/workflow/conformance.md` §2 G5 says "0 mismatches after the decided unit mapping".
+- **Bears on it.** At about 5,000 new cases per chunk, the text chunk alone gives about 800 such cases on this proportion (deduction from one salt). A reader can sort them by the replayer's note; a tool can only where a row states a condition the replayer checks. The handoff check "decision rows that state a condition: the fixtures in which the replayer met each equal its list" relies on the listing, so a condition applied beyond the list would make that check count differently. The trial also left out of 2 new cases an entry the approved `no-counterpart.jsonl` holds for no committed fixture: `('state', 'char', 'state.changeByRange', 'changes.from')`.
+- **Blocks.** G5's verdict. The full run (`--min 5000`) is running meanwhile; its cases are kept for whatever reading or rerun the answer asks.
+- **Raised by.** The orchestrator, 2026-11-24.
+
+## Q134. G5's coverage per entry of the shape checklist has no data to be counted from
+- **Found.** `plan.md` "Conformance" step 1, G5: "Coverage: the count per entry of the shape checklist (`specification.md` §5) on the new cases; an entry with no case fails." The fixtures record no checklist entry: a fixture's keys are `id`, `item_id`, `behaviors`, `input`, `output`, `encoding` (counted over the five files at c08e6da). Where a generator covers each entry is prose in its header comment (18 headers name the checklist, e.g. `docs/parity/ferrum-state/oracle/cm6/text/gen-char.ts:10-26`), saying which draw gives each entry and with what probability.
+- **Open because.** No tool can count an entry per case without a classification of each case by entry, and the specification stage recorded none. What each entry means differs per chunk (a string's text classes, an array's length, positions at the edges, a set's ranges overlapping or nested), so a classifier is per chunk and per generator.
+- **Bears on it.** With salts, every seeded generator draws its cases by the same code as at the specification, so the proportions its header states hold; what changes is which values are drawn. Deduction, not measured. The sensitivity part of G5 (one deviation per chunk in a copy, each reported) is independent of this and runs as written.
+- **Blocks.** The coverage part of G5's verdict.
 - **Raised by.** The orchestrator, 2026-11-24.
 
