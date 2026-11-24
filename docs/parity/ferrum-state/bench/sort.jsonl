@@ -1,0 +1,173 @@
+{"id": "state.findClusterBreak.B6", "class": "local", "reason": "O(k) in the code points of the one cluster at pos; does not grow with the string's length"}
+{"id": "state.findClusterBreak.B7", "class": "local", "reason": "O(k) in the code points of the one cluster at pos; does not grow with the string's length"}
+{"id": "state.findClusterBreak.B10", "class": "local", "reason": "O(k) in the code points of the one cluster at pos; does not grow with the string's length"}
+{"id": "state.findClusterBreak.B13", "class": "local", "reason": "quadratic in the code points of the one cluster before pos (O(k^2), O(r^2) for a run of regional indicators), bounded by that cluster; does not grow with the string's length"}
+{"id": "state.findClusterBreak.B14", "class": "local", "reason": "as B13: bounded by the cluster before pos, not by the string's length"}
+{"id": "state.countColumn.B3", "class": "local", "reason": "O(cluster length) per cluster: bounded by each cluster; the walk up to `to` is the item's other rows"}
+{"id": "state.CharCategory.Word.B5", "class": "linear or more", "reason": "O(w * s): grows with the wordChars list and the string"}
+{"id": "state.CharCategory.Word.B6", "class": "linear or more", "reason": "as B5: O(w * s)"}
+{"id": "state.Text.B1", "class": "none", "reason": "\"see each operation\": the class has no cost of its own; each operation is sorted on its own row"}
+{"id": "state.Text.replace.B2", "class": "logarithmic", "reason": "\"see B3-B5\": B4 and B5 are logarithmic in the document (O(depth * children)); B3's term grows with the inserted lines, not the document"}
+{"id": "state.Text.replace.B3", "class": "linear or more", "reason": "O(32 + inserted lines): grows with the inserted text (constant in the receiver)"}
+{"id": "state.Text.replace.B4", "class": "logarithmic", "reason": "O(depth * children per node + 32): the tree's depth, logarithmic in the document"}
+{"id": "state.Text.append.B1", "class": "logarithmic", "reason": "as Text.replace at the end: a local edit, Text.replace.B4, O(depth * children per node)"}
+{"id": "state.Text.eq.B5", "class": "linear or more", "reason": "grows with the size of the region between the shared prefix and suffix"}
+{"id": "state.ChangeDesc.composeDesc.B9", "class": "linear or more", "reason": "walks the common prefix of the sections before failing: linear in sections"}
+{"id": "state.ChangeDesc.mapDesc.B7", "class": "linear or more", "reason": "walks the common prefix of the sections before failing: linear in sections"}
+{"id": "state.ChangeDesc.mapDesc.B9", "class": "linear or more", "reason": "does not terminate: no bound"}
+{"id": "state.ChangeSpec.B2", "class": "linear or more", "reason": "O(insert length): the string split grows with the insert"}
+{"id": "state.ChangeSpec.B3", "class": "linear or more", "reason": "one compose and one map of the accumulated set: linear in its sections"}
+{"id": "state.ChangeSpec.B4", "class": "linear or more", "reason": "as state.ChangeSet^of.B4: O(total sections) per out-of-order spec"}
+{"id": "state.ChangeSet^of.B2", "class": "linear or more", "reason": "one Text.append per joined insert: grows with the number of inserts"}
+{"id": "state.ChangeSet^of.B4", "class": "linear or more", "reason": "O(total sections) per out-of-order spec, quadratic for fully reversed input"}
+{"id": "state.ChangeSet^of.B5", "class": "linear or more", "reason": "\"One map and compose per ChangeSet spec.\": a map and compose are linear in the sections"}
+{"id": "state.ChangeSet^of.B8", "class": "linear or more", "reason": "\"O(insert length).\": grows with the named quantity"}
+{"id": "state.ChangeSet^fromJSON.B1", "class": "linear or more", "reason": "\"O(JSON size).\": grows with the named quantity"}
+{"id": "state.ChangeSet^fromJSON.B2", "class": "linear or more", "reason": "\"O(JSON size).\": grows with the named quantity"}
+{"id": "state.ChangeSet^fromJSON.B3", "class": "linear or more", "reason": "\"O(JSON size).\": grows with the named quantity"}
+{"id": "state.ChangeSet.B1", "class": "linear or more", "reason": "memory: one Text reference per changed section, linear in sections"}
+{"id": "state.ChangeSet.compose.B4", "class": "linear or more", "reason": "walks the common prefix of the sections before failing: linear in sections"}
+{"id": "state.ChangeSet.map.B3", "class": "linear or more", "reason": "walks the common prefix before failing, or does not terminate"}
+{"id": "state.SelectionRange.map.B2", "class": "linear or more", "reason": "two mapPos calls, each walking the change's sections up to the position: linear in sections"}
+{"id": "state.EditorSelection.map.B2", "class": "linear or more", "reason": "O(ranges * sections) mapping plus create"}
+{"id": "state.Facet.compute.B2", "class": "none", "reason": "\"one getter call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.Facet.compute.B6", "class": "none", "reason": "\"one compareInput call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.Facet.compute.B9", "class": "none", "reason": "\"one getter call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.Facet.compute.B10", "class": "none", "reason": "\"one getter call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.Facet.computeN.B6", "class": "none", "reason": "as Facet.compute: one getter call, a count that does not grow with any input"}
+{"id": "state.Facet.from.B2", "class": "none", "reason": "\"one get call per recomputation\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.StateField.B3", "class": "none", "reason": "\"one update and one compare call per transaction\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.StateField^define.B2", "class": "none", "reason": "\"one provide call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.StateField.init.B3", "class": "linear or more", "reason": "\"O(init entries)\": grows with the named quantity"}
+{"id": "state.Extension.B6", "class": "linear or more", "reason": "\"O(bucket size) per move\": grows with the named quantity"}
+{"id": "state.Prec.B3", "class": "linear or more", "reason": "\"O(bucket size)\": grows with the named quantity"}
+{"id": "state.Compartment.B4", "class": "linear or more", "reason": "\"O(bucket size)\": grows with the named quantity"}
+{"id": "state.Compartment.reconfigure.B3", "class": "linear or more", "reason": "\"O(compartments) for the copy\": grows with the named quantity"}
+{"id": "state.Compartment.reconfigure.B4", "class": "linear or more", "reason": "\"a full resolution\": a configuration resolution is linear in the extensions (at least)"}
+{"id": "state.Compartment.reconfigure.B7", "class": "linear or more", "reason": "\"a full resolution\": a configuration resolution is linear in the extensions (at least)"}
+{"id": "state.combineConfig.B2", "class": "linear or more", "reason": "\"one combine call per conflict\": grows with the number of inputs, conflicts or fields"}
+{"id": "state.Facet^define config FacetConfig.combine.B1", "class": "none", "reason": "\"one call per (re)computation\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.Facet^define config FacetConfig.combine.B2", "class": "linear or more", "reason": "\"O(inputs)\": grows with the named quantity"}
+{"id": "state.Facet^define config FacetConfig.combine.B4", "class": "linear or more", "reason": "\"O(inputs)\": grows with the named quantity"}
+{"id": "state.Facet^define config FacetConfig.compare.B1", "class": "linear or more", "reason": "\"O(inputs)\": grows with the named quantity"}
+{"id": "state.Facet^define config FacetConfig.compare.B2", "class": "none", "reason": "\"one compare call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.Facet^define config FacetConfig.compare.B3", "class": "none", "reason": "\"one compare call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.Facet^define config FacetConfig.compare.B4", "class": "linear or more", "reason": "\"O(inputs)\": grows with the named quantity"}
+{"id": "state.Facet^define config FacetConfig.compareInput.B1", "class": "linear or more", "reason": "\"one call per input\": grows with the number of inputs, conflicts or fields"}
+{"id": "state.Facet^define config FacetConfig.enables.B2", "class": "none", "reason": "\"one call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.StateField^define config StateFieldSpec.create.B1", "class": "none", "reason": "\"one call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.StateField^define config StateFieldSpec.update.B1", "class": "none", "reason": "\"one call per transaction\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.StateField^define config StateFieldSpec.update.B3", "class": "none", "reason": "\"one call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.StateField^define config StateFieldSpec.compare.B2", "class": "none", "reason": "\"one call per transaction\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.StateField^define config StateFieldSpec.provide.B1", "class": "none", "reason": "\"one call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.StateField^define config StateFieldSpec.toJSON.B1", "class": "linear or more", "reason": "\"one call per field\": grows with the number of inputs, conflicts or fields"}
+{"id": "state.StateField^define config StateFieldSpec.fromJSON.B1", "class": "none", "reason": "\"one call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.EditorStateConfig.B2", "class": "linear or more", "reason": "see EditorState^fromJSON: linear in the document and the ranges (its B4, B7, B2)"}
+{"id": "state.EditorState.B2", "class": "linear or more", "reason": "each slot computed once: linear in the slots of the configuration"}
+{"id": "state.EditorState.field.B5", "class": "none", "reason": "the cost of one call of the other field's create, a caller's function"}
+{"id": "state.EditorState^tabSize.B3", "class": "linear or more", "reason": "\"Configuration resolution\": a configuration resolution is linear in the extensions (at least)"}
+{"id": "state.EditorState.languageDataAt.B3", "class": "linear or more", "reason": "\"O(providers)\": grows with the named quantity"}
+{"id": "state.EditorState.charCategorizer.B1", "class": "linear or more", "reason": "one languageDataAt call, which is O(providers) (languageDataAt.B3)"}
+{"id": "state.EditorState.wordAt.B2", "class": "local", "reason": "local to the line: does not grow with the document beyond the line lookup"}
+{"id": "state.EditorState.wordAt.B3", "class": "local", "reason": "local to the line: does not grow with the document beyond the line lookup"}
+{"id": "state.EditorState.wordAt.B4", "class": "local", "reason": "local to the line: does not grow with the document beyond the line lookup"}
+{"id": "state.EditorState.wordAt.B5", "class": "local", "reason": "local to the line: does not grow with the document beyond the line lookup"}
+{"id": "state.EditorState.update.B4", "class": "linear or more", "reason": "\"O(total sections) per merge\": grows with the named quantity"}
+{"id": "state.EditorState.changeByRange.B2", "class": "linear or more", "reason": "O(r^2) range mappings for r ranges plus a compose and map per range"}
+{"id": "state.EditorState.changeByRange.B3", "class": "linear or more", "reason": "\"O(r)\": grows with the named quantity"}
+{"id": "state.EditorState.changeByRange.B4", "class": "linear or more", "reason": "\"O(effects) per range\": grows with the named quantity"}
+{"id": "state.EditorState.changeByRange.B6", "class": "linear or more", "reason": "as B2: O(r^2)"}
+{"id": "state.EditorState.changes.B5", "class": "linear or more", "reason": "O(changes * sections) in the worst case"}
+{"id": "state.Transaction.B1", "class": "linear or more", "reason": "\"O(ranges)\": grows with the named quantity"}
+{"id": "state.Transaction.B2", "class": "linear or more", "reason": "\"O(annotations)\": grows with the named quantity"}
+{"id": "state.Transaction.B3", "class": "linear or more", "reason": "\"O(annotations)\": grows with the named quantity"}
+{"id": "state.Transaction.B4", "class": "linear or more", "reason": "\"O(annotations)\": grows with the named quantity"}
+{"id": "state.Transaction.effects.B1", "class": "linear or more", "reason": "\"O(effects)\": grows with the named quantity"}
+{"id": "state.Transaction.newSelection.B2", "class": "linear or more", "reason": "\"O(ranges * mapPos) per read\": grows with the named quantity"}
+{"id": "state.Transaction.state.B1", "class": "linear or more", "reason": "\"One state construction\": a configuration resolution is linear in the extensions (at least)"}
+{"id": "state.Transaction.state.B9", "class": "linear or more", "reason": "\"An extra state construction\": a configuration resolution is linear in the extensions (at least)"}
+{"id": "state.Transaction.annotation.B1", "class": "linear or more", "reason": "\"O(annotations)\": grows with the named quantity"}
+{"id": "state.Transaction.annotation.B2", "class": "linear or more", "reason": "\"O(annotations)\": grows with the named quantity"}
+{"id": "state.Transaction.annotation.B3", "class": "linear or more", "reason": "\"O(annotations)\": grows with the named quantity"}
+{"id": "state.Transaction.reconfigured.B1", "class": "linear or more", "reason": "\"Forces state construction\": a configuration resolution is linear in the extensions (at least)"}
+{"id": "state.Transaction.reconfigured.B2", "class": "linear or more", "reason": "\"One state construction\": a configuration resolution is linear in the extensions (at least)"}
+{"id": "state.Transaction.isUserEvent.B5", "class": "linear or more", "reason": "\"O(annotations)\": grows with the named quantity"}
+{"id": "state.TransactionSpec.selection.B2", "class": "linear or more", "reason": "\"O(ranges)\": grows with the named quantity"}
+{"id": "state.TransactionSpec.selection.B3", "class": "linear or more", "reason": "\"O(ranges)\": grows with the named quantity"}
+{"id": "state.TransactionSpec.effects.B2", "class": "linear or more", "reason": "\"O(effects)\": grows with the named quantity"}
+{"id": "state.TransactionSpec.annotations.B1", "class": "linear or more", "reason": "\"O(annotations)\": grows with the named quantity"}
+{"id": "state.TransactionSpec.filter.B1", "class": "linear or more", "reason": "\"O(specs)\": grows with the named quantity"}
+{"id": "state.TransactionSpec.sequential.B2", "class": "linear or more", "reason": "\"O(effects)\": grows with the named quantity"}
+{"id": "state.EditorState^changeFilter.B3", "class": "linear or more", "reason": "\"O(total range count)\": grows with the named quantity"}
+{"id": "state.EditorState^changeFilter.B5", "class": "linear or more", "reason": "\"O(filters)\": grows with the named quantity"}
+{"id": "state.EditorState^changeFilter.B6", "class": "linear or more", "reason": "\"O(filters)\": grows with the named quantity"}
+{"id": "state.EditorState^transactionFilter.B2", "class": "linear or more", "reason": "\"O(filters)\": grows with the named quantity"}
+{"id": "state.EditorState^transactionFilter.B3", "class": "linear or more", "reason": "\"One extra resolution per filter returning specs\": a configuration resolution is linear in the extensions (at least)"}
+{"id": "state.EditorState^transactionFilter.B4", "class": "linear or more", "reason": "\"Two extender passes\": grows with the named quantity"}
+{"id": "state.EditorState^transactionExtender.B1", "class": "linear or more", "reason": "\"O(extenders)\": grows with the named quantity"}
+{"id": "state.EditorState^transactionExtender.B2", "class": "linear or more", "reason": "\"O(extenders)\": grows with the named quantity"}
+{"id": "state.EditorState^transactionExtender.B4", "class": "linear or more", "reason": "\"O(effects)\": grows with the named quantity"}
+{"id": "state.EditorState^transactionExtender.B5", "class": "linear or more", "reason": "\"O(extenders)\": grows with the named quantity"}
+{"id": "state.EditorState^transactionExtender.B6", "class": "linear or more", "reason": "\"O(effects)\": grows with the named quantity"}
+{"id": "state.StateEffect^mapEffects.B2", "class": "linear or more", "reason": "\"O(effects)\": grows with the named quantity"}
+{"id": "state.StateEffect^reconfigure.B1", "class": "linear or more", "reason": "\"One configuration resolution\": a configuration resolution is linear in the extensions (at least)"}
+{"id": "state.StateEffect^reconfigure.B2", "class": "linear or more", "reason": "\"One configuration resolution\": a configuration resolution is linear in the extensions (at least)"}
+{"id": "state.StateEffect^reconfigure.B3", "class": "linear or more", "reason": "\"O(effects)\": grows with the named quantity"}
+{"id": "state.StateEffect^appendConfig.B1", "class": "linear or more", "reason": "\"One configuration resolution\": a configuration resolution is linear in the extensions (at least)"}
+{"id": "state.StateEffect^appendConfig.B2", "class": "linear or more", "reason": "\"One configuration resolution\": a configuration resolution is linear in the extensions (at least)"}
+{"id": "state.RangeValue.eq.B5", "class": "linear or more", "reason": "\"O(k) for k active values\": grows with the named quantity"}
+{"id": "state.RangeValue.startSide.B3", "class": "linear or more", "reason": "\"O(changes) per mapped position\": grows with the named quantity"}
+{"id": "state.RangeValue.endSide.B2", "class": "linear or more", "reason": "\"O(changes) per range\": grows with the named quantity"}
+{"id": "state.RangeValue.endSide.B3", "class": "linear or more", "reason": "\"O(changes)\": grows with the named quantity"}
+{"id": "state.RangeValue.endSide.B5", "class": "linear or more", "reason": "\"O(active)\": grows with the named quantity"}
+{"id": "state.RangeValue.mapMode.B1", "class": "linear or more", "reason": "\"O(changes) per range\": grows with the named quantity"}
+{"id": "state.RangeValue.point.B3", "class": "linear or more", "reason": "O(chunks) skipped: grows with the set's chunks"}
+{"id": "state.RangeSet.B5", "class": "linear or more", "reason": "\"O(layers)\": grows with the named quantity"}
+{"id": "state.RangeSet.size.B2", "class": "linear or more", "reason": "\"O(chunks + layers)\": grows with the named quantity"}
+{"id": "state.RangeSet.update.B3", "class": "linear or more", "reason": "\"O(k)\": grows with the named quantity"}
+{"id": "state.RangeSet.update.B4", "class": "linear or more", "reason": "\"O(k + walked ranges)\": grows with the named quantity"}
+{"id": "state.RangeSet.update.B6", "class": "linear or more", "reason": "\"O(chunks + ranges in walked chunks)\": grows with the named quantity"}
+{"id": "state.RangeSet.update.B7", "class": "linear or more", "reason": "\"O(ranges walked)\": grows with the named quantity"}
+{"id": "state.RangeSet.update.B9", "class": "linear or more", "reason": "\"O(layers + ranges)\": grows with the named quantity"}
+{"id": "state.RangeSet.map.B2", "class": "linear or more", "reason": "\"O(changes) per untouched chunk\": grows with the named quantity"}
+{"id": "state.RangeSet.map.B3", "class": "linear or more", "reason": "\"O(changes) per range\": grows with the named quantity"}
+{"id": "state.RangeSet.map.B4", "class": "linear or more", "reason": "\"O(changes)\": grows with the named quantity"}
+{"id": "state.RangeSet.map.B5", "class": "linear or more", "reason": "\"O(changes) per range\": grows with the named quantity"}
+{"id": "state.RangeSet.map.B6", "class": "linear or more", "reason": "O(r) per range in the worst case (backward scan)"}
+{"id": "state.RangeSet.map.B8", "class": "linear or more", "reason": "\"O(spilled)\": grows with the named quantity"}
+{"id": "state.RangeSet.map.B10", "class": "linear or more", "reason": "\"O(changes)\": grows with the named quantity"}
+{"id": "state.RangeSet.map.B11", "class": "linear or more", "reason": "\"O(changes)\": grows with the named quantity"}
+{"id": "state.RangeSet.between.B6", "class": "linear or more", "reason": "\"O(chunks)\": grows with the named quantity"}
+{"id": "state.RangeSet.iter.B4", "class": "linear or more", "reason": "\"O(chunks)\": grows with the named quantity"}
+{"id": "state.RangeCursor.goto.B3", "class": "linear or more", "reason": "\"O(chunks)\": grows with the named quantity"}
+{"id": "state.RangeSet^compare.B1", "class": "linear or more", "reason": "\"O(sets)\": grows with the named quantity"}
+{"id": "state.RangeSet^compare.B4", "class": "linear or more", "reason": "\"O(active) per stretch\": grows with the named quantity"}
+{"id": "state.RangeSet^compare.B5", "class": "linear or more", "reason": "\"O(active)\": grows with the named quantity"}
+{"id": "state.RangeSet^compare.B10", "class": "linear or more", "reason": "\"O(active)\": grows with the named quantity"}
+{"id": "state.RangeSet^eq.B2", "class": "linear or more", "reason": "\"O(sets^2)\": grows with the named quantity"}
+{"id": "state.RangeSet^eq.B3", "class": "linear or more", "reason": "\"O(points)\": grows with the named quantity"}
+{"id": "state.RangeSet^eq.B4", "class": "linear or more", "reason": "\"O(points)\": grows with the named quantity"}
+{"id": "state.RangeSet^eq.B5", "class": "linear or more", "reason": "\"O(points up to to)\": grows with the named quantity"}
+{"id": "state.RangeSet^spans.B2", "class": "linear or more", "reason": "\"O(active) per insertion\": grows with the named quantity"}
+{"id": "state.RangeSet^spans.B3", "class": "linear or more", "reason": "\"O(active)\": grows with the named quantity"}
+{"id": "state.RangeSet^spans.B4", "class": "linear or more", "reason": "\"O(active)\": grows with the named quantity"}
+{"id": "state.RangeSet^spans.B6", "class": "linear or more", "reason": "\"O(active)\": grows with the named quantity"}
+{"id": "state.RangeSet^spans.B7", "class": "linear or more", "reason": "O(chunks) skipped: grows with the set's chunks"}
+{"id": "state.RangeSet^spans.B10", "class": "linear or more", "reason": "\"O(active)\": grows with the named quantity"}
+{"id": "state.RangeSet^join.B3", "class": "linear or more", "reason": "\"O(total layers)\": grows with the named quantity"}
+{"id": "state.RangeSet^join.B4", "class": "linear or more", "reason": "\"O(layers)\": grows with the named quantity"}
+{"id": "state.RangeSetBuilder.add.B2", "class": "linear or more", "reason": "\"O(layers)\": grows with the named quantity"}
+{"id": "state.RangeSetBuilder.add.B3", "class": "linear or more", "reason": "\"O(layers)\": grows with the named quantity"}
+{"id": "state.RangeSetBuilder.finish.B1", "class": "linear or more", "reason": "\"O(layers)\": grows with the named quantity"}
+{"id": "state.RangeSetBuilder.finish.B3", "class": "linear or more", "reason": "\"O(layers)\": grows with the named quantity"}
+{"id": "state.RangeSetUpdate.add.B1", "class": "linear or more", "reason": "\"O(k)\": grows with the named quantity"}
+{"id": "state.RangeSetUpdate.add.B2", "class": "linear or more", "reason": "\"O(k)\": grows with the named quantity"}
+{"id": "state.RangeSetUpdate.filter.B1", "class": "linear or more", "reason": "\"O(ranges in region)\": grows with the named quantity"}
+{"id": "state.RangeSetUpdate.filterTo.B2", "class": "linear or more", "reason": "\"O(layers)\": grows with the named quantity"}
+{"id": "state.Text.replace.B7", "class": "logarithmic", "reason": "as Text.replace B4 and B5: both logarithmic in the document"}
+{"id": "state.Text.slice.B5", "class": "logarithmic", "reason": "as Text.slice B1, which costs.jsonl classes logarithmic"}
+{"id": "state.Text.slice.B6", "class": "logarithmic", "reason": "as Text.slice B1, which costs.jsonl classes logarithmic"}
+{"id": "state.RangeSet^eq.B7", "class": "linear or more", "reason": "O(top-layer chunks) plus a walk of the unshared chunks"}
+{"id": "state.Facet^define config FacetConfig.compare.B6", "class": "none", "reason": "\"one compare call\": one call of a caller's function, a count that does not grow with any input"}
+{"id": "state.Facet^define config FacetConfig.compareInput.B4", "class": "linear or more", "reason": "\"one compareInput call per input\": grows with the number of inputs, conflicts or fields"}
+{"id": "state.StateField^define config StateFieldSpec.compare.B3", "class": "none", "reason": "\"one compare call per transaction\": one call of a caller's function, a count that does not grow with any input"}
