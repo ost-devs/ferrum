@@ -8,7 +8,7 @@ use std::any::Any;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use super::driver::{Ctx, Decisions, Run, call, run_one};
+use super::driver::{Control, Ctx, Decisions, Run, call, run_one};
 use super::lang::eval::{Flow, arg};
 use super::lang::json::from_serde_json;
 use super::lang::value::Host;
@@ -475,7 +475,38 @@ fn rule_the_control_run_alters_a_compared_leaf() {
     let r = run_one(&lang, &fixture, &ctx);
     assert_eq!(r.result, "part");
     // the only compared leaf is the first member; the second is no counterpart
-    assert_eq!(r.control, Some(("/ok/0".to_string(), false)));
+    assert_eq!(r.control, Some(Control::Seeded("/ok/0".to_string(), false)));
+}
+
+#[test]
+fn rule_the_exhaustive_control_run_alters_every_compared_path() {
+    let lang = language();
+    let decisions = Decisions::default();
+    let ops = HashMap::new();
+    let ctx = Ctx {
+        decisions: &decisions,
+        chunk_ops: &ops,
+        control: Some("all".into()),
+        trace: None,
+        trace_dir: "unused".into(),
+    };
+    // three compared paths: two leaves and an empty array, each altered in turn, none passing
+    let fixture =
+        parse(r#"{"id":"F1","input":{"op":"list","of":[1,"x",{"op":"list","of":[]}]},"output":{"ok":[1,"x",[]]}}"#)
+            .expect("JSON");
+    let r = run_one(&lang, &fixture, &ctx);
+    assert_eq!(r.result, "equal");
+    assert_eq!(r.control, Some(Control::All { paths: 3, passing: vec![] }));
+    // a position that holds no counterpart is not a compared path
+    let fixture = parse(r#"{"id":"F1","input":{"op":"t.part"},"output":{"ok":[1,"x"]}}"#).expect("JSON");
+    let r = run_one(&lang, &fixture, &ctx);
+    assert_eq!(r.result, "part");
+    assert_eq!(r.control, Some(Control::All { paths: 1, passing: vec![] }));
+    // no position compared: not altered
+    let fixture =
+        parse(r#"{"id":"F1","input":{"op":"list","of":[{"op":"t.type","x":1}]},"output":{"ok":[5]}}"#).expect("JSON");
+    let r = run_one(&lang, &fixture, &ctx);
+    assert_eq!((r.result, r.control), ("none", None));
 }
 
 #[test]
@@ -516,7 +547,7 @@ fn rule_no_position_compared_is_not_altered_by_the_control_run() {
     let fixture = parse(r#"{"id":"F1","input":{"op":"list","of":[{"op":"t.type","x":1},{"op":"list","of":[]}]},"output":{"ok":[5,[]]}}"#)
         .expect("JSON");
     let r = run_one(&lang, &fixture, &ctx);
-    assert_eq!((r.result, r.control), ("part", Some(("/ok/1".to_string(), false))));
+    assert_eq!((r.result, r.control), ("part", Some(Control::Seeded("/ok/1".to_string(), false))));
 }
 
 #[test]

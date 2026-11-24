@@ -308,8 +308,17 @@ pub struct Run {
     pub at: Option<String>,
     /// Why a mismatch is one, for the test's failure message.
     pub note: String,
-    /// The control run: the path altered and whether the fixture still passes.
-    pub control: Option<(String, bool)>,
+    /// The control run's alteration of this fixture, when it was altered.
+    pub control: Option<Control>,
+}
+
+/// What the control run did to one compared fixture.
+#[derive(Debug, PartialEq)]
+pub enum Control {
+    /// A seeded run: the path altered and whether the fixture still passes.
+    Seeded(String, bool),
+    /// The exhaustive run: the number of paths altered, one at a time, and those with which the fixture still passes.
+    All { paths: usize, passing: Vec<String> },
 }
 
 /// What a run of one fixture needs besides the fixture.
@@ -462,15 +471,24 @@ pub fn run_one(lang: &Language, fixture: &Value, ctx: &Ctx) -> Run {
                 } else {
                     "part"
                 };
-                if let (Some(seed), "equal" | "part") = (&ctx.control, run.result) {
-                    let (path, passes) = if c.paths.is_empty() {
-                        (String::new(), true)
-                    } else {
-                        let path = &c.paths[pick(seed, &chunk, &id, c.paths.len())];
-                        let alt = altered(&recorded, path);
-                        (path_text(path), compare(&ours, &alt, &mut Vec::new(), &mut Compared::default()))
-                    };
-                    run.control = Some((path, passes));
+                // the program ran once; only the comparison is repeated, with the recorded output altered
+                let still_passes =
+                    |path: &[Seg]| compare(&ours, &altered(&recorded, path), &mut Vec::new(), &mut Compared::default());
+                match (ctx.control.as_deref(), run.result) {
+                    (Some("all"), "equal" | "part") => {
+                        let passing = c.paths.iter().filter(|p| still_passes(p)).map(|p| path_text(p)).collect();
+                        run.control = Some(Control::All { paths: c.paths.len(), passing });
+                    }
+                    (Some(seed), "equal" | "part") => {
+                        let (path, passes) = if c.paths.is_empty() {
+                            (String::new(), true)
+                        } else {
+                            let path = &c.paths[pick(seed, &chunk, &id, c.paths.len())];
+                            (path_text(path), still_passes(path))
+                        };
+                        run.control = Some(Control::Seeded(path, passes));
+                    }
+                    _ => {}
                 }
             } else if recorded.has("error") && p.last_not_called().is_some() {
                 // the recorded output is an uncaught error, Ferrum's run does not end in it, and a call Ferrum did not
@@ -656,21 +674,36 @@ pub fn run() {
 
     // control.jsonl
     let mut still_pass = Vec::new();
+    let mut paths_altered = 0;
     if ctx.control.is_some() {
         let mut text = String::new();
         for r in &runs {
-            if let Some((path, passes)) = &r.control {
-                if *passes {
-                    still_pass.push(format!("{} {}", r.chunk, r.id));
+            let line = match &r.control {
+                Some(Control::Seeded(path, passes)) => {
+                    if *passes {
+                        still_pass.push(format!("{} {}", r.chunk, r.id));
+                    }
+                    Value::record([
+                        ("fixture", Value::str(&r.id)),
+                        ("chunk", Value::str(&r.chunk)),
+                        ("altered", Value::str(path)),
+                        ("passes", Value::Bool(*passes)),
+                    ])
                 }
-                text.push_str(&to_json(&Value::record([
-                    ("fixture", Value::str(&r.id)),
-                    ("chunk", Value::str(&r.chunk)),
-                    ("altered", Value::str(path)),
-                    ("passes", Value::Bool(*passes)),
-                ])));
-                text.push('\n');
-            }
+                Some(Control::All { paths, passing }) => {
+                    paths_altered += paths;
+                    still_pass.extend(passing.iter().map(|p| format!("{} {} (altered {p})", r.chunk, r.id)));
+                    Value::record([
+                        ("fixture", Value::str(&r.id)),
+                        ("chunk", Value::str(&r.chunk)),
+                        ("paths", Value::Num(*paths as f64)),
+                        ("passing", Value::array(passing.iter().map(|p| Value::str(p)).collect())),
+                    ])
+                }
+                None => continue,
+            };
+            text.push_str(&to_json(&line));
+            text.push('\n');
         }
         fs::write(out.join("control.jsonl"), text).expect("control.jsonl can be written");
     }
@@ -726,8 +759,13 @@ pub fn run() {
     }
     let mismatches: Vec<String> =
         runs.iter().filter(|r| r.result == "mismatch").map(|r| format!("{} {}: {}", r.chunk, r.id, r.note)).collect();
-    if ctx.control.is_some() {
-        println!("control run: {} compared fixtures still pass: {still_pass:?}", still_pass.len());
+    match ctx.control.as_deref() {
+        Some("all") => println!(
+            "exhaustive control run: {paths_altered} paths altered, {} still pass: {still_pass:?}",
+            still_pass.len()
+        ),
+        Some(_) => println!("control run: {} compared fixtures still pass: {still_pass:?}", still_pass.len()),
+        None => {}
     }
     assert!(nc_differ.is_empty(), "what is left out differs from {}:\n{}", nc_path.display(), nc_differ.join("\n"));
     assert!(mismatches.is_empty(), "{} mismatch(es):\n{}", mismatches.len(), mismatches.join("\n"));
