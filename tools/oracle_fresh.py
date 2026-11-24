@@ -90,6 +90,7 @@ def main():
                FERRUM_REPLAY_CHUNKS=",".join(c for c in chunks if info["new"][c]))
     r = subprocess.run(["cargo", "test", "-q", "-p", crate, "--features", "__test", "--test", "replay"], cwd=tree, env=env,
                        capture_output=True, text=True)
+    with open(os.path.join(out, "replay-notes.txt"), "w", encoding="utf-8") as f: f.write(r.stdout + r.stderr)
     got = [x for x in rows(rep) if "fixture" in x] if os.path.exists(rep) else []
     per = collections.defaultdict(collections.Counter)
     for x in got: per[x["chunk"]][x["result"]] += 1

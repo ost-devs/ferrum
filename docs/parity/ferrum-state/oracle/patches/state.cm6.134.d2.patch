@@ -1,0 +1,15 @@
+--- cm6/state/src/config.ts
++++ cm6/state/src/config.ts
+@@ -11,7 +11,11 @@
+   combine: {[P in keyof Config]?: (first: Config[P], second: Config[P]) => Config[P]} = {}
+ ): Config {
+   let result: any = {}
+-  for (let config of configs) for (let key of Object.keys(config) as (keyof Config)[]) {
++  // state.cm6.134.d2: field by field, keys in the order they first appear (Ferrum's combine_config per field)
++  let keys: (keyof Config)[] = []
++  for (let config of configs) for (let key of Object.keys(config) as (keyof Config)[]) if (!keys.includes(key)) keys.push(key)
++  for (let key of keys) for (let config of configs) {
++    if (!Object.keys(config).includes(key as string)) continue
+     let value = config[key], current = result[key]
+     if (current === undefined) result[key] = value
+     else if (current === value || value === undefined) {} // No conflict

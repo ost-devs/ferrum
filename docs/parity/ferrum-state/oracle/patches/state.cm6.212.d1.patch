@@ -1,0 +1,12 @@
+--- cm6/state/src/char.ts
++++ cm6/state/src/char.ts
+@@ -7,6 +7,9 @@
+ /// `includeExtending` is true), characters joined with zero-width
+ /// joiners, and flag emoji.
+ export function findClusterBreak(str: string, pos: number, forward = true, includeExtending = true) {
++  // state.cm6.212.d1: a position past the end fails, as Ferrum's panic does; a string holding a lone surrogate is
++  // input excluded by type (D12), on which Ferrum is never called
++  if (pos > str.length && !/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(str)) throw new Error(`Position ${pos} is beyond the end of a string of length ${str.length}`)
+   return find(str, pos, forward, includeExtending)
+ }
+ 
