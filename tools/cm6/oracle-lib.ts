@@ -5,8 +5,11 @@ import {spawnSync} from "node:child_process"
 import {Worker} from "node:worker_threads"
 
 /** Seeded PRNG (mulberry32). Record the seed in the generator header and in every fixture. */
+// ORACLE_SEED_SALT=<n>: every generator draws from seeds it never drew from before (conformance G5,
+// tools/oracle_fresh.py); unset, every seed is the one its generator states, and the fixtures are what they were.
+const SALT = process.env.ORACLE_SEED_SALT
 export function rng(seed: number) {
-  let a = seed >>> 0
+  let a = (SALT ? Math.imul((seed ^ Math.imul(Number(SALT) >>> 0, 0x9E3779B1)) >>> 0, 0x85EBCA6B) ^ Number(SALT) : seed) >>> 0
   const next = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296 }
   return {next, int: (n: number) => Math.floor(next() * n), pick: <T>(xs: readonly T[]) => xs[Math.floor(next() * xs.length)], chance: (p: number) => next() < p}
 }

@@ -1,0 +1,24 @@
+`cm6 deviation:` lines: 2
+        src/config.rs:18: where configs conflict in more than one field, the panic names the first of them in the caller's field order, where cm6 names the first conflict in config order -> state.cm6.134.d2 (row)
+        src/state.rs:565: a change set longer than 1e9 positions is filtered to its end where cm6 does not terminate, see state.cm6.032 -> state.cm6.032 (inventory)
+FAIL  every `cm6 deviation:` names a row of raw/decisions.jsonl: 1 do not
+        src/state.rs:565: cites state.cm6.032 (inventory)
+ok    no `cm6 deviation:` names an improvement (none is adopted before the delta): 0
+improvement rows: {'scheduled': 2, 'candidate': 13, 'declined': 1}; adopted with code: 0
+`candidate` rows and the point at which each is evaluated (each must be a point not yet past):
+        state.imp.002: ferrum-state improvement delta (after the conformance verdict, before the S0 of ferrum-view)
+        state.imp.003: ferrum-state improvement delta (after the conformance verdict, before the S0 of ferrum-view)
+        state.imp.004: ferrum-state improvement delta (after the conformance verdict, before the S0 of ferrum-view)
+        state.imp.005: ferrum-state improvement delta (after the conformance verdict, before the S0 of ferrum-view)
+        state.imp.006: ferrum-state improvement delta (after the conformance verdict, before the S0 of ferrum-view)
+        state.imp.007: ferrum-state improvement delta (after the conformance verdict, before the S0 of ferrum-view)
+        state.imp.008: ferrum-state improvement delta (after the conformance verdict, before the S0 of ferrum-view)
+        state.imp.009: the specification of ferrum-view, or the first consumer that shows the need, whichever comes first
+        state.imp.010: gate G8 of ferrum-state conformance, on a benchmark with long lines
+        state.imp.011: the specification of ferrum-commands, which counts the call patterns of cm6's commands; earlier if the port of ferrum-view shows one pattern at more than a hundred call sites
+        state.imp.012: the improvement delta of ferrum-state
+        state.imp.015: ferrum-state improvement delta (after the conformance verdict, before the S0 of ferrum-view)
+        state.imp.016: ferrum-state improvement delta (after the conformance verdict, before the S0 of ferrum-view)
+
+1 check(s) failed:
+  every `cm6 deviation:` names a row of raw/decisions.jsonl: 1 do not

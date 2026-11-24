@@ -1,0 +1,12 @@
+cargo tree -p ferrum-state -e normal (each package once, with its license):
+        ferrum-state v0.0.0 (/ferrum/crates/ferrum-state) MIT
+        itoa v1.0.19 MIT OR Apache-2.0
+        memchr v2.8.3 Unlicense OR MIT
+        serde_core v1.0.229 MIT OR Apache-2.0
+        serde_json v1.0.154 MIT OR Apache-2.0
+        zmij v1.0.23 MIT
+ok    direct dependencies: ['serde_json']; named in design.md §1: ['serde_json']; not named: 0
+ok    no copyleft license in the tree, every package with a license: 0 copyleft, 0 without
+ok    ferrum-state declares license MIT (D9): MIT
+
+checks passed

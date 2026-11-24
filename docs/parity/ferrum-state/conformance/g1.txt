@@ -1,0 +1,44 @@
+ok    qualifier lines (`ferrum-only`, `placement`, `name`, `cm6 impl`, `cm6 deviation`) cite ids that exist: 143 lines, Counter({'ferrum-only': 113, 'name': 24, 'cm6 impl': 4, 'cm6 deviation': 2}); 0 cite a missing id, 0 cite none
+cm6 members marked @internal: 58; public in the crate under that name: 1 (outside the feature __test)
+        Compartment.reconfigure (mirrors/cm6/state/src/facet.ts:437) -> facet::Compartment::reconfigure
+ok    every @internal member public in the crate is named in design.md: 0 are not
+ok    no public stand-in named after a DROP item (3 items): 0
+FAIL  public types Send and Sync without condition, or generic (D6): 47 types, 10 fail
+        facet::FacetEnables: !Send
+        facet::FacetEnables: !Sync
+        extension::StateCommandTarget: !Send
+        extension::StateCommandTarget: !Sync
+        facet::StateFieldSpec: !Send
+        facet::StateFieldSpec: !Sync
+        facet::FacetConfig: !Send
+        facet::FacetConfig: !Sync
+        rangeset::RangeSetUpdate: !Send
+        rangeset::RangeSetUpdate: !Sync
+generic public types, each Send and Sync under the bounds of its parameters (the verifier of its unit reads these): 22
+        rangeset::RangeSetBuilder<T>: Send where 1 predicate(s): T: Send + Sync
+        rangeset::RangeSetBuilder<T>: Sync where 1 predicate(s): T: Sync + Send
+        facet::StateField<T>: Send where 1 predicate(s): T: Sized
+        facet::StateField<T>: Sync where 1 predicate(s): T: Sized
+        transaction::StateEffectSpec<T>: Send where 0 predicate(s): 
+        transaction::StateEffectSpec<T>: Sync where 0 predicate(s): 
+        transaction::StateEffectType<T>: Send where 0 predicate(s): 
+        transaction::StateEffectType<T>: Sync where 0 predicate(s): 
+        facet::FacetReader<O>: Send where 1 predicate(s): O: Sized
+        facet::FacetReader<O>: Sync where 1 predicate(s): O: Sized
+        rangeset::Range<T>: Send where 1 predicate(s): T: Send
+        rangeset::Range<T>: Sync where 1 predicate(s): T: Sync
+        rangeset::RangeCursor<T>: Send where 1 predicate(s): T: Sync + Send
+        rangeset::RangeCursor<T>: Sync where 1 predicate(s): T: Sync + Send
+        facet::ByAddress<T>: Send where 1 predicate(s): T: Sync + Send + Sized
+        facet::ByAddress<T>: Sync where 1 predicate(s): T: Sync + Send + Sized
+        facet::Facet<I, O>: Send where 0 predicate(s): 
+        facet::Facet<I, O>: Sync where 0 predicate(s): 
+        rangeset::RangeSet<T>: Send where 1 predicate(s): T: Sync + Send
+        rangeset::RangeSet<T>: Sync where 1 predicate(s): T: Sync + Send
+        transaction::AnnotationType<T>: Send where 0 predicate(s): 
+        transaction::AnnotationType<T>: Sync where 0 predicate(s): 
+public signatures: 360 at the skeleton 2881c16, 361 now; 3 changed, 1 added, 0 removed; each with the commits that touched its name since the skeleton: .scratch/conformance/ferrum-state/signatures.jsonl (for the consultant's acceptance)
+of these, 1 have no commit since the skeleton whose subject names a question (the consultant reads which question changed each)
+
+1 check(s) failed:
+  public types Send and Sync without condition, or generic (D6): 47 types, 10 fail

@@ -1,0 +1,51 @@
+FAIL  exhaustive control run: exit 101, 4204 lines for 4204 fixtures compared whole or in part, 0 malformed
+FAIL  exhaustive control run on text, change, rangeset, facet, state: 207929 paths altered in 4204 fixtures ({'lang': 48, 'text': 1362, 'change': 1084, 'rangeset': 366, 'facet': 412, 'state': 932}), 10961 still pass
+        lang L001 (altered /ok/3/js_undefined)
+        lang L011 (altered /ok/undef/js_undefined)
+        lang L011 (altered /ok/yes)
+        lang L011 (altered /ok/no)
+        lang L012 (altered /ok/r/0)
+        lang L012 (altered /ok/r/1)
+        lang L012 (altered /ok/r/2)
+        lang L012 (altered /ok/r/3)
+        lang L012 (altered /ok/r/4)
+        lang L012 (altered /ok/r/5)
+        lang L012 (altered /ok/r/6)
+        lang L012 (altered /ok/r/7)
+        lang L012 (altered /ok/r/8)
+        lang L013 (altered /ok/r/0)
+        lang L013 (altered /ok/r/1)
+        lang L013 (altered /ok/r/2)
+        lang L013 (altered /ok/r/3)
+        lang L013 (altered /ok/r/4)
+        lang L014 (altered /ok/r/0)
+        lang L014 (altered /ok/r/1)
+        lang L014 (altered /ok/r/2)
+        lang L014 (altered /ok/r/3)
+        lang L014 (altered /ok/r/4)
+        lang L014 (altered /ok/r/5)
+        lang L014 (altered /ok/r/6)
+        lang L015 (altered /ok/r/0)
+        lang L015 (altered /ok/r/1)
+        lang L015 (altered /ok/r/2)
+        lang L015 (altered /ok/r/3)
+        lang L015 (altered /ok/r/4)
+        lang L015 (altered /ok/r/5)
+        lang L016 (altered /ok/r/0)
+        lang L016 (altered /ok/r/1)
+        lang L016 (altered /ok/r/2)
+        lang L016 (altered /ok/r/3)
+        lang L016 (altered /ok/r/4)
+        lang L016 (altered /ok/r/5)
+        lang L016 (altered /ok/r/6)
+        lang L016 (altered /ok/r/7)
+        lang L016 (altered /ok/r/8)
+        ... and 10921 more
+
+2 check(s) failed:
+  exhaustive control run: exit 101, 4204 lines for 4204 fixtures compared whole or in part, 0 malformed
+  exhaustive control run on text, change, rangeset, facet, state: 207929 paths altered in 4204 fixtures ({'lang': 48, 'text': 1362, 'change': 1084, 'rangeset': 366, 'facet': 412, 'state': 932}), 10961 still pass
+
+real	18m42.546s
+user	18m50.735s
+sys	0m1.751s

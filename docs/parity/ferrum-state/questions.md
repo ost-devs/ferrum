@@ -2,7 +2,7 @@
 
 Open questions only (`docs/workflow/README.md` §3): a decided entry is removed in the commit that records the decision. Ids are stable and never reused.
 
-The next id is Q132.
+The next id is Q133.
 
 ## Q130. Five public types are neither `Send` nor `Sync`, where D6 says every public value is
 - **Found.** `python3 tools/conf_check.py ferrum-state g1` (G1, `docs/parity/ferrum-state/plan.md` "Conformance" step 1) reads the synthetic auto-trait implementations of rustdoc JSON at c08e6da: of 47 public types, 22 generic ones are `Send` and `Sync` under the bounds of their parameters, and five are `!Send` and `!Sync` with no condition. Each holds a callback that a decision leaves without `Send` and `Sync`:
@@ -21,5 +21,12 @@ The next id is Q132.
 - **Open because.** `docs/parity/ferrum-state/plan.md` "Conformance" step 1 asks that every `/// cm6 deviation:` name a row of `raw/decisions.jsonl`. `.claude/rules/rust-crates.md` "Annotations" allows `<decision>` to be "the inventory id of the item's specification row (`state.cm6.042`) when the decision is about that item alone". Item `state.cm6.032` has three decision rows, so the inventory id does not say which of them the deviation rests on. `tools/impl_check.py` did not check this at hand-off.
 - **Bears on it.** What the deviation states (a change set longer than 1e9 positions filtered to its end where cm6 does not terminate) is the subject of Q95 (`docs/decisions/ferrum-state.md`), which the row `state.cm6.032.d3` records (its `question` is "Q93, Q95", its class `deviation-a`: after the last pair of a change filter's list, `ChangeSet::filter` keeps every remaining change, where cm6 bounds that stretch at 1e9). The difference is one token in a doc comment; no behavior or test depends on it. The G6 gate fails on this line as the check is written.
 - **Blocks.** G6's verdict (step 5); no other step.
+- **Raised by.** The orchestrator, 2026-11-24.
+
+## Q132. One of the nineteen names the mutation step lists, `EditorState.reconfigure`, is no member of cm6
+- **Found.** `docs/parity/ferrum-state/plan.md` "Conformance" step 1, G2's mutation, names nineteen cm6 items whose porting functions mutation runs on. `python3 tools/conf_check.py ferrum-state mutants <the nineteen>` at c08e6da finds a function whose `cm6:` line (or, for a private function, "cm6's `<name>`") names each of eighteen, and none for `EditorState.reconfigure`. `@codemirror/state` 6.7.6 has no member `reconfigure` on `EditorState`. What it has under that name: the static effect type `StateEffect.reconfigure` (`mirrors/cm6/state/src/transaction.ts:113`); the static effect type `Compartment.reconfigure` (`facet.ts:437`, defined at `state.ts:446`) and the method `Compartment.reconfigure(content)` (`facet.ts:425`); the getter `Transaction.reconfigured` (`transaction.ts:237`); the `reconfigure` of each slot kind (`facet.ts:173`, `:242`, `:337`, `:448`). The two effects are acted on in `EditorState.applyTransaction` (`state.ts:99`, `:106`), which rebuilds the configuration (`Configuration.resolve`) and calls each slot's `reconfigure` (`state.ts:118`).
+- **Open because.** The plan's list is the consultant's, and the name does not say which of these code paths it meant; `docs/decisions/ferrum-state.md` "Q121 to Q129" does not name it either.
+- **Bears on it.** The 1,316 mutants of the other eighteen (with the private functions they call, selected by the tool: `.scratch/conformance/ferrum-state/mutant-functions.txt` lists 161 functions) run now in the background. `EditorState::update` (`crates/ferrum-state/src/state.rs:220`) is among them, but the tool's selection reaches another file's helper only by a free call to a name no other private function has, so the reconfiguration code in `facet.rs` that `update` reaches through methods is not selected. The mutants of whatever the name means can run afterwards as a second run, at no cost in tokens.
+- **Blocks.** That second mutation run, and so the verdict of G2's mutation; nothing else.
 - **Raised by.** The orchestrator, 2026-11-24.
 

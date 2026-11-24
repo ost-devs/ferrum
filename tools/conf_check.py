@@ -423,7 +423,7 @@ def g10(c, crate, args):
     by_item = collections.defaultdict(list)
     for b in ic.rows(ic.spec(crate, "raw", "behaviors.jsonl")): by_item[b["item_id"]].append(b["id"])
     xc = ic.rows(ic.spec(crate, "raw", "xc.jsonl"))
-    per, fails = collections.Counter(), []
+    per, fails, accepted = collections.Counter(), [], []
     for r in xc:
         if r["direction"] != "offers": continue
         it = inv.get(r["item_id"])
@@ -432,15 +432,20 @@ def g10(c, crate, args):
         elif it["disposition"] != "CORE": why.append(f"item {it['disposition']}")
         elif it["item"].replace("^", ".") not in have: why.append("no counterpart")
         else:
+            checked = lambda b: any(not k.startswith("accepted") for k in named.get(b, []))
             un = [b for b in by_item[r["item_id"]] if b not in named]
+            acc = [b for b in by_item[r["item_id"]] if b in named and not checked(b)]
             if not by_item[r["item_id"]]: why.append("the item has no behavior row")
             if un: why.append(f"behaviors not named by a passing check: {un}")
+            if acc and not why: accepted.append(f"{r['capability']} -> {r['crate']} ({r['item_id']}): " + "; ".join(f"{b} ({named[b][0]})" for b in acc))
         if why: fails.append(f"{r['capability']} -> {r['crate']} ({r['item_id']}): {'; '.join(why)}")
         else: per[r["crate"]] += 1
     offers = sum(1 for r in xc if r["direction"] == "offers")
     needs = [r for r in xc if r["direction"] != "offers"]
     c.say("capabilities offered, each with its counterpart and every behavior named by a passing check, per consuming crate:")
     for k, v in sorted(per.items(), key=lambda x: -x[1]): c.say(f"        {k}: {v}")
+    c.say(f"capabilities that pass with a behavior the hand-off accepted with no check (a `form` row, or input excluded by type), the consultant reads these: {len(accepted)}")
+    for x in accepted: c.say("        " + x)
     c.need(not fails, f"G10: {offers} capabilities offered, {offers - len(fails)} pass; capabilities needed from another crate: {len(needs)}", fails)
 
 
@@ -532,8 +537,10 @@ def fns_with_spans(text):
         body = [x for x in toks[j + 1:e] if x[0] != "comment"]
         calls = {body[k][1] for k in range(len(body) - 1) if body[k][0] == "ident" and body[k + 1][1] == "("}
         calls |= {body[k][1] for k in range(1, len(body)) if body[k][0] == "ident" and body[k - 1][1] in (".", "::")}
+        free = {body[k][1] for k in range(len(body) - 1) if body[k][0] == "ident" and body[k + 1][1] == "("
+                and (k == 0 or body[k - 1][1] != ".")}
         out.append({"name": toks[i + 1][1], "line": line, "end": toks[min(e, len(toks) - 1)][2], "public": public,
-                    "docs": "\n".join(docs[::-1]), "calls": calls})
+                    "docs": "\n".join(docs[::-1]), "calls": calls, "free": free})
     return out
 
 
@@ -544,20 +551,31 @@ def mutants(c, crate, args):
     for f, text in src_files(crate).items():
         if f.startswith("__test"): continue
         for fn in fns_with_spans(text): fn["file"] = f; fns.append(fn)
-    seeds = [fn for fn in fns if any(re.search(rf"cm6(?: impl)?:\s*{re.escape(n)}\s*$", fn["docs"], re.M) for n in names)]
-    found = {n for n in names if any(re.search(rf"cm6(?: impl)?:\s*{re.escape(n)}\s*$", fn["docs"], re.M) for fn in seeds)}
+    def names_it(fn, n):
+        """A `cm6:` line naming n (a static member written with `^`), or a private function's "cm6's `n`"."""
+        docs = fn["docs"].replace("^", ".")
+        return bool(re.search(rf"cm6(?: impl)?:\s*{re.escape(n)}\s*$", docs, re.M)
+                    or (not fn["public"] and re.search(rf"cm6's (?:`@internal` )?`{re.escape(n)}`", docs)))
+    seeds = [fn for fn in fns if any(names_it(fn, n) for n in names)]
+    found = {n for n in names if any(names_it(fn, n) for fn in seeds)}
     c.need(found == set(names), f"each named cm6 item has a function whose `cm6:` line names it: {len(found)} of {len(names)}", sorted(set(names) - found))
+    # a std trait's method (`impl Clone for …`) is not a helper of the function that calls `.clone()`
+    STD = {"clone", "default", "drop", "fmt", "eq", "ne", "hash", "deref", "deref_mut", "from", "into", "partial_cmp",
+           "cmp", "as_ref", "borrow", "index", "into_iter"}
     private = collections.defaultdict(list)
     for fn in fns:
-        if not fn["public"]: private[fn["name"]].append(fn)
+        if not fn["public"] and fn["name"] not in STD: private[fn["name"]].append(fn)
     chosen, todo = {(f["file"], f["line"]): f for f in seeds}, list(seeds)
     while todo:
         fn = todo.pop()
         for name in fn["calls"]:
             for h in private.get(name, []):
+                # another file's helper only through a call by path or a free call, and only when its name is one
+                # private function's: a method call `.name(` is too often another type's method
+                if h["file"] != fn["file"] and (name not in fn["free"] or len(private[name]) > 1): continue
                 k = (h["file"], h["line"])
                 if k not in chosen: chosen[k] = h; todo.append(h)
-    c.say(f"functions: {len(seeds)} with a named `cm6:` line, {len(chosen) - len(seeds)} private functions they call (transitively, by name)")
+    c.say(f"functions: {len(seeds)} with a named `cm6:` line, {len(chosen) - len(seeds)} private functions they call (transitively, by name: in another file only by a free or path call to a name no other private function has)")
     r = ic.run(["cargo", "mutants", "-p", crate, "--features", "__test", "--list", "--json"])
     try: ms = json.loads(r.stdout)
     except ValueError: c.need(False, "cargo mutants --list --json", r.stderr.strip().split("\n")[-6:]); return

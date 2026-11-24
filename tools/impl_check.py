@@ -495,6 +495,7 @@ def report_counts(c, fixtures):
 
 
 BY_TYPE = {"type", "flow", "error"}
+ACCEPTED = {}   # behavior -> why it passes with no check, from the last call of unnamed()
 
 def unnamed(c, crate, chunks, fixtures, named, tested):
     """Behaviors of the chunks that no check names: no fixture compared whole or in part, no ported case, no
@@ -525,6 +526,9 @@ def unnamed(c, crate, chunks, fixtures, named, tested):
             typed.append(f"{b}: {len(rs)} fixture(s)")
         else: bare.append(f"{b}: {dict(got) or 'no fixture'}")
     c.say(f"behaviors: {len(behaviors)}; with a fixture compared whole {whole}, only in part {part}; named by a ported case {len(tested & set(behaviors))}; by `// covers:` {len(named & set(behaviors))}")
+    ACCEPTED.clear()
+    ACCEPTED.update({a.split(": ")[0]: "accepted: a row of class form, " + a.split(": ")[1] for a in form})
+    ACCEPTED.update({a.split(": ")[0]: "accepted: every fixture needs input excluded by type (D12)" for a in typed})
     c.say(f"behaviors with no check that a row of class `form` of raw/decisions.jsonl names (the consultant reads this list): {len(form)}")
     for a in form: c.say("        " + a)
     c.say(f"behaviors with no check whose every fixture needs input excluded by type, D12 (the consultant reads this list): {len(typed)}")
@@ -823,6 +827,7 @@ def handoff(c, crate, args):
                 for b in f["behaviors"]: by[b].append(f"fixture {f['id']} {res[(ch, f['id'])]}")
     for b in tested: by[b].append("ported")
     for b in named: by[b].append("covers")
+    for b, why in ACCEPTED.items(): by[b].append(why)
     with open(target(crate, "named.json"), "w", encoding="utf8") as fh: json.dump(by, fh, sort_keys=True)
     # checks unchanged since their unit's code
     names = list(us)

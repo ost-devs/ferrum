@@ -1,0 +1,6 @@
+panics (G9): 40 lines
+shared state (G7): 116 lines
+sentinels and their arithmetic (G7): 192 lines
+written: .scratch/conformance/ferrum-state/lists.md
+
+checks passed

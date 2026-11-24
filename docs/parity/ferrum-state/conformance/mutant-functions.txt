@@ -1,0 +1,161 @@
+src/change.rs:187 map_pos (seed)
+src/change.rs:243 touches_range (seed)
+src/change.rs:432 compose (seed)
+src/change.rs:452 map (seed)
+src/change.rs:592 create
+src/change.rs:599 create_set
+src/change.rs:605 filter (seed)
+src/change.rs:788 add_section
+src/change.rs:807 add_insert
+src/change.rs:867 map_set
+src/change.rs:945 compose_sets
+src/change.rs:1011 mismatched_lengths
+src/change.rs:1027 new
+src/change.rs:1033 next
+src/change.rs:1045 done
+src/change.rs:1049 len2
+src/change.rs:1058 text
+src/change.rs:1065 text_bit
+src/change.rs:1074 forward
+src/change.rs:1083 forward2
+src/char.rs:73 is_extending_char
+src/char.rs:94 is_regional_indicator
+src/char.rs:101 char_at
+src/char.rs:109 char_before
+src/char.rs:114 assert_char_boundary
+src/char.rs:123 cluster_break
+src/char.rs:130 next_cluster_break
+src/char.rs:170 prev_cluster_break
+src/char.rs:193 find_cluster_break (seed)
+src/column.rs:7 assert_tab_size
+src/column.rs:21 count_column (seed)
+src/column.rs:42 find_column_inner (seed)
+src/column.rs:66 find_column (seed)
+src/facet.rs:59 new_id
+src/facet.rs:66 builtin_id
+src/facet.rs:246 combine
+src/facet.rs:258 compare
+src/facet.rs:438 compute (seed)
+src/facet.rs:586 extension
+src/facet.rs:599 get
+src/facet.rs:691 define (seed)
+src/facet.rs:778 new
+src/facet.rs:811 key
+src/facet.rs:818 new
+src/facet.rs:962 key
+src/facet.rs:974 get
+src/facet.rs:978 set
+src/facet.rs:982 has
+src/facet.rs:986 delete
+src/facet.rs:1170 key
+src/facet.rs:1192 result_key
+src/facet.rs:1200 inner
+src/facet.rs:1295 get_addr
+src/facet.rs:1474 get
+src/rangeset.rs:30 or
+src/rangeset.rs:35 assoc
+src/rangeset.rs:49 start_side
+src/rangeset.rs:56 end_side
+src/rangeset.rs:63 map_mode
+src/rangeset.rs:71 point
+src/rangeset.rs:79 range
+src/rangeset.rs:89 cmp_val
+src/rangeset.rs:150 bound_change
+src/rangeset.rs:289 access
+src/rangeset.rs:333 new
+src/rangeset.rs:346 length
+src/rangeset.rs:351 touch
+src/rangeset.rs:357 value_len
+src/rangeset.rs:363 read
+src/rangeset.rs:373 find_index
+src/rangeset.rs:415 map
+src/rangeset.rs:518 chunk_end
+src/rangeset.rs:540 is_empty
+src/rangeset.rs:545 max_point
+src/rangeset.rs:550 length
+src/rangeset.rs:594 update (seed)
+src/rangeset.rs:601 update_inner
+src/rangeset.rs:675 map (seed)
+src/rangeset.rs:780 compare (seed)
+src/rangeset.rs:842 spans (seed)
+src/rangeset.rs:990 finish_chunk
+src/rangeset.rs:1020 add_range
+src/rangeset.rs:1035 add_inner
+src/rangeset.rs:1067 add_chunk
+src/rangeset.rs:1095 finish_inner
+src/rangeset.rs:1124 chunk_id
+src/rangeset.rs:1130 find_shared_chunks
+src/rangeset.rs:1180 new
+src/rangeset.rs:1190 value_ref
+src/rangeset.rs:1194 start_side
+src/rangeset.rs:1198 end_side
+src/rangeset.rs:1202 skipped
+src/rangeset.rs:1206 goto
+src/rangeset.rs:1212 goto_inner
+src/rangeset.rs:1236 forward
+src/rangeset.rs:1242 next
+src/rangeset.rs:1264 set_range_index
+src/rangeset.rs:1278 next_chunk
+src/rangeset.rs:1284 compare
+src/rangeset.rs:1307 value_ref
+src/rangeset.rs:1311 goto
+src/rangeset.rs:1321 forward
+src/rangeset.rs:1336 next
+src/rangeset.rs:1357 heap_bubble
+src/rangeset.rs:1376 from_sets
+src/rangeset.rs:1397 goto
+src/rangeset.rs:1404 forward
+src/rangeset.rs:1411 next
+src/rangeset.rs:1418 value
+src/rangeset.rs:1432 to
+src/rangeset.rs:1439 rank
+src/rangeset.rs:1446 start_side
+src/rangeset.rs:1470 new
+src/rangeset.rs:1486 goto
+src/rangeset.rs:1498 forward
+src/rangeset.rs:1508 remove_active
+src/rangeset.rs:1515 add_active
+src/rangeset.rs:1534 next
+src/rangeset.rs:1599 active_for_point
+src/rangeset.rs:1617 open_end
+src/rangeset.rs:1632 compare
+src/rangeset.rs:1690 same_values
+src/rangeset.rs:1703 find_min_index
+src/selection.rs:343 create (seed)
+src/selection.rs:461 new
+src/selection.rs:471 normalized
+src/selection.rs:506 check_selection
+src/state.rs:220 update (seed)
+src/text.rs:46 text_length
+src/text.rs:52 cut
+src/text.rs:62 join
+src/text.rs:74 append_text
+src/text.rs:105 slice_text
+src/text.rs:110 clip
+src/text.rs:116 split_leaves
+src/text.rs:147 add
+src/text.rs:179 flush
+src/text.rs:194 node_from
+src/text.rs:273 line_at (seed)
+src/text.rs:308 replace (seed)
+src/text.rs:478 not_a_boundary
+src/text.rs:484 leaf
+src/text.rs:489 node
+src/text.rs:495 size
+src/text.rs:503 assert_boundary
+src/text.rs:510 line_inner
+src/text.rs:541 decompose
+src/text.rs:594 replace_inner
+src/text.rs:642 replace_general (seed)
+src/text.rs:694 flatten
+src/text.rs:931 new
+src/text.rs:1043 new
+src/transaction.rs:33 new
+src/transaction.rs:476 create
+src/transaction.rs:506 now
+src/transaction.rs:614 join_ranges
+src/transaction.rs:651 merge_transaction
+src/transaction.rs:686 resolve_transaction_inner
+src/transaction.rs:712 resolve_transaction
+src/transaction.rs:738 filter_transaction
+src/transaction.rs:793 extend_transaction
