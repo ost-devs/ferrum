@@ -84,6 +84,10 @@
 - A panic in an embedded engine: the floor is cm6's stability (the view catches extension code, the browser contains the rest); catch where cm6 catches, outside data through `Result`, keep the panic for a caller's bug. `docs/decisions/foundation.md` Q128
 - API stability before the facade: provisional; only the cost of a change (call sites, cm6 familiarity, mid-stage risk) keeps a form, never that it is written. Same file, Q129
 
+- A type that only carries an argument into one call is no "public value" of D6: check D6 through what the call keeps, accept such types by a named list with their member, failing when stale. `docs/decisions/foundation.md` 2026-11-24 D6
+- A difference on a fresh case is attributed to a decision by a run (the row's rule kept as a patch of cm6, validated by reproducing its committed list), never by reading: the first reading misfiled 1 of 3 kinds. Rows no patch can write: a tool check from the row's own sentence. `docs/decisions/ferrum-state.md` "Q130 to Q134"
+- A budget is a context size (the ledger's unit): role base + files the card reads whole + kept output + a third; a running worker's transcript shows its size and consumption live, so a stop line can stop. `docs/decisions/method.md` M23
+
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.
 - They confirm drafts readily when the draft states costs; what they push back on is a value judgment of mine presented as a technical one.

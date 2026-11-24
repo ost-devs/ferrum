@@ -431,3 +431,17 @@ mechanical conversion settles anyway) or misses cases implementers hit.
 **What I assumed about the maintainer's wishes.** That no application, their own Markdown editor included, depends on a foundation crate before the facade is released (`ferrum-foundation.md` §5 says nothing else starts before). If they want one to, the point at which stability binds moves to that day for the crates it uses, and that is their call.
 
 **Confidence.** High. **Reopens.** An outside consumer before the facade; a change under this rule that costs more than its record estimated.
+
+## 2026-11-24 · D6: a type that only carries an argument into one call
+
+*Decided by the consultant (Q130 of `ferrum-state`; the crate's part: `docs/decisions/ferrum-state.md`, "Q130 to Q134"). Binding text: `.claude/rules/decisions.md` D6 (amended).*
+
+**Question.** D6 says every public value of the foundation is `Send + Sync`; D14 leaves a callback called only within its call without those bounds. A public type that holds such a callback (a config `define` consumes, a command's target, an update spec) is then neither `Send` nor `Sync`. Is it a "public value" in D6's sense?
+
+**Decision.** No. Such a type is not shared with any thread: the call consumes it and keeps nothing of it, and D6 is checked through what the call keeps, since every value the crate returns or holds must be `Send + Sync`, and would fail if it held one of these. Each crate's `design.md` names its types of this kind, and its G1 check accepts those and no other.
+
+**Why.** D6's reason is a snapshot read off the main thread (parsing, search, indexing), which needs the values the crate keeps and returns to be shareable. D14's reason for the callback holds for the type that carries it: bounds would forbid what cm6's callers write there (a closure that collects into a local) and buy nothing. `ferrum-view` will meet the same shape (a plugin's spec, a command's target), so the rule is written once for every crate.
+
+**Lost.** Bounds on the callbacks; a G1 check that excuses a type by a general test (whether any function returns it: constructors do).
+
+**Confidence.** High. **Reopens.** A caller that must build such a type on one thread and use it on another.

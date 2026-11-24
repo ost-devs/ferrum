@@ -5,7 +5,7 @@
     python3 tools/ledger.py report [<crate>]             cost per stage and step, escapes, open expectations
 
 Kinds and their keys (date defaults to today; numbers are parsed):
-  step     crate stage step role model effort tokens [attempts] [note]   one finished worker run or orchestrator step;
+  step     crate stage step role model effort tokens [consumed] [attempts] [note]   one finished worker run or orchestrator step;
                                                                      model: the id of the model the run was served by
                                                                      (claude-opus-5-5, claude-fable-5-2), never an alias:
                                                                      the session's model for the orchestrator, the model of
@@ -17,6 +17,9 @@ Kinds and their keys (date defaults to today; numbers are parsed):
                                                                      not the sum of its requests: the context the run ended
                                                                      with; a resumed run is the sum of its parts, and a run
                                                                      that compacted says so in its note (it under-counts)
+                                                                     consumed: the sum over the run's requests of the four
+                                                                     usage counts in its transcript (docs/workflow/README.md §8),
+                                                                     what the run cost; recorded for workers from 2026-11-24 (M23)
   escape   crate defect class severity made_in found_in [note]       a defect one step made and a later step found
                                                                      (severity: high | low, specification.md §8 item 3)
   expect   id change expects check_at                                a method change and the measurement that confirms it

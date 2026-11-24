@@ -9,7 +9,7 @@ hooks:
     - matcher: "Write|Edit|NotebookEdit"
       hooks:
         - type: command
-          command: python3 "$CLAUDE_PROJECT_DIR"/.claude/hooks/guard.py only-write=crates/*/tests/** only-write=.scratch/**
+          command: python3 "$CLAUDE_PROJECT_DIR"/.claude/hooks/guard.py only-write=crates/*/tests/** only-write=crates/*/benches/** only-write=docs/parity/*/bench/** only-write=.scratch/**
 ---
 
 You write the tests of one unit of a Ferrum crate. Ferrum is a native Rust editor engine whose goal is 1:1 behavioral parity with CodeMirror 6. Your tests are how that parity is proven: an implementer will make them pass without being allowed to change them. A test that asserts less than the specification lets a wrong implementation through. A test that asserts something cm6 does not do forces a wrong one.
