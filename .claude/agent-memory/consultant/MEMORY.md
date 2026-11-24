@@ -88,6 +88,10 @@
 - A difference on a fresh case is attributed to a decision by a run (the row's rule kept as a patch of cm6, validated by reproducing its committed list), never by reading: the first reading misfiled 1 of 3 kinds. Rows no patch can write: a tool check from the row's own sentence. `docs/decisions/ferrum-state.md` "Q130 to Q134"
 - A budget is a context size (the ledger's unit): role base + files the card reads whole + kept output + a third; a running worker's transcript shows its size and consumption live, so a stop line can stop. `docs/decisions/method.md` M23
 
+- A decision row for D1's arithmetic (a distance measured on one stretch, walked on another): find its condition as a class by a model run in both units over random cases, never from the instance; the narrower "where it binds" condition missed cases. Re-derive a left-out kind's values outside the replayer (a reading misplaced one insertion). `docs/decisions/ferrum-state.md` "Q135, Q136 and the U1 findings"
+- A mutant that changes a value no check reads (tree shape, a cached length): coverage cannot see it (the line ran); close it with fixtures from cm6 runs, then rerun the mutants. Same entry
+- A worker's budget counts the runs its card asks for (a build per mutant), not only reading; split a card by kind of work above ~140k. A timeout mutant is sorted by its logs (sub-second test still running = hang), never by default. `docs/decisions/method.md` M25, M26
+
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.
 - They confirm drafts readily when the draft states costs; what they push back on is a value judgment of mine presented as a technical one.

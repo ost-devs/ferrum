@@ -60,7 +60,7 @@ Mechanical gates run first, for the whole crate, by the orchestrator, each as a 
 - Reading check, for written tests: the test really asserts the behavior, on the right input class and on the whole observable result the behavior states; otherwise the test is `WEAKER`. For the replayer, once: it runs the recorded input and compares the whole recorded output, with no field skipped.
 - Test files and the replayer are unchanged since the commit that preceded their unit's code, except listed changes (`git log`).
 - **Coverage of Ferrum's code by the checks:** every line and branch of the crate that no fixture replay and no test reaches is listed. Each is code no evidence speaks for: it gets a check, a reason, or is removed.
-- **Mutation** (`cargo-mutants`) on the functions the crate's plan names. A surviving mutant that a behavior forbids is a missing or weak check.
+- **Mutation** (`cargo-mutants`) on the functions the crate's plan names. A surviving mutant that a behavior forbids is a missing or weak check. A mutant that times out is run again at a limit of about thirty times the unmutated test run: one whose log then shows a test that finishes in under a second unmutated still running after a minute is caught by a hang, counted apart; any other is run once more at ten times that limit, and counts by its outcome there or as a hang (M26).
 
 **G3. Ported cm6 tests.**
 - Every `LOGIC-ONLY`, `NEEDS LAYOUT` and `NEEDS GRAMMAR` case has its `test_cm6_<file>_<nn>_<slug>` test.
