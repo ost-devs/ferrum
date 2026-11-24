@@ -31,6 +31,8 @@
                                                                 gives by pattern, or `unsorted`; conformance/costs.jsonl
     python3 tools/conf_check.py <crate> g8 [--sizes n,10n,100n]  the G8 benchmarks cover every item with a local or
                                                                 logarithmic behavior, on both sides, at those sizes
+    python3 tools/conf_check.py <crate> coverage-fresh [<report.json>]   Q134: G2's missed branch outcomes that G5's new
+                                                                cases reach, and the outcomes only G2's run reaches
     python3 tools/conf_check.py <crate> sample --seed <n>        the items step 3's verifiers read, drawn with the seed
     (--root <dir>: another tree than the repository, for trying the tool on a copy)
 
@@ -770,11 +772,44 @@ def sample(c, crate, args):
     c.say(f"sample: {len(why)} of {len(inv)} CORE items (seed {seed}); by unit {dict(per)}; written {os.path.relpath(path, REPO)}")
 
 
+def outcome_counts(path, src_marker):
+    data = json.load(open(path))
+    out = collections.defaultdict(lambda: [0, 0])
+    for fn in data["data"][0]["functions"]:
+        for b in fn.get("branches", []):
+            fname = fn["filenames"][b[6]] if len(b) > 6 and b[6] < len(fn["filenames"]) else fn["filenames"][0]
+            if src_marker not in fname: continue
+            k = (fname.split(src_marker, 1)[1], b[0], b[1])
+            out[k][0] += b[4]; out[k][1] += b[5]
+    return out
+
+
+def coverage_fresh(c, crate, args):
+    """Q134: the branch outcomes of the crate the new cases of G5 reach, against G2's run (the committed checks):
+    which of G2's missed outcomes the new cases reach, and how many outcomes only the committed checks reach."""
+    g2 = os.path.join(REPO, ".scratch", "conformance", crate, "coverage", "report.json")
+    fresh = args[0] if args else os.path.join(REPO, ".scratch", "conformance", crate, "coverage-fresh", "report.json")
+    marker = f"/crates/{crate}/src/"
+    a, b = outcome_counts(g2, marker), outcome_counts(fresh, marker)
+    missed = {k: v for k, v in a.items() if not (v[0] and v[1])}
+    reached = []
+    for k, (t, f_) in sorted(missed.items()):
+        bt, bf = b.get(k, [0, 0])
+        got = [side for side, was, now in (("true", t, bt), ("false", f_, bf)) if not was and now]
+        if got: reached.append(f"src/{k[0]}:{k[1]}:{k[2]} reached {', '.join(got)} by the new cases")
+    only_committed = sum(1 for k, (t, f_) in a.items() for was, now in ((t, b.get(k, [0, 0])[0]), (f_, b.get(k, [0, 0])[1])) if was and not now)
+    total = sum(1 for k, (t, f_) in a.items() for x in (t, f_) if x)
+    fresh_total = sum(1 for k, (t, f_) in b.items() for x in (t, f_) if x)
+    c.say(f"branch outcomes reached: by G2's run {total}, by the new cases alone {fresh_total}; reached by G2's run and not by the new cases: {only_committed}")
+    c.say(f"of G2's {len(missed)} conditions with a missed outcome, outcomes the new cases reach: {len(reached)} (each to its unit's verifier)")
+    for r in reached: c.say("        " + r)
+
+
 def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ic.ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample}
+    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = ic.Check()

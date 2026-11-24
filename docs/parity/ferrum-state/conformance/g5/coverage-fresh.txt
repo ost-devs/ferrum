@@ -1,0 +1,4 @@
+branch outcomes reached: by G2's run 1282, by the new cases alone 1124; reached by G2's run and not by the new cases: 158
+of G2's 53 conditions with a missed outcome, outcomes the new cases reach: 0 (each to its unit's verifier)
+
+checks passed
