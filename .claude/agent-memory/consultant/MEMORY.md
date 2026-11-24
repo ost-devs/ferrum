@@ -92,6 +92,8 @@
 - A mutant that changes a value no check reads (tree shape, a cached length): coverage cannot see it (the line ran); close it with fixtures from cm6 runs, then rerun the mutants. Same entry
 - A worker's budget counts the runs its card asks for (a build per mutant), not only reading; split a card by kind of work above ~140k. A timeout mutant is sorted by its logs (sub-second test still running = hang), never by default. `docs/decisions/method.md` M25, M26
 
+- A budget overrun: measure the transcript's composition before accepting anyone's attribution of it (results by what each command read, path-loaded rules, own output, bytes per token on single results). At M27 both the question's (runs) and my own M25 premise (mutants) were wrong: reading filled both runs, a byte cost 0.43 tokens. A run stopped at its line is not resumed. `docs/decisions/method.md` M27
+
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.
 - They confirm drafts readily when the draft states costs; what they push back on is a value judgment of mine presented as a technical one.
