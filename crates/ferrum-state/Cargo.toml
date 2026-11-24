@@ -19,3 +19,9 @@ serde_json = "1"
 ferrum-state = { path = ".", features = ["__test"] }
 # the fixture replayer reads a fixture file through a Visitor, with keys in file order (docs/parity/ferrum-state/plan.md, "Reading a fixture file")
 serde_core = "1"
+
+# G8 of conformance: one entry per item whose cost is local or logarithmic, timed with std's clock (no harness crate:
+# docs/parity/ferrum-state/plan.md "Conformance", step 2; M24)
+[[bench]]
+name = "g8"
+harness = false

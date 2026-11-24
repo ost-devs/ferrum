@@ -1,0 +1,953 @@
+{"id": "state.findClusterBreak.B1", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(1)", "class": "local"}
+{"id": "state.findClusterBreak.B2", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(1)", "class": "local"}
+{"id": "state.findClusterBreak.B3", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(1)", "class": "local"}
+{"id": "state.findClusterBreak.B4", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(1)", "class": "local"}
+{"id": "state.findClusterBreak.B5", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(k log r) for a cluster of k code points (binary search over r table ranges per code point, mirrors/marijn/find-cluster-break/src/index.js:19-25)", "class": "logarithmic"}
+{"id": "state.findClusterBreak.B6", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(k) for k joined code points", "class": "unsorted"}
+{"id": "state.findClusterBreak.B7", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(k) for k joined code points", "class": "unsorted"}
+{"id": "state.findClusterBreak.B8", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(r) per call for a run of r indicators before pos (the count walks the whole run), so walking a run of r indicators is O(r^2) (deduction from the code)", "class": "linear or more"}
+{"id": "state.findClusterBreak.B9", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(1)", "class": "local"}
+{"id": "state.findClusterBreak.B10", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(k)", "class": "unsorted"}
+{"id": "state.findClusterBreak.B11", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(1)", "class": "local"}
+{"id": "state.findClusterBreak.B12", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(1)", "class": "local"}
+{"id": "state.findClusterBreak.B13", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(k^2) code points examined for a cluster of k code points before pos, because each candidate re-scans forward to the cluster end; with regional indicators each forward scan also counts the run, O(r^2) per call (deduction from the code)", "class": "unsorted"}
+{"id": "state.findClusterBreak.B14", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "as B13", "class": "unsorted"}
+{"id": "state.findClusterBreak.B15", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(1)", "class": "local"}
+{"id": "state.findClusterBreak.B16", "item_id": "state.cm6.212", "item": "findClusterBreak", "cost": "O(1)", "class": "local"}
+{"id": "state.codePointAt.B1", "item_id": "state.cm6.213", "item": "codePointAt", "cost": "O(1)", "class": "local"}
+{"id": "state.codePointAt.B2", "item_id": "state.cm6.213", "item": "codePointAt", "cost": "O(1)", "class": "local"}
+{"id": "state.codePointAt.B3", "item_id": "state.cm6.213", "item": "codePointAt", "cost": "O(1)", "class": "local"}
+{"id": "state.codePointAt.B4", "item_id": "state.cm6.213", "item": "codePointAt", "cost": "O(1)", "class": "local"}
+{"id": "state.codePointAt.B5", "item_id": "state.cm6.213", "item": "codePointAt", "cost": "O(1)", "class": "local"}
+{"id": "state.codePointAt.B6", "item_id": "state.cm6.213", "item": "codePointAt", "cost": "O(1)", "class": "local"}
+{"id": "state.codePointAt.B7", "item_id": "state.cm6.213", "item": "codePointAt", "cost": "O(1)", "class": "local"}
+{"id": "state.codePointSize.B1", "item_id": "state.cm6.215", "item": "codePointSize", "cost": "O(1)", "class": "local"}
+{"id": "state.codePointSize.B2", "item_id": "state.cm6.215", "item": "codePointSize", "cost": "O(1)", "class": "local"}
+{"id": "state.codePointSize.B3", "item_id": "state.cm6.215", "item": "codePointSize", "cost": "O(1)", "class": "local"}
+{"id": "state.codePointSize.B4", "item_id": "state.cm6.215", "item": "codePointSize", "cost": "O(1)", "class": "local"}
+{"id": "state.countColumn.B1", "item_id": "state.cm6.216", "item": "countColumn", "cost": "linear in the string up to `to` (one findClusterBreak per cluster)", "class": "linear or more"}
+{"id": "state.countColumn.B2", "item_id": "state.cm6.216", "item": "countColumn", "cost": "O(1) per tab", "class": "local"}
+{"id": "state.countColumn.B3", "item_id": "state.cm6.216", "item": "countColumn", "cost": "O(cluster length) per cluster", "class": "unsorted"}
+{"id": "state.countColumn.B4", "item_id": "state.cm6.216", "item": "countColumn", "cost": "as B1", "class": "linear or more"}
+{"id": "state.countColumn.B5", "item_id": "state.cm6.216", "item": "countColumn", "cost": "as B1", "class": "linear or more"}
+{"id": "state.countColumn.B6", "item_id": "state.cm6.216", "item": "countColumn", "cost": "as B1", "class": "linear or more"}
+{"id": "state.countColumn.B7", "item_id": "state.cm6.216", "item": "countColumn", "cost": "as B1", "class": "linear or more"}
+{"id": "state.countColumn.B8", "item_id": "state.cm6.216", "item": "countColumn", "cost": "as B1", "class": "linear or more"}
+{"id": "state.findColumn.B1", "item_id": "state.cm6.217", "item": "findColumn", "cost": "O(1)", "class": "local"}
+{"id": "state.findColumn.B2", "item_id": "state.cm6.217", "item": "findColumn", "cost": "linear in the string up to the returned offset", "class": "linear or more"}
+{"id": "state.findColumn.B3", "item_id": "state.cm6.217", "item": "findColumn", "cost": "as B2", "class": "linear or more"}
+{"id": "state.findColumn.B4", "item_id": "state.cm6.217", "item": "findColumn", "cost": "as B2", "class": "linear or more"}
+{"id": "state.findColumn.B5", "item_id": "state.cm6.217", "item": "findColumn", "cost": "as B2", "class": "linear or more"}
+{"id": "state.findColumn.B6", "item_id": "state.cm6.217", "item": "findColumn", "cost": "as B2", "class": "linear or more"}
+{"id": "state.findColumn.B7", "item_id": "state.cm6.217", "item": "findColumn", "cost": "as B2", "class": "linear or more"}
+{"id": "state.findColumn.B8", "item_id": "state.cm6.217", "item": "findColumn", "cost": "as B2", "class": "linear or more"}
+{"id": "state.findColumn.B9", "item_id": "state.cm6.217", "item": "findColumn", "cost": "as B2", "class": "linear or more"}
+{"id": "state.CharCategory.B1", "item_id": "state.cm6.166", "item": "CharCategory", "cost": "O(1)", "class": "local"}
+{"id": "state.CharCategory.B2", "item_id": "state.cm6.166", "item": "CharCategory", "cost": "linear in the string length plus the wordChars length times the string length (indexOf per wordChars code unit)", "class": "linear or more"}
+{"id": "state.CharCategory.Word.B1", "item_id": "state.cm6.167", "item": "CharCategory.Word", "cost": "linear in the string length", "class": "linear or more"}
+{"id": "state.CharCategory.Word.B2", "item_id": "state.cm6.167", "item": "CharCategory.Word", "cost": "linear in the string length", "class": "linear or more"}
+{"id": "state.CharCategory.Word.B3", "item_id": "state.cm6.167", "item": "CharCategory.Word", "cost": "O(1)", "class": "local"}
+{"id": "state.CharCategory.Word.B4", "item_id": "state.cm6.167", "item": "CharCategory.Word", "cost": "linear in the string length", "class": "linear or more"}
+{"id": "state.CharCategory.Word.B5", "item_id": "state.cm6.167", "item": "CharCategory.Word", "cost": "O(w * s) for w wordChars code units and a string of s code units", "class": "unsorted"}
+{"id": "state.CharCategory.Word.B6", "item_id": "state.cm6.167", "item": "CharCategory.Word", "cost": "as B5", "class": "unsorted"}
+{"id": "state.CharCategory.Space.B1", "item_id": "state.cm6.168", "item": "CharCategory.Space", "cost": "O(1)", "class": "local"}
+{"id": "state.CharCategory.Space.B2", "item_id": "state.cm6.168", "item": "CharCategory.Space", "cost": "linear in the string length", "class": "linear or more"}
+{"id": "state.CharCategory.Space.B3", "item_id": "state.cm6.168", "item": "CharCategory.Space", "cost": "linear in the string length", "class": "linear or more"}
+{"id": "state.CharCategory.Other.B1", "item_id": "state.cm6.169", "item": "CharCategory.Other", "cost": "linear in the string length", "class": "linear or more"}
+{"id": "state.CharCategory.Other.B2", "item_id": "state.cm6.169", "item": "CharCategory.Other", "cost": "linear in the string length", "class": "linear or more"}
+{"id": "state.CharCategory.Other.B3", "item_id": "state.cm6.169", "item": "CharCategory.Other", "cost": "O(1)", "class": "local"}
+{"id": "state.Line.B1", "item_id": "state.cm6.218", "item": "Line", "cost": "O(log n) per query (the lookup); the object itself O(1) plus a reference to the stored line string", "class": "logarithmic"}
+{"id": "state.Line.from.B1", "item_id": "state.cm6.219", "item": "Line.from", "cost": "O(1) field", "class": "local"}
+{"id": "state.Line.to.B1", "item_id": "state.cm6.220", "item": "Line.to", "cost": "O(1) field", "class": "local"}
+{"id": "state.Line.to.B2", "item_id": "state.cm6.220", "item": "Line.to", "cost": "O(1) field", "class": "local"}
+{"id": "state.Line.number.B1", "item_id": "state.cm6.221", "item": "Line.number", "cost": "O(1) field", "class": "local"}
+{"id": "state.Line.text.B1", "item_id": "state.cm6.222", "item": "Line.text", "cost": "O(1) field", "class": "local"}
+{"id": "state.Line.text.B2", "item_id": "state.cm6.222", "item": "Line.text", "cost": "O(1) field", "class": "local"}
+{"id": "state.Line.length.B1", "item_id": "state.cm6.223", "item": "Line.length", "cost": "O(1)", "class": "local"}
+{"id": "state.Line.length.B2", "item_id": "state.cm6.223", "item": "Line.length", "cost": "O(1)", "class": "local"}
+{"id": "state.TextIterator.B1", "item_id": "state.cm6.224", "item": "TextIterator", "cost": "O(1) per step", "class": "local"}
+{"id": "state.TextIterator.B2", "item_id": "state.cm6.224", "item": "TextIterator", "cost": "O(1)", "class": "local"}
+{"id": "state.TextIterator.next.B1", "item_id": "state.cm6.225", "item": "TextIterator.next", "cost": "amortized O(1) per value (a stack of nodes, one entry per tree level)", "class": "local"}
+{"id": "state.TextIterator.next.B2", "item_id": "state.cm6.225", "item": "TextIterator.next", "cost": "amortized O(1) per value", "class": "local"}
+{"id": "state.TextIterator.next.B3", "item_id": "state.cm6.225", "item": "TextIterator.next", "cost": "O(log n + line length) per skipped call (whole children skipped)", "class": "logarithmic"}
+{"id": "state.TextIterator.next.B4", "item_id": "state.cm6.225", "item": "TextIterator.next", "cost": "as B3, twice", "class": "logarithmic"}
+{"id": "state.TextIterator.next.B5", "item_id": "state.cm6.225", "item": "TextIterator.next", "cost": "O(1)", "class": "local"}
+{"id": "state.TextIterator.next.B6", "item_id": "state.cm6.225", "item": "TextIterator.next", "cost": "O(log n) to the first value (the initial skip to from), then amortized O(1) per value", "class": "logarithmic"}
+{"id": "state.TextIterator.next.B7", "item_id": "state.cm6.225", "item": "TextIterator.next", "cost": "as B3", "class": "logarithmic"}
+{"id": "state.TextIterator.next.B8", "item_id": "state.cm6.225", "item": "TextIterator.next", "cost": "as B3", "class": "logarithmic"}
+{"id": "state.TextIterator.next.B9", "item_id": "state.cm6.225", "item": "TextIterator.next", "cost": "amortized O(1) per line", "class": "local"}
+{"id": "state.TextIterator.next.B10", "item_id": "state.cm6.225", "item": "TextIterator.next", "cost": "as B3", "class": "logarithmic"}
+{"id": "state.TextIterator.next.B11", "item_id": "state.cm6.225", "item": "TextIterator.next", "cost": "as B3", "class": "logarithmic"}
+{"id": "state.TextIterator.next.B12", "item_id": "state.cm6.225", "item": "TextIterator.next", "cost": "as B6", "class": "logarithmic"}
+{"id": "state.TextIterator.value.B1", "item_id": "state.cm6.226", "item": "TextIterator.value", "cost": "O(1) field", "class": "local"}
+{"id": "state.TextIterator.done.B1", "item_id": "state.cm6.227", "item": "TextIterator.done", "cost": "O(1) field", "class": "local"}
+{"id": "state.TextIterator.lineBreak.B1", "item_id": "state.cm6.228", "item": "TextIterator.lineBreak", "cost": "O(1)", "class": "local"}
+{"id": "state.TextIterator.lineBreak.B2", "item_id": "state.cm6.228", "item": "TextIterator.lineBreak", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.B1", "item_id": "state.cm6.229", "item": "Text", "cost": "see each operation", "class": "unsorted"}
+{"id": "state.Text.B2", "item_id": "state.cm6.229", "item": "Text", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.B3", "item_id": "state.cm6.229", "item": "Text", "cost": "O(1) (no copy)", "class": "local"}
+{"id": "state.Text.length.B1", "item_id": "state.cm6.230", "item": "Text.length", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.lines.B1", "item_id": "state.cm6.231", "item": "Text.lines", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.lineAt.B1", "item_id": "state.cm6.232", "item": "Text.lineAt", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.lineAt.B2", "item_id": "state.cm6.232", "item": "Text.lineAt", "cost": "O(log n) levels, with a linear scan of the children at each level (63 top-level children for 2000 lines, F1065) and of up to 32 lines in the leaf", "class": "logarithmic"}
+{"id": "state.Text.lineAt.B3", "item_id": "state.cm6.232", "item": "Text.lineAt", "cost": "as B2", "class": "logarithmic"}
+{"id": "state.Text.lineAt.B4", "item_id": "state.cm6.232", "item": "Text.lineAt", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.lineAt.B5", "item_id": "state.cm6.232", "item": "Text.lineAt", "cost": "as B2", "class": "logarithmic"}
+{"id": "state.Text.lineAt.B6", "item_id": "state.cm6.232", "item": "Text.lineAt", "cost": "as B2", "class": "logarithmic"}
+{"id": "state.Text.line.B1", "item_id": "state.cm6.233", "item": "Text.line", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.line.B2", "item_id": "state.cm6.233", "item": "Text.line", "cost": "O(log n), as Text.lineAt B2", "class": "logarithmic"}
+{"id": "state.Text.line.B3", "item_id": "state.cm6.233", "item": "Text.line", "cost": "as B2", "class": "logarithmic"}
+{"id": "state.Text.replace.B1", "item_id": "state.cm6.234", "item": "Text.replace", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.replace.B2", "item_id": "state.cm6.234", "item": "Text.replace", "cost": "see B3-B5", "class": "unsorted"}
+{"id": "state.Text.replace.B3", "item_id": "state.cm6.234", "item": "Text.replace", "cost": "O(32 + inserted lines)", "class": "unsorted"}
+{"id": "state.Text.replace.B4", "item_id": "state.cm6.234", "item": "Text.replace", "cost": "O(depth * children per node + 32) for a local edit", "class": "unsorted"}
+{"id": "state.Text.replace.B5", "item_id": "state.cm6.234", "item": "Text.replace", "cost": "O(log n * children per node) for the decomposition plus O(lines inserted / 32) for new leaves; the receiver is never materialized as a string", "class": "logarithmic"}
+{"id": "state.Text.replace.B6", "item_id": "state.cm6.234", "item": "Text.replace", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.append.B1", "item_id": "state.cm6.235", "item": "Text.append", "cost": "as Text.replace at the end", "class": "unsorted"}
+{"id": "state.Text.slice.B1", "item_id": "state.cm6.236", "item": "Text.slice", "cost": "as B3", "class": "logarithmic"}
+{"id": "state.Text.slice.B2", "item_id": "state.cm6.236", "item": "Text.slice", "cost": "O(1) extra", "class": "local"}
+{"id": "state.Text.slice.B3", "item_id": "state.cm6.236", "item": "Text.slice", "cost": "O(log n * children per node + lines in the cut leaves); whole children are not copied", "class": "logarithmic"}
+{"id": "state.Text.slice.B4", "item_id": "state.cm6.236", "item": "Text.slice", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.sliceString.B1", "item_id": "state.cm6.237", "item": "Text.sliceString", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.sliceString.B2", "item_id": "state.cm6.237", "item": "Text.sliceString", "cost": "linear in the result plus a scan of the children and lines before from at each level", "class": "linear or more"}
+{"id": "state.Text.sliceString.B3", "item_id": "state.cm6.237", "item": "Text.sliceString", "cost": "as B2", "class": "linear or more"}
+{"id": "state.Text.sliceString.B4", "item_id": "state.cm6.237", "item": "Text.sliceString", "cost": "as B2", "class": "linear or more"}
+{"id": "state.Text.sliceString.B5", "item_id": "state.cm6.237", "item": "Text.sliceString", "cost": "O(lines)", "class": "linear or more"}
+{"id": "state.Text.sliceString.B6", "item_id": "state.cm6.237", "item": "Text.sliceString", "cost": "as B2", "class": "linear or more"}
+{"id": "state.Text.eq.B1", "item_id": "state.cm6.238", "item": "Text.eq", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.eq.B2", "item_id": "state.cm6.238", "item": "Text.eq", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.eq.B3", "item_id": "state.cm6.238", "item": "Text.eq", "cost": "O(n) for documents that share no structure", "class": "linear or more"}
+{"id": "state.Text.eq.B4", "item_id": "state.cm6.238", "item": "Text.eq", "cost": "as B3", "class": "linear or more"}
+{"id": "state.Text.eq.B5", "item_id": "state.cm6.238", "item": "Text.eq", "cost": "O(depth * children + size of the region between the shared prefix and suffix)", "class": "unsorted"}
+{"id": "state.Text.iter.B1", "item_id": "state.cm6.239", "item": "Text.iter", "cost": "O(1) to create", "class": "local"}
+{"id": "state.Text.iter.B2", "item_id": "state.cm6.239", "item": "Text.iter", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.iterRange.B1", "item_id": "state.cm6.240", "item": "Text.iterRange", "cost": "O(1) to create", "class": "local"}
+{"id": "state.Text.iterRange.B2", "item_id": "state.cm6.240", "item": "Text.iterRange", "cost": "as B1", "class": "local"}
+{"id": "state.Text.iterRange.B3", "item_id": "state.cm6.240", "item": "Text.iterRange", "cost": "as B1", "class": "local"}
+{"id": "state.Text.iterLines.B1", "item_id": "state.cm6.241", "item": "Text.iterLines", "cost": "O(1) to create; O(1) amortized per line", "class": "local"}
+{"id": "state.Text.iterLines.B2", "item_id": "state.cm6.241", "item": "Text.iterLines", "cost": "O(log n) to create (Text.line)", "class": "logarithmic"}
+{"id": "state.Text.iterLines.B3", "item_id": "state.cm6.241", "item": "Text.iterLines", "cost": "O(log n) to create", "class": "logarithmic"}
+{"id": "state.Text.iterLines.B4", "item_id": "state.cm6.241", "item": "Text.iterLines", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.iterLines.B5", "item_id": "state.cm6.241", "item": "Text.iterLines", "cost": "O(log n)", "class": "logarithmic"}
+{"id": "state.Text.iterLines.B6", "item_id": "state.cm6.241", "item": "Text.iterLines", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.iterLines.B7", "item_id": "state.cm6.241", "item": "Text.iterLines", "cost": "O(log n)", "class": "logarithmic"}
+{"id": "state.Text.toString.B1", "item_id": "state.cm6.242", "item": "Text.toString", "cost": "O(n): materializes the document", "class": "linear or more"}
+{"id": "state.Text.toJSON.B1", "item_id": "state.cm6.243", "item": "Text.toJSON", "cost": "O(lines)", "class": "linear or more"}
+{"id": "state.Text.children.B1", "item_id": "state.cm6.244", "item": "Text.children", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.children.B2", "item_id": "state.cm6.244", "item": "Text.children", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.children.B3", "item_id": "state.cm6.244", "item": "Text.children", "cost": "O(1)", "class": "local"}
+{"id": "state.Text.[Symbol.iterator].B1", "item_id": "state.cm6.245", "item": "Text.[Symbol.iterator]", "cost": "O(1) to create; O(1) amortized per value", "class": "local"}
+{"id": "state.Text^of.B1", "item_id": "state.cm6.246", "item": "Text^of", "cost": "O(1)", "class": "local"}
+{"id": "state.Text^of.B2", "item_id": "state.cm6.246", "item": "Text^of", "cost": "O(1)", "class": "local"}
+{"id": "state.Text^of.B3", "item_id": "state.cm6.246", "item": "Text^of", "cost": "O(lines) for the length", "class": "linear or more"}
+{"id": "state.Text^of.B4", "item_id": "state.cm6.246", "item": "Text^of", "cost": "O(lines)", "class": "linear or more"}
+{"id": "state.Text^of.B5", "item_id": "state.cm6.246", "item": "Text^of", "cost": "O(lines)", "class": "linear or more"}
+{"id": "state.Text^empty.B1", "item_id": "state.cm6.247", "item": "Text^empty", "cost": "O(1)", "class": "local"}
+{"id": "state.Text^empty.B2", "item_id": "state.cm6.247", "item": "Text^empty", "cost": "O(1)", "class": "local"}
+{"id": "state.ChangeDesc.B1", "item_id": "state.cm6.148", "item": "ChangeDesc", "cost": "Memory 2 numbers per section; sections are O(number of changes), independent of document size.", "class": "linear or more"}
+{"id": "state.ChangeDesc.B2", "item_id": "state.cm6.148", "item": "ChangeDesc", "cost": "Linear in sections.", "class": "linear or more"}
+{"id": "state.ChangeDesc.B3", "item_id": "state.cm6.148", "item": "ChangeDesc", "cost": "O(1); the array is kept by reference.", "class": "local"}
+{"id": "state.ChangeDesc.B4", "item_id": "state.cm6.148", "item": "ChangeDesc", "cost": "O(1) dispatch.", "class": "local"}
+{"id": "state.ChangeDesc.length.B1", "item_id": "state.cm6.149", "item": "ChangeDesc.length", "cost": "O(number of sections) per access.", "class": "linear or more"}
+{"id": "state.ChangeDesc.length.B2", "item_id": "state.cm6.149", "item": "ChangeDesc.length", "cost": "O(number of sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.newLength.B1", "item_id": "state.cm6.150", "item": "ChangeDesc.newLength", "cost": "O(number of sections) per access.", "class": "linear or more"}
+{"id": "state.ChangeDesc.newLength.B2", "item_id": "state.cm6.150", "item": "ChangeDesc.newLength", "cost": "O(number of sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.empty.B1", "item_id": "state.cm6.151", "item": "ChangeDesc.empty", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeDesc.empty.B2", "item_id": "state.cm6.151", "item": "ChangeDesc.empty", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeDesc.empty.B3", "item_id": "state.cm6.151", "item": "ChangeDesc.empty", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeDesc.iterGaps.B1", "item_id": "state.cm6.152", "item": "ChangeDesc.iterGaps", "cost": "O(number of sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.iterGaps.B2", "item_id": "state.cm6.152", "item": "ChangeDesc.iterGaps", "cost": "O(number of sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.iterGaps.B3", "item_id": "state.cm6.152", "item": "ChangeDesc.iterGaps", "cost": "O(number of sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.iterChangedRanges.B1", "item_id": "state.cm6.153", "item": "ChangeDesc.iterChangedRanges", "cost": "O(number of sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.iterChangedRanges.B2", "item_id": "state.cm6.153", "item": "ChangeDesc.iterChangedRanges", "cost": "O(number of sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.iterChangedRanges.B3", "item_id": "state.cm6.153", "item": "ChangeDesc.iterChangedRanges", "cost": "O(number of sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.iterChangedRanges.B4", "item_id": "state.cm6.153", "item": "ChangeDesc.iterChangedRanges", "cost": "O(number of sections) plus Text.append per inserted section when the receiver is a ChangeSet.", "class": "linear or more"}
+{"id": "state.ChangeDesc.invertedDesc.B1", "item_id": "state.cm6.154", "item": "ChangeDesc.invertedDesc", "cost": "O(number of sections) per access.", "class": "linear or more"}
+{"id": "state.ChangeDesc.invertedDesc.B2", "item_id": "state.cm6.154", "item": "ChangeDesc.invertedDesc", "cost": "O(number of sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.composeDesc.B1", "item_id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeDesc.composeDesc.B2", "item_id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeDesc.composeDesc.B3", "item_id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "cost": "O(sections of A + sections of B).", "class": "linear or more"}
+{"id": "state.ChangeDesc.composeDesc.B4", "item_id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.composeDesc.B5", "item_id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.composeDesc.B6", "item_id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "cost": "O(sections) plus Text.slice per piece.", "class": "linear or more"}
+{"id": "state.ChangeDesc.composeDesc.B7", "item_id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.composeDesc.B8", "item_id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.composeDesc.B9", "item_id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "cost": "Fails after walking the common prefix.", "class": "unsorted"}
+{"id": "state.ChangeDesc.composeDesc.B10", "item_id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.composeDesc.B11", "item_id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapDesc.B1", "item_id": "state.cm6.156", "item": "ChangeDesc.mapDesc", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeDesc.mapDesc.B2", "item_id": "state.cm6.156", "item": "ChangeDesc.mapDesc", "cost": "O(sections of A + sections of B).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapDesc.B3", "item_id": "state.cm6.156", "item": "ChangeDesc.mapDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapDesc.B4", "item_id": "state.cm6.156", "item": "ChangeDesc.mapDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapDesc.B5", "item_id": "state.cm6.156", "item": "ChangeDesc.mapDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapDesc.B6", "item_id": "state.cm6.156", "item": "ChangeDesc.mapDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapDesc.B7", "item_id": "state.cm6.156", "item": "ChangeDesc.mapDesc", "cost": "Fails after walking the common prefix.", "class": "unsorted"}
+{"id": "state.ChangeDesc.mapDesc.B8", "item_id": "state.cm6.156", "item": "ChangeDesc.mapDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapDesc.B9", "item_id": "state.cm6.156", "item": "ChangeDesc.mapDesc", "cost": "Does not terminate.", "class": "unsorted"}
+{"id": "state.ChangeDesc.mapPos.B1", "item_id": "state.cm6.157", "item": "ChangeDesc.mapPos", "cost": "O(number of sections up to pos).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapPos.B2", "item_id": "state.cm6.157", "item": "ChangeDesc.mapPos", "cost": "O(sections up to pos).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapPos.B3", "item_id": "state.cm6.157", "item": "ChangeDesc.mapPos", "cost": "O(sections up to pos).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapPos.B4", "item_id": "state.cm6.157", "item": "ChangeDesc.mapPos", "cost": "O(sections up to pos).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapPos.B5", "item_id": "state.cm6.157", "item": "ChangeDesc.mapPos", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapPos.B6", "item_id": "state.cm6.157", "item": "ChangeDesc.mapPos", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapPos.B7", "item_id": "state.cm6.157", "item": "ChangeDesc.mapPos", "cost": "O(sections up to pos).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapPos.B8", "item_id": "state.cm6.157", "item": "ChangeDesc.mapPos", "cost": "O(sections up to pos).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapPos.B9", "item_id": "state.cm6.157", "item": "ChangeDesc.mapPos", "cost": "O(sections up to pos).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapPos.B10", "item_id": "state.cm6.157", "item": "ChangeDesc.mapPos", "cost": "O(sections up to pos).", "class": "linear or more"}
+{"id": "state.ChangeDesc.mapPos.B11", "item_id": "state.cm6.157", "item": "ChangeDesc.mapPos", "cost": "O(1) for empty, O(1) for one gap.", "class": "local"}
+{"id": "state.ChangeDesc.touchesRange.B1", "item_id": "state.cm6.158", "item": "ChangeDesc.touchesRange", "cost": "O(sections up to `to`); the scan stops once a section starts after `to`.", "class": "linear or more"}
+{"id": "state.ChangeDesc.touchesRange.B2", "item_id": "state.cm6.158", "item": "ChangeDesc.touchesRange", "cost": "O(sections up to `to`).", "class": "linear or more"}
+{"id": "state.ChangeDesc.touchesRange.B3", "item_id": "state.cm6.158", "item": "ChangeDesc.touchesRange", "cost": "O(sections up to `to`).", "class": "linear or more"}
+{"id": "state.ChangeDesc.touchesRange.B4", "item_id": "state.cm6.158", "item": "ChangeDesc.touchesRange", "cost": "O(sections up to `to`).", "class": "linear or more"}
+{"id": "state.ChangeDesc.touchesRange.B5", "item_id": "state.cm6.158", "item": "ChangeDesc.touchesRange", "cost": "O(sections up to `to`).", "class": "linear or more"}
+{"id": "state.ChangeDesc.touchesRange.B6", "item_id": "state.cm6.158", "item": "ChangeDesc.touchesRange", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeDesc.toJSON.B1", "item_id": "state.cm6.159", "item": "ChangeDesc.toJSON", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeDesc^fromJSON.B1", "item_id": "state.cm6.160", "item": "ChangeDesc^fromJSON", "cost": "O(length) for the checks.", "class": "linear or more"}
+{"id": "state.ChangeDesc^fromJSON.B2", "item_id": "state.cm6.160", "item": "ChangeDesc^fromJSON", "cost": "O(length).", "class": "linear or more"}
+{"id": "state.ChangeDesc^fromJSON.B3", "item_id": "state.cm6.160", "item": "ChangeDesc^fromJSON", "cost": "O(length).", "class": "linear or more"}
+{"id": "state.MapMode.B1", "item_id": "state.cm6.161", "item": "MapMode", "cost": "O(1).", "class": "local"}
+{"id": "state.MapMode.Simple.B1", "item_id": "state.cm6.162", "item": "MapMode.Simple", "cost": "O(1).", "class": "local"}
+{"id": "state.MapMode.TrackDel.B1", "item_id": "state.cm6.163", "item": "MapMode.TrackDel", "cost": "O(1).", "class": "local"}
+{"id": "state.MapMode.TrackBefore.B1", "item_id": "state.cm6.164", "item": "MapMode.TrackBefore", "cost": "O(1).", "class": "local"}
+{"id": "state.MapMode.TrackAfter.B1", "item_id": "state.cm6.165", "item": "MapMode.TrackAfter", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeSpec.B1", "item_id": "state.cm6.135", "item": "ChangeSpec", "cost": "O(1) per spec.", "class": "local"}
+{"id": "state.ChangeSpec.B2", "item_id": "state.cm6.135", "item": "ChangeSpec", "cost": "String split O(insert length).", "class": "unsorted"}
+{"id": "state.ChangeSpec.B3", "item_id": "state.cm6.135", "item": "ChangeSpec", "cost": "One compose and one map of the accumulated set.", "class": "unsorted"}
+{"id": "state.ChangeSpec.B4", "item_id": "state.cm6.135", "item": "ChangeSpec", "cost": "See state.ChangeSet^of.B4.", "class": "unsorted"}
+{"id": "state.ChangeSpec.B5", "item_id": "state.cm6.135", "item": "ChangeSpec", "cost": "O(1) per spec.", "class": "local"}
+{"id": "state.ChangeSet^of.B1", "item_id": "state.cm6.145", "item": "ChangeSet^of", "cost": "O(number of specs) for one sorted run.", "class": "linear or more"}
+{"id": "state.ChangeSet^of.B2", "item_id": "state.cm6.145", "item": "ChangeSet^of", "cost": "Text.append per joined insert.", "class": "unsorted"}
+{"id": "state.ChangeSet^of.B3", "item_id": "state.cm6.145", "item": "ChangeSet^of", "cost": "O(1) per spec.", "class": "local"}
+{"id": "state.ChangeSet^of.B4", "item_id": "state.cm6.145", "item": "ChangeSet^of", "cost": "Each flush costs a map and a compose over the accumulated set: O(total sections) per out-of-order spec, quadratic for fully reversed input.", "class": "unsorted"}
+{"id": "state.ChangeSet^of.B5", "item_id": "state.cm6.145", "item": "ChangeSet^of", "cost": "One map and compose per ChangeSet spec.", "class": "unsorted"}
+{"id": "state.ChangeSet^of.B6", "item_id": "state.cm6.145", "item": "ChangeSet^of", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeSet^of.B7", "item_id": "state.cm6.145", "item": "ChangeSet^of", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeSet^of.B8", "item_id": "state.cm6.145", "item": "ChangeSet^of", "cost": "O(insert length).", "class": "unsorted"}
+{"id": "state.ChangeSet^of.B9", "item_id": "state.cm6.145", "item": "ChangeSet^of", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeSet^of.B10", "item_id": "state.cm6.145", "item": "ChangeSet^of", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeSet^empty.B1", "item_id": "state.cm6.146", "item": "ChangeSet^empty", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeSet^empty.B2", "item_id": "state.cm6.146", "item": "ChangeSet^empty", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeSet^fromJSON.B1", "item_id": "state.cm6.147", "item": "ChangeSet^fromJSON", "cost": "O(JSON size).", "class": "unsorted"}
+{"id": "state.ChangeSet^fromJSON.B2", "item_id": "state.cm6.147", "item": "ChangeSet^fromJSON", "cost": "O(JSON size).", "class": "unsorted"}
+{"id": "state.ChangeSet^fromJSON.B3", "item_id": "state.cm6.147", "item": "ChangeSet^fromJSON", "cost": "O(JSON size).", "class": "unsorted"}
+{"id": "state.ChangeSet^fromJSON.B4", "item_id": "state.cm6.147", "item": "ChangeSet^fromJSON", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeSet.toJSON.B1", "item_id": "state.cm6.144", "item": "ChangeSet.toJSON", "cost": "O(sections + inserted text size).", "class": "linear or more"}
+{"id": "state.ChangeSet.B1", "item_id": "state.cm6.136", "item": "ChangeSet", "cost": "Memory: one Text reference per changed section.", "class": "unsorted"}
+{"id": "state.ChangeSet.B2", "item_id": "state.cm6.136", "item": "ChangeSet", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeSet.apply.B1", "item_id": "state.cm6.137", "item": "ChangeSet.apply", "cost": "O(sections) for the length.", "class": "linear or more"}
+{"id": "state.ChangeSet.apply.B2", "item_id": "state.cm6.137", "item": "ChangeSet.apply", "cost": "One Text.replace per merged run: O(runs · log n) with the tree Text; never materializes the document as a string.", "class": "logarithmic"}
+{"id": "state.ChangeSet.apply.B3", "item_id": "state.cm6.137", "item": "ChangeSet.apply", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeSet.mapDesc.B1", "item_id": "state.cm6.138", "item": "ChangeSet.mapDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeSet.mapDesc.B2", "item_id": "state.cm6.138", "item": "ChangeSet.mapDesc", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeSet.invert.B1", "item_id": "state.cm6.139", "item": "ChangeSet.invert", "cost": "O(sections + replaced text), one Text.slice per change.", "class": "linear or more"}
+{"id": "state.ChangeSet.invert.B2", "item_id": "state.cm6.139", "item": "ChangeSet.invert", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeSet.compose.B1", "item_id": "state.cm6.140", "item": "ChangeSet.compose", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeSet.compose.B2", "item_id": "state.cm6.140", "item": "ChangeSet.compose", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeSet.compose.B3", "item_id": "state.cm6.140", "item": "ChangeSet.compose", "cost": "O(sections of both) plus Text.slice/append per piece.", "class": "linear or more"}
+{"id": "state.ChangeSet.compose.B4", "item_id": "state.cm6.140", "item": "ChangeSet.compose", "cost": "Fails after the common prefix.", "class": "unsorted"}
+{"id": "state.ChangeSet.map.B1", "item_id": "state.cm6.141", "item": "ChangeSet.map", "cost": "O(1).", "class": "local"}
+{"id": "state.ChangeSet.map.B2", "item_id": "state.cm6.141", "item": "ChangeSet.map", "cost": "O(sections of both).", "class": "linear or more"}
+{"id": "state.ChangeSet.map.B3", "item_id": "state.cm6.141", "item": "ChangeSet.map", "cost": "Fails after the common prefix, or does not terminate.", "class": "unsorted"}
+{"id": "state.ChangeSet.iterChanges.B1", "item_id": "state.cm6.142", "item": "ChangeSet.iterChanges", "cost": "O(sections) plus Text.append per inserted section.", "class": "linear or more"}
+{"id": "state.ChangeSet.iterChanges.B2", "item_id": "state.cm6.142", "item": "ChangeSet.iterChanges", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeSet.iterChanges.B3", "item_id": "state.cm6.142", "item": "ChangeSet.iterChanges", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.ChangeSet.desc.B1", "item_id": "state.cm6.143", "item": "ChangeSet.desc", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.B1", "item_id": "state.cm6.077", "item": "SelectionRange", "cost": "O(1); immutable value.", "class": "local"}
+{"id": "state.SelectionRange.B2", "item_id": "state.cm6.077", "item": "SelectionRange", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.from.B1", "item_id": "state.cm6.078", "item": "SelectionRange.from", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.to.B1", "item_id": "state.cm6.079", "item": "SelectionRange.to", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.goalColumn.B1", "item_id": "state.cm6.080", "item": "SelectionRange.goalColumn", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.goalColumn.B2", "item_id": "state.cm6.080", "item": "SelectionRange.goalColumn", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.goalColumn.B3", "item_id": "state.cm6.080", "item": "SelectionRange.goalColumn", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.anchor.B1", "item_id": "state.cm6.081", "item": "SelectionRange.anchor", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.head.B1", "item_id": "state.cm6.082", "item": "SelectionRange.head", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.empty.B1", "item_id": "state.cm6.083", "item": "SelectionRange.empty", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.assoc.B1", "item_id": "state.cm6.084", "item": "SelectionRange.assoc", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.assoc.B2", "item_id": "state.cm6.084", "item": "SelectionRange.assoc", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.undirectional.B1", "item_id": "state.cm6.085", "item": "SelectionRange.undirectional", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.bidiLevel.B1", "item_id": "state.cm6.086", "item": "SelectionRange.bidiLevel", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.bidiLevel.B2", "item_id": "state.cm6.086", "item": "SelectionRange.bidiLevel", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.map.B1", "item_id": "state.cm6.087", "item": "SelectionRange.map", "cost": "O(sections up to the position).", "class": "linear or more"}
+{"id": "state.SelectionRange.map.B2", "item_id": "state.cm6.087", "item": "SelectionRange.map", "cost": "Two mapPos calls.", "class": "unsorted"}
+{"id": "state.SelectionRange.map.B3", "item_id": "state.cm6.087", "item": "SelectionRange.map", "cost": "O(1) extra.", "class": "local"}
+{"id": "state.SelectionRange.map.B4", "item_id": "state.cm6.087", "item": "SelectionRange.map", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.map.B5", "item_id": "state.cm6.087", "item": "SelectionRange.map", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.map.B6", "item_id": "state.cm6.087", "item": "SelectionRange.map", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.SelectionRange.map.B7", "item_id": "state.cm6.087", "item": "SelectionRange.map", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.SelectionRange.extend.B1", "item_id": "state.cm6.088", "item": "SelectionRange.extend", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.extend.B2", "item_id": "state.cm6.088", "item": "SelectionRange.extend", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.extend.B3", "item_id": "state.cm6.088", "item": "SelectionRange.extend", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.eq.B1", "item_id": "state.cm6.089", "item": "SelectionRange.eq", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.eq.B2", "item_id": "state.cm6.089", "item": "SelectionRange.eq", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.eq.B3", "item_id": "state.cm6.089", "item": "SelectionRange.eq", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange.toJSON.B1", "item_id": "state.cm6.090", "item": "SelectionRange.toJSON", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange^fromJSON.B1", "item_id": "state.cm6.091", "item": "SelectionRange^fromJSON", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange^fromJSON.B2", "item_id": "state.cm6.091", "item": "SelectionRange^fromJSON", "cost": "O(1).", "class": "local"}
+{"id": "state.SelectionRange^fromJSON.B3", "item_id": "state.cm6.091", "item": "SelectionRange^fromJSON", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^cursor.B1", "item_id": "state.cm6.074", "item": "EditorSelection^cursor", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^cursor.B2", "item_id": "state.cm6.074", "item": "EditorSelection^cursor", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^cursor.B3", "item_id": "state.cm6.074", "item": "EditorSelection^cursor", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^cursor.B4", "item_id": "state.cm6.074", "item": "EditorSelection^cursor", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^range.B1", "item_id": "state.cm6.075", "item": "EditorSelection^range", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^range.B2", "item_id": "state.cm6.075", "item": "EditorSelection^range", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^range.B3", "item_id": "state.cm6.075", "item": "EditorSelection^range", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^range.B4", "item_id": "state.cm6.075", "item": "EditorSelection^range", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^undirectionalRange.B1", "item_id": "state.cm6.076", "item": "EditorSelection^undirectionalRange", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^single.B1", "item_id": "state.cm6.072", "item": "EditorSelection^single", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^create.B1", "item_id": "state.cm6.073", "item": "EditorSelection^create", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^create.B2", "item_id": "state.cm6.073", "item": "EditorSelection^create", "cost": "O(n) check.", "class": "linear or more"}
+{"id": "state.EditorSelection^create.B3", "item_id": "state.cm6.073", "item": "EditorSelection^create", "cost": "O(n log n) sort plus O(n) merge with splice (O(n^2) worst case for many merges).", "class": "logarithmic"}
+{"id": "state.EditorSelection^create.B4", "item_id": "state.cm6.073", "item": "EditorSelection^create", "cost": "O(n) merges, each a splice.", "class": "linear or more"}
+{"id": "state.EditorSelection^create.B5", "item_id": "state.cm6.073", "item": "EditorSelection^create", "cost": "O(1) per merge.", "class": "local"}
+{"id": "state.EditorSelection^create.B6", "item_id": "state.cm6.073", "item": "EditorSelection^create", "cost": "O(n).", "class": "linear or more"}
+{"id": "state.EditorSelection.B1", "item_id": "state.cm6.061", "item": "EditorSelection", "cost": "O(1) storage per range.", "class": "local"}
+{"id": "state.EditorSelection.B2", "item_id": "state.cm6.061", "item": "EditorSelection", "cost": "O(n).", "class": "linear or more"}
+{"id": "state.EditorSelection.ranges.B1", "item_id": "state.cm6.062", "item": "EditorSelection.ranges", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection.ranges.B2", "item_id": "state.cm6.062", "item": "EditorSelection.ranges", "cost": "O(n).", "class": "linear or more"}
+{"id": "state.EditorSelection.mainIndex.B1", "item_id": "state.cm6.063", "item": "EditorSelection.mainIndex", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection.mainIndex.B2", "item_id": "state.cm6.063", "item": "EditorSelection.mainIndex", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection.main.B1", "item_id": "state.cm6.066", "item": "EditorSelection.main", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection.map.B1", "item_id": "state.cm6.064", "item": "EditorSelection.map", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection.map.B2", "item_id": "state.cm6.064", "item": "EditorSelection.map", "cost": "O(ranges · sections) mapping plus create.", "class": "unsorted"}
+{"id": "state.EditorSelection.map.B3", "item_id": "state.cm6.064", "item": "EditorSelection.map", "cost": "O(n log n) when normalizing.", "class": "logarithmic"}
+{"id": "state.EditorSelection.map.B4", "item_id": "state.cm6.064", "item": "EditorSelection.map", "cost": "O(n).", "class": "linear or more"}
+{"id": "state.EditorSelection.map.B5", "item_id": "state.cm6.064", "item": "EditorSelection.map", "cost": "O(sections).", "class": "linear or more"}
+{"id": "state.EditorSelection.map.B6", "item_id": "state.cm6.064", "item": "EditorSelection.map", "cost": "O(1): the map over zero ranges is empty and create throws before any other work.", "class": "local"}
+{"id": "state.EditorSelection.eq.B1", "item_id": "state.cm6.065", "item": "EditorSelection.eq", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection.eq.B2", "item_id": "state.cm6.065", "item": "EditorSelection.eq", "cost": "O(n).", "class": "linear or more"}
+{"id": "state.EditorSelection.asSingle.B1", "item_id": "state.cm6.067", "item": "EditorSelection.asSingle", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection.asSingle.B2", "item_id": "state.cm6.067", "item": "EditorSelection.asSingle", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection.addRange.B1", "item_id": "state.cm6.068", "item": "EditorSelection.addRange", "cost": "O(n log n).", "class": "logarithmic"}
+{"id": "state.EditorSelection.addRange.B2", "item_id": "state.cm6.068", "item": "EditorSelection.addRange", "cost": "O(n log n).", "class": "logarithmic"}
+{"id": "state.EditorSelection.addRange.B3", "item_id": "state.cm6.068", "item": "EditorSelection.addRange", "cost": "O(n log n).", "class": "logarithmic"}
+{"id": "state.EditorSelection.addRange.B4", "item_id": "state.cm6.068", "item": "EditorSelection.addRange", "cost": "O(n log n).", "class": "logarithmic"}
+{"id": "state.EditorSelection.replaceRange.B1", "item_id": "state.cm6.069", "item": "EditorSelection.replaceRange", "cost": "O(n log n).", "class": "logarithmic"}
+{"id": "state.EditorSelection.replaceRange.B2", "item_id": "state.cm6.069", "item": "EditorSelection.replaceRange", "cost": "O(n).", "class": "linear or more"}
+{"id": "state.EditorSelection.toJSON.B1", "item_id": "state.cm6.070", "item": "EditorSelection.toJSON", "cost": "O(n).", "class": "linear or more"}
+{"id": "state.EditorSelection^fromJSON.B1", "item_id": "state.cm6.071", "item": "EditorSelection^fromJSON", "cost": "O(n).", "class": "linear or more"}
+{"id": "state.EditorSelection^fromJSON.B2", "item_id": "state.cm6.071", "item": "EditorSelection^fromJSON", "cost": "O(1).", "class": "local"}
+{"id": "state.EditorSelection^fromJSON.B3", "item_id": "state.cm6.071", "item": "EditorSelection^fromJSON", "cost": "O(n).", "class": "linear or more"}
+{"id": "state.StateCommand.B1", "item_id": "state.cm6.035", "item": "StateCommand", "cost": "O(1) (no runtime code in this package)", "class": "local"}
+{"id": "state.StateCommand.B2", "item_id": "state.cm6.035", "item": "StateCommand", "cost": "O(1) per command call", "class": "local"}
+{"id": "state.Facet.B1", "item_id": "state.cm6.036", "item": "Facet", "cost": "O(1) per definition", "class": "local"}
+{"id": "state.Facet.B2", "item_id": "state.cm6.036", "item": "Facet", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.B3", "item_id": "state.cm6.036", "item": "Facet", "cost": "combine runs once per resolution, on the facet's input count; a read is O(1)", "class": "local"}
+{"id": "state.Facet.B4", "item_id": "state.cm6.036", "item": "Facet", "cost": "per transaction: O(number of dynamic providers) to check them; combine on the full input list when one changed", "class": "linear or more"}
+{"id": "state.Facet.B5", "item_id": "state.cm6.036", "item": "Facet", "cost": "O(number of dynamic providers)", "class": "linear or more"}
+{"id": "state.Facet.B6", "item_id": "state.cm6.036", "item": "Facet", "cost": "linear in the number of slots per state", "class": "linear or more"}
+{"id": "state.Facet.B7", "item_id": "state.cm6.036", "item": "Facet", "cost": "O(number of providers) to compare lists; combine on the inputs otherwise", "class": "linear or more"}
+{"id": "state.Facet.B8", "item_id": "state.cm6.036", "item": "Facet", "cost": "O(number of providers) plus combine when not kept", "class": "linear or more"}
+{"id": "state.Facet.B9", "item_id": "state.cm6.036", "item": "Facet", "cost": "O(1) per check", "class": "local"}
+{"id": "state.Facet.B10", "item_id": "state.cm6.036", "item": "Facet", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.reader.B1", "item_id": "state.cm6.037", "item": "Facet.reader", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.reader.B2", "item_id": "state.cm6.037", "item": "Facet.reader", "cost": "O(1) per dependency", "class": "local"}
+{"id": "state.FacetReader.B1", "item_id": "state.cm6.044", "item": "FacetReader", "cost": "O(1)", "class": "local"}
+{"id": "state.FacetReader.B2", "item_id": "state.cm6.044", "item": "FacetReader", "cost": "O(1) per dependency", "class": "local"}
+{"id": "state.FacetReader.B3", "item_id": "state.cm6.044", "item": "FacetReader", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define.B1", "item_id": "state.cm6.038", "item": "Facet^define", "cost": "O(1) plus one combine([]) call", "class": "local"}
+{"id": "state.Facet^define.B2", "item_id": "state.cm6.038", "item": "Facet^define", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define.B3", "item_id": "state.cm6.038", "item": "Facet^define", "cost": "O(1) plus one combine call", "class": "local"}
+{"id": "state.Facet^define.B4", "item_id": "state.cm6.038", "item": "Facet^define", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define.B5", "item_id": "state.cm6.038", "item": "Facet^define", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.of.B1", "item_id": "state.cm6.039", "item": "Facet.of", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.of.B2", "item_id": "state.cm6.039", "item": "Facet.of", "cost": "O(1) per occurrence", "class": "local"}
+{"id": "state.Facet.of.B3", "item_id": "state.cm6.039", "item": "Facet.of", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.of.B4", "item_id": "state.cm6.039", "item": "Facet.of", "cost": "O(1) per read", "class": "local"}
+{"id": "state.Facet.compute.B1", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.compute.B2", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "one getter call", "class": "unsorted"}
+{"id": "state.Facet.compute.B3", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "O(1) check; one getter call when it fires", "class": "local"}
+{"id": "state.Facet.compute.B4", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "O(1) check", "class": "local"}
+{"id": "state.Facet.compute.B5", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "O(number of dependencies) per transaction", "class": "linear or more"}
+{"id": "state.Facet.compute.B6", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "one compareInput call", "class": "unsorted"}
+{"id": "state.Facet.compute.B7", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.compute.B8", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "O(number of dependencies), plus one getter call when a dependency changed", "class": "linear or more"}
+{"id": "state.Facet.compute.B9", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "one getter call", "class": "unsorted"}
+{"id": "state.Facet.compute.B10", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "one getter call", "class": "unsorted"}
+{"id": "state.Facet.compute.B11", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.computeN.B1", "item_id": "state.cm6.041", "item": "Facet.computeN", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.computeN.B2", "item_id": "state.cm6.041", "item": "Facet.computeN", "cost": "linear in the returned array", "class": "linear or more"}
+{"id": "state.Facet.computeN.B3", "item_id": "state.cm6.041", "item": "Facet.computeN", "cost": "linear in the array length", "class": "linear or more"}
+{"id": "state.Facet.computeN.B4", "item_id": "state.cm6.041", "item": "Facet.computeN", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.computeN.B5", "item_id": "state.cm6.041", "item": "Facet.computeN", "cost": "linear", "class": "linear or more"}
+{"id": "state.Facet.computeN.B6", "item_id": "state.cm6.041", "item": "Facet.computeN", "cost": "as compute", "class": "unsorted"}
+{"id": "state.Facet.from.B1", "item_id": "state.cm6.042", "item": "Facet.from", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.from.B2", "item_id": "state.cm6.042", "item": "Facet.from", "cost": "one get call per recomputation", "class": "unsorted"}
+{"id": "state.Facet.from.B3", "item_id": "state.cm6.042", "item": "Facet.from", "cost": "O(1) check", "class": "local"}
+{"id": "state.Facet.from.B4", "item_id": "state.cm6.042", "item": "Facet.from", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.from.B5", "item_id": "state.cm6.042", "item": "Facet.from", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField.B1", "item_id": "state.cm6.046", "item": "StateField", "cost": "O(1) per occurrence", "class": "local"}
+{"id": "state.StateField.B2", "item_id": "state.cm6.046", "item": "StateField", "cost": "linear in the number of init entries", "class": "linear or more"}
+{"id": "state.StateField.B3", "item_id": "state.cm6.046", "item": "StateField", "cost": "one update and one compare call per transaction", "class": "unsorted"}
+{"id": "state.StateField.B4", "item_id": "state.cm6.046", "item": "StateField", "cost": "O(number of init entries) per field", "class": "linear or more"}
+{"id": "state.StateField.B5", "item_id": "state.cm6.046", "item": "StateField", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField.B6", "item_id": "state.cm6.046", "item": "StateField", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField.B7", "item_id": "state.cm6.046", "item": "StateField", "cost": "linear in the number of fields", "class": "linear or more"}
+{"id": "state.StateField.B8", "item_id": "state.cm6.046", "item": "StateField", "cost": "O(1) per read", "class": "local"}
+{"id": "state.StateField^define.B1", "item_id": "state.cm6.047", "item": "StateField^define", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define.B2", "item_id": "state.cm6.047", "item": "StateField^define", "cost": "one provide call", "class": "unsorted"}
+{"id": "state.StateField.init.B1", "item_id": "state.cm6.048", "item": "StateField.init", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField.init.B2", "item_id": "state.cm6.048", "item": "StateField.init", "cost": "linear in init entries", "class": "linear or more"}
+{"id": "state.StateField.init.B3", "item_id": "state.cm6.048", "item": "StateField.init", "cost": "O(init entries)", "class": "unsorted"}
+{"id": "state.StateField.init.B4", "item_id": "state.cm6.048", "item": "StateField.init", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField.init.B5", "item_id": "state.cm6.048", "item": "StateField.init", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField.extension.B1", "item_id": "state.cm6.049", "item": "StateField.extension", "cost": "O(1); no allocation", "class": "local"}
+{"id": "state.StateField.extension.B2", "item_id": "state.cm6.049", "item": "StateField.extension", "cost": "O(1) per occurrence (one Map lookup)", "class": "local"}
+{"id": "state.StateField.extension.B3", "item_id": "state.cm6.049", "item": "StateField.extension", "cost": "O(1) when skipped; O(bucket size) when moved (indexOf + splice)", "class": "local"}
+{"id": "state.StateField.extension.B4", "item_id": "state.cm6.049", "item": "StateField.extension", "cost": "O(1) per occurrence", "class": "local"}
+{"id": "state.StateField.extension.B5", "item_id": "state.cm6.049", "item": "StateField.extension", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField.extension.B6", "item_id": "state.cm6.049", "item": "StateField.extension", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField.extension.B7", "item_id": "state.cm6.049", "item": "StateField.extension", "cost": "O(1)", "class": "local"}
+{"id": "state.Extension.B1", "item_id": "state.cm6.050", "item": "Extension", "cost": "linear in the number of extension nodes", "class": "linear or more"}
+{"id": "state.Extension.B2", "item_id": "state.cm6.050", "item": "Extension", "cost": "O(1) per wrapper", "class": "local"}
+{"id": "state.Extension.B3", "item_id": "state.cm6.050", "item": "Extension", "cost": "O(1)", "class": "local"}
+{"id": "state.Extension.B4", "item_id": "state.cm6.050", "item": "Extension", "cost": "O(1)", "class": "local"}
+{"id": "state.Extension.B5", "item_id": "state.cm6.050", "item": "Extension", "cost": "O(1)", "class": "local"}
+{"id": "state.Extension.B6", "item_id": "state.cm6.050", "item": "Extension", "cost": "O(bucket size) per move", "class": "unsorted"}
+{"id": "state.Extension.B7", "item_id": "state.cm6.050", "item": "Extension", "cost": "O(1)", "class": "local"}
+{"id": "state.Extension.B8", "item_id": "state.cm6.050", "item": "Extension", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.B1", "item_id": "state.cm6.051", "item": "Prec", "cost": "linear in extension nodes", "class": "linear or more"}
+{"id": "state.Prec.B2", "item_id": "state.cm6.051", "item": "Prec", "cost": "O(1) per wrapper", "class": "local"}
+{"id": "state.Prec.B3", "item_id": "state.cm6.051", "item": "Prec", "cost": "O(bucket size)", "class": "unsorted"}
+{"id": "state.Prec.B4", "item_id": "state.cm6.051", "item": "Prec", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.B5", "item_id": "state.cm6.051", "item": "Prec", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.B6", "item_id": "state.cm6.051", "item": "Prec", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.B7", "item_id": "state.cm6.051", "item": "Prec", "cost": "linear in fields", "class": "linear or more"}
+{"id": "state.Prec.B8", "item_id": "state.cm6.051", "item": "Prec", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.highest.B1", "item_id": "state.cm6.052", "item": "Prec.highest", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.highest.B2", "item_id": "state.cm6.052", "item": "Prec.highest", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.high.B1", "item_id": "state.cm6.053", "item": "Prec.high", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.default.B1", "item_id": "state.cm6.054", "item": "Prec.default", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.default.B2", "item_id": "state.cm6.054", "item": "Prec.default", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.low.B1", "item_id": "state.cm6.055", "item": "Prec.low", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.lowest.B1", "item_id": "state.cm6.056", "item": "Prec.lowest", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.lowest.B2", "item_id": "state.cm6.056", "item": "Prec.lowest", "cost": "O(1)", "class": "local"}
+{"id": "state.Compartment.B1", "item_id": "state.cm6.057", "item": "Compartment", "cost": "O(1) per instance", "class": "local"}
+{"id": "state.Compartment.B2", "item_id": "state.cm6.057", "item": "Compartment", "cost": "O(1)", "class": "local"}
+{"id": "state.Compartment.B3", "item_id": "state.cm6.057", "item": "Compartment", "cost": "O(1)", "class": "local"}
+{"id": "state.Compartment.B4", "item_id": "state.cm6.057", "item": "Compartment", "cost": "O(bucket size)", "class": "unsorted"}
+{"id": "state.Compartment.B5", "item_id": "state.cm6.057", "item": "Compartment", "cost": "O(1)", "class": "local"}
+{"id": "state.Compartment.of.B1", "item_id": "state.cm6.058", "item": "Compartment.of", "cost": "O(1)", "class": "local"}
+{"id": "state.Compartment.of.B2", "item_id": "state.cm6.058", "item": "Compartment.of", "cost": "O(1)", "class": "local"}
+{"id": "state.Compartment.reconfigure.B1", "item_id": "state.cm6.059", "item": "Compartment.reconfigure", "cost": "O(1)", "class": "local"}
+{"id": "state.Compartment.reconfigure.B2", "item_id": "state.cm6.059", "item": "Compartment.reconfigure", "cost": "a full configuration resolution (linear in extension nodes)", "class": "linear or more"}
+{"id": "state.Compartment.reconfigure.B3", "item_id": "state.cm6.059", "item": "Compartment.reconfigure", "cost": "O(compartments) for the copy", "class": "unsorted"}
+{"id": "state.Compartment.reconfigure.B4", "item_id": "state.cm6.059", "item": "Compartment.reconfigure", "cost": "a full resolution", "class": "unsorted"}
+{"id": "state.Compartment.reconfigure.B5", "item_id": "state.cm6.059", "item": "Compartment.reconfigure", "cost": "O(1)", "class": "local"}
+{"id": "state.Compartment.reconfigure.B6", "item_id": "state.cm6.059", "item": "Compartment.reconfigure", "cost": "O(1)", "class": "local"}
+{"id": "state.Compartment.reconfigure.B7", "item_id": "state.cm6.059", "item": "Compartment.reconfigure", "cost": "a full resolution", "class": "unsorted"}
+{"id": "state.Compartment.get.B1", "item_id": "state.cm6.060", "item": "Compartment.get", "cost": "O(1)", "class": "local"}
+{"id": "state.Compartment.get.B2", "item_id": "state.cm6.060", "item": "Compartment.get", "cost": "O(1)", "class": "local"}
+{"id": "state.Compartment.get.B3", "item_id": "state.cm6.060", "item": "Compartment.get", "cost": "O(1)", "class": "local"}
+{"id": "state.combineConfig.B1", "item_id": "state.cm6.134", "item": "combineConfig", "cost": "linear in the total number of keys", "class": "linear or more"}
+{"id": "state.combineConfig.B2", "item_id": "state.cm6.134", "item": "combineConfig", "cost": "one combine call per conflict", "class": "unsorted"}
+{"id": "state.combineConfig.B3", "item_id": "state.cm6.134", "item": "combineConfig", "cost": "O(1)", "class": "local"}
+{"id": "state.combineConfig.B4", "item_id": "state.cm6.134", "item": "combineConfig", "cost": "O(1)", "class": "local"}
+{"id": "state.combineConfig.B5", "item_id": "state.cm6.134", "item": "combineConfig", "cost": "linear in default keys", "class": "linear or more"}
+{"id": "state.combineConfig.B6", "item_id": "state.cm6.134", "item": "combineConfig", "cost": "O(1)", "class": "local"}
+{"id": "state.combineConfig.B7", "item_id": "state.cm6.134", "item": "combineConfig", "cost": "O(1)", "class": "local"}
+{"id": "state.combineConfig.B8", "item_id": "state.cm6.134", "item": "combineConfig", "cost": "O(1)", "class": "local"}
+{"id": "state.combineConfig.B9", "item_id": "state.cm6.134", "item": "combineConfig", "cost": "O(1)", "class": "local"}
+{"id": "state.combineConfig.B10", "item_id": "state.cm6.134", "item": "combineConfig", "cost": "linear in default keys", "class": "linear or more"}
+{"id": "state.Facet^define config FacetConfig.combine.B1", "item_id": "state.cm6.248", "item": "Facet^define config FacetConfig.combine", "cost": "one call per (re)computation", "class": "unsorted"}
+{"id": "state.Facet^define config FacetConfig.combine.B2", "item_id": "state.cm6.248", "item": "Facet^define config FacetConfig.combine", "cost": "O(inputs)", "class": "unsorted"}
+{"id": "state.Facet^define config FacetConfig.combine.B3", "item_id": "state.cm6.248", "item": "Facet^define config FacetConfig.combine", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.combine.B4", "item_id": "state.cm6.248", "item": "Facet^define config FacetConfig.combine", "cost": "O(inputs)", "class": "unsorted"}
+{"id": "state.Facet^define config FacetConfig.compare.B1", "item_id": "state.cm6.249", "item": "Facet^define config FacetConfig.compare", "cost": "O(inputs)", "class": "unsorted"}
+{"id": "state.Facet^define config FacetConfig.compare.B2", "item_id": "state.cm6.249", "item": "Facet^define config FacetConfig.compare", "cost": "one compare call", "class": "unsorted"}
+{"id": "state.Facet^define config FacetConfig.compare.B3", "item_id": "state.cm6.249", "item": "Facet^define config FacetConfig.compare", "cost": "one compare call", "class": "unsorted"}
+{"id": "state.Facet^define config FacetConfig.compare.B4", "item_id": "state.cm6.249", "item": "Facet^define config FacetConfig.compare", "cost": "O(inputs)", "class": "unsorted"}
+{"id": "state.Facet^define config FacetConfig.compare.B5", "item_id": "state.cm6.249", "item": "Facet^define config FacetConfig.compare", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.compareInput.B1", "item_id": "state.cm6.250", "item": "Facet^define config FacetConfig.compareInput", "cost": "one call per input", "class": "unsorted"}
+{"id": "state.Facet^define config FacetConfig.compareInput.B2", "item_id": "state.cm6.250", "item": "Facet^define config FacetConfig.compareInput", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.compareInput.B3", "item_id": "state.cm6.250", "item": "Facet^define config FacetConfig.compareInput", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.static.B1", "item_id": "state.cm6.251", "item": "Facet^define config FacetConfig.static", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.static.B2", "item_id": "state.cm6.251", "item": "Facet^define config FacetConfig.static", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.static.B3", "item_id": "state.cm6.251", "item": "Facet^define config FacetConfig.static", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.enables.B1", "item_id": "state.cm6.252", "item": "Facet^define config FacetConfig.enables", "cost": "O(1) per provider", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.enables.B2", "item_id": "state.cm6.252", "item": "Facet^define config FacetConfig.enables", "cost": "one call", "class": "unsorted"}
+{"id": "state.Facet^define config FacetConfig.enables.B3", "item_id": "state.cm6.252", "item": "Facet^define config FacetConfig.enables", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.enables.B4", "item_id": "state.cm6.252", "item": "Facet^define config FacetConfig.enables", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.create.B1", "item_id": "state.cm6.253", "item": "StateField^define config StateFieldSpec.create", "cost": "one call", "class": "unsorted"}
+{"id": "state.StateField^define config StateFieldSpec.create.B2", "item_id": "state.cm6.253", "item": "StateField^define config StateFieldSpec.create", "cost": "O(1) per read", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.create.B3", "item_id": "state.cm6.253", "item": "StateField^define config StateFieldSpec.create", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.update.B1", "item_id": "state.cm6.254", "item": "StateField^define config StateFieldSpec.update", "cost": "one call per transaction", "class": "unsorted"}
+{"id": "state.StateField^define config StateFieldSpec.update.B2", "item_id": "state.cm6.254", "item": "StateField^define config StateFieldSpec.update", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.update.B3", "item_id": "state.cm6.254", "item": "StateField^define config StateFieldSpec.update", "cost": "one call", "class": "unsorted"}
+{"id": "state.StateField^define config StateFieldSpec.update.B4", "item_id": "state.cm6.254", "item": "StateField^define config StateFieldSpec.update", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.update.B5", "item_id": "state.cm6.254", "item": "StateField^define config StateFieldSpec.update", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.compare.B1", "item_id": "state.cm6.255", "item": "StateField^define config StateFieldSpec.compare", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.compare.B2", "item_id": "state.cm6.255", "item": "StateField^define config StateFieldSpec.compare", "cost": "one call per transaction", "class": "unsorted"}
+{"id": "state.StateField^define config StateFieldSpec.provide.B1", "item_id": "state.cm6.256", "item": "StateField^define config StateFieldSpec.provide", "cost": "one call", "class": "unsorted"}
+{"id": "state.StateField^define config StateFieldSpec.provide.B2", "item_id": "state.cm6.256", "item": "StateField^define config StateFieldSpec.provide", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.provide.B3", "item_id": "state.cm6.256", "item": "StateField^define config StateFieldSpec.provide", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.toJSON.B1", "item_id": "state.cm6.257", "item": "StateField^define config StateFieldSpec.toJSON", "cost": "one call per field", "class": "unsorted"}
+{"id": "state.StateField^define config StateFieldSpec.toJSON.B2", "item_id": "state.cm6.257", "item": "StateField^define config StateFieldSpec.toJSON", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.fromJSON.B1", "item_id": "state.cm6.258", "item": "StateField^define config StateFieldSpec.fromJSON", "cost": "one call", "class": "unsorted"}
+{"id": "state.StateField^define config StateFieldSpec.fromJSON.B2", "item_id": "state.cm6.258", "item": "StateField^define config StateFieldSpec.fromJSON", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.fromJSON.B3", "item_id": "state.cm6.258", "item": "StateField^define config StateFieldSpec.fromJSON", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorStateConfig.B1", "item_id": "state.cm6.001", "item": "EditorStateConfig", "cost": "O(1) for the empty configuration (no extensions to resolve, no slots)", "class": "local"}
+{"id": "state.EditorStateConfig.B2", "item_id": "state.cm6.001", "item": "EditorStateConfig", "cost": "see EditorState^fromJSON", "class": "unsorted"}
+{"id": "state.EditorStateConfig.doc.B1", "item_id": "state.cm6.002", "item": "EditorStateConfig.doc", "cost": "Linear in the string length (split, then Text.of builds the leaf/node tree)", "class": "linear or more"}
+{"id": "state.EditorStateConfig.doc.B2", "item_id": "state.cm6.002", "item": "EditorStateConfig.doc", "cost": "Linear in the string length", "class": "linear or more"}
+{"id": "state.EditorStateConfig.doc.B3", "item_id": "state.cm6.002", "item": "EditorStateConfig.doc", "cost": "Linear in the string length", "class": "linear or more"}
+{"id": "state.EditorStateConfig.doc.B4", "item_id": "state.cm6.002", "item": "EditorStateConfig.doc", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorStateConfig.doc.B5", "item_id": "state.cm6.002", "item": "EditorStateConfig.doc", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorStateConfig.selection.B1", "item_id": "state.cm6.003", "item": "EditorStateConfig.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorStateConfig.selection.B2", "item_id": "state.cm6.003", "item": "EditorStateConfig.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorStateConfig.selection.B3", "item_id": "state.cm6.003", "item": "EditorStateConfig.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorStateConfig.selection.B4", "item_id": "state.cm6.003", "item": "EditorStateConfig.selection", "cost": "Linear in the number of ranges", "class": "linear or more"}
+{"id": "state.EditorStateConfig.selection.B5", "item_id": "state.cm6.003", "item": "EditorStateConfig.selection", "cost": "Linear in the number of ranges", "class": "linear or more"}
+{"id": "state.EditorStateConfig.selection.B6", "item_id": "state.cm6.003", "item": "EditorStateConfig.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorStateConfig.selection.B7", "item_id": "state.cm6.003", "item": "EditorStateConfig.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorStateConfig.selection.B8", "item_id": "state.cm6.003", "item": "EditorStateConfig.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorStateConfig.extensions.B1", "item_id": "state.cm6.004", "item": "EditorStateConfig.extensions", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorStateConfig.extensions.B2", "item_id": "state.cm6.004", "item": "EditorStateConfig.extensions", "cost": "Linear in the size of the extension tree", "class": "linear or more"}
+{"id": "state.EditorStateConfig.extensions.B3", "item_id": "state.cm6.004", "item": "EditorStateConfig.extensions", "cost": "O(number of fields)", "class": "linear or more"}
+{"id": "state.EditorState.B1", "item_id": "state.cm6.005", "item": "EditorState", "cost": "Linear in the number of dynamic slots, plus the cost of each field/facet function", "class": "linear or more"}
+{"id": "state.EditorState.B2", "item_id": "state.cm6.005", "item": "EditorState", "cost": "Each slot computed once", "class": "unsorted"}
+{"id": "state.EditorState.B3", "item_id": "state.cm6.005", "item": "EditorState", "cost": "O(1) detection", "class": "local"}
+{"id": "state.EditorState.B4", "item_id": "state.cm6.005", "item": "EditorState", "cost": "O(1) per state beyond slot computation (doc and selection shared)", "class": "local"}
+{"id": "state.EditorState.B5", "item_id": "state.cm6.005", "item": "EditorState", "cost": "O(1) extra", "class": "local"}
+{"id": "state.EditorState.doc.B1", "item_id": "state.cm6.006", "item": "EditorState.doc", "cost": "O(log n) per change plus inserted size (Text.replace)", "class": "logarithmic"}
+{"id": "state.EditorState.doc.B2", "item_id": "state.cm6.006", "item": "EditorState.doc", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.doc.B3", "item_id": "state.cm6.006", "item": "EditorState.doc", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.selection.B1", "item_id": "state.cm6.007", "item": "EditorState.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.selection.B2", "item_id": "state.cm6.007", "item": "EditorState.selection", "cost": "Linear in the number of ranges times O(changes) per mapPos", "class": "linear or more"}
+{"id": "state.EditorState.selection.B3", "item_id": "state.cm6.007", "item": "EditorState.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.selection.B4", "item_id": "state.cm6.007", "item": "EditorState.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.field.B1", "item_id": "state.cm6.008", "item": "EditorState.field", "cost": "O(1) after computation (address lookup and array read)", "class": "local"}
+{"id": "state.EditorState.field.B2", "item_id": "state.cm6.008", "item": "EditorState.field", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.field.B3", "item_id": "state.cm6.008", "item": "EditorState.field", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.field.B4", "item_id": "state.cm6.008", "item": "EditorState.field", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.field.B5", "item_id": "state.cm6.008", "item": "EditorState.field", "cost": "Cost of the other field's create", "class": "unsorted"}
+{"id": "state.EditorState.field.B6", "item_id": "state.cm6.008", "item": "EditorState.field", "cost": "O(1) after computation", "class": "local"}
+{"id": "state.EditorState.toText.B1", "item_id": "state.cm6.013", "item": "EditorState.toText", "cost": "Linear in the string length", "class": "linear or more"}
+{"id": "state.EditorState.toText.B2", "item_id": "state.cm6.013", "item": "EditorState.toText", "cost": "Linear in the string length", "class": "linear or more"}
+{"id": "state.EditorState.toText.B3", "item_id": "state.cm6.013", "item": "EditorState.toText", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.toText.B4", "item_id": "state.cm6.013", "item": "EditorState.toText", "cost": "Linear in the string length", "class": "linear or more"}
+{"id": "state.EditorState.sliceDoc.B1", "item_id": "state.cm6.014", "item": "EditorState.sliceDoc", "cost": "O(log n + k) for a slice of k characters (tree descent and concatenation); materializes only the slice", "class": "logarithmic"}
+{"id": "state.EditorState.sliceDoc.B2", "item_id": "state.cm6.014", "item": "EditorState.sliceDoc", "cost": "O(log n + k)", "class": "logarithmic"}
+{"id": "state.EditorState.sliceDoc.B3", "item_id": "state.cm6.014", "item": "EditorState.sliceDoc", "cost": "O(log n + k)", "class": "logarithmic"}
+{"id": "state.EditorState.sliceDoc.B4", "item_id": "state.cm6.014", "item": "EditorState.sliceDoc", "cost": "O(log n + k)", "class": "logarithmic"}
+{"id": "state.EditorState.facet.B1", "item_id": "state.cm6.015", "item": "EditorState.facet", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.facet.B2", "item_id": "state.cm6.015", "item": "EditorState.facet", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.facet.B3", "item_id": "state.cm6.015", "item": "EditorState.facet", "cost": "O(1) to read; recomputation cost on update", "class": "local"}
+{"id": "state.EditorState.facet.B4", "item_id": "state.cm6.015", "item": "EditorState.facet", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.toJSON.B1", "item_id": "state.cm6.016", "item": "EditorState.toJSON", "cost": "Linear in the document (materializes the whole document as one string)", "class": "linear or more"}
+{"id": "state.EditorState.toJSON.B2", "item_id": "state.cm6.016", "item": "EditorState.toJSON", "cost": "Linear in the number of fields plus each toJSON", "class": "linear or more"}
+{"id": "state.EditorState.toJSON.B3", "item_id": "state.cm6.016", "item": "EditorState.toJSON", "cost": "O(number of fields)", "class": "linear or more"}
+{"id": "state.EditorState.toJSON.B4", "item_id": "state.cm6.016", "item": "EditorState.toJSON", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.toJSON.B5", "item_id": "state.cm6.016", "item": "EditorState.toJSON", "cost": "O(number of fields)", "class": "linear or more"}
+{"id": "state.EditorState^fromJSON.B1", "item_id": "state.cm6.017", "item": "EditorState^fromJSON", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^fromJSON.B2", "item_id": "state.cm6.017", "item": "EditorState^fromJSON", "cost": "Linear in the number of ranges", "class": "linear or more"}
+{"id": "state.EditorState^fromJSON.B3", "item_id": "state.cm6.017", "item": "EditorState^fromJSON", "cost": "O(number of fields) plus each fromJSON", "class": "linear or more"}
+{"id": "state.EditorState^fromJSON.B4", "item_id": "state.cm6.017", "item": "EditorState^fromJSON", "cost": "Linear in the document", "class": "linear or more"}
+{"id": "state.EditorState^fromJSON.B5", "item_id": "state.cm6.017", "item": "EditorState^fromJSON", "cost": "Linear in the number of ranges", "class": "linear or more"}
+{"id": "state.EditorState^fromJSON.B6", "item_id": "state.cm6.017", "item": "EditorState^fromJSON", "cost": "O(number of ranges)", "class": "linear or more"}
+{"id": "state.EditorState^fromJSON.B7", "item_id": "state.cm6.017", "item": "EditorState^fromJSON", "cost": "Linear in the document", "class": "linear or more"}
+{"id": "state.EditorState^fromJSON.B8", "item_id": "state.cm6.017", "item": "EditorState^fromJSON", "cost": "O(number of fields) initializers; the winning one is found by a linear scan of the init entries", "class": "linear or more"}
+{"id": "state.EditorState^fromJSON.B9", "item_id": "state.cm6.017", "item": "EditorState^fromJSON", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^fromJSON.B10", "item_id": "state.cm6.017", "item": "EditorState^fromJSON", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^create.B1", "item_id": "state.cm6.018", "item": "EditorState^create", "cost": "Linear in extensions + document + ranges", "class": "linear or more"}
+{"id": "state.EditorState^create.B2", "item_id": "state.cm6.018", "item": "EditorState^create", "cost": "Plus the cost of every field create", "class": "linear or more"}
+{"id": "state.EditorState^allowMultipleSelections.B1", "item_id": "state.cm6.019", "item": "EditorState^allowMultipleSelections", "cost": "O(number of inputs) at configuration time", "class": "linear or more"}
+{"id": "state.EditorState^allowMultipleSelections.B2", "item_id": "state.cm6.019", "item": "EditorState^allowMultipleSelections", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^allowMultipleSelections.B3", "item_id": "state.cm6.019", "item": "EditorState^allowMultipleSelections", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^tabSize.B1", "item_id": "state.cm6.020", "item": "EditorState^tabSize", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^tabSize.B2", "item_id": "state.cm6.020", "item": "EditorState^tabSize", "cost": "O(1) plus the provider function", "class": "local"}
+{"id": "state.EditorState^tabSize.B3", "item_id": "state.cm6.020", "item": "EditorState^tabSize", "cost": "Configuration resolution", "class": "unsorted"}
+{"id": "state.EditorState.tabSize.B1", "item_id": "state.cm6.021", "item": "EditorState.tabSize", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^lineSeparator.B1", "item_id": "state.cm6.022", "item": "EditorState^lineSeparator", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^lineSeparator.B2", "item_id": "state.cm6.022", "item": "EditorState^lineSeparator", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^lineSeparator.B3", "item_id": "state.cm6.022", "item": "EditorState^lineSeparator", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^lineSeparator.B4", "item_id": "state.cm6.022", "item": "EditorState^lineSeparator", "cost": "Linear in inserted text", "class": "linear or more"}
+{"id": "state.EditorState.lineBreak.B1", "item_id": "state.cm6.023", "item": "EditorState.lineBreak", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^readOnly.B1", "item_id": "state.cm6.024", "item": "EditorState^readOnly", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^readOnly.B2", "item_id": "state.cm6.024", "item": "EditorState^readOnly", "cost": "O(1) plus provider", "class": "local"}
+{"id": "state.EditorState.readOnly.B1", "item_id": "state.cm6.025", "item": "EditorState.readOnly", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.readOnly.B2", "item_id": "state.cm6.025", "item": "EditorState.readOnly", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^phrases.B1", "item_id": "state.cm6.026", "item": "EditorState^phrases", "cost": "O(number of inputs)", "class": "linear or more"}
+{"id": "state.EditorState^phrases.B2", "item_id": "state.cm6.026", "item": "EditorState^phrases", "cost": "O(number of inputs)", "class": "linear or more"}
+{"id": "state.EditorState.phrase.B1", "item_id": "state.cm6.027", "item": "EditorState.phrase", "cost": "O(number of phrase objects)", "class": "linear or more"}
+{"id": "state.EditorState.phrase.B2", "item_id": "state.cm6.027", "item": "EditorState.phrase", "cost": "O(number of phrase objects)", "class": "linear or more"}
+{"id": "state.EditorState.phrase.B3", "item_id": "state.cm6.027", "item": "EditorState.phrase", "cost": "Linear in the phrase length", "class": "linear or more"}
+{"id": "state.EditorState.phrase.B4", "item_id": "state.cm6.027", "item": "EditorState.phrase", "cost": "O(1) beyond lookup", "class": "local"}
+{"id": "state.EditorState.phrase.B5", "item_id": "state.cm6.027", "item": "EditorState.phrase", "cost": "Linear", "class": "linear or more"}
+{"id": "state.EditorState.phrase.B6", "item_id": "state.cm6.027", "item": "EditorState.phrase", "cost": "Linear", "class": "linear or more"}
+{"id": "state.EditorState.phrase.B7", "item_id": "state.cm6.027", "item": "EditorState.phrase", "cost": "Linear", "class": "linear or more"}
+{"id": "state.EditorState^languageData.B1", "item_id": "state.cm6.028", "item": "EditorState^languageData", "cost": "O(number of providers)", "class": "linear or more"}
+{"id": "state.EditorState.languageDataAt.B1", "item_id": "state.cm6.029", "item": "EditorState.languageDataAt", "cost": "Linear in providers and their results; each provider may walk the syntax tree (language.ts:90)", "class": "linear or more"}
+{"id": "state.EditorState.languageDataAt.B2", "item_id": "state.cm6.029", "item": "EditorState.languageDataAt", "cost": "As B1", "class": "linear or more"}
+{"id": "state.EditorState.languageDataAt.B3", "item_id": "state.cm6.029", "item": "EditorState.languageDataAt", "cost": "O(providers)", "class": "unsorted"}
+{"id": "state.EditorState.charCategorizer.B1", "item_id": "state.cm6.030", "item": "EditorState.charCategorizer", "cost": "One languageDataAt call per categorizer", "class": "unsorted"}
+{"id": "state.EditorState.charCategorizer.B2", "item_id": "state.cm6.030", "item": "EditorState.charCategorizer", "cost": "Linear in the string length", "class": "linear or more"}
+{"id": "state.EditorState.charCategorizer.B3", "item_id": "state.cm6.030", "item": "EditorState.charCategorizer", "cost": "O(len(wordChars) * len(string))", "class": "linear or more"}
+{"id": "state.EditorState.charCategorizer.B4", "item_id": "state.cm6.030", "item": "EditorState.charCategorizer", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.wordAt.B1", "item_id": "state.cm6.031", "item": "EditorState.wordAt", "cost": "Local to the line: O(log n) to find the line plus linear in the word length", "class": "logarithmic"}
+{"id": "state.EditorState.wordAt.B2", "item_id": "state.cm6.031", "item": "EditorState.wordAt", "cost": "Local to the line", "class": "unsorted"}
+{"id": "state.EditorState.wordAt.B3", "item_id": "state.cm6.031", "item": "EditorState.wordAt", "cost": "Local to the line", "class": "unsorted"}
+{"id": "state.EditorState.wordAt.B4", "item_id": "state.cm6.031", "item": "EditorState.wordAt", "cost": "Local to the line", "class": "unsorted"}
+{"id": "state.EditorState.wordAt.B5", "item_id": "state.cm6.031", "item": "EditorState.wordAt", "cost": "Local to the line", "class": "unsorted"}
+{"id": "state.EditorState.wordAt.B6", "item_id": "state.cm6.031", "item": "EditorState.wordAt", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.wordAt.B7", "item_id": "state.cm6.031", "item": "EditorState.wordAt", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.update.B1", "item_id": "state.cm6.009", "item": "EditorState.update", "cost": "O(1) plus filters and extenders", "class": "local"}
+{"id": "state.EditorState.update.B2", "item_id": "state.cm6.009", "item": "EditorState.update", "cost": "Linear in the number of specs plus the filters' and extenders' work", "class": "linear or more"}
+{"id": "state.EditorState.update.B3", "item_id": "state.cm6.009", "item": "EditorState.update", "cost": "O(1) for update itself; state construction deferred", "class": "local"}
+{"id": "state.EditorState.update.B4", "item_id": "state.cm6.009", "item": "EditorState.update", "cost": "O(total sections) per merge", "class": "unsorted"}
+{"id": "state.EditorState.update.B5", "item_id": "state.cm6.009", "item": "EditorState.update", "cost": "O(1) checks", "class": "local"}
+{"id": "state.EditorState.replaceSelection.B1", "item_id": "state.cm6.010", "item": "EditorState.replaceSelection", "cost": "Linear in the number of ranges times the change-set merge cost", "class": "linear or more"}
+{"id": "state.EditorState.replaceSelection.B2", "item_id": "state.cm6.010", "item": "EditorState.replaceSelection", "cost": "As B1", "class": "linear or more"}
+{"id": "state.EditorState.replaceSelection.B3", "item_id": "state.cm6.010", "item": "EditorState.replaceSelection", "cost": "As B1", "class": "linear or more"}
+{"id": "state.EditorState.replaceSelection.B4", "item_id": "state.cm6.010", "item": "EditorState.replaceSelection", "cost": "As B1", "class": "linear or more"}
+{"id": "state.EditorState.replaceSelection.B5", "item_id": "state.cm6.010", "item": "EditorState.replaceSelection", "cost": "As B1", "class": "linear or more"}
+{"id": "state.EditorState.replaceSelection.B6", "item_id": "state.cm6.010", "item": "EditorState.replaceSelection", "cost": "As B1", "class": "linear or more"}
+{"id": "state.EditorState.changeByRange.B1", "item_id": "state.cm6.011", "item": "EditorState.changeByRange", "cost": "O(1) calls plus change-set construction", "class": "local"}
+{"id": "state.EditorState.changeByRange.B2", "item_id": "state.cm6.011", "item": "EditorState.changeByRange", "cost": "O(r^2) range mappings for r ranges (each step maps all earlier ranges) plus change-set compose/map per range", "class": "unsorted"}
+{"id": "state.EditorState.changeByRange.B3", "item_id": "state.cm6.011", "item": "EditorState.changeByRange", "cost": "O(r)", "class": "unsorted"}
+{"id": "state.EditorState.changeByRange.B4", "item_id": "state.cm6.011", "item": "EditorState.changeByRange", "cost": "O(effects) per range", "class": "unsorted"}
+{"id": "state.EditorState.changeByRange.B5", "item_id": "state.cm6.011", "item": "EditorState.changeByRange", "cost": "O(r log r)", "class": "logarithmic"}
+{"id": "state.EditorState.changeByRange.B6", "item_id": "state.cm6.011", "item": "EditorState.changeByRange", "cost": "As B2", "class": "unsorted"}
+{"id": "state.EditorState.changes.B1", "item_id": "state.cm6.012", "item": "EditorState.changes", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.changes.B2", "item_id": "state.cm6.012", "item": "EditorState.changes", "cost": "Linear in the number of changes and inserted text", "class": "linear or more"}
+{"id": "state.EditorState.changes.B3", "item_id": "state.cm6.012", "item": "EditorState.changes", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.changes.B4", "item_id": "state.cm6.012", "item": "EditorState.changes", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.changes.B5", "item_id": "state.cm6.012", "item": "EditorState.changes", "cost": "O(changes * sections) in the worst case (one compose per out-of-order change)", "class": "unsorted"}
+{"id": "state.Transaction.B1", "item_id": "state.cm6.092", "item": "Transaction", "cost": "O(ranges)", "class": "unsorted"}
+{"id": "state.Transaction.B2", "item_id": "state.cm6.092", "item": "Transaction", "cost": "O(annotations)", "class": "unsorted"}
+{"id": "state.Transaction.B3", "item_id": "state.cm6.092", "item": "Transaction", "cost": "O(annotations)", "class": "unsorted"}
+{"id": "state.Transaction.B4", "item_id": "state.cm6.092", "item": "Transaction", "cost": "O(annotations)", "class": "unsorted"}
+{"id": "state.Transaction.B5", "item_id": "state.cm6.092", "item": "Transaction", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.startState.B1", "item_id": "state.cm6.093", "item": "Transaction.startState", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.changes.B1", "item_id": "state.cm6.094", "item": "Transaction.changes", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.changes.B2", "item_id": "state.cm6.094", "item": "Transaction.changes", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.selection.B1", "item_id": "state.cm6.095", "item": "Transaction.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.selection.B2", "item_id": "state.cm6.095", "item": "Transaction.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.effects.B1", "item_id": "state.cm6.096", "item": "Transaction.effects", "cost": "O(effects)", "class": "unsorted"}
+{"id": "state.Transaction.scrollIntoView.B1", "item_id": "state.cm6.097", "item": "Transaction.scrollIntoView", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.newDoc.B1", "item_id": "state.cm6.098", "item": "Transaction.newDoc", "cost": "O(log n) per change plus inserted size, once", "class": "logarithmic"}
+{"id": "state.Transaction.newDoc.B2", "item_id": "state.cm6.098", "item": "Transaction.newDoc", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.newDoc.B3", "item_id": "state.cm6.098", "item": "Transaction.newDoc", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.newSelection.B1", "item_id": "state.cm6.099", "item": "Transaction.newSelection", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.newSelection.B2", "item_id": "state.cm6.099", "item": "Transaction.newSelection", "cost": "O(ranges * mapPos) per read", "class": "unsorted"}
+{"id": "state.Transaction.newSelection.B3", "item_id": "state.cm6.099", "item": "Transaction.newSelection", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.state.B1", "item_id": "state.cm6.100", "item": "Transaction.state", "cost": "One state construction", "class": "unsorted"}
+{"id": "state.Transaction.state.B2", "item_id": "state.cm6.100", "item": "Transaction.state", "cost": "Linear in the number of slots", "class": "linear or more"}
+{"id": "state.Transaction.state.B3", "item_id": "state.cm6.100", "item": "Transaction.state", "cost": "One Configuration.resolve, linear in the extension tree", "class": "linear or more"}
+{"id": "state.Transaction.state.B4", "item_id": "state.cm6.100", "item": "Transaction.state", "cost": "Linear in slots", "class": "linear or more"}
+{"id": "state.Transaction.state.B5", "item_id": "state.cm6.100", "item": "Transaction.state", "cost": "Linear in slots", "class": "linear or more"}
+{"id": "state.Transaction.state.B6", "item_id": "state.cm6.100", "item": "Transaction.state", "cost": "Linear in slots", "class": "linear or more"}
+{"id": "state.Transaction.state.B7", "item_id": "state.cm6.100", "item": "Transaction.state", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.state.B8", "item_id": "state.cm6.100", "item": "Transaction.state", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.state.B9", "item_id": "state.cm6.100", "item": "Transaction.state", "cost": "An extra state construction", "class": "unsorted"}
+{"id": "state.Transaction.annotation.B1", "item_id": "state.cm6.101", "item": "Transaction.annotation", "cost": "O(annotations)", "class": "unsorted"}
+{"id": "state.Transaction.annotation.B2", "item_id": "state.cm6.101", "item": "Transaction.annotation", "cost": "O(annotations)", "class": "unsorted"}
+{"id": "state.Transaction.annotation.B3", "item_id": "state.cm6.101", "item": "Transaction.annotation", "cost": "O(annotations)", "class": "unsorted"}
+{"id": "state.Transaction.docChanged.B1", "item_id": "state.cm6.102", "item": "Transaction.docChanged", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.docChanged.B2", "item_id": "state.cm6.102", "item": "Transaction.docChanged", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.reconfigured.B1", "item_id": "state.cm6.103", "item": "Transaction.reconfigured", "cost": "Forces state construction", "class": "unsorted"}
+{"id": "state.Transaction.reconfigured.B2", "item_id": "state.cm6.103", "item": "Transaction.reconfigured", "cost": "One state construction", "class": "unsorted"}
+{"id": "state.Transaction.isUserEvent.B1", "item_id": "state.cm6.104", "item": "Transaction.isUserEvent", "cost": "O(len(event))", "class": "linear or more"}
+{"id": "state.Transaction.isUserEvent.B2", "item_id": "state.cm6.104", "item": "Transaction.isUserEvent", "cost": "O(len(event))", "class": "linear or more"}
+{"id": "state.Transaction.isUserEvent.B3", "item_id": "state.cm6.104", "item": "Transaction.isUserEvent", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.isUserEvent.B4", "item_id": "state.cm6.104", "item": "Transaction.isUserEvent", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction.isUserEvent.B5", "item_id": "state.cm6.104", "item": "Transaction.isUserEvent", "cost": "O(annotations)", "class": "unsorted"}
+{"id": "state.Transaction^time.B1", "item_id": "state.cm6.105", "item": "Transaction^time", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction^time.B2", "item_id": "state.cm6.105", "item": "Transaction^time", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction^userEvent.B1", "item_id": "state.cm6.106", "item": "Transaction^userEvent", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction^addToHistory.B1", "item_id": "state.cm6.107", "item": "Transaction^addToHistory", "cost": "O(1)", "class": "local"}
+{"id": "state.Transaction^remote.B1", "item_id": "state.cm6.108", "item": "Transaction^remote", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.B1", "item_id": "state.cm6.109", "item": "TransactionSpec", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.changes.B1", "item_id": "state.cm6.110", "item": "TransactionSpec.changes", "cost": "Linear in the changes", "class": "linear or more"}
+{"id": "state.TransactionSpec.changes.B2", "item_id": "state.cm6.110", "item": "TransactionSpec.changes", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.changes.B3", "item_id": "state.cm6.110", "item": "TransactionSpec.changes", "cost": "Linear in inserted text", "class": "linear or more"}
+{"id": "state.TransactionSpec.changes.B4", "item_id": "state.cm6.110", "item": "TransactionSpec.changes", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.changes.B5", "item_id": "state.cm6.110", "item": "TransactionSpec.changes", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.changes.B6", "item_id": "state.cm6.110", "item": "TransactionSpec.changes", "cost": "O(sections) per merge", "class": "linear or more"}
+{"id": "state.TransactionSpec.selection.B1", "item_id": "state.cm6.111", "item": "TransactionSpec.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.selection.B2", "item_id": "state.cm6.111", "item": "TransactionSpec.selection", "cost": "O(ranges)", "class": "unsorted"}
+{"id": "state.TransactionSpec.selection.B3", "item_id": "state.cm6.111", "item": "TransactionSpec.selection", "cost": "O(ranges)", "class": "unsorted"}
+{"id": "state.TransactionSpec.selection.B4", "item_id": "state.cm6.111", "item": "TransactionSpec.selection", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.effects.B1", "item_id": "state.cm6.112", "item": "TransactionSpec.effects", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.effects.B2", "item_id": "state.cm6.112", "item": "TransactionSpec.effects", "cost": "O(effects)", "class": "unsorted"}
+{"id": "state.TransactionSpec.annotations.B1", "item_id": "state.cm6.113", "item": "TransactionSpec.annotations", "cost": "O(annotations)", "class": "unsorted"}
+{"id": "state.TransactionSpec.userEvent.B1", "item_id": "state.cm6.114", "item": "TransactionSpec.userEvent", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.scrollIntoView.B1", "item_id": "state.cm6.115", "item": "TransactionSpec.scrollIntoView", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.filter.B1", "item_id": "state.cm6.116", "item": "TransactionSpec.filter", "cost": "O(specs)", "class": "unsorted"}
+{"id": "state.TransactionSpec.filter.B2", "item_id": "state.cm6.116", "item": "TransactionSpec.filter", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.sequential.B1", "item_id": "state.cm6.117", "item": "TransactionSpec.sequential", "cost": "O(sections)", "class": "linear or more"}
+{"id": "state.TransactionSpec.sequential.B2", "item_id": "state.cm6.117", "item": "TransactionSpec.sequential", "cost": "O(effects)", "class": "unsorted"}
+{"id": "state.TransactionSpec.sequential.B3", "item_id": "state.cm6.117", "item": "TransactionSpec.sequential", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.sequential.B4", "item_id": "state.cm6.117", "item": "TransactionSpec.sequential", "cost": "O(1)", "class": "local"}
+{"id": "state.TransactionSpec.sequential.B5", "item_id": "state.cm6.117", "item": "TransactionSpec.sequential", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^changeFilter.B1", "item_id": "state.cm6.032", "item": "EditorState^changeFilter", "cost": "O(sections + ranges + effects)", "class": "linear or more"}
+{"id": "state.EditorState^changeFilter.B2", "item_id": "state.cm6.032", "item": "EditorState^changeFilter", "cost": "O(sections + ranges)", "class": "linear or more"}
+{"id": "state.EditorState^changeFilter.B3", "item_id": "state.cm6.032", "item": "EditorState^changeFilter", "cost": "O(total range count)", "class": "unsorted"}
+{"id": "state.EditorState^changeFilter.B4", "item_id": "state.cm6.032", "item": "EditorState^changeFilter", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^changeFilter.B5", "item_id": "state.cm6.032", "item": "EditorState^changeFilter", "cost": "O(filters)", "class": "unsorted"}
+{"id": "state.EditorState^changeFilter.B6", "item_id": "state.cm6.032", "item": "EditorState^changeFilter", "cost": "O(filters)", "class": "unsorted"}
+{"id": "state.EditorState^changeFilter.B7", "item_id": "state.cm6.032", "item": "EditorState^changeFilter", "cost": "O(sections + ranges)", "class": "linear or more"}
+{"id": "state.EditorState^changeFilter.B8", "item_id": "state.cm6.032", "item": "EditorState^changeFilter", "cost": "O(sections + ranges)", "class": "linear or more"}
+{"id": "state.EditorState^changeFilter.B9", "item_id": "state.cm6.032", "item": "EditorState^changeFilter", "cost": "O(sections + effects)", "class": "linear or more"}
+{"id": "state.EditorState^transactionFilter.B1", "item_id": "state.cm6.033", "item": "EditorState^transactionFilter", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^transactionFilter.B2", "item_id": "state.cm6.033", "item": "EditorState^transactionFilter", "cost": "O(filters)", "class": "unsorted"}
+{"id": "state.EditorState^transactionFilter.B3", "item_id": "state.cm6.033", "item": "EditorState^transactionFilter", "cost": "One extra resolution per filter returning specs", "class": "unsorted"}
+{"id": "state.EditorState^transactionFilter.B4", "item_id": "state.cm6.033", "item": "EditorState^transactionFilter", "cost": "Two extender passes", "class": "unsorted"}
+{"id": "state.EditorState^transactionFilter.B5", "item_id": "state.cm6.033", "item": "EditorState^transactionFilter", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^transactionFilter.B6", "item_id": "state.cm6.033", "item": "EditorState^transactionFilter", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^transactionFilter.B7", "item_id": "state.cm6.033", "item": "EditorState^transactionFilter", "cost": "O(sections)", "class": "linear or more"}
+{"id": "state.EditorState^transactionFilter.B8", "item_id": "state.cm6.033", "item": "EditorState^transactionFilter", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^transactionFilter.B9", "item_id": "state.cm6.033", "item": "EditorState^transactionFilter", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^transactionExtender.B1", "item_id": "state.cm6.034", "item": "EditorState^transactionExtender", "cost": "O(extenders)", "class": "unsorted"}
+{"id": "state.EditorState^transactionExtender.B2", "item_id": "state.cm6.034", "item": "EditorState^transactionExtender", "cost": "O(extenders)", "class": "unsorted"}
+{"id": "state.EditorState^transactionExtender.B3", "item_id": "state.cm6.034", "item": "EditorState^transactionExtender", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^transactionExtender.B4", "item_id": "state.cm6.034", "item": "EditorState^transactionExtender", "cost": "O(effects)", "class": "unsorted"}
+{"id": "state.EditorState^transactionExtender.B5", "item_id": "state.cm6.034", "item": "EditorState^transactionExtender", "cost": "O(extenders)", "class": "unsorted"}
+{"id": "state.EditorState^transactionExtender.B6", "item_id": "state.cm6.034", "item": "EditorState^transactionExtender", "cost": "O(effects)", "class": "unsorted"}
+{"id": "state.EditorState^transactionExtender.B7", "item_id": "state.cm6.034", "item": "EditorState^transactionExtender", "cost": "O(1)", "class": "local"}
+{"id": "state.Annotation.B1", "item_id": "state.cm6.118", "item": "Annotation", "cost": "O(1)", "class": "local"}
+{"id": "state.Annotation.type.B1", "item_id": "state.cm6.119", "item": "Annotation.type", "cost": "O(1)", "class": "local"}
+{"id": "state.Annotation.value.B1", "item_id": "state.cm6.120", "item": "Annotation.value", "cost": "O(1)", "class": "local"}
+{"id": "state.Annotation^define.B1", "item_id": "state.cm6.121", "item": "Annotation^define", "cost": "O(1)", "class": "local"}
+{"id": "state.AnnotationType.B1", "item_id": "state.cm6.122", "item": "AnnotationType", "cost": "O(1)", "class": "local"}
+{"id": "state.AnnotationType.of.B1", "item_id": "state.cm6.123", "item": "AnnotationType.of", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffect.B1", "item_id": "state.cm6.124", "item": "StateEffect", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffect.value.B1", "item_id": "state.cm6.125", "item": "StateEffect.value", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffect.map.B1", "item_id": "state.cm6.126", "item": "StateEffect.map", "cost": "O(1) plus the map function", "class": "local"}
+{"id": "state.StateEffect.map.B2", "item_id": "state.cm6.126", "item": "StateEffect.map", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffect.map.B3", "item_id": "state.cm6.126", "item": "StateEffect.map", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffect.is.B1", "item_id": "state.cm6.127", "item": "StateEffect.is", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffect^define.B1", "item_id": "state.cm6.128", "item": "StateEffect^define", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffect^mapEffects.B1", "item_id": "state.cm6.129", "item": "StateEffect^mapEffects", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffect^mapEffects.B2", "item_id": "state.cm6.129", "item": "StateEffect^mapEffects", "cost": "O(effects)", "class": "unsorted"}
+{"id": "state.StateEffect^mapEffects.B3", "item_id": "state.cm6.129", "item": "StateEffect^mapEffects", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffect^reconfigure.B1", "item_id": "state.cm6.130", "item": "StateEffect^reconfigure", "cost": "One configuration resolution", "class": "unsorted"}
+{"id": "state.StateEffect^reconfigure.B2", "item_id": "state.cm6.130", "item": "StateEffect^reconfigure", "cost": "One configuration resolution", "class": "unsorted"}
+{"id": "state.StateEffect^reconfigure.B3", "item_id": "state.cm6.130", "item": "StateEffect^reconfigure", "cost": "O(effects)", "class": "unsorted"}
+{"id": "state.StateEffect^reconfigure.B4", "item_id": "state.cm6.130", "item": "StateEffect^reconfigure", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffect^appendConfig.B1", "item_id": "state.cm6.131", "item": "StateEffect^appendConfig", "cost": "One configuration resolution", "class": "unsorted"}
+{"id": "state.StateEffect^appendConfig.B2", "item_id": "state.cm6.131", "item": "StateEffect^appendConfig", "cost": "One configuration resolution", "class": "unsorted"}
+{"id": "state.StateEffect^appendConfig.B3", "item_id": "state.cm6.131", "item": "StateEffect^appendConfig", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffectType.B1", "item_id": "state.cm6.132", "item": "StateEffectType", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffectType.of.B1", "item_id": "state.cm6.133", "item": "StateEffectType.of", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffect^define config StateEffectSpec.map.B1", "item_id": "state.cm6.259", "item": "StateEffect^define config StateEffectSpec.map", "cost": "O(1) per call", "class": "local"}
+{"id": "state.StateEffect^define config StateEffectSpec.map.B2", "item_id": "state.cm6.259", "item": "StateEffect^define config StateEffectSpec.map", "cost": "O(1) per call", "class": "local"}
+{"id": "state.RangeValue.B1", "item_id": "state.cm6.170", "item": "RangeValue", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeValue.B2", "item_id": "state.cm6.170", "item": "RangeValue", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeValue.B3", "item_id": "state.cm6.170", "item": "RangeValue", "cost": "O(1) per read", "class": "local"}
+{"id": "state.RangeValue.eq.B1", "item_id": "state.cm6.171", "item": "RangeValue.eq", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeValue.eq.B2", "item_id": "state.cm6.171", "item": "RangeValue.eq", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeValue.eq.B3", "item_id": "state.cm6.171", "item": "RangeValue.eq", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeValue.eq.B4", "item_id": "state.cm6.171", "item": "RangeValue.eq", "cost": "O(1) per call", "class": "local"}
+{"id": "state.RangeValue.eq.B5", "item_id": "state.cm6.171", "item": "RangeValue.eq", "cost": "O(k) for k active values", "class": "unsorted"}
+{"id": "state.RangeValue.startSide.B1", "item_id": "state.cm6.172", "item": "RangeValue.startSide", "cost": "O(1) per comparison", "class": "local"}
+{"id": "state.RangeValue.startSide.B2", "item_id": "state.cm6.172", "item": "RangeValue.startSide", "cost": "O(log L) per step for L layers", "class": "logarithmic"}
+{"id": "state.RangeValue.startSide.B3", "item_id": "state.cm6.172", "item": "RangeValue.startSide", "cost": "O(changes) per mapped position", "class": "unsorted"}
+{"id": "state.RangeValue.startSide.B4", "item_id": "state.cm6.172", "item": "RangeValue.startSide", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeValue.startSide.B5", "item_id": "state.cm6.172", "item": "RangeValue.startSide", "cost": "O(1) per comparison", "class": "local"}
+{"id": "state.RangeValue.startSide.B6", "item_id": "state.cm6.172", "item": "RangeValue.startSide", "cost": "O(log n)", "class": "logarithmic"}
+{"id": "state.RangeValue.endSide.B1", "item_id": "state.cm6.173", "item": "RangeValue.endSide", "cost": "O(1) per add", "class": "local"}
+{"id": "state.RangeValue.endSide.B2", "item_id": "state.cm6.173", "item": "RangeValue.endSide", "cost": "O(changes) per range", "class": "unsorted"}
+{"id": "state.RangeValue.endSide.B3", "item_id": "state.cm6.173", "item": "RangeValue.endSide", "cost": "O(changes)", "class": "unsorted"}
+{"id": "state.RangeValue.endSide.B4", "item_id": "state.cm6.173", "item": "RangeValue.endSide", "cost": "O(1) per range", "class": "local"}
+{"id": "state.RangeValue.endSide.B5", "item_id": "state.cm6.173", "item": "RangeValue.endSide", "cost": "O(active)", "class": "unsorted"}
+{"id": "state.RangeValue.endSide.B6", "item_id": "state.cm6.173", "item": "RangeValue.endSide", "cost": "O(log L) per step", "class": "logarithmic"}
+{"id": "state.RangeValue.mapMode.B1", "item_id": "state.cm6.174", "item": "RangeValue.mapMode", "cost": "O(changes) per range", "class": "unsorted"}
+{"id": "state.RangeValue.mapMode.B2", "item_id": "state.cm6.174", "item": "RangeValue.mapMode", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeValue.mapMode.B3", "item_id": "state.cm6.174", "item": "RangeValue.mapMode", "cost": "O(1) per covered chunk", "class": "local"}
+{"id": "state.RangeValue.point.B1", "item_id": "state.cm6.175", "item": "RangeValue.point", "cost": "O(1) per add", "class": "local"}
+{"id": "state.RangeValue.point.B2", "item_id": "state.cm6.175", "item": "RangeValue.point", "cost": "O(log n) per skipped range", "class": "logarithmic"}
+{"id": "state.RangeValue.point.B3", "item_id": "state.cm6.175", "item": "RangeValue.point", "cost": "O(chunks) skipped by maxPoint when a layer cursor is positioned (goto, forward); a chunk entered by advancing from the previous one is read range by range (F7017, F7018)", "class": "unsorted"}
+{"id": "state.RangeValue.range.B1", "item_id": "state.cm6.176", "item": "RangeValue.range", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeValue.range.B2", "item_id": "state.cm6.176", "item": "RangeValue.range", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeValue.range.B3", "item_id": "state.cm6.176", "item": "RangeValue.range", "cost": "O(1)", "class": "local"}
+{"id": "state.Range.B1", "item_id": "state.cm6.177", "item": "Range", "cost": "O(1)", "class": "local"}
+{"id": "state.Range.B2", "item_id": "state.cm6.177", "item": "Range", "cost": "O(1)", "class": "local"}
+{"id": "state.Range.from.B1", "item_id": "state.cm6.178", "item": "Range.from", "cost": "O(1)", "class": "local"}
+{"id": "state.Range.to.B1", "item_id": "state.cm6.179", "item": "Range.to", "cost": "O(1)", "class": "local"}
+{"id": "state.Range.value.B1", "item_id": "state.cm6.180", "item": "Range.value", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.B1", "item_id": "state.cm6.181", "item": "RangeSet", "cost": "O(n) to build", "class": "linear or more"}
+{"id": "state.RangeSet.B2", "item_id": "state.cm6.181", "item": "RangeSet", "cost": "O(n)", "class": "linear or more"}
+{"id": "state.RangeSet.B3", "item_id": "state.cm6.181", "item": "RangeSet", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.B4", "item_id": "state.cm6.181", "item": "RangeSet", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.B5", "item_id": "state.cm6.181", "item": "RangeSet", "cost": "O(layers)", "class": "unsorted"}
+{"id": "state.RangeSet.B6", "item_id": "state.cm6.181", "item": "RangeSet", "cost": "O(1) per shared chunk", "class": "local"}
+{"id": "state.RangeSet.size.B1", "item_id": "state.cm6.182", "item": "RangeSet.size", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.size.B2", "item_id": "state.cm6.182", "item": "RangeSet.size", "cost": "O(chunks + layers)", "class": "unsorted"}
+{"id": "state.RangeSet.update.B1", "item_id": "state.cm6.183", "item": "RangeSet.update", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.update.B2", "item_id": "state.cm6.183", "item": "RangeSet.update", "cost": "O(k log k)", "class": "logarithmic"}
+{"id": "state.RangeSet.update.B3", "item_id": "state.cm6.183", "item": "RangeSet.update", "cost": "O(k)", "class": "unsorted"}
+{"id": "state.RangeSet.update.B4", "item_id": "state.cm6.183", "item": "RangeSet.update", "cost": "O(k + walked ranges)", "class": "unsorted"}
+{"id": "state.RangeSet.update.B5", "item_id": "state.cm6.183", "item": "RangeSet.update", "cost": "O(1) per step", "class": "local"}
+{"id": "state.RangeSet.update.B6", "item_id": "state.cm6.183", "item": "RangeSet.update", "cost": "O(chunks + ranges in walked chunks)", "class": "unsorted"}
+{"id": "state.RangeSet.update.B7", "item_id": "state.cm6.183", "item": "RangeSet.update", "cost": "O(ranges walked)", "class": "unsorted"}
+{"id": "state.RangeSet.update.B8", "item_id": "state.cm6.183", "item": "RangeSet.update", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.update.B9", "item_id": "state.cm6.183", "item": "RangeSet.update", "cost": "O(layers + ranges)", "class": "unsorted"}
+{"id": "state.RangeSet.update.B10", "item_id": "state.cm6.183", "item": "RangeSet.update", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.update.B11", "item_id": "state.cm6.183", "item": "RangeSet.update", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.update.B12", "item_id": "state.cm6.183", "item": "RangeSet.update", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.map.B1", "item_id": "state.cm6.184", "item": "RangeSet.map", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.map.B2", "item_id": "state.cm6.184", "item": "RangeSet.map", "cost": "O(changes) per untouched chunk", "class": "unsorted"}
+{"id": "state.RangeSet.map.B3", "item_id": "state.cm6.184", "item": "RangeSet.map", "cost": "O(changes) per range", "class": "unsorted"}
+{"id": "state.RangeSet.map.B4", "item_id": "state.cm6.184", "item": "RangeSet.map", "cost": "O(changes)", "class": "unsorted"}
+{"id": "state.RangeSet.map.B5", "item_id": "state.cm6.184", "item": "RangeSet.map", "cost": "O(changes) per range", "class": "unsorted"}
+{"id": "state.RangeSet.map.B6", "item_id": "state.cm6.184", "item": "RangeSet.map", "cost": "O(r) per range in the worst case (backward scan)", "class": "unsorted"}
+{"id": "state.RangeSet.map.B7", "item_id": "state.cm6.184", "item": "RangeSet.map", "cost": "O(1) per covered chunk", "class": "local"}
+{"id": "state.RangeSet.map.B8", "item_id": "state.cm6.184", "item": "RangeSet.map", "cost": "O(spilled)", "class": "unsorted"}
+{"id": "state.RangeSet.map.B9", "item_id": "state.cm6.184", "item": "RangeSet.map", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.map.B10", "item_id": "state.cm6.184", "item": "RangeSet.map", "cost": "O(changes)", "class": "unsorted"}
+{"id": "state.RangeSet.map.B11", "item_id": "state.cm6.184", "item": "RangeSet.map", "cost": "O(changes)", "class": "unsorted"}
+{"id": "state.RangeSet.map.B12", "item_id": "state.cm6.184", "item": "RangeSet.map", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.between.B1", "item_id": "state.cm6.185", "item": "RangeSet.between", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.between.B2", "item_id": "state.cm6.185", "item": "RangeSet.between", "cost": "O(chunks + log r + reported) per layer", "class": "logarithmic"}
+{"id": "state.RangeSet.between.B3", "item_id": "state.cm6.185", "item": "RangeSet.between", "cost": "as B2", "class": "logarithmic"}
+{"id": "state.RangeSet.between.B4", "item_id": "state.cm6.185", "item": "RangeSet.between", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.between.B5", "item_id": "state.cm6.185", "item": "RangeSet.between", "cost": "O(log r)", "class": "logarithmic"}
+{"id": "state.RangeSet.between.B6", "item_id": "state.cm6.185", "item": "RangeSet.between", "cost": "O(chunks)", "class": "unsorted"}
+{"id": "state.RangeSet.between.B7", "item_id": "state.cm6.185", "item": "RangeSet.between", "cost": "O(n)", "class": "linear or more"}
+{"id": "state.RangeSet.iter.B1", "item_id": "state.cm6.186", "item": "RangeSet.iter", "cost": "O(chunks + log r) to start, O(log L) per step", "class": "logarithmic"}
+{"id": "state.RangeSet.iter.B2", "item_id": "state.cm6.186", "item": "RangeSet.iter", "cost": "O(log L) per step", "class": "logarithmic"}
+{"id": "state.RangeSet.iter.B3", "item_id": "state.cm6.186", "item": "RangeSet.iter", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet.iter.B4", "item_id": "state.cm6.186", "item": "RangeSet.iter", "cost": "O(chunks)", "class": "unsorted"}
+{"id": "state.RangeSet^iter.B1", "item_id": "state.cm6.187", "item": "RangeSet^iter", "cost": "O(L) to start + O(log L) per step", "class": "logarithmic"}
+{"id": "state.RangeSet^iter.B2", "item_id": "state.cm6.187", "item": "RangeSet^iter", "cost": "O(1) per set", "class": "local"}
+{"id": "state.RangeSet^iter.B3", "item_id": "state.cm6.187", "item": "RangeSet^iter", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^iter.B4", "item_id": "state.cm6.187", "item": "RangeSet^iter", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^iter.B5", "item_id": "state.cm6.187", "item": "RangeSet^iter", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeCursor.B1", "item_id": "state.cm6.194", "item": "RangeCursor", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeCursor.next.B1", "item_id": "state.cm6.195", "item": "RangeCursor.next", "cost": "O(1) one layer, O(log L) several", "class": "logarithmic"}
+{"id": "state.RangeCursor.next.B2", "item_id": "state.cm6.195", "item": "RangeCursor.next", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeCursor.goto.B1", "item_id": "state.cm6.196", "item": "RangeCursor.goto", "cost": "O(chunks + log r)", "class": "logarithmic"}
+{"id": "state.RangeCursor.goto.B2", "item_id": "state.cm6.196", "item": "RangeCursor.goto", "cost": "O(L (chunks + log r))", "class": "logarithmic"}
+{"id": "state.RangeCursor.goto.B3", "item_id": "state.cm6.196", "item": "RangeCursor.goto", "cost": "O(chunks)", "class": "unsorted"}
+{"id": "state.RangeCursor.value.B1", "item_id": "state.cm6.197", "item": "RangeCursor.value", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeCursor.from.B1", "item_id": "state.cm6.198", "item": "RangeCursor.from", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeCursor.to.B1", "item_id": "state.cm6.199", "item": "RangeCursor.to", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeCursor.rank.B1", "item_id": "state.cm6.200", "item": "RangeCursor.rank", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeCursor.rank.B2", "item_id": "state.cm6.200", "item": "RangeCursor.rank", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^compare.B1", "item_id": "state.cm6.188", "item": "RangeSet^compare", "cost": "O(sets)", "class": "unsorted"}
+{"id": "state.RangeSet^compare.B2", "item_id": "state.cm6.188", "item": "RangeSet^compare", "cost": "O(top-layer chunks) to find shared chunks + walk of every unshared chunk of every layer", "class": "linear or more"}
+{"id": "state.RangeSet^compare.B3", "item_id": "state.cm6.188", "item": "RangeSet^compare", "cost": "O(gaps * (chunks + log r) + steps)", "class": "logarithmic"}
+{"id": "state.RangeSet^compare.B4", "item_id": "state.cm6.188", "item": "RangeSet^compare", "cost": "O(active) per stretch", "class": "unsorted"}
+{"id": "state.RangeSet^compare.B5", "item_id": "state.cm6.188", "item": "RangeSet^compare", "cost": "O(active)", "class": "unsorted"}
+{"id": "state.RangeSet^compare.B6", "item_id": "state.cm6.188", "item": "RangeSet^compare", "cost": "O(1) per stretch", "class": "local"}
+{"id": "state.RangeSet^compare.B7", "item_id": "state.cm6.188", "item": "RangeSet^compare", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^compare.B8", "item_id": "state.cm6.188", "item": "RangeSet^compare", "cost": "as B3", "class": "logarithmic"}
+{"id": "state.RangeSet^compare.B9", "item_id": "state.cm6.188", "item": "RangeSet^compare", "cost": "as B3", "class": "logarithmic"}
+{"id": "state.RangeSet^compare.B10", "item_id": "state.cm6.188", "item": "RangeSet^compare", "cost": "O(active)", "class": "unsorted"}
+{"id": "state.RangeSet^compare.B11", "item_id": "state.cm6.188", "item": "RangeSet^compare", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^eq.B1", "item_id": "state.cm6.189", "item": "RangeSet^eq", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^eq.B2", "item_id": "state.cm6.189", "item": "RangeSet^eq", "cost": "O(sets^2)", "class": "unsorted"}
+{"id": "state.RangeSet^eq.B3", "item_id": "state.cm6.189", "item": "RangeSet^eq", "cost": "O(points)", "class": "unsorted"}
+{"id": "state.RangeSet^eq.B4", "item_id": "state.cm6.189", "item": "RangeSet^eq", "cost": "O(points)", "class": "unsorted"}
+{"id": "state.RangeSet^eq.B5", "item_id": "state.cm6.189", "item": "RangeSet^eq", "cost": "O(points up to to)", "class": "unsorted"}
+{"id": "state.RangeSet^eq.B6", "item_id": "state.cm6.189", "item": "RangeSet^eq", "cost": "O(chunks + log r)", "class": "logarithmic"}
+{"id": "state.RangeSet^spans.B1", "item_id": "state.cm6.190", "item": "RangeSet^spans", "cost": "O(chunks + log r) to start, O(log L + active) per step", "class": "logarithmic"}
+{"id": "state.RangeSet^spans.B2", "item_id": "state.cm6.190", "item": "RangeSet^spans", "cost": "O(active) per insertion", "class": "unsorted"}
+{"id": "state.RangeSet^spans.B3", "item_id": "state.cm6.190", "item": "RangeSet^spans", "cost": "O(active)", "class": "unsorted"}
+{"id": "state.RangeSet^spans.B4", "item_id": "state.cm6.190", "item": "RangeSet^spans", "cost": "O(active)", "class": "unsorted"}
+{"id": "state.RangeSet^spans.B5", "item_id": "state.cm6.190", "item": "RangeSet^spans", "cost": "O(log r) per skipped range", "class": "logarithmic"}
+{"id": "state.RangeSet^spans.B6", "item_id": "state.cm6.190", "item": "RangeSet^spans", "cost": "O(active)", "class": "unsorted"}
+{"id": "state.RangeSet^spans.B7", "item_id": "state.cm6.190", "item": "RangeSet^spans", "cost": "O(chunks) skipped by maxPoint when a layer cursor is positioned (goto, forward); a chunk entered by advancing from the previous one is read range by range (250 reads of a mark-only chunk from 0, none from 300, F7017, F7018)", "class": "unsorted"}
+{"id": "state.RangeSet^spans.B8", "item_id": "state.cm6.190", "item": "RangeSet^spans", "cost": "O(chunks + log r)", "class": "logarithmic"}
+{"id": "state.RangeSet^spans.B9", "item_id": "state.cm6.190", "item": "RangeSet^spans", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^spans.B10", "item_id": "state.cm6.190", "item": "RangeSet^spans", "cost": "O(active)", "class": "unsorted"}
+{"id": "state.RangeSet^spans.B11", "item_id": "state.cm6.190", "item": "RangeSet^spans", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^spans.B12", "item_id": "state.cm6.190", "item": "RangeSet^spans", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeComparator.B1", "item_id": "state.cm6.205", "item": "RangeComparator", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeComparator.compareRange.B1", "item_id": "state.cm6.206", "item": "RangeComparator.compareRange", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeComparator.comparePoint.B1", "item_id": "state.cm6.207", "item": "RangeComparator.comparePoint", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeComparator.boundChange.B1", "item_id": "state.cm6.208", "item": "RangeComparator.boundChange", "cost": "O(1)", "class": "local"}
+{"id": "state.SpanIterator.B1", "item_id": "state.cm6.209", "item": "SpanIterator", "cost": "O(1)", "class": "local"}
+{"id": "state.SpanIterator.span.B1", "item_id": "state.cm6.210", "item": "SpanIterator.span", "cost": "O(1)", "class": "local"}
+{"id": "state.SpanIterator.span.B2", "item_id": "state.cm6.210", "item": "SpanIterator.span", "cost": "O(1)", "class": "local"}
+{"id": "state.SpanIterator.point.B1", "item_id": "state.cm6.211", "item": "SpanIterator.point", "cost": "O(1)", "class": "local"}
+{"id": "state.SpanIterator.point.B2", "item_id": "state.cm6.211", "item": "SpanIterator.point", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^of.B1", "item_id": "state.cm6.191", "item": "RangeSet^of", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^of.B2", "item_id": "state.cm6.191", "item": "RangeSet^of", "cost": "O(n)", "class": "linear or more"}
+{"id": "state.RangeSet^of.B3", "item_id": "state.cm6.191", "item": "RangeSet^of", "cost": "O(n) when sorted, O(n log n) otherwise", "class": "logarithmic"}
+{"id": "state.RangeSet^of.B4", "item_id": "state.cm6.191", "item": "RangeSet^of", "cost": "O(n log n)", "class": "logarithmic"}
+{"id": "state.RangeSet^of.B5", "item_id": "state.cm6.191", "item": "RangeSet^of", "cost": "O(n)", "class": "linear or more"}
+{"id": "state.RangeSet^of.B6", "item_id": "state.cm6.191", "item": "RangeSet^of", "cost": "O(n)", "class": "linear or more"}
+{"id": "state.RangeSet^of.B7", "item_id": "state.cm6.191", "item": "RangeSet^of", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^join.B1", "item_id": "state.cm6.192", "item": "RangeSet^join", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^join.B2", "item_id": "state.cm6.192", "item": "RangeSet^join", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^join.B3", "item_id": "state.cm6.192", "item": "RangeSet^join", "cost": "O(total layers)", "class": "unsorted"}
+{"id": "state.RangeSet^join.B4", "item_id": "state.cm6.192", "item": "RangeSet^join", "cost": "O(layers)", "class": "unsorted"}
+{"id": "state.RangeSet^join.B5", "item_id": "state.cm6.192", "item": "RangeSet^join", "cost": "O(1) per layer", "class": "local"}
+{"id": "state.RangeSet^join.B6", "item_id": "state.cm6.192", "item": "RangeSet^join", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSet^empty.B1", "item_id": "state.cm6.193", "item": "RangeSet^empty", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSetBuilder.B1", "item_id": "state.cm6.201", "item": "RangeSetBuilder", "cost": "O(1) amortized per add", "class": "local"}
+{"id": "state.RangeSetBuilder.B2", "item_id": "state.cm6.201", "item": "RangeSetBuilder", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSetBuilder.constructor.B1", "item_id": "state.cm6.202", "item": "RangeSetBuilder.constructor", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSetBuilder.add.B1", "item_id": "state.cm6.203", "item": "RangeSetBuilder.add", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSetBuilder.add.B2", "item_id": "state.cm6.203", "item": "RangeSetBuilder.add", "cost": "O(layers)", "class": "unsorted"}
+{"id": "state.RangeSetBuilder.add.B3", "item_id": "state.cm6.203", "item": "RangeSetBuilder.add", "cost": "O(layers)", "class": "unsorted"}
+{"id": "state.RangeSetBuilder.add.B4", "item_id": "state.cm6.203", "item": "RangeSetBuilder.add", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSetBuilder.add.B5", "item_id": "state.cm6.203", "item": "RangeSetBuilder.add", "cost": "O(1) amortized", "class": "local"}
+{"id": "state.RangeSetBuilder.add.B6", "item_id": "state.cm6.203", "item": "RangeSetBuilder.add", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSetBuilder.add.B7", "item_id": "state.cm6.203", "item": "RangeSetBuilder.add", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSetBuilder.finish.B1", "item_id": "state.cm6.204", "item": "RangeSetBuilder.finish", "cost": "O(layers)", "class": "unsorted"}
+{"id": "state.RangeSetBuilder.finish.B2", "item_id": "state.cm6.204", "item": "RangeSetBuilder.finish", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSetBuilder.finish.B3", "item_id": "state.cm6.204", "item": "RangeSetBuilder.finish", "cost": "O(layers)", "class": "unsorted"}
+{"id": "state.RangeSetUpdate.add.B1", "item_id": "state.cm6.260", "item": "RangeSet.update config RangeSetUpdate.add", "cost": "O(k)", "class": "unsorted"}
+{"id": "state.RangeSetUpdate.add.B2", "item_id": "state.cm6.260", "item": "RangeSet.update config RangeSetUpdate.add", "cost": "O(k)", "class": "unsorted"}
+{"id": "state.RangeSetUpdate.sort.B1", "item_id": "state.cm6.261", "item": "RangeSet.update config RangeSetUpdate.sort", "cost": "O(k log k)", "class": "logarithmic"}
+{"id": "state.RangeSetUpdate.sort.B2", "item_id": "state.cm6.261", "item": "RangeSet.update config RangeSetUpdate.sort", "cost": "O(k log k)", "class": "logarithmic"}
+{"id": "state.RangeSetUpdate.filter.B1", "item_id": "state.cm6.262", "item": "RangeSet.update config RangeSetUpdate.filter", "cost": "O(ranges in region)", "class": "unsorted"}
+{"id": "state.RangeSetUpdate.filter.B2", "item_id": "state.cm6.262", "item": "RangeSet.update config RangeSetUpdate.filter", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSetUpdate.filter.B3", "item_id": "state.cm6.262", "item": "RangeSet.update config RangeSetUpdate.filter", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSetUpdate.filterFrom.B1", "item_id": "state.cm6.263", "item": "RangeSet.update config RangeSetUpdate.filterFrom", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSetUpdate.filterTo.B1", "item_id": "state.cm6.264", "item": "RangeSet.update config RangeSetUpdate.filterTo", "cost": "O(1)", "class": "local"}
+{"id": "state.RangeSetUpdate.filterTo.B2", "item_id": "state.cm6.264", "item": "RangeSet.update config RangeSetUpdate.filterTo", "cost": "O(layers)", "class": "unsorted"}
+{"id": "state.Text.lineAt.B7", "item_id": "state.cm6.232", "item": "Text.lineAt", "cost": "Visits every child of the root node, then throws", "class": "linear or more"}
+{"id": "state.Text.line.B4", "item_id": "state.cm6.233", "item": "Text.line", "cost": "Visits every child of the root node, then throws", "class": "linear or more"}
+{"id": "state.Text.iter.B3", "item_id": "state.cm6.239", "item": "Text.iter", "cost": "O(1) before the throw", "class": "local"}
+{"id": "state.Text.iter.B4", "item_id": "state.cm6.239", "item": "Text.iter", "cost": "linear in the lines of the first (or last) child; the other children are not visited", "class": "linear or more"}
+{"id": "state.Text.replace.B7", "item_id": "state.cm6.234", "item": "Text.replace", "cost": "as Text.replace B4 and B5", "class": "unsorted"}
+{"id": "state.Text.slice.B5", "item_id": "state.cm6.236", "item": "Text.slice", "cost": "as Text.slice B1", "class": "unsorted"}
+{"id": "state.Text.slice.B6", "item_id": "state.cm6.236", "item": "Text.slice", "cost": "as Text.slice B1", "class": "unsorted"}
+{"id": "state.RangeSet^eq.B7", "item_id": "state.cm6.189", "item": "RangeSet^eq", "cost": "O(top-layer chunks) + walk of unshared chunks", "class": "unsorted"}
+{"id": "state.Facet.computeN.B7", "item_id": "state.cm6.041", "item": "Facet.computeN", "cost": "O(1) per provider before the throw", "class": "local"}
+{"id": "state.Facet.computeN.B8", "item_id": "state.cm6.041", "item": "Facet.computeN", "cost": "linear in the elements spread", "class": "linear or more"}
+{"id": "state.Facet.computeN.B9", "item_id": "state.cm6.041", "item": "Facet.computeN", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.computeN.B10", "item_id": "state.cm6.041", "item": "Facet.computeN", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.compute.B12", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.compute.B13", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.compute.B14", "item_id": "state.cm6.040", "item": "Facet.compute", "cost": "linear in the dependency list", "class": "linear or more"}
+{"id": "state.Facet.from.B6", "item_id": "state.cm6.042", "item": "Facet.from", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.from.B7", "item_id": "state.cm6.042", "item": "Facet.from", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet.from.B8", "item_id": "state.cm6.042", "item": "Facet.from", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define.B6", "item_id": "state.cm6.038", "item": "Facet^define", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.combine.B5", "item_id": "state.cm6.248", "item": "Facet^define config FacetConfig.combine", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.compare.B6", "item_id": "state.cm6.249", "item": "Facet^define config FacetConfig.compare", "cost": "one compare call", "class": "unsorted"}
+{"id": "state.Facet^define config FacetConfig.compare.B7", "item_id": "state.cm6.249", "item": "Facet^define config FacetConfig.compare", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.compareInput.B4", "item_id": "state.cm6.250", "item": "Facet^define config FacetConfig.compareInput", "cost": "one compareInput call per input", "class": "unsorted"}
+{"id": "state.Facet^define config FacetConfig.compareInput.B5", "item_id": "state.cm6.250", "item": "Facet^define config FacetConfig.compareInput", "cost": "O(1)", "class": "local"}
+{"id": "state.Facet^define config FacetConfig.enables.B5", "item_id": "state.cm6.252", "item": "Facet^define config FacetConfig.enables", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.create.B4", "item_id": "state.cm6.253", "item": "StateField^define config StateFieldSpec.create", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.update.B6", "item_id": "state.cm6.254", "item": "StateField^define config StateFieldSpec.update", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.compare.B3", "item_id": "state.cm6.255", "item": "StateField^define config StateFieldSpec.compare", "cost": "one compare call per transaction", "class": "unsorted"}
+{"id": "state.StateField^define config StateFieldSpec.compare.B4", "item_id": "state.cm6.255", "item": "StateField^define config StateFieldSpec.compare", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define config StateFieldSpec.provide.B4", "item_id": "state.cm6.256", "item": "StateField^define config StateFieldSpec.provide", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField.init.B6", "item_id": "state.cm6.048", "item": "StateField.init", "cost": "O(1)", "class": "local"}
+{"id": "state.StateField^define.B3", "item_id": "state.cm6.047", "item": "StateField^define", "cost": "O(1)", "class": "local"}
+{"id": "state.Extension.B9", "item_id": "state.cm6.050", "item": "Extension", "cost": "O(1)", "class": "local"}
+{"id": "state.combineConfig.B11", "item_id": "state.cm6.134", "item": "combineConfig", "cost": "linear in the total number of keys", "class": "linear or more"}
+{"id": "state.combineConfig.B12", "item_id": "state.cm6.134", "item": "combineConfig", "cost": "linear in the total number of keys", "class": "linear or more"}
+{"id": "state.Prec.highest.B3", "item_id": "state.cm6.052", "item": "Prec.highest", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.high.B2", "item_id": "state.cm6.053", "item": "Prec.high", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.default.B3", "item_id": "state.cm6.054", "item": "Prec.default", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.low.B2", "item_id": "state.cm6.055", "item": "Prec.low", "cost": "O(1)", "class": "local"}
+{"id": "state.Prec.lowest.B3", "item_id": "state.cm6.056", "item": "Prec.lowest", "cost": "O(1)", "class": "local"}
+{"id": "state.Compartment.B6", "item_id": "state.cm6.057", "item": "Compartment", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.phrase.B8", "item_id": "state.cm6.027", "item": "EditorState.phrase", "cost": "O(number of phrase objects)", "class": "linear or more"}
+{"id": "state.EditorState.phrase.B9", "item_id": "state.cm6.027", "item": "EditorState.phrase", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState.languageDataAt.B4", "item_id": "state.cm6.029", "item": "EditorState.languageDataAt", "cost": "linear in the provider results", "class": "linear or more"}
+{"id": "state.EditorState.charCategorizer.B5", "item_id": "state.cm6.030", "item": "EditorState.charCategorizer", "cost": "O(length of wordChars) per call", "class": "linear or more"}
+{"id": "state.EditorState^changeFilter.B10", "item_id": "state.cm6.032", "item": "EditorState^changeFilter", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^changeFilter.B11", "item_id": "state.cm6.032", "item": "EditorState^changeFilter", "cost": "linear in the changes; unbounded for the odd-length case", "class": "linear or more"}
+{"id": "state.EditorState^changeFilter.B12", "item_id": "state.cm6.032", "item": "EditorState^changeFilter", "cost": "linear in the changes below the bound; unbounded above it", "class": "linear or more"}
+{"id": "state.EditorState^transactionFilter.B10", "item_id": "state.cm6.033", "item": "EditorState^transactionFilter", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^transactionExtender.B8", "item_id": "state.cm6.034", "item": "EditorState^transactionExtender", "cost": "O(1)", "class": "local"}
+{"id": "state.StateEffect^define config StateEffectSpec.map.B3", "item_id": "state.cm6.259", "item": "StateEffect^define config StateEffectSpec.map", "cost": "O(1)", "class": "local"}
+{"id": "state.EditorState^lineSeparator.B5", "item_id": "state.cm6.022", "item": "EditorState^lineSeparator", "cost": "linear in the text split", "class": "linear or more"}

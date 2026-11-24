@@ -2,7 +2,10 @@
 """Conformance G5, the differential oracle on seeds the implementation never saw (docs/workflow/conformance.md §2 G5;
 the crate's plan.md "Conformance", step 1).
 
-    python3 tools/oracle_fresh.py <crate> [--salts 1,2,...] [--min 5000] [--max-salts 200] [--replay-only]
+    python3 tools/oracle_fresh.py <crate> [--salts 1,2,...] [--min 5000] [--max-salts 200] [--replay-only [--root <tree>]]
+
+(--replay-only --root <tree>: replay the kept new cases on the crate of another tree, a copy with a deviation made on
+purpose: G5's sensitivity, where the run must report the deviation.)
 
 For each salt it runs every generator of oracle/cm6/order.json, in order, in a scratch copy, with
 ORACLE_SEED_SALT=<salt> (tools/cm6/oracle-lib.ts `rng`: every seeded generator draws from new seeds; the generators
@@ -80,11 +83,12 @@ def main():
     for c in info["seeded_chunks"]:
         if info["new"][c] < want: failures.append(f"chunk {c}: {info['new'][c]} new cases, fewer than {want}")
     # the replay of the new cases
-    rep = os.path.join(ROOT, "target", "replay", crate, "report.jsonl")
+    tree = os.path.abspath(opt("--root", ROOT))
+    rep = os.path.join(tree, "target", "replay", crate, "report.jsonl")
     if os.path.exists(rep): os.remove(rep)
     env = dict(os.environ, FERRUM_REPLAY_FIXTURES=out, FERRUM_REPLAY_WRITE_NO_COUNTERPART="1",
                FERRUM_REPLAY_CHUNKS=",".join(c for c in chunks if info["new"][c]))
-    r = subprocess.run(["cargo", "test", "-q", "-p", crate, "--features", "__test", "--test", "replay"], cwd=ROOT, env=env,
+    r = subprocess.run(["cargo", "test", "-q", "-p", crate, "--features", "__test", "--test", "replay"], cwd=tree, env=env,
                        capture_output=True, text=True)
     got = [x for x in rows(rep) if "fixture" in x] if os.path.exists(rep) else []
     per = collections.defaultdict(collections.Counter)

@@ -3,6 +3,9 @@
 
     python3 tools/ledger.py add <kind> key=value ...     append one row to docs/progress/ledger.jsonl
     python3 tools/ledger.py report [<crate>]             cost per stage and step, escapes, open expectations
+    python3 tools/ledger.py usage <transcript.jsonl>     a run's size from its transcript: requests, `tokens` (the
+                                                         last request's four usage counts) and `consumed` (their sum
+                                                         over the requests), each request counted once by its id
 
 Kinds and their keys (date defaults to today; numbers are parsed):
   step     crate stage step role model effort tokens [consumed] [attempts] [note]   one finished worker run or orchestrator step;
@@ -100,8 +103,22 @@ def report(crate=None):
             print(f"- {r['id']}: {r['change']} | expects: {r['expects']} | {state}")
 
 
+def usage(path):
+    seen, total, last = set(), 0, None
+    for line in open(path, encoding="utf-8"):
+        try: m = json.loads(line).get("message")
+        except ValueError: continue
+        u = m.get("usage") if isinstance(m, dict) else None
+        if not u or m.get("id") in seen: continue
+        seen.add(m.get("id"))
+        last = sum(u.get(k) or 0 for k in ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
+        total += last
+    print(json.dumps({"requests": len(seen), "tokens": last, "consumed": total}))
+
+
 if __name__ == "__main__":
     a = sys.argv[1:]
     if a[:1] == ["add"] and len(a) >= 2: add(a[1], a[2:])
     elif a[:1] == ["report"]: report(a[1] if len(a) > 1 else None)
+    elif a[:1] == ["usage"] and len(a) == 2: usage(a[1])
     else: print(__doc__)

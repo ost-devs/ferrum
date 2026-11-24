@@ -1,0 +1,59 @@
+uncovered lines: 42; sorted in implementation.md "Lines no check reaches" (same file and text): 41; not sorted: 1 (each to its unit's verifier)
+        U4 state: src/state.rs:329 `}`
+branch conditions: 668; with a missed outcome (summed over instantiations): 53 (each to its unit's verifier)
+        U2 change: src/change.rs:252:28 never false: `if ins >= 0 && pos <= to && end >= from {`
+        U2 change: src/change.rs:619:20 never false: `if let Some(next) = next {`
+        U2 change: src/change.rs:642:20 never false: `if let Some(&end) = ranges.get(i - 1) {`
+        U2 change: src/change.rs:779:18 never true: `(f >= 0.0 && f.fract() == 0.0 && f < 9_007_199_254_740_992.0).then_some(f as isize)`
+        U2 change: src/change.rs:1067:12 never true: `if index >= self.inserted.len() as isize && len == 0 {`
+        U2 change: src/change.rs:1067:53 never evaluated: `if index >= self.inserted.len() as isize && len == 0 {`
+        U1 text: src/char.rs:234:17 never false: `assert!(is_extending_char(0x301) && is_extending_char(0x200C) && is_extending_char(0x1F3FB));`
+        U1 text: src/char.rs:234:45 never false: `assert!(is_extending_char(0x301) && is_extending_char(0x200C) && is_extending_char(0x1F3FB));`
+        U1 text: src/char.rs:234:74 never false: `assert!(is_extending_char(0x301) && is_extending_char(0x200C) && is_extending_char(0x1F3FB));`
+        U1 text: src/char.rs:235:17 never false: `assert!(!is_extending_char(0x2FF) && !is_extending_char(0x200D) && !is_extending_char(0xE0100));`
+        U1 text: src/char.rs:235:46 never false: `assert!(!is_extending_char(0x2FF) && !is_extending_char(0x200D) && !is_extending_char(0xE0100));`
+        U1 text: src/char.rs:235:76 never false: `assert!(!is_extending_char(0x2FF) && !is_extending_char(0x200D) && !is_extending_char(0xE0100));`
+        U1 text: src/char.rs:247:16 never true: `if pos == u.len() {`
+        U1 text: src/char.rs:250:65 never false: `if pos > 0 && (0xDC00..0xE000).contains(&u[pos]) && (0xD800..0xDC00).contains(&u[pos - 1]) {`
+        U1 text: src/charcategory.rs:26:24 never false: `c == '\u{FEFF}' || c != '\u{85}' && c.is_whitespace()`
+        U4 state: src/facet.rs:1207:28 never false: `&& let Some(found) = self.result[known].iter().position(|f| f.key() == result_key)`
+        U4 state: src/facet.rs:1440:47 never false: `(Some(a), Some(b)) => Arc::ptr_eq(a, b) || (field.inner.eq)(&**a, &**b),`
+        U3 rangeset: src/rangeset.rs:295:12 never true: `if state.poisoned {`
+        U3 rangeset: src/rangeset.rs:634:24 never false: `if let Some(range) = add.next()`
+        U3 rangeset: src/rangeset.rs:640:20 never false: `&& cur.chunk_index < this.chunk.len()`
+        U3 rangeset: src/rangeset.rs:649:24 never false: `if let Some(value) = cur.value_ref() {`
+        U3 rangeset: src/rangeset.rs:825:20 never true: `|| !same_values(&side_a.active, &side_b.active)`
+        U3 rangeset: src/rangeset.rs:879:68 never false: `return (open_ranges + if cursor.point.is_some() && cursor.to > to { 1 } else { 0 }) as usize;`
+        U3 rangeset: src/rangeset.rs:1133:16 never false: `if let Some(l) = &set.inner {`
+        U3 rangeset: src/rangeset.rs:1143:16 never false: `if let Some(l) = &set.inner {`
+        U3 rangeset: src/rangeset.rs:1151:20 never false: `if mapped == l.chunk_pos[i]`
+        U3 rangeset: src/rangeset.rs:1152:24 never false: `&& text_diff.is_none_or(|d| d.touches_range(known, end) == TouchesRange::False)`
+        U3 rangeset: src/rangeset.rs:1389:20 never false: `&& let Some(cur) = heap.pop()`
+        U3 rangeset: src/rangeset.rs:1516:13 never false: `let Some(value) = self.cursor.value().cloned() else { return };`
+        U3 rangeset: src/rangeset.rs:1564:27 never false: `} else if let Some(next_val) = self.cursor.value() {`
+        U3 rangeset: src/rangeset.rs:1609:42 never false: `if self.active_to[i] > to || self.active_to[i] == to && self.active[i].end_side() >= point_end_side {`
+        U3 rangeset: src/rangeset.rs:1609:69 never false: `if self.active_to[i] > to || self.active_to[i] == to && self.active[i].end_side() >= point_end_side {`
+        U3 rangeset: src/rangeset.rs:1710:16 never true: `if found < 0 { 0 } else { value[i].end_side() as i64 - value[found as usize].end_side() as i64 }`
+        U2 change: src/selection.rs:146:9 never false: `*self == *other && (!self.is_empty() || self.assoc() == other.assoc())`
+        U2 change: src/selection.rs:170:35 never true: `if !anchor.is_number() || !head.is_number() {`
+        U2 change: src/selection.rs:182:44 never false: `self.anchor() == other.anchor() && self.head() == other.head() && self.goal_column == other.goal_column`
+        U2 change: src/selection.rs:234:9 never false: `self.ranges.len() == other.ranges.len()`
+        U2 change: src/selection.rs:235:16 never false: `&& self.main_index == other.main_index`
+        U4 state: src/state.rs:327:24 never false: `if let Some(value) = self.field_value(field) {`
+        U1 text: src/text.rs:150:20 never false: `&& let Tree::Node(node) = &*child.node`
+        U1 text: src/text.rs:159:20 never false: `&& let Some(last) = self.current_chunk.last_mut()`
+        U1 text: src/text.rs:552:25 never false: `let Some(prev) = target.pop() else { unreachable!("an open piece follows another piece") };`
+        U1 text: src/text.rs:553:25 never false: `let (Tree::Leaf(prev), Tree::Leaf(piece)) = (&*prev.node, &*text.node) else {`
+        U1 text: src/text.rs:577:39 never false: `if from <= end && to >= pos {`
+        U1 text: src/text.rs:665:38 never false: `if pos > from && i > 0 {`
+        U1 text: src/text.rs:681:38 never false: `if pos > from && i > 0 {`
+        U1 text: src/text.rs:744:16 never true: `if a.line_break != b.line_break || a.done != b.done || a.value.as_str() != b.value.as_str() {`
+        U1 text: src/text.rs:744:48 never true: `if a.line_break != b.line_break || a.done != b.done || a.value.as_str() != b.value.as_str() {`
+        U1 text: src/text.rs:901:20 never false: `if from == 0 && to >= 1 {`
+        U1 text: src/text.rs:901:33 never true: `if from == 0 && to >= 1 {`
+        U4 state: src/transaction.rs:52:12 never false: `if self.is(ty) { Some(down::<T>(&*self.value)) } else { None }`
+        U4 state: src/transaction.rs:577:24 never true: `let _lock = if nested { None } else { Some(self.lock.lock().unwrap_or_else(PoisonError::into_inner)) };`
+        U4 state: src/transaction.rs:578:12 never false: `if !nested && let Some(state) = self.find(me) {`
+totals: lines 4230/4273, branches 1280/1336, functions 634/637
+
+checks passed

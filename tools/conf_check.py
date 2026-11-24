@@ -29,6 +29,8 @@
                                                                 not sorted in implementation.md, the missed branch outcomes
     python3 tools/conf_check.py <crate> costs                    G8's input: every behavior with the class its cost text
                                                                 gives by pattern, or `unsorted`; conformance/costs.jsonl
+    python3 tools/conf_check.py <crate> g8 [--sizes n,10n,100n]  the G8 benchmarks cover every item with a local or
+                                                                logarithmic behavior, on both sides, at those sizes
     (--root <dir>: another tree than the repository, for trying the tool on a copy)
 
 Output files go to .scratch/conformance/<crate>/ (never committed: regenerated from the recorded commit).
@@ -146,8 +148,16 @@ def public_paths(doc):
     return out
 
 
-def send_sync(c, doc):
+def call_scoped(crate):
+    """The public types design.md §6 names as carrying a callback into one call, and so neither Send nor Sync (D6):
+    type -> the member named (`(its field `x`)` or `(its variant `X`)`)."""
+    sect = re.search(r"^## 6\. .*?(?=^## 7\.)", ic.read(ic.spec(crate, "design.md")), re.M | re.S)
+    return dict(re.findall(r"`(\w+)` \(its (?:field|variant) `(\w+)`\)", sect.group(0))) if sect else {}
+
+
+def send_sync(c, doc, crate):
     idx, bad, generic, n = doc["index"], [], [], 0
+    allowed, seen_allowed = call_scoped(crate), {}
     for i, p in doc["paths"].items():
         if p.get("crate_id") != 0 or p["kind"] not in ("struct", "enum", "union"): continue
         it = idx.get(i)
@@ -161,13 +171,24 @@ def send_sync(c, doc):
                      and (idx[str(x)]["inner"]["impl"].get("trait") or {}).get("path") in (tr, f"core::marker::{tr}", f"std::marker::{tr}")]
             if not found: bad.append(f"{name}: no {tr} implementation in rustdoc JSON"); continue
             neg = [f for f in found if f.get("is_negative")]
+            short = p["path"][-1]
+            if short in allowed:
+                seen_allowed.setdefault(short, []).append(bool(neg))
+                if neg:
+                    kind = inner.get("kind") if isinstance(inner.get("kind"), dict) else {}
+                    members = [idx[str(x)]["name"] for x in ((kind.get("plain") or {}).get("fields", []) + inner.get("variants", [])) if str(x) in idx]
+                    if allowed[short] not in members: bad.append(f"{name}: !{tr}, and design.md §6 names its member `{allowed[short]}`, which it does not have")
+                    continue
             if neg: bad.append(f"{name}: !{tr}"); continue
             preds = [json.dumps(w) for f in found for w in f.get("generics", {}).get("where_predicates", [])]
             if params:
                 generic.append(f"{name}<{', '.join(params)}>: {tr} where {len(preds)} predicate(s): " + "; ".join(bound_text(json.loads(x)) for x in preds))
             elif preds:
                 bad.append(f"{name}: {tr} only under {len(preds)} predicate(s): " + "; ".join(bound_text(json.loads(x)) for x in preds))
-    c.need(n > 0 and not bad, f"public types Send and Sync without condition, or generic (D6): {n} types, {len(bad)} fail", bad)
+    stale = [f"{t}: named in design.md §6 as neither Send nor Sync, and it is both (the list is stale)" for t, v in seen_allowed.items() if not any(v)]
+    stale += [f"{t}: named in design.md §6, no such public type" for t in allowed if t not in seen_allowed]
+    c.say(f"types design.md §6 names as carrying a callback into one call (D6), accepted as neither Send nor Sync, each for its member: {', '.join(f'{t} ({m})' for t, m in allowed.items())}")
+    c.need(n > 0 and not bad and not stale, f"public types Send and Sync without condition, or generic, or named in design.md §6 (D6): {n} types, {len(bad) + len(stale)} fail", bad + stale)
     c.say(f"generic public types, each Send and Sync under the bounds of its parameters (the verifier of its unit reads these): {len(generic)}")
     for g in generic: c.say("        " + g)
 
@@ -364,7 +385,7 @@ def g1(c, crate, args):
             if segs[-1] in (member, parts[-1]) and (len(parts) == 1 or (len(segs) > 1 and segs[-2] == parts[0])):
                 stand.append(f"{r['id']} {r['item']}: {p}")
     c.need(not stand, f"no public stand-in named after a DROP item ({sum(r['disposition'] == 'DROP' for r in inv)} items): {len(stand)}", stand)
-    send_sync(c, doc)
+    send_sync(c, doc, crate)
     if "--skeleton" in args:
         sigdiff(c, crate, args[args.index("--skeleton") + 1])
 
@@ -692,11 +713,43 @@ def costs(c, crate, args):
     c.say(f"behaviors by the class their cost text gives: {dict(n)}; items with a local or logarithmic behavior: {len(items)}; written {os.path.relpath(path, REPO)}")
 
 
+def g8(c, crate, args):
+    """The G8 benchmarks against the items they must cover: every item with a behavior whose cost class is local or
+    logarithmic (costs.jsonl, with the worker's sort of the unsorted ones in bench/sort.jsonl) has an entry on both
+    sides (bench/rust.jsonl, bench/cm6.jsonl), each at the sizes asked (--sizes n,10n,100n; default n)."""
+    sizes = (args[args.index("--sizes") + 1] if "--sizes" in args else "n").split(",")
+    bench = ic.spec(crate, "bench")
+    cost = {r["id"]: r for r in ic.rows(ic.spec(crate, "conformance", "costs.jsonl"))}
+    sort_path = os.path.join(bench, "sort.jsonl")
+    sort = {r["id"]: r for r in ic.rows(sort_path)} if os.path.exists(sort_path) else {}
+    unsorted = [b for b, r in cost.items() if r["class"] == "unsorted"]
+    missing_sort = [b for b in unsorted if b not in sort or sort[b].get("class") not in ("local", "logarithmic", "linear or more", "none")]
+    c.need(not missing_sort, f"behaviors no pattern settles, sorted in bench/sort.jsonl (class local, logarithmic, linear or more, or none, with a reason): {len(unsorted) - len(missing_sort)} of {len(unsorted)}", missing_sort)
+    cls = lambda b: sort[b]["class"] if cost[b]["class"] == "unsorted" and b in sort else cost[b]["class"]
+    items = sorted({cost[b]["item_id"] for b in cost if cls(b) in ("local", "logarithmic")})
+    sides = {}
+    for side in ("rust", "cm6"):
+        p = os.path.join(bench, side + ".jsonl")
+        sides[side] = ic.rows(p) if os.path.exists(p) else []
+    for side, rs in sides.items():
+        bad = [json.dumps(r)[:160] for r in rs if not {"entry", "item_id", "size", "n", "median_ns"} <= set(r)]
+        c.need(bool(rs) and not bad, f"bench/{side}.jsonl: {len(rs)} lines, each with entry, item_id, size, n, median_ns: {len(bad)} do not", bad)
+    have = {side: {(r.get("item_id"), r.get("size")) for r in rs} for side, rs in sides.items()}
+    for side in sides:
+        miss = [f"{i} at {z}" for i in items for z in sizes if (i, z) not in have[side]]
+        c.need(not miss, f"items with a local or logarithmic behavior ({len(items)}) timed by bench/{side}.jsonl at {','.join(sizes)}: {len(miss)} missing", miss)
+    ent = {side: {(r.get("entry"), r.get("size")) for r in rs} for side, rs in sides.items()}
+    only = sorted(ent["rust"] ^ ent["cm6"])
+    c.need(not only, f"every entry and size timed on both sides: {len(only)} on one side only", [f"{e} {z}" for e, z in only])
+    longs = [r for r in sides["rust"] if str(r.get("entry", "")).startswith("long.")]
+    c.say(f"long-line entries (state.imp.010) on the Rust side: {len(longs)}")
+
+
 def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ic.ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs}
+    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = ic.Check()

@@ -1,0 +1,18 @@
+salt 1: new cases text 734, change 443, facet 183, state 306, rangeset 81
+salts used: 1..1 (1); new cases: {'text': 734, 'change': 443, 'facet': 183, 'state': 306, 'rangeset': 81}
+replay of new cases, lang: {'equal': 48}
+replay of new cases, text: {'none': 113, 'mismatch': 119, 'part': 237, 'equal': 265}
+replay of new cases, change: {'equal': 235, 'none': 58, 'part': 150}
+replay of new cases, rangeset: {'equal': 64, 'none': 14, 'mismatch': 1, 'part': 2}
+replay of new cases, facet: {'equal': 179, 'mismatch': 4}
+replay of new cases, state: {'equal': 199, 'part': 35, 'none': 72}
+entries left out of new cases whose reason, op and argument the approved file does not hold: 1 kinds
+        ('state', 'char', 'state.changeByRange', 'changes.from'): 2 case(s)
+
+2 check(s) failed:
+  124 new cases mismatch or pending: text S1.F2002: mismatch; text S1.F2003: mismatch; text S1.F2004: mismatch; text S1.F2005: mismatch; text S1.F2006: mismatch; text S1.F2007: mismatch; text S1.F2008: mismatch; text S1.F2010: mismatch; text S1.F2011: mismatch; text S1.F2012: mismatch; text S1.F2013: mismatch; text S1.F2014: mismatch; text S1.F2016: mismatch; text S1.F2017: mismatch; text S1.F2018: mismatch; text S1.F2020: mismatch; text S1.F2021: mismatch; text S1.F2023: mismatch; text S1.F2025: mismatch; text S1.F2026: mismatch; text S1.F2027: mismatch; text S1.F2028: mismatch; text S1.F2029: mismatch; text S1.F2030: mismatch; text S1.F2032: mismatch; text S1.F2034: mismatch; text S1.F2035: mismatch; text S1.F2037: mismatch; text S1.F2042: mismatch; text S1.F2044: mismatch
+  1 kinds of entry left out that the approved file does not hold (read each)
+
+real	2m20.896s
+user	1m34.031s
+sys	0m6.401s

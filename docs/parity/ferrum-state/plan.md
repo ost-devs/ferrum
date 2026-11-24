@@ -193,7 +193,7 @@ The checks of `docs/workflow/implementation.md` §7, run by `python3 tools/impl_
 
 ## Conformance (written 2026-11-19)
 
-<!-- refs:planned crates/ferrum-state/benches crates/ferrum-state/benches/g8.rs docs/parity/ferrum-state/bench docs/parity/ferrum-state/oracle/patches -->
+<!-- refs:planned docs/parity/ferrum-state/bench docs/parity/ferrum-state/oracle/patches -->
 Written at the end of the implementation (record: `docs/decisions/ferrum-state.md`, "The end of the implementation stage"). It starts when `python3 tools/impl_check.py ferrum-state handoff --since text=c0ba180,change=ea896a1,rangeset=126dad7,state=efdebd2` passes whole at the orchestrator's run; the commit of that run is the crate's recorded commit. The brief: `docs/workflow/conformance.md`. One worker at a time; every reading step at `high`.
 
 ### What is already shown, and is run again, not redone

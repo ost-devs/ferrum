@@ -1,0 +1,28 @@
+warning: --branch option is unstable
+Filename                      Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+__test.rs                          77                 3    96.10%          26                 1    96.15%          70                 3    95.71%           0                 0         -
+change.rs                         879                 9    98.98%          60                 0   100.00%         586                 3    99.49%         324                 7    97.84%
+char.rs                           206                11    94.66%          18                 1    94.44%         150                11    92.67%          66                 8    87.88%
+charcategory.rs                    32                 0   100.00%           6                 0   100.00%          27                 0   100.00%          16                 1    93.75%
+column.rs                          58                 0   100.00%           5                 0   100.00%          38                 0   100.00%          16                 0   100.00%
+config.rs                          15                 0   100.00%           1                 0   100.00%          17                 0   100.00%           2                 0   100.00%
+error.rs                           42                 0   100.00%           1                 0   100.00%          24                 0   100.00%           0                 0         -
+extension.rs                        7                 0   100.00%           7                 0   100.00%           7                 0   100.00%           0                 0         -
+facet.rs                          889                11    98.76%         130                 1    99.23%         669                 8    98.80%          98                 3    96.94%
+rangeset.rs                      1415                10    99.29%         152                 0   100.00%        1089                 8    99.27%         354                17    95.20%
+selection.rs                      325                 0   100.00%          43                 0   100.00%         216                 0   100.00%          86                 5    94.19%
+state.rs                          441                 3    99.32%          48                 0   100.00%         335                 3    99.10%          56                 1    98.21%
+text.rs                           981                11    98.88%          77                 0   100.00%         672                 6    99.11%         250                11    95.60%
+transaction.rs                    447                 3    99.33%          63                 0   100.00%         373                 1    99.73%          68                 3    95.59%
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                            5814                61    98.95%         637                 3    99.53%        4273                43    98.99%        1336                56    95.81%
+Uncovered Lines:
+/ferrum/crates/ferrum-state/src/__test.rs: 135-137
+/ferrum/crates/ferrum-state/src/change.rs: 640, 661, 1068
+/ferrum/crates/ferrum-state/src/char.rs: 30-36, 38-39, 104, 248
+/ferrum/crates/ferrum-state/src/facet.rs: 53, 546, 601, 1019, 1121, 1301, 1342
+/ferrum/crates/ferrum-state/src/rangeset.rs: 296-297, 658, 1139, 1155, 1157, 1584, 1611
+/ferrum/crates/ferrum-state/src/state.rs: 329, 668, 676
+/ferrum/crates/ferrum-state/src/text.rs: 92, 535, 554, 899, 902, 1208
+/ferrum/crates/ferrum-state/src/transaction.rs: 509
