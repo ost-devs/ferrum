@@ -2,7 +2,7 @@
 
 Open questions only (`docs/workflow/README.md` §3): a decided entry is removed in the commit that records the decision. Ids are stable and never reused.
 
-The next id is Q138.
+The next id is Q139.
 
 ## Q137. A hazard that cannot arise with Ferrum's types has no verdict in the verifier card
 - **Found.** The card `docs/parity/ferrum-state/cards/verifier.md` (M27) gives a `hazard` line the verdicts `EXERCISED` (with its check) or `FINDING`. The U1 hazards run for `Text` and `Line` wrote 36 of its 84 lines as `UNREACHABLE`: about 30 because the hazard's input is outside what Ferrum's types can express (negative, fractional or NaN positions and line numbers under `usize`, a `dir` other than plus or minus one under `IterDirection`; D12, Q9, N11, `state.cm6.239.d1`; the fixtures that hold such input are left out with reason `type`), and the rest because cm6 itself cannot observe the hazard (`Line` fields `readonly` at `mirrors/cm6/state/src/text.ts:566-574`; `Line.text` aliasing of an immutable string). Example: `state.Line.B1:h1` in `docs/parity/ferrum-state/raw/conformance-text.jsonl`. Where part of such a hazard can be written in Ferrum's types, the run traced that part to compared fixtures.
@@ -11,3 +11,9 @@ The next id is Q138.
 - **Blocks.** Nothing now; the verdict of G7 on hazards (step 5).
 - **Raised by.** The orchestrator, 2026-11-24, from the U1 hazards run.
 
+## Q138. A ChangeDesc read from JSON can have a total length that no isize holds
+- **Found.** `ChangeDesc::from_json` accepts each number below 2^53 (`json_length`, `crates/ferrum-state/src/change.rs:773-780`; row `state.cm6.160.d1`). 1,025 pairs `[9007199254740991, -1]` are accepted, and `length()` (`:72`) and `new_length()` (`:79`) overflow `isize`: a panic "attempt to add with overflow" in a debug build (the U2 verifier's probe, `.scratch/verify-change/hz-probe`), a wrap in release. The same sum feeds `iter_gaps`, `iter_changes`, `try_map_pos` and `touches_range`. cm6 adds floats and returns about 9.23e18 (a deduction from `mirrors/cm6/state/src/change.ts:34-48`, not run).
+- **Open because.** D12 excludes negative, fractional, NaN and infinite numbers, and D13 has `from_json` return `Err` for those; every number here is in the domain, only their sum is not. No row of `raw/decisions.jsonl` (`state.cm6.160.d1`, `state.cm6.156.d2`) and no section of `design.md` covers a total.
+- **Bears on it.** No document can be this long; the input reaches Ferrum only through `from_json`, that is outside data (D13). cm6's own result is past 2^53, so imprecise there too. A release build returns a wrapped `usize` with no error. The same run found ten more sentinel findings of one shape, `as isize` on a `usize` above `isize::MAX` (`raw/conformance-change.jsonl`, kind `sentinel`, `src/change.rs:207`, `:214`, `:244`, `:515`, `:529`, `:617`, `:643`, `:715`, `:718`), as U1's run did at `src/text.rs:1051-1052` (item `state.cm6.240`, NONCONFORMANT): those are findings for the round of step 5, this one is open because the domain of a sum is not stated.
+- **Blocks.** The item verdicts of `state.cm6.149` (`length`) and `state.cm6.150` (`newLength`), `UNVERIFIED` in step 3; nothing before step 5.
+- **Raised by.** The U2 verifier (hazards run), 2026-11-24; queued by the orchestrator.
