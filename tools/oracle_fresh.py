@@ -3,6 +3,8 @@
 the crate's plan.md "Conformance", step 1).
 
     python3 tools/oracle_fresh.py <crate> [--salts 1,2,...] [--min 5000] [--max-salts 200] [--replay-only [--root <tree>]]
+    python3 tools/oracle_fresh.py <crate> --classes      (Q134: the text classes of the new cases against those of the
+                                                         committed fixtures of the seeded generators, per chunk)
 
 (--replay-only --root <tree>: replay the kept new cases on the crate of another tree, a copy with a deviation made on
 purpose: G5's sensitivity, where the run must report the deviation.)
@@ -44,6 +46,9 @@ def main():
     pkg, chunks = order["package"], order["chunks"]
     out = os.path.join(ROOT, ".scratch", "conformance", crate, "fresh"); os.makedirs(out, exist_ok=True)
     failures = []
+    if "--classes" in a:
+        f = text_classes(crate, out)
+        print("\nchecks passed" if not f else "\n%d check(s) failed: %s" % (len(f), f)); return 1 if f else 0
     if "--replay-only" not in a:
         seen = {c: {key(r) for r in rows(os.path.join(base, "fixtures", c + ".jsonl"))} for c in chunks}
         new = {c: [] for c in chunks}
@@ -90,7 +95,8 @@ def main():
                FERRUM_REPLAY_CHUNKS=",".join(c for c in chunks if info["new"][c]))
     r = subprocess.run(["cargo", "test", "-q", "-p", crate, "--features", "__test", "--test", "replay"], cwd=tree, env=env,
                        capture_output=True, text=True)
-    with open(os.path.join(out, "replay-notes.txt"), "w", encoding="utf-8") as f: f.write(r.stdout + r.stderr)
+    notes = "replay-notes.txt" if tree == os.path.abspath(ROOT) else f"replay-notes-{os.path.basename(tree)}.txt"
+    with open(os.path.join(out, notes), "w", encoding="utf-8") as f: f.write(r.stdout + r.stderr)
     got = [x for x in rows(rep) if "fixture" in x] if os.path.exists(rep) else []
     per = collections.defaultdict(collections.Counter)
     for x in got: per[x["chunk"]][x["result"]] += 1
@@ -115,6 +121,60 @@ def main():
     if failures:
         print("\n%d check(s) failed:" % len(failures)); [print("  " + f[:2000]) for f in failures]; return 1
     print("\nchecks passed"); return 0
+
+
+CLASSES = ("empty", "ascii", "bmp", "astral", "lone surrogate", "crlf", "lone cr", "u2028")
+
+
+def classes_of(v, out):
+    """The text classes of every string in a decoded program (`docs/workflow/specification.md` §5 "text classes")."""
+    if isinstance(v, dict) and set(v) == {"utf16"}:
+        units = v["utf16"]; s = "".join(chr(u) for u in units)
+    elif isinstance(v, str): s = v; units = [ord(c) for c in v]
+    elif isinstance(v, dict):
+        for x in v.values(): classes_of(x, out)
+        return
+    elif isinstance(v, list):
+        for x in v: classes_of(x, out)
+        return
+    else: return
+    if isinstance(v, str):
+        units = []
+        for ch in s:
+            o = ord(ch)
+            units += [0xD800 + ((o - 0x10000) >> 10), 0xDC00 + ((o - 0x10000) & 0x3FF)] if o > 0xFFFF else [o]
+    if not units: out.add("empty")
+    i = 0
+    while i < len(units):
+        u = units[i]
+        if 0xD800 <= u < 0xDC00 and i + 1 < len(units) and 0xDC00 <= units[i + 1] < 0xE000: out.add("astral"); i += 2; continue
+        if 0xD800 <= u < 0xE000: out.add("lone surrogate")
+        elif u == 0x2028: out.add("u2028")
+        elif u == 13: out.add("crlf" if i + 1 < len(units) and units[i + 1] == 10 else "lone cr")
+        elif u < 128: out.add("ascii")
+        else: out.add("bmp")
+        i += 1
+
+
+def text_classes(crate, out):
+    """Q134: per chunk, the text classes the committed fixtures of its seeded generators hold (those whose id comes
+    back with a new input under a salt) against those its new cases hold; a class the first hold and the second lack
+    fails."""
+    base = os.path.join(ROOT, "docs", "parity", crate)
+    order = json.load(open(os.path.join(base, "oracle", "cm6", "order.json")))
+    failures = []
+    for c in order["chunks"]:
+        p = os.path.join(out, c + ".jsonl")
+        if not os.path.exists(p): continue
+        new = rows(p)
+        ids = {r["id"].split(".", 1)[1] for r in new}
+        committed = [r for r in rows(os.path.join(base, "fixtures", c + ".jsonl")) if r["id"] in ids]
+        count = lambda rs: collections.Counter(k for r in rs for k in (lambda s: (classes_of(r["input"], s), s)[1])(set()))
+        a, b = count(committed), count(new)
+        lack = [k for k in CLASSES if a[k] and not b[k]]
+        print(f"text classes, {c}: committed seeded fixtures {dict((k, a[k]) for k in CLASSES if a[k])}; new cases {dict((k, b[k]) for k in CLASSES if b[k])}" + (f"; LACKING {lack}" if lack else ""))
+        if lack: failures.append(f"chunk {c}: the new cases lack {lack}")
+    return failures
 
 
 if __name__ == "__main__":

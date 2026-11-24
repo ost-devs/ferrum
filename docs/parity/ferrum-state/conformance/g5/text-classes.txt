@@ -1,0 +1,7 @@
+text classes, text: committed seeded fixtures {'empty': 325, 'ascii': 737, 'bmp': 574, 'astral': 545, 'lone surrogate': 174, 'crlf': 98, 'lone cr': 290, 'u2028': 260}; new cases {'empty': 2341, 'ascii': 5101, 'bmp': 4069, 'astral': 3939, 'lone surrogate': 1256, 'crlf': 585, 'lone cr': 2137, 'u2028': 1849}
+text classes, change: committed seeded fixtures {'empty': 133, 'ascii': 451, 'bmp': 196, 'astral': 215, 'lone surrogate': 6, 'crlf': 132, 'lone cr': 74, 'u2028': 84}; new cases {'empty': 1644, 'ascii': 5220, 'bmp': 2519, 'astral': 2411, 'lone surrogate': 111, 'crlf': 1600, 'lone cr': 1006, 'u2028': 1042}
+text classes, facet: committed seeded fixtures {'empty': 55, 'ascii': 183, 'bmp': 11, 'astral': 18, 'crlf': 7, 'lone cr': 8, 'u2028': 11}; new cases {'empty': 1467, 'ascii': 5117, 'bmp': 283, 'astral': 659, 'crlf': 265, 'lone cr': 284, 'u2028': 265}
+text classes, state: committed seeded fixtures {'empty': 75, 'ascii': 306, 'bmp': 138, 'astral': 163, 'crlf': 62, 'lone cr': 15, 'u2028': 16}; new cases {'empty': 1197, 'ascii': 5178, 'bmp': 2228, 'astral': 2818, 'crlf': 1002, 'lone cr': 270, 'u2028': 268}
+text classes, rangeset: committed seeded fixtures {'empty': 15, 'ascii': 81, 'bmp': 2, 'astral': 14, 'crlf': 6, 'lone cr': 6, 'u2028': 9}; new cases {'empty': 1147, 'ascii': 5022, 'bmp': 560, 'astral': 980, 'crlf': 571, 'lone cr': 529, 'u2028': 481}
+
+checks passed

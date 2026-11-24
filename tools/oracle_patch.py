@@ -18,7 +18,8 @@ row's list in a copy of raw/decisions.jsonl written to <dir>/decisions.jsonl, wh
 of the committed file. The rows no patch of cm6 can write (D1's arithmetic) are attributed by the check their row's
 sentence states for G5, from the replayer's notes of a first fresh replay (--notes: the lines
 `<chunk> <id>: ours <json> recorded <json>` the replay test prints):
-  state.cm6.188.d2   the outputs are equal once every ["bound", n] record is removed from the `compare` log, and
+  state.cm6.188.d2   the outputs are equal once every ["bound", n] record is removed from the `compare` log (a
+                     position Ferrum's output holds as no counterpart matching anything, as the replayer compares), and
                      the program's changes insert or delete text that is not ASCII (so the gap offsets differ)
 """
 import json, os, re, shutil, subprocess, sys
@@ -87,6 +88,16 @@ def non_ascii_change(program):
     return any(ord(ch) > 127 for m in re.finditer(r'"insert": ("(?:[^"\\]|\\.)*")', text) for ch in json.loads(m.group(1)))
 
 
+def same_but_left_out(x, y):
+    """Equal as the replayer compares: a position Ferrum's output holds as {"no_counterpart": reason} matches anything."""
+    if isinstance(x, dict) and set(x) == {"no_counterpart"}: return True
+    if isinstance(x, dict) and isinstance(y, dict):
+        return set(x) == set(y) and all(same_but_left_out(x[k], y[k]) for k in x)
+    if isinstance(x, list) and isinstance(y, list):
+        return len(x) == len(y) and all(same_but_left_out(a, b) for a, b in zip(x, y))
+    return x == y
+
+
 def strip_bounds(v):
     if isinstance(v, dict): return {k: strip_bounds(x) for k, x in v.items()}
     if isinstance(v, list): return [strip_bounds(x) for x in v if not (isinstance(x, list) and x[:1] == ["bound"])]
@@ -114,7 +125,7 @@ def attribute(crate, fresh, notes):
             key = f"{m.group(1)}:{m.group(2)}"
             try: ours, rec = json.loads(m.group(3)), json.loads(m.group(4))
             except ValueError: continue
-            if m.group(1) == "rangeset" and ours != rec and strip_bounds(ours) == strip_bounds(rec) and non_ascii_change(prog.get(key)):
+            if m.group(1) == "rangeset" and ours != rec and same_but_left_out(strip_bounds(ours), strip_bounds(rec)) and non_ascii_change(prog.get(key)):
                 hits.append(key)
         added["state.cm6.188.d2"] = sorted(set(added.get("state.cm6.188.d2", [])) | set(hits))
         print(f"state.cm6.188.d2: {len(hits)} new cases meet its sentence for G5")

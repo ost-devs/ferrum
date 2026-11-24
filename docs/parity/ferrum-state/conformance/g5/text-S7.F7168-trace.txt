@@ -1,0 +1,4 @@
+ferrum-state text S7.F7168: first difference at evaluation 0 of 1
+  cm6     {"n": 0, "depth": 0, "op": "check.partialCursor", "kinds": ["api"], "value": {"cases": 3200, "agree": 3200, "perDoc": {"4 lines": 400, "empty lines": 400, "empty": 400, "one line": 400, "astral": 400, "40 lines": 400, "300 lines": 400, "5000 lines": 400}, "mismatches": []}}
+  ferrum  {"n": 0, "depth": 0, "op": "check.partialCursor", "kinds": ["api"], "threw": {"name": "Error", "message": "Position 3 is inside a character of the string"}}
+  an op that calls the crate or compares its values: the difference is in this op's part of the replayer (arguments, the conversion of a position, the reading of the result) or in the crate's code

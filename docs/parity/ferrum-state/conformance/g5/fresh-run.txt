@@ -1,0 +1,81 @@
+salt 1: new cases text 734, change 443, facet 183, state 306, rangeset 81
+salt 2: new cases text 1463, change 880, facet 366, state 612, rangeset 162
+salt 3: new cases text 2194, change 1322, facet 549, state 917, rangeset 243
+salt 4: new cases text 2924, change 1753, facet 732, state 1222, rangeset 324
+salt 5: new cases text 3652, change 2184, facet 915, state 1527, rangeset 405
+salt 6: new cases text 4376, change 2621, facet 1098, state 1832, rangeset 486
+salt 7: new cases text 5101, change 3052, facet 1281, state 2136, rangeset 567
+salt 8: new cases text 5101, change 3485, facet 1464, state 2440, rangeset 648
+salt 9: new cases text 5101, change 3924, facet 1647, state 2745, rangeset 729
+salt 10: new cases text 5101, change 4360, facet 1829, state 3048, rangeset 810
+salt 11: new cases text 5101, change 4794, facet 2012, state 3354, rangeset 891
+salt 12: new cases text 5101, change 5220, facet 2195, state 3659, rangeset 972
+salt 13: new cases text 5101, change 5220, facet 2377, state 3965, rangeset 1053
+salt 14: new cases text 5101, change 5220, facet 2560, state 4269, rangeset 1134
+salt 15: new cases text 5101, change 5220, facet 2743, state 4573, rangeset 1215
+salt 16: new cases text 5101, change 5220, facet 2926, state 4875, rangeset 1296
+salt 17: new cases text 5101, change 5220, facet 3109, state 5178, rangeset 1377
+salt 18: new cases text 5101, change 5220, facet 3292, state 5178, rangeset 1458
+salt 19: new cases text 5101, change 5220, facet 3475, state 5178, rangeset 1539
+salt 20: new cases text 5101, change 5220, facet 3657, state 5178, rangeset 1620
+salt 21: new cases text 5101, change 5220, facet 3839, state 5178, rangeset 1701
+salt 22: new cases text 5101, change 5220, facet 4021, state 5178, rangeset 1782
+salt 23: new cases text 5101, change 5220, facet 4204, state 5178, rangeset 1863
+salt 24: new cases text 5101, change 5220, facet 4386, state 5178, rangeset 1944
+salt 25: new cases text 5101, change 5220, facet 4568, state 5178, rangeset 2025
+salt 26: new cases text 5101, change 5220, facet 4751, state 5178, rangeset 2106
+salt 27: new cases text 5101, change 5220, facet 4934, state 5178, rangeset 2187
+salt 28: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 2268
+salt 29: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 2349
+salt 30: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 2430
+salt 31: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 2511
+salt 32: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 2592
+salt 33: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 2673
+salt 34: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 2754
+salt 35: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 2835
+salt 36: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 2916
+salt 37: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 2997
+salt 38: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 3078
+salt 39: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 3159
+salt 40: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 3240
+salt 41: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 3321
+salt 42: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 3402
+salt 43: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 3483
+salt 44: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 3564
+salt 45: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 3645
+salt 46: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 3726
+salt 47: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 3807
+salt 48: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 3888
+salt 49: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 3969
+salt 50: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 4050
+salt 51: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 4131
+salt 52: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 4212
+salt 53: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 4293
+salt 54: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 4374
+salt 55: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 4455
+salt 56: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 4536
+salt 57: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 4617
+salt 58: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 4698
+salt 59: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 4779
+salt 60: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 4860
+salt 61: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 4941
+salt 62: new cases text 5101, change 5220, facet 5117, state 5178, rangeset 5022
+salts used: 1..62 (62); new cases: {'text': 5101, 'change': 5220, 'facet': 5117, 'state': 5178, 'rangeset': 5022}
+replay of new cases, lang: {'equal': 48}
+replay of new cases, text: {'none': 819, 'mismatch': 838, 'part': 1682, 'equal': 1762}
+replay of new cases, change: {'equal': 2784, 'none': 664, 'part': 1772}
+replay of new cases, rangeset: {'equal': 4063, 'none': 538, 'mismatch': 157, 'part': 264}
+replay of new cases, facet: {'equal': 4951, 'mismatch': 162, 'none': 4}
+replay of new cases, state: {'equal': 3351, 'part': 621, 'none': 1206}
+entries left out of new cases whose reason, op and argument the approved file does not hold: 3 kinds
+        ('state', 'char', 'state.changeByRange', 'changes.from'): 45 case(s)
+        ('rangeset', 'char', 'set.update', 'filterTo'): 23 case(s)
+        ('rangeset', 'char', 'set.update', 'filterFrom'): 21 case(s)
+
+2 check(s) failed:
+  1157 new cases mismatch or pending: text S1.F2002: mismatch; text S1.F2003: mismatch; text S1.F2004: mismatch; text S1.F2005: mismatch; text S1.F2006: mismatch; text S1.F2007: mismatch; text S1.F2008: mismatch; text S1.F2010: mismatch; text S1.F2011: mismatch; text S1.F2012: mismatch; text S1.F2013: mismatch; text S1.F2014: mismatch; text S1.F2016: mismatch; text S1.F2017: mismatch; text S1.F2018: mismatch; text S1.F2020: mismatch; text S1.F2021: mismatch; text S1.F2023: mismatch; text S1.F2025: mismatch; text S1.F2026: mismatch; text S1.F2027: mismatch; text S1.F2028: mismatch; text S1.F2029: mismatch; text S1.F2030: mismatch; text S1.F2032: mismatch; text S1.F2034: mismatch; text S1.F2035: mismatch; text S1.F2037: mismatch; text S1.F2042: mismatch; text S1.F2044: mismatch
+  3 kinds of entry left out that the approved file does not hold (read each)
+
+real	32m27.284s
+user	25m5.749s
+sys	1m50.253s

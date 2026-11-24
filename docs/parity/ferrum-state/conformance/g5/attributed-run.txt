@@ -1,0 +1,15 @@
+salts used: 1..62 (62); new cases: {'text': 5101, 'change': 5220, 'facet': 5117, 'state': 5178, 'rangeset': 5022}
+replay of new cases, lang: {'equal': 48}
+replay of new cases, text: {'none': 819, 'part': 2519, 'equal': 1762, 'mismatch': 1}
+replay of new cases, change: {'equal': 2784, 'none': 664, 'part': 1772}
+replay of new cases, rangeset: {'equal': 4063, 'none': 694, 'part': 264, 'mismatch': 1}
+replay of new cases, facet: {'equal': 4951, 'none': 166}
+replay of new cases, state: {'equal': 3351, 'part': 621, 'none': 1206}
+entries left out of new cases whose reason, op and argument the approved file does not hold: 3 kinds
+        ('state', 'char', 'state.changeByRange', 'changes.from'): 45 case(s)
+        ('rangeset', 'char', 'set.update', 'filterTo'): 23 case(s)
+        ('rangeset', 'char', 'set.update', 'filterFrom'): 21 case(s)
+
+2 check(s) failed:
+  2 new cases mismatch or pending: text S7.F7168: mismatch; rangeset S57.F5063: mismatch
+  3 kinds of entry left out that the approved file does not hold (read each)
