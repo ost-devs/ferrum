@@ -1027,7 +1027,7 @@ def mutant_probe(c, crate, args):
     timeout = 900
     if "--timeout" in rest: j = rest.index("--timeout"); timeout = int(rest[j + 1]); rest = rest[:j] + rest[j + 2:]
     if len(rest) < 2: c.need(False, "give the unit and the mutation dirs"); return
-    sel, dirs = rest[0], rest[1:]
+    sel, dirs = rest[0], [os.path.abspath(d) for d in rest[1:]]
     us = ic.units(crate)
     modules = us[sel]["modules"] if sel in us else sel.split(",")
     final = {}
@@ -1054,9 +1054,13 @@ def mutant_probe(c, crate, args):
     if n != 1: return
     open(os.path.join(pr, "Cargo.toml"), "w").write(pm2 if "[workspace]" in pm2 else pm2 + "\n[workspace]\n")
     env = dict(os.environ, CARGO_TARGET_DIR=os.path.join(work, "target"))
+    binary = re.search(r'^\[package\][^\[]*?^name\s*=\s*"([^"]+)"', pm2, re.M | re.S).group(1)
     def run():
-        try:
-            r = subprocess.run(["cargo", "run", "-q", "--release"], cwd=pr, env=env, capture_output=True, text=True, timeout=timeout)
+        try:  # built first, so that what is compared is the probe's output, not the compiler's warnings on the mutant
+            b = subprocess.run(["cargo", "build", "-q", "--release"], cwd=pr, env=env, capture_output=True, text=True, timeout=timeout)
+            if b.returncode: return "build failed", b.stderr.split("\n")[-5:]
+            # the binary itself: `cargo run` replays the cached warnings of the build on stderr
+            r = subprocess.run([os.path.join(work, "target", "release", binary)], cwd=pr, env=env, capture_output=True, text=True, timeout=timeout)
             return r.returncode, (r.stdout + r.stderr).split("\n")
         except subprocess.TimeoutExpired:
             return "timeout", []
