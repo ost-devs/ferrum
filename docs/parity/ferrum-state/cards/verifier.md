@@ -2,7 +2,7 @@
 
 Written by the orchestrator from `docs/parity/ferrum-state/plan.md` "Conformance", step 3, and `docs/workflow/conformance.md` Appendix A. Your assignment (the spawn prompt) names your unit. The crate is at the recorded commit c08e6da (the tree's `crates/ferrum-state/` holds it; nothing under `src/` changed since). Reference: `@codemirror/state` 6.7.6 in `mirrors/cm6/state/`.
 
-<!-- refs:planned docs/parity/ferrum-state/conformance/mutants-missed.md docs/parity/ferrum-state/raw/conformance-text.jsonl -->
+<!-- refs:planned docs/parity/ferrum-state/raw/conformance-text.jsonl -->
 
 ## What your verdicts are for
 

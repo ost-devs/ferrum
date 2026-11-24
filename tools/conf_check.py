@@ -33,6 +33,10 @@
                                                                 logarithmic behavior, on both sides, at those sizes
     python3 tools/conf_check.py <crate> coverage-fresh [<report.json>]   Q134: G2's missed branch outcomes that G5's new
                                                                 cases reach, and the outcomes only G2's run reaches
+    python3 tools/conf_check.py <crate> mutants-missed <dir> ...  the mutants no check killed, by unit and module, with
+                                                                their source line, from cargo mutants' --output dirs
+                                                                (each <dir>/mutants.out); the timeouts listed apart;
+                                                                writes .scratch/conformance/<crate>/mutants-missed.md
     python3 tools/conf_check.py <crate> sample --seed <n>        the items step 3's verifiers read, drawn with the seed
     (--root <dir>: another tree than the repository, for trying the tool on a copy)
 
@@ -805,11 +809,52 @@ def coverage_fresh(c, crate, args):
     for r in reached: c.say("        " + r)
 
 
+def mutants_missed(c, crate, args):
+    """The survivors of one or more cargo-mutants runs, by unit (step 3's verifiers read their unit's part)."""
+    if not args: c.need(False, "give the --output directories of the cargo mutants runs"); return
+    us = ic.units(crate)
+    unit_of = lambda f: next((f"{u['id']} {n}" for n, u in us.items() if os.path.basename(f)[:-3] in u["modules"]), "crate-wide")
+    src = ic.crate_dir(crate, "src")
+    kinds = {"missed": [], "timeout": []}
+    for d in args:
+        o = json.load(open(os.path.join(d, "mutants.out", "outcomes.json")))
+        c.say(f"{os.path.relpath(d, REPO)}: {o['total_mutants']} mutants, caught {o['caught']}, missed {o['missed']}, "
+              f"timeout {o['timeout']}, unviable {o['unviable']}; {o['start_time']} to {o['end_time']}")
+        for k in kinds:
+            for l in ic.read(os.path.join(d, "mutants.out", k + ".txt")).split("\n"):
+                m = re.match(r"^crates/[\w-]+/src/(\S+?):(\d+):(\d+): (.*)$", l.strip())
+                if not m:
+                    c.need(not l.strip(), f"every line of {k}.txt read", [l])
+                    continue
+                r = (m.group(1), int(m.group(2)), int(m.group(3)), m.group(4))
+                if r not in kinds[k]: kinds[k].append(r)  # a mutant the filter does not select runs in every pass
+    both = set(kinds["missed"]) & set(kinds["timeout"])
+    c.need(not both, "no mutant both missed and timed out across the runs", sorted(both))
+    out = [f"# Mutants no check killed, {crate} (tools/conf_check.py mutants-missed)", "",
+           "Each `missed` mutant goes to its unit's verifier: a behavior no check forbids (a finding, with the input that shows the",
+           "difference) or a mutant equivalent to the code (with the reason). A `timeout` made the test run exceed cargo mutants'",
+           "limit; it is listed apart, as the run reported it.", ""]
+    for k, rows in kinds.items():
+        out += [f"## {k} ({len(rows)})", ""]
+        by = collections.defaultdict(list)
+        for r in rows: by[(unit_of(r[0]), r[0])].append(r)
+        for (u, f) in sorted(by):
+            lines = ic.read(os.path.join(src, f)).split("\n")
+            out.append(f"### {u}: `crates/{crate}/src/{f}` ({len(by[(u, f)])})")
+            for (_, n, col, what) in sorted(by[(u, f)], key=lambda r: (r[1], r[2], r[3])):
+                out.append(f"- `src/{f}:{n}:{col}` {what}  \n  `{lines[n - 1].strip()}`")
+            out.append("")
+        c.say(f"{k}: {len(rows)} by unit: " + ", ".join(f"{u} {n}" for u, n in sorted(collections.Counter(unit_of(r[0]) for r in rows).items())))
+    path = os.path.join(out_dir(crate), "mutants-missed.md")
+    with open(path, "w", encoding="utf8") as fh: fh.write("\n".join(out))
+    c.say(f"written: {os.path.relpath(path, REPO)}")
+
+
 def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ic.ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh}
+    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = ic.Check()
