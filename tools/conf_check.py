@@ -939,6 +939,25 @@ def hazards(c, crate, args):
     c.say(f"written: {os.path.relpath(path, REPO)}")
 
 
+def baseline_times(log):
+    """test name -> seconds its test binary took in the unmutated run (the `finished in` of its `test result` line)."""
+    out, cur = {}, []
+    for l in ic.read(log).split("\n"):
+        m = re.match(r"^test (\S+) \.\.\. ", l)
+        if m: cur.append(m.group(1)); continue
+        m = re.match(r"^test result: .*finished in ([\d.]+)s", l)
+        if m:
+            for t in cur: out[t] = max(out.get(t, 0.0), float(m.group(1)))
+            cur = []
+    return out
+
+
+def hang_of(log, times):
+    """M26: the tests the log shows running over 60 s whose binary finished in under a second unmutated."""
+    running = re.findall(r"^test (\S+) has been running for over 60 seconds", ic.read(log), re.M)
+    return [t for t in running if t in times and times[t] < 1.0], running
+
+
 def mutants_missed(c, crate, args):
     """The survivors of one or more cargo-mutants runs, by unit (step 3's verifiers read their unit's part), and the
     timeouts sorted by M26 from the logs of the runs given with --rerun (in order, the last outcome counting)."""

@@ -190,9 +190,20 @@ here is run once more at ten times that limit.
 - `src/transaction.rs:632:26` replace < with <= in join_ranges  
   `if *last < to {`
 
-## hang (12)
+## hang (62)
 
-### U2 change: `crates/ferrum-state/src/change.rs` (12)
+### U1 text: `crates/ferrum-state/src/char.rs` (3)
+- `src/char.rs:84:24` replace + with * in is_extending_char  
+  `from = mid + 1;`  
+  running over 60 s: char::tests::prev_cluster_break_is_cm6s_loop, char::tests::the_table_decodes_as_the_package_decodes_it (binary under 1 s unmutated)
+- `src/char.rs:84:24` replace + with - in is_extending_char  
+  `from = mid + 1;`  
+  running over 60 s: char::tests::prev_cluster_break_is_cm6s_loop, char::tests::the_table_decodes_as_the_package_decodes_it (binary under 1 s unmutated)
+- `src/char.rs:174:25` replace - with / in prev_cluster_break  
+  `let start = end - c.len_utf8();`  
+  running over 60 s: char::tests::prev_cluster_break_is_cm6s_loop (binary under 1 s unmutated)
+
+### U2 change: `crates/ferrum-state/src/change.rs` (33)
 - `src/change.rs:620:27` replace < with <= in ChangeSet::filter  
   `while pos < next || pos == next && iter.len == 0 {`  
   running over 60 s: test_cm6_state_21_can_split_changes, test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
@@ -226,198 +237,183 @@ here is run once more at ten times that limit.
 - `src/change.rs:889:27` replace || with && in map_set  
   `&& (a.ins < 0 || inserted == a.i as isize || a.off == 0 && (b.len < a.len || b.len == a.len && !before))`  
   running over 60 s: test_cm6_change_14_joins_deletions, test_cm6_change_18_drops_duplicate_deletion, test_cm6_change_19_handles_overlapping_replaces, test_cm6_change_28_can_create_change_sets (binary under 1 s unmutated)
+- `src/change.rs:889:39` replace == with != in map_set  
+  `&& (a.ins < 0 || inserted == a.i as isize || a.off == 0 && (b.len < a.len || b.len == a.len && !before))`  
+  running over 60 s: test_cm6_change_14_joins_deletions, test_cm6_change_16_keeps_replacements, test_cm6_change_28_can_create_change_sets, test_cm6_change_37_compose_produces_the_same_result_as_individual_changes (binary under 1 s unmutated)
 - `src/change.rs:889:55` replace || with && in map_set  
   `&& (a.ins < 0 || inserted == a.i as isize || a.off == 0 && (b.len < a.len || b.len == a.len && !before))`  
   running over 60 s: test_cm6_change_14_joins_deletions, test_cm6_change_16_keeps_replacements, test_cm6_change_18_drops_duplicate_deletion, test_cm6_change_28_can_create_change_sets (binary under 1 s unmutated)
-
-## timeout (60)
-
-### U1 text: `crates/ferrum-state/src/char.rs` (7)
-- `src/char.rs:84:24` replace + with * in is_extending_char  
-  `from = mid + 1;`  
-  not yet run again at the longer limit
-- `src/char.rs:84:24` replace + with - in is_extending_char  
-  `from = mid + 1;`  
-  not yet run again at the longer limit
-- `src/char.rs:124:5` replace cluster_break -> usize with 0  
-  `if forward { next_cluster_break(s, pos, include_extending) } else { prev_cluster_break(s, pos, include_extending) }`  
-  not yet run again at the longer limit
-- `src/char.rs:124:5` replace cluster_break -> usize with 1  
-  `if forward { next_cluster_break(s, pos, include_extending) } else { prev_cluster_break(s, pos, include_extending) }`  
-  not yet run again at the longer limit
-- `src/char.rs:131:5` replace next_cluster_break -> usize with 0  
-  `if pos == s.len() {`  
-  not yet run again at the longer limit
-- `src/char.rs:155:17` replace += with -= in next_cluster_break  
-  `pos += next.len_utf8();`  
-  not yet run again at the longer limit
-- `src/char.rs:174:25` replace - with / in prev_cluster_break  
-  `let start = end - c.len_utf8();`  
-  not yet run again at the longer limit
-
-### U1 text: `crates/ferrum-state/src/column.rs` (2)
-- `src/column.rs:31:15` replace += with *= in count_column  
-  `i += 1;`  
-  not yet run again at the longer limit
-- `src/column.rs:31:15` replace += with -= in count_column  
-  `i += 1;`  
-  not yet run again at the longer limit
-
-### U2 change: `crates/ferrum-state/src/change.rs` (21)
-- `src/change.rs:889:39` replace == with != in map_set  
-  `&& (a.ins < 0 || inserted == a.i as isize || a.off == 0 && (b.len < a.len || b.len == a.len && !before))`  
-  not yet run again at the longer limit
 - `src/change.rs:893:23` replace != with == in map_set  
   `while len != 0 {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_09_can_map_over_an_insertion, test_cm6_change_11_orders_insertions, test_cm6_change_13_can_handle_changes_after, test_cm6_change_16_keeps_replacements (binary under 1 s unmutated)
 - `src/change.rs:910:25` replace >= with < in map_set  
   `} else if a.ins >= 0 {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_15_keeps_insertions_in_deletions, test_cm6_change_19_handles_overlapping_replaces (binary under 1 s unmutated)
 - `src/change.rs:912:24` replace != with == in map_set  
   `while left != 0 {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_11_orders_insertions, test_cm6_change_12_can_map_a_deletion_over_an_overlapping_replace, test_cm6_change_13_can_handle_changes_after, test_cm6_change_14_joins_deletions (binary under 1 s unmutated)
 - `src/change.rs:913:26` replace == with != in map_set  
   `if b.ins == -1 {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_12_can_map_a_deletion_over_an_overlapping_replace, test_cm6_change_13_can_handle_changes_after, test_cm6_change_14_joins_deletions, test_cm6_change_16_keeps_replacements (binary under 1 s unmutated)
 - `src/change.rs:913:29` delete - in map_set  
   `if b.ins == -1 {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_12_can_map_a_deletion_over_an_overlapping_replace, test_cm6_change_13_can_handle_changes_after, test_cm6_change_14_joins_deletions, test_cm6_change_16_keeps_replacements (binary under 1 s unmutated)
 - `src/change.rs:960:25` replace == with != in compose_sets  
   `} else if a.ins == 0 {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_01_can_compose_unrelated_changes, test_cm6_change_02_cancels_insertions_with_deletions, test_cm6_change_03_joins_adjacent_insertions, test_cm6_change_04_joins_adjacent_deletions (binary under 1 s unmutated)
 - `src/change.rs:964:30` replace && with || in compose_sets  
   `} else if b.len == 0 && !b.done() {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_01_can_compose_unrelated_changes, test_cm6_change_02_cancels_insertions_with_deletions, test_cm6_change_03_joins_adjacent_insertions, test_cm6_change_04_joins_adjacent_deletions (binary under 1 s unmutated)
 - `src/change.rs:964:33` delete ! in compose_sets  
   `} else if b.len == 0 && !b.done() {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_08_throws_for_inconsistent_lengths (binary under 1 s unmutated)
 - `src/change.rs:971:28` replace || with && in compose_sets  
   `} else if a.done() || b.done() {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_08_throws_for_inconsistent_lengths (binary under 1 s unmutated)
 - `src/change.rs:1034:9` replace SectionIter<'a>::next with ()  
   `if self.i < self.sections.len() {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_01_can_compose_unrelated_changes, test_cm6_change_02_cancels_insertions_with_deletions, test_cm6_change_03_joins_adjacent_insertions, test_cm6_change_04_joins_adjacent_deletions (binary under 1 s unmutated)
 - `src/change.rs:1037:20` replace += with *= in SectionIter<'a>::next  
   `self.i += 2;`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_01_can_compose_unrelated_changes, test_cm6_change_02_cancels_insertions_with_deletions, test_cm6_change_03_joins_adjacent_insertions, test_cm6_change_04_joins_adjacent_deletions (binary under 1 s unmutated)
 - `src/change.rs:1040:24` delete - in SectionIter<'a>::next  
   `self.ins = -2;`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_01_can_compose_unrelated_changes, test_cm6_change_02_cancels_insertions_with_deletions, test_cm6_change_03_joins_adjacent_insertions, test_cm6_change_04_joins_adjacent_deletions (binary under 1 s unmutated)
 - `src/change.rs:1046:9` replace SectionIter<'a>::done -> bool with false  
   `self.ins == -2`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_01_can_compose_unrelated_changes, test_cm6_change_02_cancels_insertions_with_deletions, test_cm6_change_03_joins_adjacent_insertions, test_cm6_change_04_joins_adjacent_deletions (binary under 1 s unmutated)
 - `src/change.rs:1046:21` delete - in SectionIter<'a>::done  
   `self.ins == -2`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_04_joins_adjacent_deletions, test_cm6_change_05_allows_a_delete_to_shadow_multiple_operations, test_cm6_change_06_can_handle_empty_sets, test_cm6_change_08_throws_for_inconsistent_lengths (binary under 1 s unmutated)
 - `src/change.rs:1050:9` replace SectionIter<'a>::len2 -> isize with -1  
   `if self.ins < 0 { self.len } else { self.ins }`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_01_can_compose_unrelated_changes, test_cm6_change_02_cancels_insertions_with_deletions, test_cm6_change_03_joins_adjacent_insertions, test_cm6_change_04_joins_adjacent_deletions (binary under 1 s unmutated)
 - `src/change.rs:1050:9` replace SectionIter<'a>::len2 -> isize with 0  
   `if self.ins < 0 { self.len } else { self.ins }`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_01_can_compose_unrelated_changes, test_cm6_change_02_cancels_insertions_with_deletions, test_cm6_change_03_joins_adjacent_insertions, test_cm6_change_04_joins_adjacent_deletions (binary under 1 s unmutated)
 - `src/change.rs:1050:21` replace < with == in SectionIter<'a>::len2  
   `if self.ins < 0 { self.len } else { self.ins }`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_01_can_compose_unrelated_changes, test_cm6_change_02_cancels_insertions_with_deletions, test_cm6_change_03_joins_adjacent_insertions, test_cm6_change_04_joins_adjacent_deletions (binary under 1 s unmutated)
 - `src/change.rs:1050:21` replace < with > in SectionIter<'a>::len2  
   `if self.ins < 0 { self.len } else { self.ins }`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_01_can_compose_unrelated_changes, test_cm6_change_02_cancels_insertions_with_deletions, test_cm6_change_03_joins_adjacent_insertions, test_cm6_change_04_joins_adjacent_deletions (binary under 1 s unmutated)
 - `src/change.rs:1075:9` replace SectionIter<'a>::forward with ()  
   `if len == self.len {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_01_can_compose_unrelated_changes, test_cm6_change_02_cancels_insertions_with_deletions, test_cm6_change_03_joins_adjacent_insertions, test_cm6_change_04_joins_adjacent_deletions (binary under 1 s unmutated)
 - `src/change.rs:1075:16` replace == with != in SectionIter<'a>::forward  
   `if len == self.len {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_change_09_can_map_over_an_insertion, test_cm6_change_10_can_map_over_a_deletion, test_cm6_change_11_orders_insertions, test_cm6_change_12_can_map_a_deletion_over_an_overlapping_replace (binary under 1 s unmutated)
 
-### U3 rangeset: `crates/ferrum-state/src/rangeset.rs` (26)
+### U3 rangeset: `crates/ferrum-state/src/rangeset.rs` (22)
 - `src/rangeset.rs:391:26` replace + with - in Chunk<T>::find_index  
   `lo = mid + 1;`  
-  not yet run again at the longer limit
+  running over 60 s: helper_mk_and_check_set, test_cm6_rangeset_01_divides_a_set_into_chunks_and_layers, test_cm6_rangeset_04_can_add_a_large_amount_of_ranges, test_cm6_rangeset_05_can_filter_ranges (binary under 1 s unmutated)
 - `src/rangeset.rs:485:27` replace -= with /= in Chunk<T>::map  
   `j -= 1;`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_19_rearranges_points_that_change_order, test_cm6_rangeset_21_spills_ranges_that_mapping_puts_out_of_order, test_cm6_rangeset_22_rearranges_a_point_that_moves_before_several_others, test_cm6_rangeset_23_keeps_chunk_offsets_relative_when_reordering_points (binary under 1 s unmutated)
 - `src/rangeset.rs:632:114` replace >= with < in RangeSet<T>::update_inner  
   `.is_some_and(|r| or(cur.from - r.from as i64, || cur.start_side() - r.value.start_side() as i64) >= 0);`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_03_can_add_ranges, test_cm6_rangeset_04_can_add_a_large_amount_of_ranges (binary under 1 s unmutated)
 - `src/rangeset.rs:878:26` replace > with == in RangeSet<T>::spans  
   `if cursor.to > to {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_35_separates_the_range_in_covering_spans, test_cm6_rangeset_39_doesn_t_get_confused_by_same_place_points, test_cm6_rangeset_42_omits_points_that_are_covered_by_the_previous_point (binary under 1 s unmutated)
 - `src/rangeset.rs:1219:30` replace += with *= in LayerCursor<T>::goto_inner  
   `self.chunk_index += 1;`  
-  not yet run again at the longer limit
-- `src/rangeset.rs:1229:16` delete ! in LayerCursor<T>::goto_inner  
-  `if !forward || self.range_index < range_index {`  
-  not yet run again at the longer limit
-- `src/rangeset.rs:1229:45` replace < with > in LayerCursor<T>::goto_inner  
-  `if !forward || self.range_index < range_index {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_29_ignores_identical_sub_nodes, test_cm6_rangeset_30_ignores_changes_in_points, test_cm6_rangeset_33_can_handle_multiple_changes, test_cm6_rangeset_34_reports_point_decorations_with_different_cover (binary under 1 s unmutated)
 - `src/rangeset.rs:1243:9` replace LayerCursor<T>::next with ()  
   `loop {`  
-  not yet run again at the longer limit
-- `src/rangeset.rs:1269:38` replace += with *= in LayerCursor<T>::set_range_index  
-  `self.chunk_index += 1;`  
-  not yet run again at the longer limit
-- `src/rangeset.rs:1269:38` replace += with -= in LayerCursor<T>::set_range_index  
-  `self.chunk_index += 1;`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_03_can_add_ranges, test_cm6_rangeset_04_can_add_a_large_amount_of_ranges, test_cm6_rangeset_25_notices_added_ranges, test_cm6_rangeset_27_recognizes_identical_ranges (binary under 1 s unmutated)
 - `src/rangeset.rs:1359:38` replace << with >> in heap_bubble  
   `let mut child_index = (index << 1) + 1;`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_16_shrinks_ranges, test_cm6_rangeset_19_rearranges_points_that_change_order, test_cm6_rangeset_21_spills_ranges_that_mapping_puts_out_of_order, test_cm6_rangeset_24_keeps_a_point_after_a_range_that_starts_before_it (binary under 1 s unmutated)
 - `src/rangeset.rs:1359:44` replace + with * in heap_bubble  
   `let mut child_index = (index << 1) + 1;`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_16_shrinks_ranges, test_cm6_rangeset_24_keeps_a_point_after_a_range_that_starts_before_it, test_cm6_rangeset_25_notices_added_ranges, test_cm6_rangeset_26_notices_deleted_ranges (binary under 1 s unmutated)
 - `src/rangeset.rs:1359:44` replace + with - in heap_bubble  
   `let mut child_index = (index << 1) + 1;`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_16_shrinks_ranges, test_cm6_rangeset_19_rearranges_points_that_change_order, test_cm6_rangeset_24_keeps_a_point_after_a_range_that_starts_before_it, test_cm6_rangeset_25_notices_added_ranges (binary under 1 s unmutated)
 - `src/rangeset.rs:1364:25` replace += with -= in heap_bubble  
   `child_index += 1;`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_21_spills_ranges_that_mapping_puts_out_of_order, test_cm6_rangeset_33_can_handle_multiple_changes, test_cm6_rangeset_38_orders_active_ranges_by_origin_set, test_cm6_rangeset_40_properly_resyncs_active_ranges_after_points (binary under 1 s unmutated)
 - `src/rangeset.rs:1509:9` replace SpanCursor<T>::remove_active with ()  
   `self.active.remove(index);`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_25_notices_added_ranges, test_cm6_rangeset_26_notices_deleted_ranges, test_cm6_rangeset_27_recognizes_identical_ranges, test_cm6_rangeset_28_skips_changes (binary under 1 s unmutated)
 - `src/rangeset.rs:1521:15` replace += with *= in SpanCursor<T>::add_active  
   `i += 1;`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_25_notices_added_ranges, test_cm6_rangeset_26_notices_deleted_ranges, test_cm6_rangeset_29_ignores_identical_sub_nodes, test_cm6_rangeset_33_can_handle_multiple_changes (binary under 1 s unmutated)
 - `src/rangeset.rs:1535:9` replace SpanCursor<T>::next with ()  
   `let from = self.to;`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_25_notices_added_ranges, test_cm6_rangeset_26_notices_deleted_ranges, test_cm6_rangeset_27_recognizes_identical_ranges, test_cm6_rangeset_28_skips_changes (binary under 1 s unmutated)
 - `src/rangeset.rs:1547:38` replace > with == in SpanCursor<T>::next  
   `if self.active_to[a] > from {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_29_ignores_identical_sub_nodes, test_cm6_rangeset_30_ignores_changes_in_points, test_cm6_rangeset_33_can_handle_multiple_changes, test_cm6_rangeset_34_reports_point_decorations_with_different_cover (binary under 1 s unmutated)
 - `src/rangeset.rs:1547:38` replace > with >= in SpanCursor<T>::next  
   `if self.active_to[a] > from {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_25_notices_added_ranges, test_cm6_rangeset_26_notices_deleted_ranges, test_cm6_rangeset_27_recognizes_identical_ranges, test_cm6_rangeset_28_skips_changes (binary under 1 s unmutated)
 - `src/rangeset.rs:1560:42` replace > with == in SpanCursor<T>::next  
   `} else if self.cursor.from() > from {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_26_notices_deleted_ranges, test_cm6_rangeset_27_recognizes_identical_ranges, test_cm6_rangeset_28_skips_changes, test_cm6_rangeset_29_ignores_identical_sub_nodes (binary under 1 s unmutated)
 - `src/rangeset.rs:1560:42` replace > with >= in SpanCursor<T>::next  
   `} else if self.cursor.from() > from {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_25_notices_added_ranges, test_cm6_rangeset_26_notices_deleted_ranges, test_cm6_rangeset_27_recognizes_identical_ranges, test_cm6_rangeset_28_skips_changes (binary under 1 s unmutated)
 - `src/rangeset.rs:1650:38` replace + with * in compare  
   `let end = if diff < 0 { a.to + d_pos } else { b.to };`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_29_ignores_identical_sub_nodes, test_cm6_rangeset_30_ignores_changes_in_points, test_cm6_rangeset_33_can_handle_multiple_changes, test_cm6_rangeset_34_reports_point_decorations_with_different_cover (binary under 1 s unmutated)
 - `src/rangeset.rs:1675:16` replace > with < in compare  
   `if end > end_b {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_28_skips_changes, test_cm6_rangeset_29_ignores_identical_sub_nodes (binary under 1 s unmutated)
 - `src/rangeset.rs:1675:16` replace > with == in compare  
   `if end > end_b {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_25_notices_added_ranges, test_cm6_rangeset_26_notices_deleted_ranges, test_cm6_rangeset_27_recognizes_identical_ranges, test_cm6_rangeset_28_skips_changes (binary under 1 s unmutated)
 - `src/rangeset.rs:1679:17` replace <= with > in compare  
   `if diff <= 0 {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_25_notices_added_ranges, test_cm6_rangeset_26_notices_deleted_ranges, test_cm6_rangeset_28_skips_changes, test_cm6_rangeset_29_ignores_identical_sub_nodes (binary under 1 s unmutated)
 - `src/rangeset.rs:1682:17` replace >= with < in compare  
   `if diff >= 0 {`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_rangeset_25_notices_added_ranges, test_cm6_rangeset_26_notices_deleted_ranges, test_cm6_rangeset_27_recognizes_identical_ranges, test_cm6_rangeset_29_ignores_identical_sub_nodes (binary under 1 s unmutated)
 
 ### U4 state: `crates/ferrum-state/src/transaction.rs` (4)
 - `src/transaction.rs:615:5` replace join_ranges -> Vec<usize> with vec![0]  
   `let mut result: Vec<usize> = Vec::new();`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
 - `src/transaction.rs:615:5` replace join_ranges -> Vec<usize> with vec![1]  
   `let mut result: Vec<usize> = Vec::new();`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
 - `src/transaction.rs:622:16` replace += with *= in join_ranges  
   `ia += 2;`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
 - `src/transaction.rs:626:16` replace += with *= in join_ranges  
   `ib += 2;`  
-  not yet run again at the longer limit
+  running over 60 s: test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
+
+## timeout (8)
+
+### U1 text: `crates/ferrum-state/src/char.rs` (4)
+- `src/char.rs:124:5` replace cluster_break -> usize with 0  
+  `if forward { next_cluster_break(s, pos, include_extending) } else { prev_cluster_break(s, pos, include_extending) }`  
+  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
+- `src/char.rs:124:5` replace cluster_break -> usize with 1  
+  `if forward { next_cluster_break(s, pos, include_extending) } else { prev_cluster_break(s, pos, include_extending) }`  
+  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
+- `src/char.rs:131:5` replace next_cluster_break -> usize with 0  
+  `if pos == s.len() {`  
+  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
+- `src/char.rs:155:17` replace += with -= in next_cluster_break  
+  `pos += next.len_utf8();`  
+  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
+
+### U1 text: `crates/ferrum-state/src/column.rs` (2)
+- `src/column.rs:31:15` replace += with *= in count_column  
+  `i += 1;`  
+  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
+- `src/column.rs:31:15` replace += with -= in count_column  
+  `i += 1;`  
+  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
+
+### U3 rangeset: `crates/ferrum-state/src/rangeset.rs` (2)
+- `src/rangeset.rs:1269:38` replace += with *= in LayerCursor<T>::set_range_index  
+  `self.chunk_index += 1;`  
+  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
+- `src/rangeset.rs:1269:38` replace += with -= in LayerCursor<T>::set_range_index  
+  `self.chunk_index += 1;`  
+  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
