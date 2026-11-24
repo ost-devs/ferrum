@@ -5,7 +5,7 @@
 //
 // An input is a program or a bare expression in the language of tools/cm6/program.ts (its header: steps, variables,
 // `if`, the `out` template, the ops that touch no cm6 value, `map`, `try`). The chunk has no setup keys.
-// Descriptive keys that no op reads: `note`, `seed`, `case`, `engine` (the node, Unicode and ICU versions the
+// Descriptive keys that no op reads: `note`, `seed`, `case`, `engine` (the Unicode and ICU versions the
 // categorizer fixtures ran on), `variant` (the name of a line-break variant), `test` (the cm6 test case a value is
 // behind), `rng` (how a seeded generator drew its values).
 //

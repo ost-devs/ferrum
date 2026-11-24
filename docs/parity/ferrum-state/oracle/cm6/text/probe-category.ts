@@ -6,7 +6,7 @@
 import {rangeWriter, op, bare, prog, step, $} from "./writer"
 
 const w = rangeWriter(600, 799)
-const ENGINE = {node: process.versions.node, unicode: (process.versions as any).unicode, icu: process.versions.icu}
+const ENGINE = {unicode: (process.versions as any).unicode, icu: process.versions.icu}
 
 function cat(item: string, b: string, char: string, wordChars?: string, note?: string) {
   w(item, [b], bare(op("categorize", {cat: op("categorizer", {wordChars}), char}), {note: note || undefined, engine: ENGINE}))

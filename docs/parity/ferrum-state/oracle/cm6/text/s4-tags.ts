@@ -234,4 +234,4 @@ for (let [s, col, tab, strict] of [["\u{1F600}e\u0301x", 1.5, 4, undefined], ["\
 // CharCategory.Word B6 ASCII counterpart (D1): wordChars matched per code unit, where a unit is a character
 for (let [ch, wc] of [["-", "$-"], ["a-b%", "$-"], ["%", "$-"], ["$$", "$-"]])
   f("CharCategory.Word", "CharCategory.Word:6", bare(op("categorize", {cat: op("categorizer", {wordChars: wc}), char: ch}),
-    {engine: {node: process.versions.node, unicode: (process.versions as any).unicode}}))
+    {engine: {unicode: (process.versions as any).unicode}}))

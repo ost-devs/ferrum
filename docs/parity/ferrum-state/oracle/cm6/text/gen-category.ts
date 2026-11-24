@@ -5,7 +5,7 @@
 //
 // Seed: 20261112. Cases: 120 fixtures, each one wordChars setting (none, "", "$", "-", "😀", "$-_") and 20 strings.
 // Each fixture is a program of interp.ts: one categorizer (wordChars absent: none), categorize over the strings.
-// Results depend on the engine's Unicode data (Q7); every fixture records node, Unicode and ICU versions.
+// Results depend on the engine's Unicode data (Q7); every fixture records the Unicode and ICU versions (not node: M22).
 // Checklist (docs/workflow/specification.md §5.5):
 //   empty input: "" is the first string of every fixture; single element: one code point (most strings);
 //   many elements: strings of up to 6 code points (the categorizer is documented for one cluster but accepts any);
@@ -23,7 +23,7 @@ import {rangeWriter, op, prog, step, $, lit} from "./writer"
 const SEED = 20261112
 const R = rng(SEED)
 const w = rangeWriter(3500, 3999)
-const ENGINE = {node: process.versions.node, unicode: (process.versions as any).unicode, icu: process.versions.icu}
+const ENGINE = {unicode: (process.versions as any).unicode, icu: process.versions.icu}
 const POOL = ["a", "Z", "_", "1", "é", "é", "中", "한", "𝐀", "²", "Ⅻ", " ", "\t", " ", " ", "　", "﻿", "​", "\r\n", "\r",
   "-", "$", "/", "<", "©", "😀", "😃", "🇩🇪", "👍🏽", "́", "‍", "\uD83D", "\uDE00", "\u0000", "\u007F", "\u0080", "¿", "À", "￿", "\u{10000}", "\u{10FFFF}"]
 const WORDCHARS = [undefined, "", "$", "-", "😀", "$-_"]
