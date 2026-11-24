@@ -403,3 +403,21 @@ The consultant decided Q120 and corrected a line of the sort (`docs/decisions/fe
 **Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): an error entry names no op (Q120)' -- crates/ferrum-state/tests`.
 
 **Report:** the output of the check, whole; each file you changed with what it now does, for the orchestrator's list; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Conformance step 0: the exhaustive control run
+
+**What it is for.** Conformance (`docs/parity/ferrum-state/plan.md` "Conformance", step 0) states that every field the replayer reports as compared is compared (gates G2 and G4). The seeded control run alters one compared path per fixture, chosen from a seed, so a comparator that compares one kind of field less than it reports passes it in every fixture whose seed lands elsewhere. The exhaustive run alters each compared path in turn, so such a comparator fails it wherever that field occurs. Its output is the evidence of that claim in the verdict.
+
+**The work**, under `crates/ferrum-state/tests/replay/` only (the driver, `driver.rs`: `Compared`, `compare`, `altered`, the control branch of the run of one fixture, the writing of `control.jsonl`):
+- `FERRUM_REPLAY_CONTROL=all` alters, one at a time, every path of `Compared::paths` of a fixture whose result is `equal` or `part` (and that no decision row lists, as the seeded run already skips), compares Ferrum's one output with each altered record through the same `compare`, and writes to `control.jsonl` one line per such fixture: `{"fixture", "chunk", "paths": <the number of paths altered>, "passing": [<each altered path, as the seeded run spells it, with which the fixture still passes>]}`. The program runs once per fixture: only the comparison is repeated.
+- Any other value of `FERRUM_REPLAY_CONTROL` is a seed and the run stays exactly as it is, with its line `{"fixture", "chunk", "altered", "passes"}`; so does every fixture's result and `report.jsonl`.
+- The printed summary at an exhaustive run says how many paths were altered and how many still pass.
+- The docstring of `tools/impl_check.py` fixes these spellings; it is the tool that reads the file.
+
+**Check, run by you before you commit:** `cargo fmt --all`; then `python3 tools/impl_check.py ferrum-state control all` (the exhaustive run on the five chunks: every compared fixture has its line, no altered path passes) and `python3 tools/impl_check.py ferrum-state control 1` (the seeded run, unchanged), both passing; then `python3 tools/impl_check.py ferrum-state handoff --since text=c0ba180,change=ea896a1,rangeset=126dad7,state=efdebd2`, passing whole but for its check that your files are listed in `implementation.md`, which the orchestrator does. Note the wall time of the exhaustive run. If an altered path still passes, do not change the comparison to make it fail: report the fixture and the path; it is a finding about the replayer.
+
+**Budget.** 30,000 tokens. If you pass 45,000, stop and report where you are.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): the exhaustive control run' -- crates/ferrum-state/tests`.
+
+**Report:** the outputs of the checks, whole; the wall time of the exhaustive run; each file you changed with what it now does, for the orchestrator's list; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".

@@ -6,6 +6,8 @@
     python3 tools/impl_check.py <crate> checks <unit> [--chunk <chunk>]   (--chunk: one step of a unit checked in two)
     python3 tools/impl_check.py <crate> code <unit> --since <the unit's checks commit>
     python3 tools/impl_check.py <crate> handoff --since <unit>=<its checks commit>,...
+    python3 tools/impl_check.py <crate> control [<seed> | all]   (the control run alone, on every unit's chunks;
+                                                                 `all`, the default, alters every compared path)
     (--root <dir>: another tree than the repository, for trying the tool on a copy)
 
 Run from the repository root with the harness built (tools/cm6/setup_harness.py). A worker runs the subcommand of its
@@ -39,7 +41,8 @@ What the tool expects to find (the plan fixes what each thing is; this fixes whe
   The replayer, run as `cargo test -p <crate> --test replay`, reads these environment variables:
     FERRUM_REPLAY_FIXTURES=<dir>       the fixture files, instead of docs/parity/<crate>/fixtures
     FERRUM_REPLAY_CHUNKS=<a,b>         only these chunks (`lang`: the cases of tools/cm6/lang-cases.jsonl)
-    FERRUM_REPLAY_CONTROL=<seed>       the control run
+    FERRUM_REPLAY_CONTROL=<seed>       the control run: one compared path of each fixture, chosen from the seed
+    FERRUM_REPLAY_CONTROL=all          the exhaustive control run: every compared path of each fixture, in turn
     FERRUM_REPLAY_TRACE=<chunk> or <chunk>:<id>   the trace of every fixture of the chunk, or of one
     FERRUM_REPLAY_WRITE_NO_COUNTERPART=1          write fixtures/no-counterpart.jsonl instead of comparing with it
   and writes, under target/replay/<crate>/:
@@ -49,7 +52,9 @@ What the tool expects to find (the plan fixes what each thing is; this fixes whe
                        "left_out": [{"reason", "op", "argument" or "part", "value"}],
                        "at": "<source file>:<line>" of the todo!() reached (pending only)}
                     and one line per op registered: {"op": name, "chunk": chunk, or "lang" for an op of the language}
-    control.jsonl   at a control run, one line per compared fixture: {"fixture", "chunk", "altered": path, "passes": bool}
+    control.jsonl   at a control run, one line per compared fixture: {"fixture", "chunk", "altered": path, "passes": bool};
+                    at the exhaustive run, one line per compared fixture: {"fixture", "chunk", "paths": the number of
+                    paths altered, one at a time, "passing": [each altered path with which the fixture still passes]}
     trace/<chunk>-<id>.jsonl   the lines tools/trace_diff.py reads
 
   In a test file, comments the tool reads (each directly before the `fn`, or inside it):
@@ -441,10 +446,21 @@ def lang_cases(c, crate, fixtures):
     c.need(len(got) == n and not bad, f"language cases equal: {len(got) - len(bad)} of {n}", bad)
 
 def control(c, crate, chunks, seed="1"):
-    replay(crate, {"FERRUM_REPLAY_CONTROL": seed, "FERRUM_REPLAY_CHUNKS": ",".join(chunks)})
+    _, r, fixtures, _ = replay(crate, {"FERRUM_REPLAY_CONTROL": seed, "FERRUM_REPLAY_CHUNKS": ",".join(chunks)})
     path = target(crate, "control.jsonl")
     lines = rows(path) if os.path.exists(path) else []
     per = collections.Counter(l["chunk"] for l in lines)
+    if seed == "all":
+        compared = {(f["chunk"], f["fixture"]) for f in fixtures if f["result"] in ("equal", "part")}
+        seen = {(l["chunk"], l["fixture"]) for l in lines}
+        bad = [f"{l['chunk']} {l['fixture']}: {l}" for l in lines if not isinstance(l.get("paths"), int) or not isinstance(l.get("passing"), list) or l["paths"] < 1]
+        c.need(r.returncode == 0 and not bad and seen == compared,
+               f"exhaustive control run: exit {r.returncode}, {len(lines)} lines for {len(compared)} fixtures compared whole or in part, {len(bad)} malformed",
+               bad + [f"{k[0]} {k[1]}: compared, no line" for k in sorted(compared - seen)] + [f"{k[0]} {k[1]}: a line, not compared" for k in sorted(seen - compared)])
+        passing = [f"{l['chunk']} {l['fixture']} (altered {p})" for l in lines for p in l.get("passing") or []]
+        c.need(bool(lines) and all(per[ch] for ch in chunks) and not passing,
+               f"exhaustive control run on {', '.join(chunks)}: {sum(l.get('paths', 0) for l in lines if isinstance(l.get('paths'), int))} paths altered in {len(lines)} fixtures ({dict(per)}), {len(passing)} still pass", passing)
+        return
     passing = [f"{l['chunk']} {l['fixture']} (altered {l.get('altered')})" for l in lines if l["passes"]]
     c.need(bool(lines) and all(per[ch] for ch in chunks) and not passing,
            f"control run (seed {seed}) on {', '.join(chunks)}: {len(lines)} compared fixtures altered ({dict(per)}), {len(passing)} still pass", passing)
@@ -623,6 +639,10 @@ def core(c, crate, args):
     fmt(c)
     uses = [p for p in lang_files if "ferrum_state" in src[p]]
     c.need(bool(lang_files) and not uses, f"the language module ({len(lang_files)} file(s) at tests/replay/lang) holds no `ferrum_state`", uses)
+
+def control_run(c, crate, args):
+    us = units(crate)
+    control(c, crate, [ch for u in us.values() for ch in u["chunks"]], args[0] if args else "all")
 
 def checks(c, crate, args):
     if not args or (len(args) > 1 and (args[1] != "--chunk" or len(args) != 3)): sys.exit("checks <unit> [--chunk <chunk>]")
@@ -818,7 +838,7 @@ def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"skeleton": skeleton, "core": core, "checks": checks, "code": code, "handoff": handoff}
+    steps = {"skeleton": skeleton, "core": core, "checks": checks, "code": code, "handoff": handoff, "control": control_run}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = Check()
