@@ -40,11 +40,17 @@
                                                                 limit (--rerun, in order): `hang` when the log shows a test
                                                                 over 60 s whose binary took under 1 s unmutated (M26), else
                                                                 `timeout`; writes .scratch/conformance/<crate>/mutants-missed.md
-    python3 tools/conf_check.py <crate> hazards <chunk>          for step 3's readings (M25): each hazard of the behaviors of
-                                                                the chunk's items, with the fixtures (and their result in
+    python3 tools/conf_check.py <crate> hazards <chunk> [--groups <g>,...] [--sampled] [--verdicts <file>]
+                                                                for step 3's hazards runs (M25, M27): each hazard of the
+                                                                behaviors of the chunk's items (of the named item groups,
+                                                                the second segment of a behavior id; of the sampled items),
+                                                                with an id `<behavior id>:h<n>`, the behavior's text, its
+                                                                item's decision rows, the fixtures (their result in
                                                                 target/replay/<crate>/named.json, which `handoff` writes),
-                                                                ported cases and written tests that name its behavior;
-                                                                writes .scratch/conformance/<crate>/hazards-<chunk>.md
+                                                                the text classes and ops of the compared ones, ported cases
+                                                                and written tests that name it; with --verdicts, the `hazard`
+                                                                lines of a verdict file counted against the list; writes
+                                                                .scratch/conformance/<crate>/hazards-<chunk>[-<groups>].md
     python3 tools/conf_check.py <crate> mutant-probe <unit>|<module>,... --probe <cargo package dir> <mutation dir> ...
                                                                 step 3's gaps (M25): each surviving mutant of the unit's
                                                                 modules (the last outcome over the dirs, in order) applied
@@ -825,13 +831,42 @@ def coverage_fresh(c, crate, args):
     for r in reached: c.say("        " + r)
 
 
+def ops_of(v, out):
+    """Every value of an `op` key in a program."""
+    if isinstance(v, dict):
+        for k, x in v.items():
+            if k == "op" and isinstance(x, str): out.add(x)
+            else: ops_of(x, out)
+    elif isinstance(v, list):
+        for x in v: ops_of(x, out)
+
+
+def group_of(behavior_id):
+    """The item group of a behavior: the cm6 class or function, the second segment of its id (before a `^`)."""
+    return behavior_id.split(".")[1].split("^")[0]
+
+
 def hazards(c, crate, args):
-    """Each hazard of a chunk's behaviors with the checks that name its behavior; the verifier traces each one."""
+    """Each hazard of a chunk's behaviors, with an id, and what a verifier needs to trace it (M25, M27)."""
     if not args: c.need(False, "give a chunk"); return
     chunk = args[0]
+    groups = set(args[args.index("--groups") + 1].split(",")) if "--groups" in args else None
+    verdicts = args[args.index("--verdicts") + 1] if "--verdicts" in args else None
+    sampled = None
+    if "--sampled" in args:
+        sampled = {json.loads(l)["item_id"] for l in open(os.path.join(ic.spec(crate, "conformance"), "sample.jsonl")) if l.strip()}
+    import oracle_fresh as of
     inv = {r["id"]: r for r in ic.rows(ic.spec(crate, "raw", "inventory.jsonl"))}
     if chunk not in {r["chunk"] for r in inv.values()}: c.need(False, f"chunk {chunk} exists"); return
     tests = {r["id"]: ic.case_name(r) for r in ic.rows(ic.spec(crate, "raw", "tests.jsonl"))}
+    rows_by_item = collections.defaultdict(list)
+    for r in ic.rows(ic.spec(crate, "raw", "decisions.jsonl")): rows_by_item[r.get("item_id")].append(r["id"])
+    fixtures = {}  # (fixture id, behavior) -> row: ids repeat across chunks, so a fixture is the one naming the behavior
+    for ch in {r["chunk"] for r in inv.values()}:
+        fp = ic.spec(crate, "fixtures", ch + ".jsonl")
+        if os.path.exists(fp):
+            for r in ic.rows(fp):
+                for bh in r.get("behaviors") or []: fixtures[(r["id"], bh)] = r
     named_path = os.path.join(ic.ROOT, "target", "replay", crate, "named.json")
     c.need(os.path.exists(named_path), f"{os.path.relpath(named_path, ic.ROOT)} exists (run `tools/impl_check.py {crate} handoff` first)")
     if not os.path.exists(named_path): return
@@ -846,57 +881,62 @@ def hazards(c, crate, args):
             for i in re.split(r"[,\s]+", m.group(1).strip()):
                 if i: covers[i].append(f"{path}::{f.group(1) if f else '?'}")
     out = [f"# Hazards of chunk `{chunk}`, {crate} (tools/conf_check.py hazards)", "",
-           "Each hazard of a behavior of the chunk's items, and every check that names the behavior: fixtures with their result",
-           "at the hand-off (`equal`, `part`, `none`), ported cm6 cases, written tests with `// covers:`. Whether a check",
-           "exercises the hazard is the verifier's reading.", ""]
-    n_h = n_none = 0
-    unchecked = []
+           "Each hazard of a behavior of the chunk's items, with its id (`<behavior id>:h<n>`, the id of the verifier's `hazard`",
+           "line), the behavior's text, its item's decision rows, and every check that names the behavior: fixtures with their",
+           "result at the hand-off (`equal`, `part`, `none`), the text classes and ops of the compared ones, ported cm6 cases,",
+           "written tests with `// covers:`. Whether a check exercises the hazard is the verifier's reading."
+           + (f" Item groups: {', '.join(sorted(groups))}." if groups else "") + (" Sampled items only." if sampled is not None else ""), ""]
+    ids, unchecked = [], []
+    per_group = collections.Counter()
     for b in ic.rows(ic.spec(crate, "raw", "behaviors.jsonl")):
         it = inv.get(b["item_id"])
         hz = [h for h in (b.get("hazards") or []) if h.strip().lower() not in ("none", "none found")]
         if not it or it["chunk"] != chunk or not hz: continue
+        if groups and group_of(b["id"]) not in groups: continue
+        if sampled is not None and b["item_id"] not in sampled: continue
+        per_group[group_of(b["id"])] += len(hz)
         res = {x.split()[1]: x.split()[2] for x in named.get(b["id"], []) if x.startswith("fixture ")}
         fx = [f"{f} {res.get(f, 'not run')}" for f in b.get("fixtures") or []]
+        comp_ids = [f for f in b.get("fixtures") or [] if res.get(f) in ("equal", "part")]
+        classes, ops = collections.Counter(), set()
+        for f in comp_ids:
+            fr = fixtures.get((f, b["id"]))
+            c.need(fr is not None, f"{b['id']}: its fixture {f} names it back", [] if fr else [f])
+            if fr:
+                cl = set(); of.classes_of(fr["input"], cl); classes.update(cl); ops_of(fr["input"], ops)
         ported = [f"{t} ({tests.get(t, '?')}{'' if tests.get(t) in fns else ', no such test fn'})" for t in b.get("cm6_tests") or []]
         wr = covers.get(b["id"], [])
         accepted = [x for x in named.get(b["id"], []) if x.startswith("accepted")]
-        compared = [f for f in fx if not f.endswith((" none", " not run"))]
-        out.append(f"## `{b['id']}` ({it['item']})")
-        for h in hz: out.append(f"- hazard: {h}")
         byres = collections.Counter(f.split(" ", 1)[1] for f in fx)
-        out.append(f"- fixtures ({len(compared)} compared of {len(fx)}; " + ", ".join(f"{k} {v}" for k, v in sorted(byres.items())) + "): "
+        out.append(f"## `{b['id']}` ({it['item']}, `{b['item_id']}`)")
+        out.append(f"- text: {b.get('text', '')}")
+        for n, h in enumerate(hz, 1):
+            out.append(f"- `{b['id']}:h{n}`: {h}"); ids.append(f"{b['id']}:h{n}")
+        if rows_by_item.get(b["item_id"]): out.append(f"- decision rows of the item: {', '.join(rows_by_item[b['item_id']])}")
+        out.append(f"- fixtures ({len(comp_ids)} compared of {len(fx)}; " + ", ".join(f"{k} {v}" for k, v in sorted(byres.items())) + "): "
                    + (", ".join(fx[:8]) + (f", ... ({len(fx) - 8} more in the behavior's row)" if len(fx) > 8 else "") if fx else "none"))
+        if comp_ids:
+            out.append(f"- compared fixtures by text class: " + ", ".join(f"{k} {classes[k]}" for k in of.CLASSES if classes[k]))
+            out.append(f"- ops they run: " + ", ".join(sorted(ops)))
         out.append(f"- ported cases: " + ("; ".join(ported) if ported else "none"))
         out.append(f"- written tests: " + ("; ".join(wr) if wr else "none"))
         if accepted: out.append(f"- hand-off: " + "; ".join(accepted))
         out.append("")
-        n_h += len(hz)
-        if not compared and not ported and not wr:
-            n_none += 1; unchecked.append(b["id"])
-    path = os.path.join(out_dir(crate), f"hazards-{chunk}.md")
+        if not comp_ids and not ported and not wr: unchecked.append(b["id"])
+    tag = chunk + ("-" + "-".join(sorted(groups)) if groups else "") + ("-sampled" if sampled is not None else "")
+    path = os.path.join(out_dir(crate), f"hazards-{tag}.md")
     with open(path, "w", encoding="utf8") as fh: fh.write("\n".join(out))
-    c.say(f"chunk {chunk}: {n_h} hazards on {sum(1 for l in out if l.startswith('## '))} behaviors; behaviors with a hazard and no compared fixture, ported case or written test: {n_none}")
+    c.say(f"chunk {chunk}: {len(ids)} hazards on {sum(1 for l in out if l.startswith('## '))} behaviors; by item group: "
+          + ", ".join(f"{g} {n}" for g, n in sorted(per_group.items())))
+    c.say(f"behaviors with a hazard and no compared fixture, ported case or written test: {len(unchecked)}")
     for u in unchecked: c.say(f"        {u}")
+    if verdicts:
+        got = {json.loads(l)["id"] for l in open(verdicts) if l.strip() and json.loads(l).get("kind") == "hazard"}
+        missing = [i for i in ids if i not in got]
+        c.need(not missing, f"`hazard` lines of {os.path.relpath(verdicts, REPO)} for the hazards listed: {len(ids) - len(missing)} of {len(ids)}", missing)
+        stray = sorted(i for i in got if i.startswith(tuple(f"{x.rsplit(':h', 1)[0]}:h" for x in ids)) and i not in ids)
+        c.need(not stray, "no `hazard` line names a hazard the list does not hold", stray)
     c.say(f"written: {os.path.relpath(path, REPO)}")
-
-
-def baseline_times(log):
-    """test name -> seconds its test binary took in the unmutated run (the `finished in` of its `test result` line)."""
-    out, cur = {}, []
-    for l in ic.read(log).split("\n"):
-        m = re.match(r"^test (\S+) \.\.\. ", l)
-        if m: cur.append(m.group(1)); continue
-        m = re.match(r"^test result: .*finished in ([\d.]+)s", l)
-        if m:
-            for t in cur: out[t] = max(out.get(t, 0.0), float(m.group(1)))
-            cur = []
-    return out
-
-
-def hang_of(log, times):
-    """M26: the tests the log shows running over 60 s whose binary finished in under a second unmutated."""
-    running = re.findall(r"^test (\S+) has been running for over 60 seconds", ic.read(log), re.M)
-    return [t for t in running if t in times and times[t] < 1.0], running
 
 
 def mutants_missed(c, crate, args):

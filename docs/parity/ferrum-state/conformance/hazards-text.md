@@ -1,729 +1,1073 @@
 # Hazards of chunk `text`, ferrum-state (tools/conf_check.py hazards)
 
-Each hazard of a behavior of the chunk's items, and every check that names the behavior: fixtures with their result
-at the hand-off (`equal`, `part`, `none`), ported cm6 cases, written tests with `// covers:`. Whether a check
-exercises the hazard is the verifier's reading.
+Each hazard of a behavior of the chunk's items, with its id (`<behavior id>:h<n>`, the id of the verifier's `hazard`
+line), the behavior's text, its item's decision rows, and every check that names the behavior: fixtures with their
+result at the hand-off (`equal`, `part`, `none`), the text classes and ops of the compared ones, ported cm6 cases,
+written tests with `// covers:`. Whether a check exercises the hazard is the verifier's reading.
 
-## `state.findClusterBreak.B1` (findClusterBreak)
-- hazard: Sentinel: the result equals the input when no break exists; callers compare result == pos (commands.ts:582).
+## `state.findClusterBreak.B1` (findClusterBreak, `state.cm6.212`)
+- text: Forward, pos equal to str.length: returns pos unchanged (also for the empty string at 0). "No further break" is signalled by returning pos itself.
+- `state.findClusterBreak.B1:h1`: Sentinel: the result equals the input when no break exists; callers compare result == pos (commands.ts:582).
+- decision rows of the item: state.cm6.212.d1
 - fixtures (5 compared of 5; equal 5): F0001 equal, F0002 equal, F0003 equal, F6093 equal, F6094 equal
+- compared fixtures by text class: empty 1, ascii 5, bmp 2, astral 2
+- ops they run: findClusterBreak
 - ported cases: none
 - written tests: none
 
-## `state.findClusterBreak.B3` (findClusterBreak)
-- hazard: UTF-16 string operations: positions are code-unit offsets; charCodeAt/surrogate checks at mirrors/marijn/find-cluster-break/src/index.js:48, :77-87 (D1).
+## `state.findClusterBreak.B3` (findClusterBreak, `state.cm6.212`)
+- text: Forward from the high surrogate of a valid surrogate pair (astral code point): the pair is one step, returns pos + 2 (plus any joined code points after it).
+- `state.findClusterBreak.B3:h1`: UTF-16 string operations: positions are code-unit offsets; charCodeAt/surrogate checks at mirrors/marijn/find-cluster-break/src/index.js:48, :77-87 (D1).
+- decision rows of the item: state.cm6.212.d1
 - fixtures (129 compared of 163; equal 3, not run 34, part 126): F0009 equal, F0010 equal, F0011 equal, F2000 part, F2001 part, F2002 part, F2003 part, F2004 part, ... (155 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 129, bmp 110, astral 86, lone cr 7, u2028 10
+- ops they run: codePointAt.every, codePointSize, count, findClusterBreak, findClusterBreak.every, findClusterBreak.walk, item, jsonEqual, let, map, reverse, slice, sum
 - ported cases: none
 - written tests: none
 
-## `state.findClusterBreak.B4` (findClusterBreak)
-- hazard: UTF-16 string operations: positions are code-unit offsets; charCodeAt/surrogate checks at mirrors/marijn/find-cluster-break/src/index.js:48, :77-87 (D1).
-- hazard: A position inside a character is a valid input; the function repairs it to the code point start. Under a non-UTF-16 position unit such positions do not exist (D1 evidence).
+## `state.findClusterBreak.B4` (findClusterBreak, `state.cm6.212`)
+- text: Forward from a position between the two halves of a surrogate pair (a low surrogate preceded by a high surrogate): pos is first moved back by one to the start of the pair, then the scan proceeds as from the pair start, so the result is the end of that code point plus anything joined to it. Inside an emoji modifier pair the scan starts at the modifier, so the result is the end of the modifier (F0015), not a recomputation of the whole cluster.
+- `state.findClusterBreak.B4:h1`: UTF-16 string operations: positions are code-unit offsets; charCodeAt/surrogate checks at mirrors/marijn/find-cluster-break/src/index.js:48, :77-87 (D1).
+- `state.findClusterBreak.B4:h2`: A position inside a character is a valid input; the function repairs it to the code point start. Under a non-UTF-16 position unit such positions do not exist (D1 evidence).
+- decision rows of the item: state.cm6.212.d1
 - fixtures (126 compared of 164; not run 38, part 126): F0012 not run, F0013 not run, F0014 not run, F0015 not run, F2000 part, F2001 part, F2002 part, F2003 part, ... (156 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 126, bmp 110, astral 83, lone cr 7, u2028 10
+- ops they run: codePointAt.every, codePointSize, count, findClusterBreak, findClusterBreak.every, findClusterBreak.walk, item, jsonEqual, let, map, reverse, slice, sum
 - ported cases: none
 - written tests: none
 
-## `state.findClusterBreak.B5` (findClusterBreak)
-- hazard: Unicode data: a fixed table compiled into the package (mirrors/marijn/find-cluster-break/src/index.js:12), independent of the JS engine. Its comment (index.js:6-8) and the README's isExtendingChar entry (mirrors/marijn/find-cluster-break/README.md) call it the Grapheme_Cluster_Break=Extend data; the build script (bin/build-extenders.js:25-29) and the results (F0049, F7001-F7003) include SpacingMark. Checked against Node 22.23.4's Intl.Segmenter (ICU 78.3, Unicode 17.0; reference values printed by oracle/cm6/text/s4-fix5.ts, not cm6 fixtures): below U+30000 the code points the segmenter joins after "a" (Extend, SpacingMark, ZWJ) are exactly those of F7000; above, the segmenter also joins U+E0020-U+E007F and U+E0100-U+E01EF. The 31 exceptions join in neither, so against Unicode 17.0 data the exclusion list removes nothing (deduction from the segmenter; GraphemeBreakProperty.txt itself was not read). Other Grapheme_Cluster_Break values (Prepend, CR, LF, Control, L, V, T, LV, LVT) and the Extended_Pictographic and Indic_Conjunct_Break properties are not used (B9).
-- hazard: Module-level state: rangeFrom/rangeTo arrays filled once at module load (mirrors/marijn/find-cluster-break/src/index.js:3-15), immutable afterwards.
+## `state.findClusterBreak.B5` (findClusterBreak, `state.cm6.212`)
+- text: Forward with includeExtending true (the default): after the first code point, every following code point in the package's extending table, generated by mirrors/marijn/find-cluster-break/bin/build-extenders.js from Unicode 17.0.0 GraphemeBreakProperty.txt (:4): every code point below U+30000 (:16-17) whose Grapheme_Cluster_Break is Extend or SpacingMark (:25), minus 31 listed SpacingMark exceptions U+102B, U+102C, U+1038, U+1062-U+1064, U+1067-U+106D, U+1083, U+1087-U+108C, U+108F, U+109A-U+109C, U+1A61, U+1A63, U+1A64, U+AA7B, U+AA7D, U+11720, U+11721 (:9-14, :26-29) is absorbed (isExtendingChar). Absorbed: combining marks, variation selectors U+FE00-U+FE0F, emoji modifiers U+1F3FB-U+1F3FF, the keycap U+20E3, ZWNJ U+200C, Indic viramas such as U+094D, and spacing marks such as U+093F, U+0903 and U+0E33 (UAX #29 GB9a; F0049, F0053, F7001-F7003). The listed exceptions are not joined (U+102B, U+1A61: F7005, F7006). Extend code points at or above U+30000 are outside the table and end the cluster: tag characters U+E0020-U+E007F (a subdivision flag splits after U+1F3F4 and after each tag character, F0022, F7009) and variation selectors U+E0100-U+E01EF (F7007, F7008). F7000 records every code point that joins after "a": 2283 code points in 332 ranges from U+0300 to U+1F3FF with includeExtending true (U+200D among them through the ZWJ rule, B7), only U+200D with false. Code points before the scan start are not consulted. A NaN code unit, read at a negative index, also counts as extending (B15).
+- `state.findClusterBreak.B5:h1`: Unicode data: a fixed table compiled into the package (mirrors/marijn/find-cluster-break/src/index.js:12), independent of the JS engine. Its comment (index.js:6-8) and the README's isExtendingChar entry (mirrors/marijn/find-cluster-break/README.md) call it the Grapheme_Cluster_Break=Extend data; the build script (bin/build-extenders.js:25-29) and the results (F0049, F7001-F7003) include SpacingMark. Checked against Node 22.23.4's Intl.Segmenter (ICU 78.3, Unicode 17.0; reference values printed by oracle/cm6/text/s4-fix5.ts, not cm6 fixtures): below U+30000 the code points the segmenter joins after "a" (Extend, SpacingMark, ZWJ) are exactly those of F7000; above, the segmenter also joins U+E0020-U+E007F and U+E0100-U+E01EF. The 31 exceptions join in neither, so against Unicode 17.0 data the exclusion list removes nothing (deduction from the segmenter; GraphemeBreakProperty.txt itself was not read). Other Grapheme_Cluster_Break values (Prepend, CR, LF, Control, L, V, T, LV, LVT) and the Extended_Pictographic and Indic_Conjunct_Break properties are not used (B9).
+- `state.findClusterBreak.B5:h2`: Module-level state: rangeFrom/rangeTo arrays filled once at module load (mirrors/marijn/find-cluster-break/src/index.js:3-15), immutable afterwards.
+- decision rows of the item: state.cm6.212.d1
 - fixtures (147 compared of 182; equal 21, not run 35, part 126): F0016 equal, F0017 equal, F0018 equal, F0019 equal, F0020 equal, F0021 equal, F0022 equal, F0023 equal, ... (174 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 147, bmp 124, astral 90, lone cr 7, u2028 10
+- ops they run: codePointAt.every, codePointSize, count, findClusterBreak, findClusterBreak.every, findClusterBreak.joinsAfterA, findClusterBreak.walk, item, jsonEqual, let, map, reverse, slice, sum
 - ported cases: none
 - written tests: none
 
-## `state.findClusterBreak.B8` (findClusterBreak)
-- hazard: UTF-16 stride: the backward count steps by 2 code units (i -= 2, mirrors/marijn/find-cluster-break/src/index.js:58), relying on every regional indicator being a surrogate pair.
+## `state.findClusterBreak.B8` (findClusterBreak, `state.cm6.212`)
+- text: Regional indicators (U+1F1E6-U+1F1FF): when the next code point is a regional indicator, the indicators immediately before it are counted by stepping back 2 code units at a time from pos - 2; an odd count joins the indicator (pair completed), an even count breaks. So indicators pair left to right from the start of their run; an odd final indicator is a cluster by itself. Pairing applies with includeExtending false too.
+- `state.findClusterBreak.B8:h1`: UTF-16 stride: the backward count steps by 2 code units (i -= 2, mirrors/marijn/find-cluster-break/src/index.js:58), relying on every regional indicator being a surrogate pair.
+- decision rows of the item: state.cm6.212.d1
 - fixtures (136 compared of 171; equal 10, not run 35, part 126): F0036 equal, F0037 equal, F0038 equal, F0039 equal, F0040 equal, F0041 equal, F0042 equal, F0043 equal, ... (163 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 136, bmp 111, astral 92, lone cr 7, u2028 10
+- ops they run: codePointAt.every, codePointSize, count, findClusterBreak, findClusterBreak.every, findClusterBreak.walk, item, jsonEqual, let, map, reverse, slice, sum
 - ported cases: none
 - written tests: none
 
-## `state.findClusterBreak.B9` (findClusterBreak)
-- hazard: A full UAX #29 implementation gives different breaks for the classes listed as not implemented. Run on Node 22.23.4's Intl.Segmenter (ICU 78.3, Unicode 17.0; reference values printed by oracle/cm6/text/s4-fix5.ts, not cm6 fixtures), cluster lengths against cm6's first break: "\r\n" [2] (cm6 1), "\r\u0301x" [1, 1, 1] (cm6 2), "\n\u200dx" [1, 1, 1] (cm6 3), "\t\u0301x" [1, 1, 1] (cm6 2), L V T jamo + x [3, 1] (cm6 1), LV + T + x [2, 1] (cm6 1), "\u0600\u0661x" [2, 1] (cm6 1), consonant virama consonant + x [3, 1] (cm6 2), "a\u{E0061}x" [3, 1] (cm6 1), "a\u200db" [2, 1] (cm6 3). They agree on "\u0915\u093fx" ([2, 1], cm6 2) and on two pictographs ([2, 2], cm6 2). No Rust grapheme library was run.
+## `state.findClusterBreak.B9` (findClusterBreak, `state.cm6.212`)
+- text: Rules of UAX #29 the package does not implement, with their observable results: CR LF is two clusters (no GB3, F0044); CR, LF and controls do not end a cluster, so a following code point of the extending table or a ZWJ joins them (no GB4/GB5: "\r\u0301x" from 0 is 2, "\n\u200dx" is 3, "\t\u0301x" is 2, "\u0000\u093fx" is 2, F7011-F7014), while a control is not joined to the code point before it ("a\r\u0301" from 0 is 1, F7015); Hangul jamo L, V, T sequences split per jamo and an LV syllable does not join a following T jamo (no GB6-GB8; precomposed syllables are single code units); Prepend such as U+0600 does not join what follows (no GB9b); a consonant, virama, consonant sequence breaks after the virama (no GB9c: "\u0915\u094d\u0937x" gives breaks 2 and 3, F0023, F7016, F7017); Extend code points at or above U+30000 (tag characters, variation selectors U+E0100-U+E01EF) are not joined (GB9 only below U+30000, B5, F7007-F7009); ZWJ joins whatever follows, with no Extended_Pictographic test (GB11 approximated, B7). Implemented through the table: Extend (GB9) and SpacingMark (GB9a) below U+30000, so U+093F joins its base (F0049, F0053). Two pictographs without ZWJ are two clusters, as in UAX #29 (GB999; F0051, F7018).
+- `state.findClusterBreak.B9:h1`: A full UAX #29 implementation gives different breaks for the classes listed as not implemented. Run on Node 22.23.4's Intl.Segmenter (ICU 78.3, Unicode 17.0; reference values printed by oracle/cm6/text/s4-fix5.ts, not cm6 fixtures), cluster lengths against cm6's first break: "\r\n" [2] (cm6 1), "\r\u0301x" [1, 1, 1] (cm6 2), "\n\u200dx" [1, 1, 1] (cm6 3), "\t\u0301x" [1, 1, 1] (cm6 2), L V T jamo + x [3, 1] (cm6 1), LV + T + x [2, 1] (cm6 1), "\u0600\u0661x" [2, 1] (cm6 1), consonant virama consonant + x [3, 1] (cm6 2), "a\u{E0061}x" [3, 1] (cm6 1), "a\u200db" [2, 1] (cm6 3). They agree on "\u0915\u093fx" ([2, 1], cm6 2) and on two pictographs ([2, 2], cm6 2). No Rust grapheme library was run.
+- decision rows of the item: state.cm6.212.d1
 - fixtures (147 compared of 181; equal 21, not run 34, part 126): F0044 equal, F0045 equal, F0046 equal, F0047 equal, F0048 equal, F0049 equal, F0050 equal, F0051 equal, ... (173 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 147, bmp 126, astral 88, crlf 1, lone cr 9, u2028 10
+- ops they run: codePointAt.every, codePointSize, count, findClusterBreak, findClusterBreak.every, findClusterBreak.walk, item, jsonEqual, let, map, reverse, slice, sum
 - ported cases: none
 - written tests: none
 
-## `state.findClusterBreak.B11` (findClusterBreak)
-- hazard: UTF-16 string operations: positions are code-unit offsets; charCodeAt/surrogate checks at mirrors/marijn/find-cluster-break/src/index.js:48, :77-87 (D1).
-- hazard: Lone surrogates cannot be held in a Rust String; fixtures store them as {"utf16": [...]}.
+## `state.findClusterBreak.B11` (findClusterBreak, `state.cm6.212`)
+- text: Lone surrogates: a high surrogate not followed by a low surrogate (or at the end of the string) and a low surrogate not preceded by a high surrogate are each one code unit, one cluster. A pos at a low surrogate that does follow a high surrogate moves back (B4) even if that high surrogate is itself preceded by another lone high surrogate.
+- `state.findClusterBreak.B11:h1`: UTF-16 string operations: positions are code-unit offsets; charCodeAt/surrogate checks at mirrors/marijn/find-cluster-break/src/index.js:48, :77-87 (D1).
+- `state.findClusterBreak.B11:h2`: Lone surrogates cannot be held in a Rust String; fixtures store them as {"utf16": [...]}.
+- decision rows of the item: state.cm6.212.d1
 - fixtures (126 compared of 169; not run 43, part 126): F0057 not run, F0058 not run, F0059 not run, F0060 not run, F0061 not run, F0062 not run, F0063 not run, F0064 not run, ... (161 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 126, bmp 110, astral 83, lone cr 7, u2028 10
+- ops they run: codePointAt.every, codePointSize, count, findClusterBreak, findClusterBreak.every, findClusterBreak.walk, item, jsonEqual, let, map, reverse, slice, sum
 - ported cases: none
 - written tests: none
 
-## `state.findClusterBreak.B12` (findClusterBreak)
-- hazard: Negative pos returns 0 rather than an error (Q9).
+## `state.findClusterBreak.B12` (findClusterBreak, `state.cm6.212`)
+- text: Backward with pos <= 1 returns 0 without inspecting the string: pos 0, pos 1 (even between the halves of a pair), and negative pos.
+- `state.findClusterBreak.B12:h1`: Negative pos returns 0 rather than an error (Q9).
+- decision rows of the item: state.cm6.212.d1
 - fixtures (4 compared of 8; equal 4, not run 4): F0066 equal, F0067 equal, F0068 equal, F0069 not run, F0070 not run, F6095 equal, F6096 not run, F7036 not run
+- compared fixtures by text class: empty 1, ascii 4, bmp 1
+- ops they run: findClusterBreak
 - ported cases: none
 - written tests: none
 
-## `state.findClusterBreak.B15` (findClusterBreak)
-- hazard: No range check; NaN and fractional results; JS numbers outside a narrow integer (Q9).
-- hazard: Consumers pass a position relative to the string they pass: a line's text (mirrors/cm6/commands/src/commands.ts:62, :581, :585, :611, :704-705; mirrors/cm6/view/src/bidi.ts:449, cursor.ts:22-31), a tile's text (mirrors/cm6/view/src/cursor.ts:360, docview.ts:377), the string search reads around a match (mirrors/cm6/search/src/search.ts:293, :296) and, in @codemirror/state, column.ts:13, :29 and state.ts:387, :392 (grep of findClusterBreak( in mirrors/cm6/*/src); deduction from those call sites: none of them passes a negative, fractional or NaN position.
-- hazard: Negative results (includeExtending false) and results inside a surrogate pair ("\u{1F600}a" from -1) for negative positions.
+## `state.findClusterBreak.B15` (findClusterBreak, `state.cm6.212`)
+- text: Arguments outside 0..str.length or not integers are not checked (Q9). Forward from pos > length returns pos + 2 (codePointAt gives NaN, codePointSize(NaN) is 2), so findClusterBreak("ab", 5) is 7 and findClusterBreak("", 1) is 3. Forward from a negative pos, the first step adds 2 (the code unit at a negative index is NaN, size 2); while the position is still negative, each code unit read is NaN, which isExtendingChar reports as extending (every comparison with NaN is false, so its binary search ends in `return true`), so with includeExtending true it is absorbed two units at a time until the position reaches 0 or 1, and the scan then goes on from there. Odd negative positions reach 1 without reading index 0 ("ab" from -1, -3, -5, -7 is 1; "\u{1F600}a" from -1 or -3 is 1, inside the surrogate pair); even ones reach 0 and take index 0 as the next code point, so the result is 0 unless index 0 holds a table code point or a ZWJ ("ab" from -2 is 0, "\u0301ab" from -2 is 1) (F0097, F0098, F6097, F7022-F7028, F7035). With includeExtending false NaN is not absorbed and the scan stops after the first step: -1 gives 1, -2 gives 0, every pos <= -3 gives pos + 2, a negative result (F7029-F7031, F7035). The empty string behaves the same (F7032-F7035). Backward from pos > length returns length, for every length (F0099, F0100, F0149, F7036); backward from a negative pos returns 0 (B12, F7036). A fractional pos gives fractional results (1.5 -> 2.5 forward, 0.5 backward) because charCodeAt truncates the index; NaN forward returns NaN, NaN backward returns 0.
+- `state.findClusterBreak.B15:h1`: No range check; NaN and fractional results; JS numbers outside a narrow integer (Q9).
+- `state.findClusterBreak.B15:h2`: Consumers pass a position relative to the string they pass: a line's text (mirrors/cm6/commands/src/commands.ts:62, :581, :585, :611, :704-705; mirrors/cm6/view/src/bidi.ts:449, cursor.ts:22-31), a tile's text (mirrors/cm6/view/src/cursor.ts:360, docview.ts:377), the string search reads around a match (mirrors/cm6/search/src/search.ts:293, :296) and, in @codemirror/state, column.ts:13, :29 and state.ts:387, :392 (grep of findClusterBreak( in mirrors/cm6/*/src); deduction from those call sites: none of them passes a negative, fractional or NaN position.
+- `state.findClusterBreak.B15:h3`: Negative results (includeExtending false) and results inside a surrogate pair ("\u{1F600}a" from -1) for negative positions.
+- decision rows of the item: state.cm6.212.d1
 - fixtures (1 compared of 32; not run 31, part 1): F0095 not run, F0096 not run, F0097 not run, F0098 not run, F0099 not run, F0100 not run, F0101 not run, F0102 not run, ... (24 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 1, bmp 1, astral 1
+- ops they run: findClusterBreak, let, map, record
 - ported cases: none
 - written tests: written_text.rs::find_cluster_break_beyond_the_end_panics
 
-## `state.findClusterBreak.B16` (findClusterBreak)
-- hazard: Optional parameters with defaults.
+## `state.findClusterBreak.B16` (findClusterBreak, `state.cm6.212`)
+- text: Defaults: forward = true and includeExtending = true; the state export is a wrapper that passes all four arguments through to @marijn/find-cluster-break 1.0.4.
+- `state.findClusterBreak.B16:h1`: Optional parameters with defaults.
+- decision rows of the item: state.cm6.212.d1
 - fixtures (5 compared of 5; equal 5): F0106 equal, F0107 equal, F0108 equal, F0151 equal, F0152 equal
+- compared fixtures by text class: ascii 5, bmp 3
+- ops they run: findClusterBreak
 - ported cases: none
 - written tests: none
 
-## `state.codePointAt.B2` (codePointAt)
-- hazard: UTF-16 string operations (charCodeAt).
+## `state.codePointAt.B2` (codePointAt, `state.cm6.213`)
+- text: A high surrogate followed by a low surrogate: returns the combined code point ((hi - 0xD800) << 10) + (lo - 0xDC00) + 0x10000, 0x10000..0x10FFFF.
+- `state.codePointAt.B2:h1`: UTF-16 string operations (charCodeAt).
 - fixtures (131 compared of 165; equal 5, not run 34, part 126): F0113 equal, F0114 equal, F0115 equal, F0116 equal, F0147 equal, F2000 part, F2001 part, F2002 part, ... (157 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 131, bmp 110, astral 88, lone cr 7, u2028 10
+- ops they run: codePointAt, codePointAt.every, codePointSize, count, findClusterBreak, findClusterBreak.every, findClusterBreak.walk, item, jsonEqual, let, map, reverse, slice, sum
 - ported cases: none
 - written tests: none
 
-## `state.codePointAt.B3` (codePointAt)
-- hazard: Returns a surrogate code unit as a "code point"; no Rust char can hold it.
+## `state.codePointAt.B3` (codePointAt, `state.cm6.213`)
+- text: A high surrogate at the last position of the string: returns the high surrogate code unit itself (0xD800..0xDBFF).
+- `state.codePointAt.B3:h1`: Returns a surrogate code unit as a "code point"; no Rust char can hold it.
 - fixtures (0 compared of 1; not run 1): F0117 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.codePointAt.B4` (codePointAt)
-- hazard: Returns a surrogate code unit as a "code point".
+## `state.codePointAt.B4` (codePointAt, `state.cm6.213`)
+- text: A high surrogate followed by a unit that is not a low surrogate: returns the high surrogate code unit.
+- `state.codePointAt.B4:h1`: Returns a surrogate code unit as a "code point".
 - fixtures (0 compared of 2; not run 2): F0118 not run, F0119 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.codePointAt.B5` (codePointAt)
-- hazard: A position inside a character is a valid input and returns half of a character (D1).
-- hazard: Returns a surrogate code unit as a "code point".
+## `state.codePointAt.B5` (codePointAt, `state.cm6.213`)
+- text: pos inside a character (between the halves of a valid pair) or at a lone low surrogate: returns the low surrogate code unit (0xDC00..0xDFFF); codePointSize of it is 1 (F0143). autocomplete prevChar relies on this: when sliceString(pos - 2, pos) starts with a low surrogate, codePointSize(codePointAt(prev, 0)) == 1 != prev.length, so it keeps only the last unit (closebrackets.ts:154, F0144). Recorded as D1 evidence at the consultant's request.
+- `state.codePointAt.B5:h1`: A position inside a character is a valid input and returns half of a character (D1).
+- `state.codePointAt.B5:h2`: Returns a surrogate code unit as a "code point".
 - fixtures (126 compared of 165; not run 39, part 126): F0120 not run, F0121 not run, F0122 not run, F0143 not run, F0144 not run, F2000 part, F2001 part, F2002 part, ... (157 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 126, bmp 110, astral 83, lone cr 7, u2028 10
+- ops they run: codePointAt.every, codePointSize, count, findClusterBreak, findClusterBreak.every, findClusterBreak.walk, item, jsonEqual, let, map, reverse, slice, sum
 - ported cases: none
 - written tests: none
 
-## `state.codePointAt.B6` (codePointAt)
-- hazard: NaN result, no exception (Q9).
+## `state.codePointAt.B6` (codePointAt, `state.cm6.213`)
+- text: pos at or past the end of the string, or negative: charCodeAt returns NaN, which is not a high surrogate, so the result is NaN (also for the empty string at 0). codePointSize(NaN) is 2 (F0145, F0146), so autocomplete nextChar at the document end slices "" (closebrackets.ts:149). Recorded as D1 evidence at the consultant's request.
+- `state.codePointAt.B6:h1`: NaN result, no exception (Q9).
 - fixtures (129 compared of 166; equal 3, not run 37, part 126): F0123 equal, F0124 equal, F0125 equal, F0126 not run, F0145 not run, F0146 not run, F2000 part, F2001 part, ... (158 more in the behavior's row)
+- compared fixtures by text class: empty 2, ascii 129, bmp 110, astral 83, lone cr 7, u2028 10
+- ops they run: codePointAt, codePointAt.every, codePointSize, count, findClusterBreak, findClusterBreak.every, findClusterBreak.walk, item, jsonEqual, let, map, reverse, slice, sum
 - ported cases: none
 - written tests: none
 
-## `state.codePointAt.B7` (codePointAt)
-- hazard: Fractional and NaN positions accepted silently (Q9).
+## `state.codePointAt.B7` (codePointAt, `state.cm6.213`)
+- text: Fractional or NaN pos: charCodeAt truncates the index (NaN reads index 0), so codePointAt("abc", 1.5) is 98, codePointAt("abc", NaN) is 97, and codePointAt("\u{1F600}", 0.5) combines the pair because the length test pos + 1 == str.length fails for 1.5 (Q9).
+- `state.codePointAt.B7:h1`: Fractional and NaN positions accepted silently (Q9).
 - fixtures (0 compared of 3; not run 3): F0127 not run, F0128 not run, F0129 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.codePointSize.B3` (codePointSize)
-- hazard: NaN and out-of-range numbers accepted silently (Q9).
+## `state.codePointSize.B3` (codePointSize, `state.cm6.215`)
+- text: Values that are not code points: NaN, Infinity and values above 0x10FFFF return 2 (the comparison code < 0x10000 is false); negative and fractional values below 0x10000 return 1. No check, no exception (Q9).
+- `state.codePointSize.B3:h1`: NaN and out-of-range numbers accepted silently (Q9).
 - fixtures (0 compared of 5; not run 5): F0138 not run, F0139 not run, F0140 not run, F0141 not run, F0142 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.codePointSize.B4` (codePointSize)
-- hazard: The "size" at a position inside a character is 1 and past the end is 2; neither is the size of a character there (D1).
+## `state.codePointSize.B4` (codePointSize, `state.cm6.215`)
+- text: Composition codePointSize(codePointAt(str, pos)) as consumers use it: 2 at the start of a valid pair; 1 at a position inside a character (between the halves of a pair) or at a lone surrogate; 2 at or past the end of the string, because codePointAt gives NaN there. Recorded as D1 evidence at the consultant's request.
+- `state.codePointSize.B4:h1`: The "size" at a position inside a character is 1 and past the end is 2; neither is the size of a character there (D1).
 - fixtures (127 compared of 165; equal 1, not run 38, part 126): F0143 not run, F0144 not run, F0145 not run, F0146 not run, F0147 equal, F2000 part, F2001 part, F2002 part, ... (157 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 127, bmp 110, astral 84, lone cr 7, u2028 10
+- ops they run: codePointAt, codePointAt.every, codePointSize, count, findClusterBreak, findClusterBreak.every, findClusterBreak.walk, item, jsonEqual, let, map, reverse, slice, sum
 - ported cases: none
 - written tests: none
 
-## `state.countColumn.B1` (countColumn)
-- hazard: Optional parameter with default.
+## `state.countColumn.B1` (countColumn, `state.cm6.216`)
+- text: `to` defaults to string.length: the column at the end of the string; the empty string is column 0. The loop runs while i < to and i < string.length.
+- `state.countColumn.B1:h1`: Optional parameter with default.
+- decision rows of the item: state.cm6.216.d1
 - fixtures (121 compared of 153; equal 3, not run 32, part 118): F0400 equal, F0401 equal, F0402 equal, F3000 part, F3001 not run, F3002 part, F3003 part, F3004 part, ... (145 more in the behavior's row)
+- compared fixtures by text class: empty 2, ascii 121, bmp 74, astral 67, crlf 1, lone cr 23, u2028 22
+- ops they run: column.roundTrip, count, countColumn, findColumn, ints, let, map, sum
 - ported cases: none
 - written tests: none
 
-## `state.countColumn.B4` (countColumn)
-- hazard: A `to` inside a character is accepted; its column is that of the end of the cluster (D1).
+## `state.countColumn.B4` (countColumn, `state.cm6.216`)
+- text: A `to` that falls inside a cluster (between surrogate halves, between a base and its mark) counts that whole cluster: the test i < to is made at the cluster start. `to` inside a tab is not possible (a tab is one unit); `to` = 0 is column 0.
+- `state.countColumn.B4:h1`: A `to` inside a character is accepted; its column is that of the end of the cluster (D1).
+- decision rows of the item: state.cm6.216.d1
 - fixtures (124 compared of 157; equal 6, not run 33, part 118): F0421 not run, F0422 equal, F0423 equal, F0424 equal, F0425 equal, F0426 equal, F0440 equal, F3000 part, ... (149 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 124, bmp 75, astral 67, crlf 1, lone cr 23, u2028 22
+- ops they run: column.roundTrip, count, countColumn, findColumn, ints, let, map, sum
 - ported cases: none
 - written tests: none
 
-## `state.countColumn.B5` (countColumn)
-- hazard: Fractional and NaN `to` accepted silently (Q9).
+## `state.countColumn.B5` (countColumn, `state.cm6.216`)
+- text: `to` outside 0..length: past the end the count stops at the string length (fixed in 6.5.1, mirrors/cm6/state/CHANGELOG.md:75, which reports an infinite loop before); negative or NaN `to` gives 0; a fractional `to` counts every cluster starting below it (countColumn("abc", 4, 1.5) is 2).
+- `state.countColumn.B5:h1`: Fractional and NaN `to` accepted silently (Q9).
+- decision rows of the item: state.cm6.216.d1
 - fixtures (119 compared of 154; equal 1, not run 35, part 118): F0427 equal, F0428 not run, F0429 not run, F0430 not run, F3000 part, F3001 not run, F3002 part, F3003 part, ... (146 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 119, bmp 74, astral 67, crlf 1, lone cr 23, u2028 22
+- ops they run: column.roundTrip, count, countColumn, findColumn, ints, let, map, sum
 - ported cases: none
 - written tests: none
 
-## `state.countColumn.B6` (countColumn)
-- hazard: NaN result; negative and fractional results; JS numbers (Q9).
+## `state.countColumn.B6` (countColumn, `state.cm6.216`)
+- text: tabSize outside the positive integers is not checked (Q9): tabSize 0 gives NaN after the first tab (n % 0 is NaN) and keeps it NaN; a string without tabs is unaffected; negative tabSize makes the column negative (countColumn("\t", -4) is -4); a fractional tabSize gives fractional columns; NaN tabSize gives NaN after a tab.
+- `state.countColumn.B6:h1`: NaN result; negative and fractional results; JS numbers (Q9).
+- decision rows of the item: state.cm6.216.d1
 - fixtures (0 compared of 8; not run 8): F0431 not run, F0432 not run, F0433 not run, F0434 not run, F0435 not run, F0436 not run, F0437 not run, F0438 not run
 - ported cases: none
 - written tests: written_text.rs::a_tab_size_of_zero_panics; written_text.rs::a_tab_size_of_zero_panics_on_a_string_without_a_tab
 
-## `state.countColumn.B7` (countColumn)
-- hazard: countColumn and findColumn are not inverse on a tab followed by a code point of the extending table (Extend or SpacingMark) or ZWJ (Q23).
+## `state.countColumn.B7` (countColumn, `state.cm6.216`)
+- text: A tab followed by a code point of the extending table (Extend or SpacingMark below U+30000, findClusterBreak B5) or a ZWJ: the tab is stepped by one code unit (B2), so the following code point starts a cluster of its own and counts one column (countColumn("\t\u0301x", 4) is 6, with to = 2 it is 5; countColumn("\t\u093fx", 4) is 6, F7019). findColumn steps the same tab with findClusterBreak, which absorbs the mark into the tab, so the two functions disagree on such strings (findColumn B8, Q23).
+- `state.countColumn.B7:h1`: countColumn and findColumn are not inverse on a tab followed by a code point of the extending table (Extend or SpacingMark) or ZWJ (Q23).
+- decision rows of the item: state.cm6.216.d1
 - fixtures (7 compared of 7; equal 7): F0482 equal, F0483 equal, F0484 equal, F6102 equal, F6103 equal, F6104 equal, F7019 equal
+- compared fixtures by text class: ascii 7, bmp 7, astral 3
+- ops they run: countColumn
 - ported cases: none
 - written tests: none
 
-## `state.countColumn.B8` (countColumn)
-- hazard: Tabs inside clusters are not tab stops.
+## `state.countColumn.B8` (countColumn, `state.cm6.216`)
+- text: A tab that follows a ZWJ is inside the ZWJ's cluster (findClusterBreak joins the code point after a ZWJ), so the tab test, made only at cluster starts, does not see it: it counts as part of a one-column cluster with no tab-stop advance (countColumn("a\u200D\tb", 4) is 2; with to = 3 it is 1).
+- `state.countColumn.B8:h1`: Tabs inside clusters are not tab stops.
+- decision rows of the item: state.cm6.216.d1
 - fixtures (5 compared of 5; equal 5): F0488 equal, F0489 equal, F6105 equal, F6106 equal, F6107 equal
+- compared fixtures by text class: ascii 5, bmp 5, astral 3
+- ops they run: countColumn
 - ported cases: none
 - written tests: none
 
-## `state.findColumn.B5` (findColumn)
-- hazard: -1 sentinel with strict (consumer rectangular-selection.ts:27 tests start < 0).
-- hazard: strict compared with === true, so a truthy non-boolean behaves as false.
+## `state.findColumn.B5` (findColumn, `state.cm6.217`)
+- text: String too short to reach col: returns string.length, or -1 when strict === true. Only the boolean true selects -1; strict false, undefined or a truthy non-boolean (1) return the length.
+- `state.findColumn.B5:h1`: -1 sentinel with strict (consumer rectangular-selection.ts:27 tests start < 0).
+- `state.findColumn.B5:h2`: strict compared with === true, so a truthy non-boolean behaves as false.
 - fixtures (125 compared of 158; equal 7, not run 33, part 118): F0459 equal, F0460 equal, F0461 equal, F0462 not run, F0463 equal, F0464 equal, F0465 equal, F0481 equal, ... (150 more in the behavior's row)
+- compared fixtures by text class: empty 2, ascii 125, bmp 74, astral 68, crlf 1, lone cr 23, u2028 22
+- ops they run: column.roundTrip, count, countColumn, findColumn, ints, let, map, sum
 - ported cases: none
 - written tests: none
 
-## `state.findColumn.B7` (findColumn)
-- hazard: NaN and Infinity columns; tabSize 0 or negative (Q9).
+## `state.findColumn.B7` (findColumn, `state.cm6.217`)
+- text: Arguments outside the domain are not checked (Q9): tabSize 0 turns n into NaN at the first tab and no later n >= col succeeds, so the result is the length (or -1 strict); negative tabSize gives offsets without error; fractional col is reached at the first n >= col (findColumn("abc", 1.5, 4) is 2); NaN and Infinity col never match and return the length (or -1 strict).
+- `state.findColumn.B7:h1`: NaN and Infinity columns; tabSize 0 or negative (Q9).
 - fixtures (0 compared of 15; not run 15): F0470 not run, F0471 not run, F0472 not run, F0473 not run, F0474 not run, F0475 not run, F0476 not run, F0477 not run, ... (7 more in the behavior's row)
 - ported cases: none
 - written tests: written_text.rs::a_tab_size_of_zero_panics; written_text.rs::a_tab_size_of_zero_panics_on_a_string_without_a_tab
 
-## `state.findColumn.B8` (findColumn)
-- hazard: findColumn and countColumn are not inverse on a tab followed by a code point of the extending table (Extend or SpacingMark) or ZWJ (Q23).
+## `state.findColumn.B8` (findColumn, `state.cm6.217`)
+- text: A tab followed by a code point of the extending table (Extend or SpacingMark below U+30000, findClusterBreak B5) or a ZWJ is stepped as one cluster with it (findClusterBreak from the tab absorbs the mark), adding only the tab's width: findColumn("\t\u0301x", 4, 4) is 2 and findColumn("\t\u0301x", 5, 4) is 3, the same for U+093F (F7020, F7021), while countColumn counts the mark as its own column (countColumn B7, Q23).
+- `state.findColumn.B8:h1`: findColumn and countColumn are not inverse on a tab followed by a code point of the extending table (Extend or SpacingMark) or ZWJ (Q23).
 - fixtures (10 compared of 10; equal 10): F0485 equal, F0486 equal, F0487 equal, F6108 equal, F6109 equal, F6110 equal, F6111 equal, F6112 equal, ... (2 more in the behavior's row)
+- compared fixtures by text class: ascii 10, bmp 10, astral 5
+- ops they run: findColumn
 - ported cases: none
 - written tests: none
 
-## `state.findColumn.B9` (findColumn)
-- hazard: Tabs inside clusters are not tab stops.
+## `state.findColumn.B9` (findColumn, `state.cm6.217`)
+- text: A tab that follows a ZWJ is stepped as part of the ZWJ's cluster and adds one column, not a tab stop: findColumn("a\u200D\tb", 1, 4) is 3 (after a, ZWJ and the tab) and findColumn("a\u200D\tb", 2, 4) is 4. countColumn agrees on this case (countColumn B8).
+- `state.findColumn.B9:h1`: Tabs inside clusters are not tab stops.
 - fixtures (6 compared of 6; equal 6): F0490 equal, F0491 equal, F6113 equal, F6114 equal, F6115 equal, F6116 equal
+- compared fixtures by text class: ascii 6, bmp 6, astral 4
+- ops they run: findColumn
 - ported cases: none
 - written tests: none
 
-## `state.CharCategory.B1` (CharCategory)
-- hazard: TypeScript numeric enum: reverse mapping object at runtime; consumers store values outside the enum in the same variable (commands.ts:124 uses -1).
+## `state.CharCategory.B1` (CharCategory, `state.cm6.166`)
+- text: Numeric enum: Word = 0, Space = 1, Other = 2. At runtime it is an object with forward and reverse mappings (CharCategory[0] is "Word"; keys "0", "1", "2", "Word", "Space", "Other"). Callers compare categories with == and != only (consumer grep); no caller orders them.
+- `state.CharCategory.B1:h1`: TypeScript numeric enum: reverse mapping object at runtime; consumers store values outside the enum in the same variable (commands.ts:124 uses -1).
+- decision rows of the item: state.cm6.166.d1
 - fixtures (1 compared of 1; part 1): F0600 part
+- compared fixtures by text class: ascii 1
+- ops they run: charCategory.get, charCategory.keys
 - ported cases: test-charcategory#01 (test_cm6_charcategory_01_categorises_into_alphanumeric); test-charcategory#02 (test_cm6_charcategory_02_categorises_into_whitespace); test-charcategory#03 (test_cm6_charcategory_03_categorises_into_other)
 - written tests: none
 
-## `state.CharCategory.B2` (CharCategory)
-- hazard: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
+## `state.CharCategory.B2` (CharCategory, `state.cm6.166`)
+- text: The categorizer checks in a fixed order, each over the whole string: (1) no non-whitespace character (/\S/ fails) gives Space; (2) any \p{Alphabetic}, \p{Number} or `_` code point anywhere gives Word; (3) any code unit of the language data `wordChars` contained in the string gives Word; (4) otherwise Other. So "a b" is Word, " -" is Other, and wordChars cannot turn a whitespace-only string into Word.
+- `state.CharCategory.B2:h1`: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
+- decision rows of the item: state.cm6.166.d1
 - fixtures (126 compared of 126; equal 21, part 105): F0601 equal, F0602 equal, F0603 equal, F0604 equal, F0605 equal, F3500 part, F3501 part, F3502 part, ... (118 more in the behavior's row)
+- compared fixtures by text class: empty 120, ascii 126, bmp 121, astral 121, lone surrogate 105, crlf 84, lone cr 67, u2028 67
+- ops they run: categorize, categorizer, let, map
 - ported cases: test-charcategory#01 (test_cm6_charcategory_01_categorises_into_alphanumeric); test-charcategory#02 (test_cm6_charcategory_02_categorises_into_whitespace); test-charcategory#03 (test_cm6_charcategory_03_categorises_into_other)
 - written tests: none
 
-## `state.CharCategory.Word.B1` (CharCategory.Word)
-- hazard: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
-- hazard: Regex \p{...} with the u flag, compiled once at module load in a try/catch (module-level state, charcategory.ts:15-16).
+## `state.CharCategory.Word.B1` (CharCategory.Word, `state.cm6.167`)
+- text: A string containing a \p{Alphabetic} code point is Word: ASCII and Latin letters, precomposed and decomposed accented letters, CJK, Hangul syllables and jamo, Hebrew, Arabic, astral letters (U+1D400), combining marks with Other_Alphabetic (U+0345), U+00AA, U+3005.
+- `state.CharCategory.Word.B1:h1`: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
+- `state.CharCategory.Word.B1:h2`: Regex \p{...} with the u flag, compiled once at module load in a try/catch (module-level state, charcategory.ts:15-16).
+- decision rows of the item: state.cm6.167.d1
 - fixtures (134 compared of 134; equal 30, part 104): F0606 equal, F0607 equal, F0608 equal, F0609 equal, F0610 equal, F0611 equal, F0612 equal, F0613 equal, ... (126 more in the behavior's row)
+- compared fixtures by text class: empty 120, ascii 134, bmp 131, astral 121, lone surrogate 104, crlf 83, lone cr 66, u2028 66
+- ops they run: categorize, categorizer, let, map
 - ported cases: test-charcategory#01 (test_cm6_charcategory_01_categorises_into_alphanumeric)
 - written tests: none
 
-## `state.CharCategory.Word.B2` (CharCategory.Word)
-- hazard: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
+## `state.CharCategory.Word.B2` (CharCategory.Word, `state.cm6.167`)
+- text: A string containing a \p{Number} code point is Word: ASCII digits, superscripts (²), fractions (½), roman numerals (Ⅻ), Arabic-Indic digits, circled digits, astral digits (U+1D7CE).
+- `state.CharCategory.Word.B2:h1`: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
+- decision rows of the item: state.cm6.167.d1
 - fixtures (128 compared of 128; equal 24, part 104): F0620 equal, F0621 equal, F0622 equal, F0623 equal, F0624 equal, F0625 equal, F0626 equal, F0627 equal, ... (120 more in the behavior's row)
+- compared fixtures by text class: empty 120, ascii 128, bmp 125, astral 121, lone surrogate 104, crlf 83, lone cr 66, u2028 66
+- ops they run: categorize, categorizer, let, map
 - ported cases: test-charcategory#01 (test_cm6_charcategory_01_categorises_into_alphanumeric)
 - written tests: none
 
-## `state.CharCategory.Word.B3` (CharCategory.Word)
-- hazard: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
+## `state.CharCategory.Word.B3` (CharCategory.Word, `state.cm6.167`)
+- text: The underscore `_` is Word (listed in the class); other connector punctuation such as U+203F is Other.
+- `state.CharCategory.Word.B3:h1`: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
+- decision rows of the item: state.cm6.167.d1
 - fixtures (2 compared of 2; equal 2): F0628 equal, F0629 equal
+- compared fixtures by text class: ascii 2, bmp 1
+- ops they run: categorize, categorizer
 - ported cases: none
 - written tests: none
 
-## `state.CharCategory.Word.B5` (CharCategory.Word)
-- hazard: Closure capturing wordChars (makeCategorizer returns a new function per charCategorizer call).
+## `state.CharCategory.Word.B5` (CharCategory.Word, `state.cm6.167`)
+- text: Language data `wordChars`: when the string is not Space and has no Unicode word character, it is Word if it contains any code unit of the wordChars string (char.indexOf(wordChars[i]) > -1 for each i). Empty or absent wordChars adds nothing. Only the first `wordChars` value from languageDataAt (the highest-precedence one) is used (EditorState.charCategorizer, state.ts:374-375; CHANGELOG 6.5.3 at mirrors/cm6/state/CHANGELOG.md:63), shown by F0645.
+- `state.CharCategory.Word.B5:h1`: Closure capturing wordChars (makeCategorizer returns a new function per charCategorizer call).
+- decision rows of the item: state.cm6.167.d1
 - fixtures (127 compared of 127; equal 23, part 104): F0635 equal, F0636 equal, F0637 equal, F0638 equal, F0639 equal, F0640 equal, F0646 equal, F3500 part, ... (119 more in the behavior's row)
+- compared fixtures by text class: empty 121, ascii 127, bmp 120, astral 121, lone surrogate 104, crlf 83, lone cr 66, u2028 66
+- ops they run: categorize, categorizer, let, map
 - ported cases: none
 - written tests: none
 
-## `state.CharCategory.Word.B6` (CharCategory.Word)
-- hazard: UTF-16 string operations: indexing wordChars by code unit splits astral characters into halves.
+## `state.CharCategory.Word.B6` (CharCategory.Word, `state.cm6.167`)
+- text: wordChars is matched per UTF-16 code unit: wordChars "😀" (D83D DE00) makes every string containing D83D or DE00 Word, so "😃" (D83D DE03) and a lone D83D are Word; wordChars holding a lone surrogate matches any astral character sharing it; a combining mark listed in wordChars makes any string containing it Word.
+- `state.CharCategory.Word.B6:h1`: UTF-16 string operations: indexing wordChars by code unit splits astral characters into halves.
+- decision rows of the item: state.cm6.167.d1
 - fixtures (127 compared of 129; equal 23, not run 2, part 104): F0641 equal, F0642 not run, F0643 not run, F0644 equal, F0645 equal, F3500 part, F3501 part, F3502 part, ... (121 more in the behavior's row)
+- compared fixtures by text class: empty 120, ascii 127, bmp 122, astral 121, lone surrogate 104, crlf 83, lone cr 66, u2028 66
+- ops they run: categorize, categorizer, let, map
 - ported cases: none
 - written tests: none
 
-## `state.CharCategory.Space.B2` (CharCategory.Space)
-- hazard: JS regex whitespace class /\s/ (ECMAScript WhiteSpace + LineTerminator; engine Unicode data for Zs) (Q7).
+## `state.CharCategory.Space.B2` (CharCategory.Space, `state.cm6.168`)
+- text: A string made only of JS whitespace (/\s/: tab, LF, VT, FF, CR, space, U+00A0, U+1680, U+2000-U+200A, U+2028, U+2029, U+202F, U+205F, U+3000, U+FEFF) is Space. U+200B and U+180E are not whitespace (Other, B3 of CharCategory.Other).
+- `state.CharCategory.Space.B2:h1`: JS regex whitespace class /\s/ (ECMAScript WhiteSpace + LineTerminator; engine Unicode data for Zs) (Q7).
 - fixtures (136 compared of 136; equal 32, part 104): F0648 equal, F0649 equal, F0650 equal, F0651 equal, F0652 equal, F0653 equal, F0654 equal, F0655 equal, ... (128 more in the behavior's row)
+- compared fixtures by text class: empty 120, ascii 136, bmp 129, astral 120, lone surrogate 104, crlf 83, lone cr 67, u2028 67
+- ops they run: categorize, categorizer, let, map
 - ported cases: test-charcategory#02 (test_cm6_charcategory_02_categorises_into_whitespace)
 - written tests: none
 
-## `state.CharCategory.Other.B1` (CharCategory.Other)
-- hazard: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
+## `state.CharCategory.Other.B1` (CharCategory.Other, `state.cm6.169`)
+- text: ASCII and non-ASCII punctuation and symbols that are not listed in wordChars are Other: / < - $ . " @ © € → ¿.
+- `state.CharCategory.Other.B1:h1`: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
 - fixtures (131 compared of 131; equal 27, part 104): F0666 equal, F0667 equal, F0668 equal, F0669 equal, F0670 equal, F0671 equal, F0672 equal, F0673 equal, ... (123 more in the behavior's row)
+- compared fixtures by text class: empty 120, ascii 131, bmp 124, astral 120, lone surrogate 104, crlf 83, lone cr 66, u2028 66
+- ops they run: categorize, categorizer, let, map
 - ported cases: test-charcategory#03 (test_cm6_charcategory_03_categorises_into_other)
 - written tests: none
 
-## `state.CharCategory.Other.B2` (CharCategory.Other)
-- hazard: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
+## `state.CharCategory.Other.B2` (CharCategory.Other, `state.cm6.169`)
+- text: Emoji and astral symbols with no letter or digit are Other: a single emoji, a ZWJ family sequence, a flag pair, an emoji with a skin-tone modifier, a heart with U+FE0F.
+- `state.CharCategory.Other.B2:h1`: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
 - fixtures (125 compared of 125; equal 21, part 104): F0677 equal, F0678 equal, F0679 equal, F0680 equal, F0681 equal, F3500 part, F3501 part, F3502 part, ... (117 more in the behavior's row)
+- compared fixtures by text class: empty 120, ascii 125, bmp 122, astral 124, lone surrogate 104, crlf 83, lone cr 66, u2028 66
+- ops they run: categorize, categorizer, let, map
 - ported cases: none
 - written tests: none
 
-## `state.CharCategory.Other.B3` (CharCategory.Other)
-- hazard: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
-- hazard: Lone surrogates reach the categorizer from closebrackets.ts:258, :261 (sliceDoc(pos - 1, pos) inside a pair).
+## `state.CharCategory.Other.B3` (CharCategory.Other, `state.cm6.169`)
+- text: Non-whitespace format and control characters, lone surrogates and non-alphabetic marks alone are Other: U+200B, ZWJ, U+180E, NUL, BEL, a lone high or low surrogate, U+0301 alone, U+FE0F alone.
+- `state.CharCategory.Other.B3:h1`: Unicode data of the JS engine (Q7): \p{Alphabetic}, \p{Number} and /\S/ come from the runtime (fixtures record node 22.23.4, Unicode 17.0, ICU 78.3).
+- `state.CharCategory.Other.B3:h2`: Lone surrogates reach the categorizer from closebrackets.ts:258, :261 (sliceDoc(pos - 1, pos) inside a pair).
 - fixtures (127 compared of 129; equal 23, not run 2, part 104): F0682 equal, F0683 equal, F0684 equal, F0685 equal, F0686 equal, F0687 not run, F0688 not run, F0689 equal, ... (121 more in the behavior's row)
+- compared fixtures by text class: empty 120, ascii 127, bmp 125, astral 120, lone surrogate 104, crlf 83, lone cr 66, u2028 66
+- ops they run: categorize, categorizer, let, map
 - ported cases: none
 - written tests: none
 
-## `state.Line.B1` (Line)
-- hazard: Object identity: a fresh object per query; no caller may rely on ===.
-- hazard: Fields are writable at runtime (TypeScript readonly only); length is recomputed from them (F0822).
+## `state.Line.B1` (Line, `state.cm6.218`)
+- text: A Line is a plain object with four data fields (from, to, number, text) and a length getter, created by Text.lineAt and Text.line on every call: two queries for the same line return distinct objects (doc.line(1) !== doc.line(1)), so Line identity carries no meaning. Its constructor is @internal; instanceof Line holds for every returned value.
+- `state.Line.B1:h1`: Object identity: a fresh object per query; no caller may rely on ===.
+- `state.Line.B1:h2`: Fields are writable at runtime (TypeScript readonly only); length is recomputed from them (F0822).
 - fixtures (1 compared of 1; part 1): F0800 part
+- compared fixtures by text class: empty 1, ascii 1
+- ops they run: line.isLine, ownKeys, same, text.line, text.lineAt, text.of
 - ported cases: test-text#25 (test_cm6_text_25_can_get_line_info_by_line_number); test-text#26 (test_cm6_text_26_can_get_line_info_by_position)
 - written tests: none
 
-## `state.Line.text.B1` (Line.text)
-- hazard: Aliasing: the string is the stored one (immutable in JS, so not observable).
+## `state.Line.text.B1` (Line.text, `state.cm6.222`)
+- text: The line's content without any line break, the same string the document stores (no copy is made); "" for an empty line. CR and U+2028 inside a line given to Text.of are content.
+- `state.Line.text.B1:h1`: Aliasing: the string is the stored one (immutable in JS, so not observable).
 - fixtures (44 compared of 44; equal 26, part 18): F0804 equal, F0809 equal, F0814 equal, F0819 equal, F4000 equal, F4010 part, F4020 equal, F4030 equal, ... (36 more in the behavior's row)
+- compared fixtures by text class: empty 19, ascii 44, bmp 21, astral 21, crlf 2, lone cr 22, u2028 21
+- ops they run: capture, ints, let, line.fields, line.get, list, map, record, state.create, state.doc, sum, text.length, text.line, text.lineAt, text.lines, text.of
 - ported cases: test-text#25 (test_cm6_text_25_can_get_line_info_by_line_number); test-text#26 (test_cm6_text_26_can_get_line_info_by_position)
 - written tests: none
 
-## `state.Line.text.B2` (Line.text)
-- hazard: A Text whose lines contain line breaks disagrees with its own string form (Q9).
+## `state.Line.text.B2` (Line.text, `state.cm6.222`)
+- text: A string containing "\n" given to Text.of as one line stays one line: line(1).text is "a\nb" with from 0, to 3, lineAt(2) returns that line, while toString() shows three lines "a\nb\nc" (Q9).
+- `state.Line.text.B2:h1`: A Text whose lines contain line breaks disagrees with its own string form (Q9).
 - fixtures (2 compared of 2; equal 1, part 1): F0821 equal, F6091 part
+- compared fixtures by text class: ascii 2, astral 1
+- ops they run: line.fields, text.line, text.lineAt, text.lines, text.of, text.toString
 - ported cases: none
 - written tests: none
 
-## `state.Line.length.B2` (Line.length)
-- hazard: Getter over writable fields (prototype dispatch).
+## `state.Line.length.B2` (Line.length, `state.cm6.223`)
+- text: A getter recomputed on each access from the to and from fields; assigning to a Line's to at runtime changes its length (F0822).
+- `state.Line.length.B2:h1`: Getter over writable fields (prototype dispatch).
 - fixtures (0 compared of 1; not run 1): F0822 not run
 - ported cases: none
 - written tests: written_text.rs::a_line_length_is_to_minus_from
 
-## `state.TextIterator.B1` (TextIterator)
-- hazard: Duck-typed protocol: the cursor is its own IteratorResult; the same object is returned by every next().
-- hazard: Mutable shared state: iterating with for..of consumes the cursor.
+## `state.TextIterator.B1` (TextIterator, `state.cm6.224`)
+- text: Three implementations share the interface: the raw cursor (Text.iter), the partial cursor (Text.iterRange) and the line cursor (Text.iterLines). Each is its own iterable: [Symbol.iterator]() returns the cursor itself, so for..of and spread continue from the current state and a second spread yields nothing. next() returns the cursor itself, which serves as the iterator-protocol result object ({value, done}).
+- `state.TextIterator.B1:h1`: Duck-typed protocol: the cursor is its own IteratorResult; the same object is returned by every next().
+- `state.TextIterator.B1:h2`: Mutable shared state: iterating with for..of consumes the cursor.
 - fixtures (2 compared of 3; not run 1, part 2): F0823 part, F0824 part, F0825 not run
+- compared fixtures by text class: empty 2, ascii 2
+- ops they run: iter.next, iter.self, same, spread, text.iter, text.iterLines, text.iterRange, text.of
 - ported cases: test-text#17 (test_cm6_text_17_is_iterable)
 - written tests: none
 
-## `state.TextIterator.next.B1` (TextIterator.next)
-- hazard: Empty lines produce no value: callers count positions from value lengths (DocInput, lint, view) and see breaks only.
+## `state.TextIterator.next.B1` (TextIterator.next, `state.cm6.225`)
+- text: Raw forward cursor (iter() or iter(1)), next() without skip: yields each non-empty line's whole content and "\n" for each line break, in document order, then done. Empty lines yield nothing of their own (two consecutive breaks show as two "\n"); the empty document is done at the first call. Values never span a line break; a "\n" stored inside a line (Q9) is part of a line value with lineBreak false. Whole lines are returned, never split at leaf or node boundaries.
+- `state.TextIterator.next.B1:h1`: Empty lines produce no value: callers count positions from value lengths (DocInput, lint, view) and see breaks only.
+- decision rows of the item: state.cm6.225.d1, state.cm6.225.d2, state.cm6.225.d3
 - fixtures (13 compared of 13; equal 8, part 5): F0830 equal, F0831 equal, F0832 equal, F0833 equal, F0834 equal, F0835 equal, F0836 equal, F0837 equal, ... (5 more in the behavior's row)
+- compared fixtures by text class: empty 6, ascii 13, astral 1, crlf 1, lone cr 2, u2028 3
+- ops they run: column, count, countOf, fill, iter.drain, join, spread, state.create, state.doc, text.iter, text.of
 - ported cases: test-text#17 (test_cm6_text_17_is_iterable)
 - written tests: none
 
-## `state.TextIterator.next.B3` (TextIterator.next)
-- hazard: UTF-16: a skip can land inside a surrogate pair and the value then starts or ends with a lone surrogate.
+## `state.TextIterator.next.B3` (TextIterator.next, `state.cm6.225`)
+- text: Raw cursor, next(skip) with an integer skip > 0 (fractional skips: B11): the cursor's position p is the end of the previous value (forward; the start for reverse), 0 (length for reverse) before the first call. Forward it reads at q = p + skip: done (value "") when q >= length; "\n" when q is a line-break position; otherwise the rest of the line from q (which can start or end inside a surrogate pair, giving a lone surrogate, F0843). Reverse reads at q = p - skip: done when q <= 0; "\n" when q - 1 is a break; otherwise the part of the line before q. Skips cross whole tree children without visiting them when skip exceeds the child's length. Checked against this model on 300 seeded cases (gen-text.ts).
+- `state.TextIterator.next.B3:h1`: UTF-16: a skip can land inside a surrogate pair and the value then starts or ends with a lone surrogate.
+- decision rows of the item: state.cm6.225.d1, state.cm6.225.d2, state.cm6.225.d3
 - fixtures (38 compared of 41; equal 27, not run 3, part 11): F0842 equal, F0843 part, F0844 equal, F0845 equal, F0846 equal, F4006 part, F4016 equal, F4026 equal, ... (33 more in the behavior's row)
+- compared fixtures by text class: empty 18, ascii 38, bmp 16, astral 17, crlf 1, lone cr 16, u2028 13
+- ops they run: block, fill, iter.drain, iter.steps, state.create, state.doc, text.iter, text.iterLines, text.iterRange, text.length, text.of
 - ported cases: test-text#19 (test_cm6_text_19_allows_negative_skip_values_in_iteration)
 - written tests: none
 
-## `state.TextIterator.next.B4` (TextIterator.next)
-- hazard: done is not sticky under a negative skip on the raw cursor.
+## `state.TextIterator.next.B4` (TextIterator.next, `state.cm6.225`)
+- text: Raw cursor, next(skip) with an integer skip < 0 (fractional skips: B11): implemented as one step of |skip| positions in the opposite direction and a step forward over that value's length (nextInner(-skip, -dir) then nextInner(value.length, dir)); the observable result is the same model with q = max(0, p + skip) forward (min(length, p - skip) reverse): next(-k) after a value ending at p returns the rest of the line from p - k, or "\n" at a break; skipping before the start clamps to the start (next(-1000) returns the first line). A negative skip after done reads again (done becomes false, F0853); as the first call, next(-1) reads from 0 (F0851).
+- `state.TextIterator.next.B4:h1`: done is not sticky under a negative skip on the raw cursor.
+- decision rows of the item: state.cm6.225.d1, state.cm6.225.d2, state.cm6.225.d3
 - fixtures (39 compared of 42; equal 29, not run 3, part 10): F0847 equal, F0848 equal, F0849 equal, F0850 equal, F0851 equal, F0852 equal, F4006 part, F4016 equal, ... (34 more in the behavior's row)
+- compared fixtures by text class: empty 18, ascii 39, bmp 16, astral 17, crlf 1, lone cr 16, u2028 13
+- ops they run: block, fill, iter.drain, iter.steps, state.create, state.doc, text.iter, text.iterLines, text.iterRange, text.length, text.of
 - ported cases: test-text#19 (test_cm6_text_19_allows_negative_skip_values_in_iteration)
 - written tests: none
 
-## `state.TextIterator.next.B5` (TextIterator.next)
-- hazard: LineCursor.done is set once and never reset: after done, a negative skip leaves done true with a non-empty value.
+## `state.TextIterator.next.B5` (TextIterator.next, `state.cm6.225`)
+- text: After the end: next() with skip >= 0 keeps returning done true and value "" on all three cursors. A negative skip after done differs per cursor: the raw cursor reads again (done false, F0853); the partial cursor stays done (F0854); the line cursor sets value to the inner value but keeps done true (value "b" with done true, F0855).
+- `state.TextIterator.next.B5:h1`: LineCursor.done is set once and never reset: after done, a negative skip leaves done true with a non-empty value.
+- decision rows of the item: state.cm6.225.d1, state.cm6.225.d2, state.cm6.225.d3
 - fixtures (9 compared of 9; equal 8, part 1): F0853 equal, F0854 equal, F0855 equal, F6003 equal, F6013 equal, F6023 equal, F6033 equal, F6043 equal, ... (1 more in the behavior's row)
+- compared fixtures by text class: ascii 9, astral 1, crlf 1, lone cr 1, u2028 2
+- ops they run: block, iter.drain, iter.steps, state.create, state.doc, text.iter, text.iterLines, text.iterRange, text.length, text.of
 - ported cases: none
 - written tests: none
 
-## `state.TextIterator.next.B6` (TextIterator.next)
-- hazard: UTF-16: range ends inside a surrogate pair give lone surrogates.
+## `state.TextIterator.next.B6` (TextIterator.next, `state.cm6.225`)
+- text: Partial cursor (iterRange(from, to)), next() without skip, integer bounds (fractional bounds: state.Text.iterRange.B3): yields the raw cursor's values clipped to [min(from, to), max(from, to)): the first value starts at from (forward) and the last ends at to; with from > to it runs in reverse over [to, from); from == to is done at once. The range is not clipped to the document (Text.iterRange B2). done is set when a step produces an empty value (done = !value). Values can start or end inside a surrogate pair (F0864).
+- `state.TextIterator.next.B6:h1`: UTF-16: range ends inside a surrogate pair give lone surrogates.
+- decision rows of the item: state.cm6.225.d1, state.cm6.225.d2, state.cm6.225.d3
 - fixtures (45 compared of 47; equal 32, not run 2, part 13): F0856 equal, F0857 equal, F0858 equal, F0859 equal, F0860 equal, F0861 equal, F0862 equal, F0863 equal, ... (39 more in the behavior's row)
+- compared fixtures by text class: empty 29, ascii 45, bmp 18, astral 22, crlf 1, lone cr 16, u2028 12
+- ops they run: count, fill, iter.drain, iter.steps, join, let, list, same, state.create, state.doc, text.iterRange, text.of, text.sliceString
 - ported cases: test-text#20 (test_cm6_text_20_is_partially_iterable); test-text#21 (test_cm6_text_21_is_partially_iterable_in_reverse); test-text#22 (test_cm6_text_22_can_partially_iter_over_subsections_at_the_start_and_end)
 - written tests: none
 
-## `state.TextIterator.next.B7` (TextIterator.next)
-- hazard: Skip clipping uses forward bounds before the first step (Q24).
+## `state.TextIterator.next.B7` (TextIterator.next, `state.cm6.225`)
+- text: Partial cursor, forward, next(skip) with an integer skip (fractional skips: B12) after the first step: skip > 0 is clipped to to - pos, skip < 0 to from - pos, so the cursor stays inside the range (next(100) past the end gives done, next(-5) back to from returns the piece at from, F0868). On the first call a negative skip is clipped with max(skip, from - pos) where from - pos is positive (pos is 0 before the first step), so it becomes a forward skip of from and the cursor reads at 2 * from instead of from (iterRange(2, 12).next(-5) returns "two" at 4, F0869; Q24).
+- `state.TextIterator.next.B7:h1`: Skip clipping uses forward bounds before the first step (Q24).
+- decision rows of the item: state.cm6.225.d1, state.cm6.225.d2, state.cm6.225.d3
 - fixtures (37 compared of 37; equal 24, part 13): F0868 equal, F0869 equal, F4007 equal, F4017 equal, F4027 part, F4037 part, F4047 equal, F4057 equal, ... (29 more in the behavior's row)
+- compared fixtures by text class: empty 21, ascii 37, bmp 18, astral 21, crlf 1, lone cr 16, u2028 12
+- ops they run: iter.drain, iter.steps, let, list, state.create, state.doc, text.iterRange, text.of
 - ported cases: none
 - written tests: none
 
-## `state.TextIterator.next.B8` (TextIterator.next)
-- hazard: Values outside the requested range from a reverse partial cursor with a skip (Q24).
+## `state.TextIterator.next.B8` (TextIterator.next, `state.cm6.225`)
+- text: Partial cursor, reverse (from > to), next(skip) with an integer skip != 0 (fractional skips: B12): the clipping in next() uses the forward bounds (min(skip, to - pos), max(skip, from - pos)) whatever the direction. Before the first step pos is the document length, so to - pos is negative and a positive skip turns into a negative one: iterRange(12, 2).next(2) returns "four" (positions 15-19, outside the range), iterRange(6, 2) on "abcdefgh" with next(1) returns "cdefgh" (positions 2-8), iterRange(8, 2).next(1) ignores the skip (F0870, F0872, F0873). After the first step a positive skip is limited by the distance already travelled (to - pos) rather than the distance left, and a negative skip by from - pos (F0871). Q24.
+- `state.TextIterator.next.B8:h1`: Values outside the requested range from a reverse partial cursor with a skip (Q24).
+- decision rows of the item: state.cm6.225.d1, state.cm6.225.d2, state.cm6.225.d3
 - fixtures (9 compared of 11; equal 4, not run 2, part 5): F0870 equal, F0871 equal, F0872 equal, F0873 equal, F1500 not run, F1501 not run, F6004 part, F6014 part, ... (3 more in the behavior's row)
+- compared fixtures by text class: empty 2, ascii 9, crlf 1, lone cr 1, u2028 2
+- ops they run: iter.drain, iter.steps, list, state.create, state.doc, text.iterRange, text.of
 - ported cases: none
 - written tests: none
 
-## `state.TextIterator.next.B9` (TextIterator.next)
-- hazard: Recursion: next() calls itself once per line break (depth 1).
+## `state.TextIterator.next.B9` (TextIterator.next, `state.cm6.225`)
+- text: Line cursor (iterLines), next() without skip: yields each line's content once, "" for every empty line including empty lines at the end of the range and the single line of the empty document, never "\n"; then done. Implemented over an inner raw or partial cursor: a break directly after a line is consumed by a recursive next(), a break after a break (or at the start) yields "", and the end after a break yields one final "" (CHANGELOG 6.3.2, mirrors/cm6/state/CHANGELOG.md:113).
+- `state.TextIterator.next.B9:h1`: Recursion: next() calls itself once per line break (depth 1).
+- decision rows of the item: state.cm6.225.d1, state.cm6.225.d2, state.cm6.225.d3
 - fixtures (41 compared of 41; equal 36, part 5): F0874 equal, F0875 equal, F0876 equal, F0877 equal, F0878 equal, F0879 equal, F4008 equal, F4018 equal, ... (33 more in the behavior's row)
+- compared fixtures by text class: empty 21, ascii 41, bmp 20, astral 21, crlf 1, lone cr 22, u2028 14
+- ops they run: capture, iter.drain, iter.steps, list, state.create, state.doc, text.iterLines, text.lines, text.of
 - ported cases: test-text#23 (test_cm6_text_23_can_iterate_over_lines)
 - written tests: none
 
-## `state.TextIterator.next.B11` (TextIterator.next)
-- hazard: Arguments outside the domain (Q9).
-- hazard: Fractional skip: the break test `skip == 0` never holds and a negative remainder reaches String.prototype.slice as a negative index, which counts from the end of the line (mirrors/cm6/state/src/text.ts:434, :445).
-- hazard: Reverse: a value "" with done false (mirrors/cm6/state/src/text.ts:444-445).
+## `state.TextIterator.next.B11` (TextIterator.next, `state.cm6.225`)
+- text: Raw cursor (iter(dir)), fractional skip (Q9). nextInner subtracts 1 from the skip for each break and a line's length for each line it passes, and returns a break only when the skip is exactly 0 (text.ts:432-439); a fractional skip is never 0, so the call returns no break; a line is returned when its length > Math.max(0, skip) (text.ts:444), cut with String.prototype.slice, which truncates the index: next.slice(skip) forward, next.slice(0, next.length - skip) reverse (text.ts:445). With p the cursor position (B3) and q = p + skip forward, p - skip reverse: (a) q inside a line's content: the value is the one the integer skip reading at Math.floor(q) gives (next(Math.floor(skip)) forward, next(Math.ceil(skip)) reverse): on Text.of(["one", "two", "", "three"]) iter().next(2.5) is "e", iter(-1).next(3.5) is "t"; except, in reverse, when q lies within one unit after a line's start (start < q < start + 1): the value is "" with done false and lineBreak false (iter(-1).next(4.5) is "" where next(5) gives "\n"; also iter(-1).next(9.5) and next(13.5)). (b) q inside a break (a line ending at e, e < q < e + 1): the break is passed. Forward, the skip left after it is q - e - 1, in (-1, 0); each further break (one per empty line in between) subtracts 1 more; the first non-empty line is returned as next.slice(skip) with a negative index, which counts from the line's end: the whole line when no empty line lies between (iter().next(3.5) is "two" where next(3) gives "\n"; iter().next(8.5) is "three"), its last k units when k empty lines lie between (iter().next(7.5) is "e": one empty line), the whole line when k >= its length; done when no non-empty line follows. Reverse, the line before the break is returned whole (next.slice(0, next.length - skip) with a negative skip, past the end): iter(-1).next(10.5) is "one", iter(-1).next(6.5) and next(5.5) are "two" (the empty line and its break passed). (c) q at or past the document end forward, at or before its start reverse: done, as B3. A negative fractional skip (text.ts:463-469) runs the reverse step with the fraction and then reads forward over that value's length: after the value "two" (p = 7), next(-0.5) gives "o" and next(-1.5) gives "wo" (the rest of the line from Math.floor(q)). The next calls continue from the end of the value returned. Recorded on Text.of(["one", "two", "", "three"]) (F7126: programs of skips, forward and reverse) and, for every fractional skip from a fresh cursor followed by next(), on six source variants of a 4-line leaf and a 40-line node document with the integer calls for comparison (F7127-F7138); seeded check (rng 4106) of 3,200 programs of 1 to 6 skips (fractional, integer, negative) on eight documents of 1 to 5000 lines (leaf, one-level and two-level trees): every [value, done, lineBreak] equal to a flat restatement of RawTextCursor over the document's line array (F7167), so the tree shape does not change the values.
+- `state.TextIterator.next.B11:h1`: Arguments outside the domain (Q9).
+- `state.TextIterator.next.B11:h2`: Fractional skip: the break test `skip == 0` never holds and a negative remainder reaches String.prototype.slice as a negative index, which counts from the end of the line (mirrors/cm6/state/src/text.ts:434, :445).
+- `state.TextIterator.next.B11:h3`: Reverse: a value "" with done false (mirrors/cm6/state/src/text.ts:444-445).
+- decision rows of the item: state.cm6.225.d1, state.cm6.225.d2, state.cm6.225.d3
 - fixtures (14 compared of 14; part 14): F7126 part, F7127 part, F7128 part, F7129 part, F7130 part, F7131 part, F7132 part, F7133 part, ... (6 more in the behavior's row)
+- compared fixtures by text class: empty 2, ascii 14, astral 3, crlf 2, lone cr 2, u2028 4
+- ops they run: ceil, check.rawCursor, floor, item, iter.next, iter.read, iter.steps, let, list, map, record, state.create, state.doc, text.iter, text.of
 - ported cases: none
 - written tests: none
 
-## `state.TextIterator.next.B12` (TextIterator.next)
-- hazard: Arguments outside the domain (Q9).
-- hazard: The partial cursor's pos accumulates the untruncated skip (mirrors/cm6/state/src/text.ts:501), so its limits drift from the values returned.
+## `state.TextIterator.next.B12` (TextIterator.next, `state.cm6.225`)
+- text: Partial cursor (iterRange) and line cursor (iterLines), fractional skip (Q9). The partial cursor clips the skip with the forward bounds (text.ts:507-509, as B7 and B8: in reverse before the first step a positive skip is clipped to to - pos = 0 and ignored), adds the distance to from on the first forward call (text.ts:496), passes it to the raw cursor, which reads as state.TextIterator.next.B11, and then advances pos by the untruncated skip plus the value's length (text.ts:501), so pos no longer equals the end of the value returned; the later limits (to - pos, pos - from, text.ts:497), the end test (text.ts:491) and the cut of the value (String.prototype.slice, text.ts:502) use that pos, and a value cut to "" ends the iteration (done = !value, text.ts:503). The line cursor passes the skip to its inner cursor unchanged (text.ts:527) and treats the raw values as B9 and B10, so a fractional skip that passes a break (B11 (b)) also passes the empty lines in between without yielding them. On Text.of(["one", "two", "", "three"]) (F7152): iterRange(0, 14) with next(0.5), next(), next(0.5), next(), next() gives "one", "\n", "two", "\n", "\n" (pos 3.5 after the first value); iterRange(1, 12) with next(2.5) first reads at 1 + 2.5 = 3.5, inside the break, and gives "two"; iterRange(14, 0).next(0.5) ignores the skip and gives "three"; iterLines() with next(0.5), next(), next(0.5) gives "one", "two", "e" and then done: the empty line 3 is not yielded and line 4 is cut to its last unit; with next(), next(), next(-0.5), next() it gives "one", "two", "o", "". Recorded for every fractional skip from fresh cursors iterRange(0, length), iterRange(length, 0) and iterLines(), each followed by two next(), on six source variants of a 4-line leaf and a 40-line node document (F7153-F7164); seeded check (rng 4106) of 3,200 iterRange cursors with fractional or integer bounds in either order and programs of 1 to 6 skips on eight documents of 1 to 5000 lines: every [value, done, lineBreak] equal to a flat restatement of PartialTextCursor over that of RawTextCursor (F7168).
+- `state.TextIterator.next.B12:h1`: Arguments outside the domain (Q9).
+- `state.TextIterator.next.B12:h2`: The partial cursor's pos accumulates the untruncated skip (mirrors/cm6/state/src/text.ts:501), so its limits drift from the values returned.
+- decision rows of the item: state.cm6.225.d1, state.cm6.225.d2, state.cm6.225.d3
 - fixtures (14 compared of 14; part 14): F7152 part, F7153 part, F7154 part, F7155 part, F7156 part, F7157 part, F7158 part, F7159 part, ... (6 more in the behavior's row)
+- compared fixtures by text class: empty 2, ascii 14, astral 3, crlf 2, lone cr 2, u2028 4
+- ops they run: check.partialCursor, iter.steps, let, list, map, record, state.create, state.doc, text.iterLines, text.iterRange, text.length, text.of
 - ported cases: none
 - written tests: none
 
-## `state.TextIterator.value.B1` (TextIterator.value)
-- hazard: On a line cursor value "" with done false is an empty line; on raw and partial cursors value "" only comes with done true.
+## `state.TextIterator.value.B1` (TextIterator.value, `state.cm6.226`)
+- text: The current string: "" before the first next() and whenever done is true (except the line cursor after a negative skip past the end, TextIterator.next B5); otherwise a line or part of one, or "\n" for a break on raw and partial cursors; on a line cursor "" also stands for an empty line.
+- `state.TextIterator.value.B1:h1`: On a line cursor value "" with done false is an empty line; on raw and partial cursors value "" only comes with done true.
 - fixtures (31 compared of 31; equal 16, part 15): F0826 equal, F0827 equal, F0828 equal, F0829 equal, F0830 equal, F0831 equal, F0832 equal, F0833 equal, ... (23 more in the behavior's row)
+- compared fixtures by text class: empty 9, ascii 31, astral 1, crlf 4, lone cr 5, u2028 9
+- ops they run: block, capture, iter.drain, iter.read, iter.steps, list, spread, state.create, state.doc, text.iter, text.iterLines, text.iterRange, text.length, text.lines, text.of
 - ported cases: test-text#17 (test_cm6_text_17_is_iterable)
 - written tests: none
 
-## `state.TextIterator.done.B1` (TextIterator.done)
-- hazard: Line cursor done is sticky even when value changes afterwards (TextIterator.next B5).
+## `state.TextIterator.done.B1` (TextIterator.done, `state.cm6.227`)
+- text: false until a next() finds nothing more, then true with value "". Raw cursor: set when the root's end (start in reverse) is reached and cleared at the start of every step; partial cursor: set when the position reaches the bound or a step produces an empty value; line cursor: set on the inner cursor's second done (the first one after a break yields a final ""), never cleared.
+- `state.TextIterator.done.B1:h1`: Line cursor done is sticky even when value changes afterwards (TextIterator.next B5).
 - fixtures (43 compared of 45; equal 28, not run 2, part 15): F0826 equal, F0827 equal, F0828 equal, F0829 equal, F0830 equal, F0831 equal, F0832 equal, F0833 equal, ... (37 more in the behavior's row)
+- compared fixtures by text class: empty 18, ascii 43, astral 2, crlf 4, lone cr 5, u2028 9
+- ops they run: block, capture, iter.drain, iter.read, iter.steps, list, spread, state.create, state.doc, text.iter, text.iterLines, text.iterRange, text.length, text.lines, text.of
 - ported cases: test-text#17 (test_cm6_text_17_is_iterable)
 - written tests: none
 
-## `state.TextIterator.lineBreak.B1` (TextIterator.lineBreak)
-- hazard: lineBreak is a field on one class and a getter on the others (prototype dispatch).
+## `state.TextIterator.lineBreak.B1` (TextIterator.lineBreak, `state.cm6.228`)
+- text: Raw cursor: true exactly when the current value is a "\n" produced by a line break (cleared at every step, false when done). Partial cursor: a getter, true when the inner raw cursor is at a break and the clipped value is not "" (false at done and for an empty range). Line cursor: a getter that is always false.
+- `state.TextIterator.lineBreak.B1:h1`: lineBreak is a field on one class and a getter on the others (prototype dispatch).
 - fixtures (42 compared of 44; equal 32, not run 2, part 10): F0826 equal, F0827 equal, F0828 equal, F0829 equal, F0830 equal, F0831 equal, F0832 equal, F0833 equal, ... (36 more in the behavior's row)
+- compared fixtures by text class: empty 24, ascii 42, astral 3, crlf 3, lone cr 4, u2028 7
+- ops they run: block, iter.drain, iter.read, iter.steps, list, spread, state.create, state.doc, text.iter, text.iterLines, text.iterRange, text.length, text.of
 - ported cases: test-text#17 (test_cm6_text_17_is_iterable)
 - written tests: none
 
-## `state.TextIterator.lineBreak.B2` (TextIterator.lineBreak)
-- hazard: Q9: line content with embedded breaks.
+## `state.TextIterator.lineBreak.B2` (TextIterator.lineBreak, `state.cm6.228`)
+- text: A "\n" stored inside a line given to Text.of (Q9) is returned inside a line value with lineBreak false; only the breaks between stored lines report lineBreak true (F0883).
+- `state.TextIterator.lineBreak.B2:h1`: Q9: line content with embedded breaks.
 - fixtures (6 compared of 6; equal 1, part 5): F0883 equal, F6002 part, F6012 part, F6022 part, F6032 part, F6042 part
+- compared fixtures by text class: ascii 6, crlf 1, lone cr 1, u2028 2
+- ops they run: iter.drain, spread, state.create, state.doc, text.iter, text.of
 - ported cases: none
 - written tests: none
 
-## `state.Text.B1` (Text)
-- hazard: Identity: a no-op edit still yields a new object, so identity does not signal "unchanged"; eq compares content.
+## `state.Text.B1` (Text, `state.cm6.229`)
+- text: Text is an immutable value: replace, append and slice return new documents and leave the receiver unchanged; they never return the receiver itself, even for a no-op (doc.replace(0, 0, Text.empty), doc.append(Text.empty) and doc.slice(0) are all !== doc, for leaf and node documents, F0885). Unchanged parts are shared between the old and new trees (Text.replace B4, Text.slice B3).
+- `state.Text.B1:h1`: Identity: a no-op edit still yields a new object, so identity does not signal "unchanged"; eq compares content.
+- decision rows of the item: state.cm6.229.d1
 - fixtures (1 compared of 1; equal 1): F0885 equal
+- compared fixtures by text class: empty 1, ascii 1
+- ops they run: fill, same, text.append, text.empty, text.of, text.replace, text.slice, text.toString
 - ported cases: test-text#14 (test_cm6_text_14_can_be_compared)
 - written tests: none
 
-## `state.Text.B2` (Text)
-- hazard: instanceof dispatch between TextLeaf and TextNode (replace, scanIdentical, TextNode.from, RawTextCursor).
-- hazard: Tree shape is observable through Text.children (Q8).
+## `state.Text.B2` (Text, `state.cm6.229`)
+- text: Two concrete classes behind the abstract Text: a leaf (constructor name TextLeaf) holding up to 32 line strings with the breaks implied between them, and a node (TextNode) holding child Texts with a break implied between consecutive children; both are instanceof Text. The constructor is protected and the subclasses are not exported, so documents come only from Text.of, Text.empty and the operations.
+- `state.Text.B2:h1`: instanceof dispatch between TextLeaf and TextNode (replace, scanIdentical, TextNode.from, RawTextCursor).
+- `state.Text.B2:h2`: Tree shape is observable through Text.children (Q8).
+- decision rows of the item: state.cm6.229.d1
 - fixtures (12 compared of 12; equal 12): F0886 equal, F1503 equal, F6050 equal, F6051 equal, F6057 equal, F6058 equal, F6064 equal, F6065 equal, ... (4 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 12, astral 1, crlf 2, lone cr 2, u2028 4
+- ops they run: fill, isArray, let, list, same, state.create, state.doc, text.children, text.className, text.isText, text.length, text.lines, text.of, text.shape
 - ported cases: test-text#04 (test_cm6_text_04_creates_a_balanced_tree_when_loading_a_document)
 - written tests: none
 
-## `state.Text.B3` (Text)
-- hazard: Aliasing: the input array is stored by reference for documents of <= 32 lines.
-- hazard: Cached length vs live line array.
+## `state.Text.B3` (Text, `state.cm6.229`)
+- text: Text.of with at most 32 lines keeps the caller's array as the leaf's storage without copying, while the length is computed once: mutating the array afterwards changes the document's lines (lines getter, toJSON, lineAt results) but not its length, leaving an inconsistent object (a = ["ab"]; t = Text.of(a); a[0] = "abcdef"; a.push("zz") gives length 2, lines 2, toString "ab", toJSON ["abcdef", "zz"], F0887). With more than 32 lines the lines are copied into new leaves (F0888); toJSON returns a fresh array (F0889).
+- `state.Text.B3:h1`: Aliasing: the input array is stored by reference for documents of <= 32 lines.
+- `state.Text.B3:h2`: Cached length vs live line array.
+- decision rows of the item: state.cm6.229.d1
 - fixtures (2 compared of 3; equal 2, not run 1): F0887 not run, F0888 equal, F0889 equal
+- compared fixtures by text class: ascii 2
+- ops they run: array.set, fill, line.get, text.length, text.line, text.of, text.toJSON, text.toString
 - ported cases: none
 - written tests: written_text.rs::text_of_copies_its_input
 
-## `state.Text.length.B1` (Text.length)
-- hazard: Cached value: stays stale if a leaf's aliased array is mutated (Text B3).
-- hazard: Can be fractional or NaN after operations with fractional or NaN positions (Text.replace B6, F0948, F0956).
+## `state.Text.length.B1` (Text.length, `state.cm6.230`)
+- text: Number of positions: the sum of the line lengths in UTF-16 code units plus one per line break (lines - 1); 0 for the empty document, 1 for two empty lines, 2 for one astral character. Stored when the object is built (leaf: computed from the lines or passed in; node: passed in by the operation), never recomputed.
+- `state.Text.length.B1:h1`: Cached value: stays stale if a leaf's aliased array is mutated (Text B3).
+- `state.Text.length.B1:h2`: Can be fractional or NaN after operations with fractional or NaN positions (Text.replace B6, F0948, F0956).
 - fixtures (14 compared of 14; equal 9, part 5): F0890 equal, F0891 equal, F0892 equal, F0893 equal, F0894 equal, F0895 equal, F0896 equal, F0897 equal, ... (6 more in the behavior's row)
+- compared fixtures by text class: empty 4, ascii 14, astral 2, crlf 1, lone cr 2, u2028 3
+- ops they run: capture, count, fill, ints, join, let, line.fields, list, map, state.create, state.doc, sum, text.depth, text.length, text.lineAt, text.lines, text.of
 - ported cases: test-text#03 (test_cm6_text_03_preserves_length); test-text#06 (test_cm6_text_06_collapses_on_delete)
 - written tests: none
 
-## `state.Text.lines.B1` (Text.lines)
-- hazard: Arguments outside the domain (Q9).
-- hazard: Leaf lines is live over the aliased array, node lines is cached (Text B3, Text.children B3).
+## `state.Text.lines.B1` (Text.lines, `state.cm6.231`)
+- text: Number of lines, >= 1 for every document built from valid arguments: the length of the leaf's array (a getter) or the sum of the children's lines, computed in the node constructor. A stored line containing "\n" counts as one line (Q9). A slice of a node document with a NaN position (F0977) or with both ends inside the break between two children (Text.slice B5, F7046) produces a document with 0 lines.
+- `state.Text.lines.B1:h1`: Arguments outside the domain (Q9).
+- `state.Text.lines.B1:h2`: Leaf lines is live over the aliased array, node lines is cached (Text B3, Text.children B3).
 - fixtures (21 compared of 21; equal 16, part 5): F0898 equal, F0899 equal, F0900 equal, F0901 equal, F0902 equal, F0903 equal, F6000 part, F6010 part, ... (13 more in the behavior's row)
+- compared fixtures by text class: empty 4, ascii 21, astral 1, crlf 3, lone cr 3, u2028 6
+- ops they run: capture, fill, ints, let, line.fields, list, map, same, state.create, state.doc, sum, text.children, text.className, text.isText, text.length, text.lineAt, text.lines, text.of, text.shape
 - ported cases: test-text#25 (test_cm6_text_25_can_get_line_info_by_line_number)
 - written tests: none
 
-## `state.Text.lineAt.B1` (Text.lineAt)
-- hazard: Exception with a message that formats the JS number (RangeError).
+## `state.Text.lineAt.B1` (Text.lineAt, `state.cm6.232`)
+- text: pos < 0 or pos > length throws RangeError with the message `Invalid position ${pos} in document of length ${length}` (also for -0.5, 14.5 and Infinity, which fail the comparison). Callers can check 0 <= pos <= length in advance.
+- `state.Text.lineAt.B1:h1`: Exception with a message that formats the JS number (RangeError).
 - fixtures (8 compared of 10; equal 3, not run 2, part 5): F0904 not run, F0905 equal, F0906 not run, F0907 equal, F0908 equal, F6000 part, F6010 part, F6020 part, ... (2 more in the behavior's row)
+- compared fixtures by text class: empty 3, ascii 8, astral 1, crlf 1, lone cr 1, u2028 2
+- ops they run: capture, ints, let, line.fields, list, map, state.create, state.doc, sum, text.length, text.lineAt, text.lines, text.of
 - ported cases: test-text#26 (test_cm6_text_26_can_get_line_info_by_position)
 - written tests: none
 
-## `state.Text.lineAt.B3` (Text.lineAt)
-- hazard: Positions inside a character are valid inputs (D1).
+## `state.Text.lineAt.B3` (Text.lineAt, `state.cm6.232`)
+- text: A pos inside a character (between the halves of a surrogate pair) is accepted and returns the containing line; no snapping.
+- `state.Text.lineAt.B3:h1`: Positions inside a character are valid inputs (D1).
 - fixtures (0 compared of 1; not run 1): F0912 not run
 - ported cases: none
 - written tests: written_text.rs::text_line_at_inside_a_character_panics
 
-## `state.Text.lineAt.B5` (Text.lineAt)
-- hazard: Arguments outside the domain (Q9).
-- hazard: TypeError instead of RangeError for NaN.
+## `state.Text.lineAt.B5` (Text.lineAt, `state.cm6.232`)
+- text: Non-integer positions that pass the range check (Q9): a fractional pos returns the first line whose to >= pos (lineAt(3.5) on "one\ntwo..." is line 2, lineAt(0.5) line 1); NaN passes both comparisons and the leaf scan runs off its array, throwing TypeError "Cannot read properties of undefined (reading 'length')". This NaN throw is the leaf-document case (TextLeaf.lineInner, text.ts:177); on a node document (more than 32 lines) NaN throws the same TypeError from TextNode.lineInner (text.ts:261), state.Text.lineAt.B7.
+- `state.Text.lineAt.B5:h1`: Arguments outside the domain (Q9).
+- `state.Text.lineAt.B5:h2`: TypeError instead of RangeError for NaN.
 - fixtures (5 compared of 14; not run 9, part 5): F0914 not run, F0915 not run, F0916 not run, F0917 not run, F0918 not run, F0919 not run, F1504 not run, F1505 not run, ... (6 more in the behavior's row)
+- compared fixtures by text class: ascii 5, crlf 1, lone cr 1, u2028 2
+- ops they run: capture, ints, let, line.fields, list, map, state.create, state.doc, sum, text.length, text.lineAt, text.lines
 - ported cases: none
 - written tests: none
 
-## `state.Text.line.B1` (Text.line)
-- hazard: Exception with a formatted message (RangeError).
+## `state.Text.line.B1` (Text.line, `state.cm6.233`)
+- text: n < 1 or n > lines throws RangeError with the message `Invalid line number ${n} in ${lines}-line document` (also 0.5, 4.5 on a 4-line document and Infinity). Callers can check 1 <= n <= lines in advance.
+- `state.Text.line.B1:h1`: Exception with a formatted message (RangeError).
 - fixtures (8 compared of 9; equal 3, not run 1, part 5): F0922 equal, F0923 equal, F0924 not run, F0925 equal, F6001 part, F6011 part, F6021 part, F6031 part, ... (1 more in the behavior's row)
+- compared fixtures by text class: empty 3, ascii 8, crlf 1, lone cr 1, u2028 2
+- ops they run: capture, ints, let, line.fields, map, record, state.create, state.doc, sum, text.line, text.lines, text.of
 - ported cases: test-text#25 (test_cm6_text_25_can_get_line_info_by_line_number)
 - written tests: none
 
-## `state.Text.line.B3` (Text.line)
-- hazard: Arguments outside the domain (Q9).
-- hazard: TypeError instead of RangeError for NaN.
+## `state.Text.line.B3` (Text.line, `state.cm6.233`)
+- text: Non-integer line numbers in range (Q9): a fractional n returns the first line whose number >= n (line(1.5) is line 2, line(3.2) is line 4) with an integer number field; NaN throws TypeError "Cannot read properties of undefined (reading 'length')". This NaN throw is the leaf-document case (TextLeaf.lineInner, text.ts:177); on a node document (more than 32 lines) NaN throws the same TypeError from TextNode.lineInner (text.ts:261), state.Text.line.B4.
+- `state.Text.line.B3:h1`: Arguments outside the domain (Q9).
+- `state.Text.line.B3:h2`: TypeError instead of RangeError for NaN.
 - fixtures (5 compared of 11; not run 6, part 5): F0929 not run, F0930 not run, F0931 not run, F0932 not run, F0933 not run, F0934 not run, F6001 part, F6011 part, ... (3 more in the behavior's row)
+- compared fixtures by text class: ascii 5, crlf 1, lone cr 1, u2028 2
+- ops they run: capture, ints, let, line.fields, map, record, state.create, state.doc, sum, text.line, text.lines
 - ported cases: none
 - written tests: none
 
-## `state.Text.replace.B1` (Text.replace)
-- hazard: Silent clipping instead of an error.
-- hazard: Arguments outside the domain (Q9).
+## `state.Text.replace.B1` (Text.replace, `state.cm6.234`)
+- text: from and to are clipped first: from = max(0, min(length, from)), to = max(from, min(length, to)). A reversed range (from > to) becomes the empty range at from (an insertion), positions before 0 or after the end are pulled to the document bounds (replace(20, 30) appends, replace(-10, -5) prepends, F0946, F0947). The resulting length is computed from the clipped range (fixed in 6.3.3, mirrors/cm6/state/CHANGELOG.md:105). Fractional positions pass the clip unchanged (replace(2.5, 4) gives length 13.5, F0948; on a leaf, a position inside a break joins the lines around it, F7057; on a node document lines away from the edit can change, B7; NaN: B6).
+- `state.Text.replace.B1:h1`: Silent clipping instead of an error.
+- `state.Text.replace.B1:h2`: Arguments outside the domain (Q9).
 - fixtures (35 compared of 42; equal 30, not run 7, part 5): F0943 not run, F0944 equal, F0945 equal, F0946 equal, F0947 not run, F0948 not run, F4002 equal, F4012 not run, ... (34 more in the behavior's row)
+- compared fixtures by text class: empty 27, ascii 35, bmp 23, astral 21, crlf 1, lone cr 18, u2028 15
+- ops they run: block, list, merge, record, same, state.create, state.doc, text.append, text.desc, text.empty, text.of, text.replace
 - ported cases: test-text#08 (test_cm6_text_08_handles_deleting_at_end)
 - written tests: none
 
-## `state.Text.replace.B2` (Text.replace)
-- hazard: UTF-16: replacing inside a surrogate pair produces ill-formed line strings.
+## `state.Text.replace.B2` (Text.replace, `state.cm6.234`)
+- text: Content: the result is the text before from, then the inserted Text, then the text after to; the inserted text's first line is joined to the line at from and its last line to the line at to, so lines = this.lines - (breaks in [from, to)) + text.lines - 1. Inserting Text.of(["", ""]) inserts one break. Positions inside a surrogate pair split it, leaving lone surrogates in the lines (F0939). Checked against a string model on seeded cases (gen-text.ts).
+- `state.Text.replace.B2:h1`: UTF-16: replacing inside a surrogate pair produces ill-formed line strings.
 - fixtures (50 compared of 74; equal 45, not run 24, part 5): F0935 equal, F0936 equal, F0937 equal, F0938 equal, F0939 not run, F0940 equal, F0941 equal, F0942 equal, ... (66 more in the behavior's row)
+- compared fixtures by text class: empty 41, ascii 50, bmp 33, astral 31, crlf 1, lone cr 23, u2028 20
+- ops they run: array.set, block, concat, copy, count, fill, join, list, merge, record, same, state.create, state.doc, sum, text.append, text.desc, text.empty, text.length, text.of, text.replace
 - ported cases: test-text#01 (test_cm6_text_01_handles_basic_replacement); test-text#07 (test_cm6_text_07_handles_deleting_at_start); test-text#08 (test_cm6_text_08_handles_deleting_at_end); test-text#09 (test_cm6_text_09_can_handle_deleting_the_entire_document); test-text#10 (test_cm6_text_10_can_insert_on_node_boundaries); test-text#11 (test_cm6_text_11_can_build_up_a_doc_by_repeated_appending); test-text#12 (test_cm6_text_12_properly_maintains_content_during_editing); test-text#27 (test_cm6_text_27_can_delete_a_range_at_the_start_of_a_child_node); test-text#05 (test_cm6_text_05_rebalances_on_insert); test-text#15 (test_cm6_text_15_can_be_compared_despite_different_tree_shape)
 - written tests: none
 
-## `state.Text.replace.B3` (Text.replace)
-- hazard: Tree shape is observable through Text.children (Q8).
-- hazard: instanceof TextLeaf decides the path.
+## `state.Text.replace.B3` (Text.replace, `state.cm6.234`)
+- text: Leaf receiver and leaf insert (TextLeaf.replace): the line arrays are spliced directly; the result is one leaf when it has at most 32 lines, otherwise TextLeaf.split into leaves of 32 lines (the last holding the remainder) under TextNode.from (30 lines + 3 inserted lines gives a 32-line leaf, one more line gives [32, 1], F0949). An inserted node Text goes through the general path (B5).
+- `state.Text.replace.B3:h1`: Tree shape is observable through Text.children (Q8).
+- `state.Text.replace.B3:h2`: instanceof TextLeaf decides the path.
 - fixtures (10 compared of 10; equal 9, part 1): F0949 equal, F1507 part, F6056 equal, F6063 equal, F6070 equal, F6077 equal, F6084 equal, F7200 equal, ... (2 more in the behavior's row)
+- compared fixtures by text class: empty 2, ascii 10, bmp 1, astral 2, crlf 1, lone cr 1, u2028 2
+- ops they run: capture, fill, line.get, state.create, state.doc, text.className, text.desc, text.eq, text.line, text.lines, text.of, text.replace, text.shape
 - ported cases: test-text#01 (test_cm6_text_01_handles_basic_replacement); test-text#11 (test_cm6_text_11_can_build_up_a_doc_by_repeated_appending)
 - written tests: none
 
-## `state.Text.replace.B4` (Text.replace)
-- hazard: Tree shape is observable through Text.children (Q8).
-- hazard: Structural sharing: untouched children are the same objects in both versions.
+## `state.Text.replace.B4` (Text.replace, `state.cm6.234`)
+- text: Node receiver fast path: when the inserted text has fewer lines than the receiver and [from, to] lies inside one child (from >= child start and to <= child end, so a range ending exactly at a child end counts), the child is replaced recursively; when the updated child's line count stays strictly between totalLines >> 6 and totalLines >> 4 (totalLines being the new document's line count), the result is a node whose children array is a copy with only that child replaced, every other child shared by identity with the receiver (F0950, F0951); otherwise the receiver's replace runs the general path on that child's whole range with the updated child as the inserted text.
+- `state.Text.replace.B4:h1`: Tree shape is observable through Text.children (Q8).
+- `state.Text.replace.B4:h2`: Structural sharing: untouched children are the same objects in both versions.
 - fixtures (8 compared of 8; equal 8): F0950 equal, F0951 equal, F1508 equal, F6053 equal, F6060 equal, F6067 equal, F6074 equal, F6081 equal
+- compared fixtures by text class: ascii 8, astral 1, crlf 1, lone cr 1, u2028 2
+- ops they run: count, fill, let, line.get, state.create, state.doc, sum, text.children, text.length, text.line, text.lines, text.of, text.replace, text.shape, text.sharedChildren
 - ported cases: test-text#05 (test_cm6_text_05_rebalances_on_insert); test-text#10 (test_cm6_text_10_can_insert_on_node_boundaries); test-text#12 (test_cm6_text_12_properly_maintains_content_during_editing); test-text#27 (test_cm6_text_27_can_delete_a_range_at_the_start_of_a_child_node)
 - written tests: none
 
-## `state.Text.replace.B5` (Text.replace)
-- hazard: Tree shape is observable through Text.children (Q8).
-- hazard: instanceof checks in TextNode.from (:345, :350-351).
-- hazard: Closures add/flush over mutable locals in TextNode.from (:342-368).
+## `state.Text.replace.B5` (Text.replace, `state.cm6.234`)
+- text: General path (Text.replace): the receiver's part before from, the inserted text and the part after to are decomposed into a flat list of whole children and cut leaves, cut leaves at the two seams joined line-to-line (a joined leaf over 32 lines is split at half), then rebuilt by TextNode.from: fewer than 32 lines in total gives one flat leaf; otherwise chunk = max(32, lines >> 5), children over 2 * chunk lines are opened, children over chunk / 2 lines stand alone, adjacent small leaves merge while their total stays <= 32 lines, and the rest group into nodes of at most chunk lines. Whole children inside the kept ranges, including children of the inserted Text, are reused by identity. Shapes recorded: deleting all but 20 positions of 200 lines gives one leaf (F0952); ten 600-character inserts into a line keep [32 x 6, 8] (F0953); inserting 500 one-character lines gives F0954; 1999 appends give 59 leaves and one nested node (F0955).
+- `state.Text.replace.B5:h1`: Tree shape is observable through Text.children (Q8).
+- `state.Text.replace.B5:h2`: instanceof checks in TextNode.from (:345, :350-351).
+- `state.Text.replace.B5:h3`: Closures add/flush over mutable locals in TextNode.from (:342-368).
 - fixtures (14 compared of 15; equal 14, not run 1): F0952 equal, F0953 equal, F0954 equal, F0955 equal, F4300 not run, F5001 equal, F5002 equal, F6054 equal, ... (7 more in the behavior's row)
+- compared fixtures by text class: empty 2, ascii 14, bmp 1, astral 1, crlf 1, lone cr 1, u2028 2
+- ops they run: block, concat, count, div, fill, floor, ints, join, let, line.get, map, record, same, state.create, state.doc, strSlice, sum, text.children, text.className, text.depth, text.desc, text.empty, text.eq, text.length, text.line, text.lines, text.of, text.replace, text.shape, text.sharedChildren, text.toString
 - ported cases: test-text#04 (test_cm6_text_04_creates_a_balanced_tree_when_loading_a_document); test-text#05 (test_cm6_text_05_rebalances_on_insert); test-text#06 (test_cm6_text_06_collapses_on_delete); test-text#07 (test_cm6_text_07_handles_deleting_at_start); test-text#09 (test_cm6_text_09_can_handle_deleting_the_entire_document); test-text#12 (test_cm6_text_12_properly_maintains_content_during_editing)
 - written tests: none
 
-## `state.Text.replace.B6` (Text.replace)
-- hazard: Arguments outside the domain (Q9).
-- hazard: TypeError from internal code instead of a RangeError.
+## `state.Text.replace.B6` (Text.replace, `state.cm6.234`)
+- text: NaN positions (Q9): clip propagates NaN; on a leaf the result is a document with NaN length (replace(NaN, 2, X) on ["one", "two", "three"] gives lines ["X"], F0956-F0958); on a node the decomposition reads past an array and throws TypeError "Cannot read properties of undefined (reading 'text')" (F0959).
+- `state.Text.replace.B6:h1`: Arguments outside the domain (Q9).
+- `state.Text.replace.B6:h2`: TypeError from internal code instead of a RangeError.
 - fixtures (0 compared of 5; not run 5): F0956 not run, F0957 not run, F0958 not run, F0959 not run, F1509 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.Text.slice.B2` (Text.slice)
-- hazard: UTF-16: ill-formed line strings.
+## `state.Text.slice.B2` (Text.slice, `state.cm6.236`)
+- text: Range ends inside surrogate pairs give lines with lone surrogates (slice(2, 6) of ["a😀b", "", "𝐀𝐁", "x"] starts with the low surrogate of U+1F600 and ends after the high surrogate of U+1D400, F0975).
+- `state.Text.slice.B2:h1`: UTF-16: ill-formed line strings.
+- decision rows of the item: state.cm6.236.d1
 - fixtures (0 compared of 1; not run 1): F0975 not run
 - ported cases: none
 - written tests: written_text.rs::text_slice_inside_a_character_panics
 
-## `state.Text.slice.B3` (Text.slice)
-- hazard: Tree shape is observable through Text.children (Q8).
+## `state.Text.slice.B3` (Text.slice, `state.cm6.236`)
+- text: Node documents: children entirely inside the range are reused by identity in the result, cut children at the ends become new leaves, and the list is rebalanced by TextNode.from (slice(4150, 14000) of 200 lines gives [23, 32, 32, 11] with the middle two shared, F0976).
+- `state.Text.slice.B3:h1`: Tree shape is observable through Text.children (Q8).
+- decision rows of the item: state.cm6.236.d1
 - fixtures (7 compared of 7; equal 7): F0976 equal, F1510 equal, F6055 equal, F6062 equal, F6069 equal, F6076 equal, F6083 equal
+- compared fixtures by text class: ascii 7, astral 1, crlf 1, lone cr 1, u2028 2
+- ops they run: count, fill, let, line.get, state.create, state.doc, sum, text.length, text.line, text.lines, text.of, text.shape, text.sharedChildren, text.slice
 - ported cases: test-text#28 (test_cm6_text_28_can_retrieve_pieces_of_text)
 - written tests: none
 
-## `state.Text.slice.B4` (Text.slice)
-- hazard: Arguments outside the domain (Q9).
-- hazard: Produces a Text breaking the lines >= 1 invariant.
+## `state.Text.slice.B4` (Text.slice, `state.cm6.236`)
+- text: NaN positions (Q9): clip yields NaN. On a node document no child passes the decompose test (text.ts:270-272), so slice(NaN, 10) returns a Text with 0 lines, no content and NaN length (F0977); on a leaf document sliceText returns one empty line, so slice(2, NaN) has 1 line [""] and NaN length (F1511). Fractional ranges inside the break between two children also give 0 lines (B5).
+- `state.Text.slice.B4:h1`: Arguments outside the domain (Q9).
+- `state.Text.slice.B4:h2`: Produces a Text breaking the lines >= 1 invariant.
+- decision rows of the item: state.cm6.236.d1
 - fixtures (0 compared of 2; not run 2): F0977 not run, F1511 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.Text.sliceString.B1` (Text.sliceString)
-- hazard: Optional parameters with defaults.
+## `state.Text.sliceString.B1` (Text.sliceString, `state.cm6.237`)
+- text: Clips like replace; `to` defaults to length and lineSep to "\n" (also when undefined is passed explicitly). A reversed range gives "".
+- `state.Text.sliceString.B1:h1`: Optional parameters with defaults.
 - fixtures (40 compared of 45; equal 35, not run 5, part 5): F0978 equal, F0979 equal, F0980 equal, F0981 equal, F0982 equal, F0983 equal, F0984 equal, F0985 not run, ... (37 more in the behavior's row)
+- compared fixtures by text class: empty 29, ascii 40, bmp 18, astral 18, crlf 14, lone cr 15, u2028 21
+- ops they run: list, not, record, same, state.create, state.doc, text.of, text.sliceString, text.toJSON, text.toString
 - ported cases: test-text#28 (test_cm6_text_28_can_retrieve_pieces_of_text)
 - written tests: none
 
-## `state.Text.sliceString.B4` (Text.sliceString)
-- hazard: UTF-16: ill-formed strings returned.
+## `state.Text.sliceString.B4` (Text.sliceString, `state.cm6.237`)
+- text: Range ends inside surrogate pairs give strings with lone surrogates (sliceString(1, 2) of "a😀b" is the high surrogate alone, F0997-F0999). autocomplete closebrackets.ts:149, :154 read sliceString(pos, pos + 2) and sliceString(pos - 2, pos) and repair halves with codePointAt (codePointAt B5).
+- `state.Text.sliceString.B4:h1`: UTF-16: ill-formed strings returned.
 - fixtures (1 compared of 4; equal 1, not run 3): F0997 not run, F0998 not run, F0999 not run, F1000 equal
+- compared fixtures by text class: empty 1, ascii 1, astral 1
+- ops they run: text.of, text.sliceString
 - ported cases: none
 - written tests: none
 
-## `state.Text.sliceString.B5` (Text.sliceString)
-- hazard: Arguments outside the domain (Q9).
+## `state.Text.sliceString.B5` (Text.sliceString, `state.cm6.237`)
+- text: NaN positions return "" (Q9): clip yields NaN and every comparison with it is false (F0987, F0988).
+- `state.Text.sliceString.B5:h1`: Arguments outside the domain (Q9).
 - fixtures (0 compared of 3; not run 3): F0987 not run, F0988 not run, F1512 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.Text.sliceString.B6` (Text.sliceString)
-- hazard: Arguments outside the domain (Q9).
-- hazard: Fractional positions: the break test compares the untruncated position while String.prototype.slice truncates it (mirrors/cm6/state/src/text.ts:216, :219).
+## `state.Text.sliceString.B6` (Text.sliceString, `state.cm6.237`)
+- text: Fractional positions (Q9), on documents whose lengths are integers (every document built from strings; replace with fractional positions can leave fractional cached lengths, state.Text.replace.B1, B7): the result is the string sliceString(Math.floor(from), Math.floor(to), lineSep) gives. clip keeps the fraction (text.ts:580-583); B2's break condition, read on the untruncated values, is: the break after a line ending at p is included when p + 1 > from and p + 1 <= to (TextLeaf.sliceString `pos > from && i` and the loop test `pos <= to` with pos = p + 1, text.ts:214, :216; TextNode.sliceString the same for the breaks between children, text.ts:307, :309), so a from inside the break (p < from < p + 1) includes it and a to inside it leaves it out, which for an integer p is from < p + 1 <= to, i.e. Math.floor(from) <= p < Math.floor(to); line content is cut with String.prototype.slice, which truncates the fractional index (text.ts:219). On Text.of(["one", "two", "", "three"]) (F7100): sliceString(2.5, 5) is "e\nt", sliceString(3.5, 5) is "\nt" (from 3.5 > 3, the break at 3 included), sliceString(0, 3.5) is "one" (to 3.5 > 3, the break at 3 left out), sliceString(0, 2.5) is "on", sliceString(3.2, 3.7) is "", sliceString(7.5, 8.5) is "\n", sliceString(5.5, 5.2) is "" (clip raises to to from). On a node document the break between two children behaves the same: with k0 = children[0].length = 102 on the 40-line lf document of F7107, sliceString(k0 + 0.5, k0 + 1.5, "|") is "|". Grids of every pair of fractional positions (every x.5 and p + 0.2, p + 0.7 at each break p) on six source variants (lf, crlf, lone cr, U+2028 as content, U+2028 as lineSeparator, astral) of a 4-line leaf and a 40-line node document, each pair with the floor call: all equal (F7101-F7112: 2,130 pairs, 1,662 on the leaf variants and 468 on the node variants); seeded check (rng 4106) of 3,200 random fractional and integer pairs on eight documents of 1 to 5000 lines (leaf, one-level and two-level trees): all equal to the floor call (F7165). Text.slice differs for a from inside a break, which leaves the break out (state.Text.slice.B6).
+- `state.Text.sliceString.B6:h1`: Arguments outside the domain (Q9).
+- `state.Text.sliceString.B6:h2`: Fractional positions: the break test compares the untruncated position while String.prototype.slice truncates it (mirrors/cm6/state/src/text.ts:216, :219).
 - fixtures (14 compared of 14; part 14): F7100 part, F7101 part, F7102 part, F7103 part, F7104 part, F7105 part, F7106 part, F7107 part, ... (6 more in the behavior's row)
+- compared fixtures by text class: empty 2, ascii 14, astral 3, crlf 2, lone cr 2, u2028 4
+- ops they run: check.sliceString, floor, item, let, list, map, pairs, state.create, state.doc, text.of, text.sliceString
 - ported cases: none
 - written tests: none
 
-## `state.Text.eq.B1` (Text.eq)
-- hazard: Identity shortcut.
+## `state.Text.eq.B1` (Text.eq, `state.cm6.238`)
+- text: The same object returns true at once.
+- `state.Text.eq.B1:h1`: Identity shortcut.
 - fixtures (1 compared of 1; equal 1): F1001 equal
+- compared fixtures by text class: empty 1, ascii 1
+- ops they run: text.eq, text.of
 - ported cases: test-text#14 (test_cm6_text_14_can_be_compared)
 - written tests: none
 
-## `state.Text.eq.B4` (Text.eq)
-- hazard: Tree shape is observable through Text.children (Q8).
+## `state.Text.eq.B4` (Text.eq, `state.cm6.238`)
+- text: Tree shape does not matter: documents with the same content built differently (Text.of vs repeated appends, a replace vs a fresh Text.of) are equal both ways (F1009, F1010).
+- `state.Text.eq.B4:h1`: Tree shape is observable through Text.children (Q8).
 - fixtures (14 compared of 34; equal 14, not run 20): F1009 equal, F1010 equal, F4009 not run, F4019 not run, F4029 equal, F4039 not run, F4049 not run, F4059 equal, ... (26 more in the behavior's row)
+- compared fixtures by text class: empty 11, ascii 14, bmp 10, astral 9, lone cr 5, u2028 5
+- ops they run: block, fill, ints, map, text.append, text.className, text.desc, text.empty, text.eq, text.lines, text.of, text.replace, text.shape
 - ported cases: test-text#15 (test_cm6_text_15_can_be_compared_despite_different_tree_shape)
 - written tests: none
 
-## `state.Text.eq.B5` (Text.eq)
-- hazard: Object identity used as an optimization only (!= on children); the result does not depend on it.
+## `state.Text.eq.B5` (Text.eq, `state.cm6.238`)
+- text: Shared structure is skipped: scanIdentical walks the two node trees from the start (dir 1) and from the end (dir -1), adding the length of children that are the same object (!= on objects) and recursing into the first differing pair; the cursors start after the identical prefix and stop once past the end of the differing region. A leaf against anything, or a node against a leaf, gives 0. The result stays content-based: replacing a range with a slice of itself compares equal (F1011).
+- `state.Text.eq.B5:h1`: Object identity used as an optimization only (!= on children); the result does not depend on it.
 - fixtures (4 compared of 4; equal 4): F1011 equal, F7203 equal, F7204 equal, F7205 equal
+- compared fixtures by text class: ascii 4
+- ops they run: fill, list, same, text.className, text.empty, text.eq, text.lines, text.of, text.replace, text.sharedChildren, text.slice
 - ported cases: test-text#14 (test_cm6_text_14_can_be_compared)
 - written tests: none
 
-## `state.Text.iter.B1` (Text.iter)
-- hazard: Optional parameter with default.
+## `state.Text.iter.B1` (Text.iter, `state.cm6.239`)
+- text: Returns a raw cursor over the whole document; dir defaults to 1 (forward), -1 iterates from the end. See TextIterator.next B1-B5 for what it yields.
+- `state.Text.iter.B1:h1`: Optional parameter with default.
+- decision rows of the item: state.cm6.239.d1
 - fixtures (34 compared of 36; equal 19, not run 2, part 15): F1012 equal, F4006 part, F4016 equal, F4026 equal, F4036 equal, F4046 equal, F4056 part, F4066 part, ... (28 more in the behavior's row)
+- compared fixtures by text class: empty 16, ascii 34, bmp 16, astral 16, crlf 1, lone cr 16, u2028 13
+- ops they run: iter.drain, iter.steps, spread, state.create, state.doc, text.iter, text.of
 - ported cases: test-text#17 (test_cm6_text_17_is_iterable); test-text#18 (test_cm6_text_18_is_iterable_in_reverse)
 - written tests: none
 
-## `state.Text.iter.B2` (Text.iter)
-- hazard: Union-typed numeric parameter not checked at runtime.
+## `state.Text.iter.B2` (Text.iter, `state.cm6.239`)
+- text: dir is not validated (typed 1 | -1). On a leaf document the cursor steps its offset by dir: iter(2) runs but skips every line break (F1013); iter(0) throws TypeError on the first next() (F1014; thrown in nextInner's leaf branch at text.ts:444, `next.length` with `next` undefined); iter(3) and iter(-3) throw the same TypeError at text.ts:444 on a 4-line document, where the step passes the end of the line array, and yield lines and "\n" values on a 32-line document (F7043, F7044). On a node document iter(2) yields different values (state.Text.iter.B4) and iter(0) throws from the node branch (state.Text.iter.B3).
+- `state.Text.iter.B2:h1`: Union-typed numeric parameter not checked at runtime.
+- decision rows of the item: state.cm6.239.d1
 - fixtures (5 compared of 9; not run 4, part 5): F1013 not run, F1014 not run, F6002 part, F6012 part, F6022 part, F6032 part, F6042 part, F7043 not run, ... (1 more in the behavior's row)
+- compared fixtures by text class: ascii 5, crlf 1, lone cr 1, u2028 2
+- ops they run: iter.drain, spread, state.create, state.doc, text.iter
 - ported cases: none
 - written tests: none
 
-## `state.Text.iterRange.B1` (Text.iterRange)
-- hazard: Optional parameter with default.
+## `state.Text.iterRange.B1` (Text.iterRange, `state.cm6.240`)
+- text: Returns a partial cursor over [min(from, to), max(from, to)); `to` defaults to length; from > to runs in reverse; from == to yields nothing. See TextIterator.next B6-B8.
+- `state.Text.iterRange.B1:h1`: Optional parameter with default.
 - fixtures (37 compared of 37; equal 24, part 13): F1015 equal, F1016 equal, F4007 equal, F4017 equal, F4027 part, F4037 part, F4047 equal, F4057 equal, ... (29 more in the behavior's row)
+- compared fixtures by text class: empty 21, ascii 37, bmp 18, astral 21, crlf 1, lone cr 16, u2028 12
+- ops they run: iter.drain, iter.steps, let, list, spread, state.create, state.doc, text.iterRange, text.of
 - ported cases: test-text#20 (test_cm6_text_20_is_partially_iterable); test-text#21 (test_cm6_text_21_is_partially_iterable_in_reverse); test-text#22 (test_cm6_text_22_can_partially_iter_over_subsections_at_the_start_and_end)
 - written tests: none
 
-## `state.Text.iterRange.B2` (Text.iterRange)
-- hazard: Arguments outside the domain (Q9).
+## `state.Text.iterRange.B2` (Text.iterRange, `state.cm6.240`)
+- text: The bounds are not clipped to the document (Q9), but iteration stops at the document ends, so the values are those of the range intersected with [0, length]: iterRange(20, 30) and iterRange(30, 20) yield nothing, iterRange(-5, 100) and iterRange(100, -5) the whole document, iterRange(10, 100) "hree"; fractional bounds: state.Text.iterRange.B3 (iterRange(2.5, 7) yields "e", "\n", "tw", F1023).
+- `state.Text.iterRange.B2:h1`: Arguments outside the domain (Q9).
 - fixtures (11 compared of 17; equal 6, not run 6, part 5): F1017 equal, F1018 not run, F1019 not run, F1020 equal, F1021 not run, F1022 equal, F1023 not run, F1024 equal, ... (9 more in the behavior's row)
+- compared fixtures by text class: empty 6, ascii 11, astral 2, crlf 1, lone cr 3, u2028 4
+- ops they run: iter.drain, iter.steps, list, state.create, state.doc, text.iterRange, text.of
 - ported cases: none
 - written tests: none
 
-## `state.Text.iterRange.B3` (Text.iterRange)
-- hazard: Arguments outside the domain (Q9).
-- hazard: The partial cursor's pos accumulates the untruncated distance (mirrors/cm6/state/src/text.ts:501).
+## `state.Text.iterRange.B3` (Text.iterRange, `state.cm6.240`)
+- text: Fractional bounds (Q9), next() without skip. The partial cursor's first call passes the fractional distance (from - 0 forward, length - to reverse) to the raw cursor as a skip (text.ts:496-500), so the first value follows state.TextIterator.next.B11, and pos then runs ahead of the values (forward) or behind them (reverse) by the fraction (text.ts:501); later values are cut at the untruncated limit with String.prototype.slice (text.ts:497-502), and a value cut to "" ends the iteration (text.ts:503). Compared with iterRange(Math.floor(from), Math.floor(to)), on Text.of(["one", "two", "", "three"]) (F7139): iterRange(2.5, 7) yields "e", "\n", "tw" (the floor range: "e", "\n", "two"; the end acts as 7 - 0.5); iterRange(3.5, 8.5) yields "two", "\n", "\n" and iterRange(3.2, 9) "two", "\n", "\n" (a from inside the break at 3: the break is not yielded, B11 (b); floor: "\n", "two", "\n" and "\n", "two", "\n", "\n"); iterRange(0.5, 4.5) yields "one", "\n" as [0, 4). Reverse: iterRange(7, 2.5) yields "two", "\n", "e" ([2, 7) reversed); iterRange(8.5, 3.5) yields "two", "\n", "e" ([3, 8) reversed: "\n", "two", "\n"); iterRange(9, 3.2) yields "\n", "\n", "two", "\n" ([3, 9) reversed); iterRange(4.5, 0.5) yields nothing (the first raw value is "": q = 4.5 lies within one unit after the start of "two", B11 (a); [0, 4) reversed: "\n", "one"). Grids of every pair of fractional positions, forward, reverse and the floor range, on six source variants of a 4-line leaf (on the lf variant 126 of 231 forward and 136 of 231 reverse lists equal the floor range) and of a 40-line node document (pairs near the first child boundary) (F7140-F7151); the seeded check of state.TextIterator.next.B12 (F7168) draws fractional bounds too.
+- `state.Text.iterRange.B3:h1`: Arguments outside the domain (Q9).
+- `state.Text.iterRange.B3:h2`: The partial cursor's pos accumulates the untruncated distance (mirrors/cm6/state/src/text.ts:501).
 - fixtures (13 compared of 13; part 13): F7139 part, F7140 part, F7141 part, F7142 part, F7143 part, F7144 part, F7145 part, F7146 part, ... (5 more in the behavior's row)
+- compared fixtures by text class: empty 1, ascii 13, astral 2, crlf 2, lone cr 2, u2028 4
+- ops they run: floor, item, iter.drain, let, list, map, state.create, state.doc, text.iterRange, text.of
 - ported cases: none
 - written tests: none
 
-## `state.Text.iterLines.B5` (Text.iterLines)
-- hazard: An empty range and a one-empty-line range are indistinguishable to the caller.
+## `state.Text.iterLines.B5` (Text.iterLines, `state.cm6.241`)
+- text: to <= from (but both valid): the range end is clamped to the start (Math.max(start, ...)), and the line cursor over an empty range yields exactly one "" before done, the same output as a range holding one empty line (iterLines(2, 1), (2, 2), (3, 1) and (4, 5) on a document whose line 4 is empty all yield [""], F1029, F1031, F1033, F1042).
+- `state.Text.iterLines.B5:h1`: An empty range and a one-empty-line range are indistinguishable to the caller.
 - fixtures (10 compared of 10; equal 5, part 5): F1029 equal, F1031 equal, F1042 equal, F1522 equal, F1523 equal, F6005 part, F6015 part, F6025 part, ... (2 more in the behavior's row)
+- compared fixtures by text class: empty 5, ascii 10, astral 2, crlf 1, lone cr 3, u2028 4
+- ops they run: capture, iter.drain, iter.steps, list, state.create, state.doc, text.iterLines, text.lines, text.of
 - ported cases: test-text#23 (test_cm6_text_23_can_iterate_over_lines)
 - written tests: none
 
-## `state.Text.iterLines.B6` (Text.iterLines)
-- hazard: The error names to - 1, not the argument passed.
+## `state.Text.iterLines.B6` (Text.iterLines, `state.cm6.241`)
+- text: Invalid line numbers throw from Text.line with RangeError "Invalid line number ${n} in ${lines}-line document": from < 1 or from > lines, and to > lines + 1, which reports to - 1 (iterLines(2, 9) on 7 lines says "Invalid line number 8", F1038). to <= 1 is not an error (empty range, B5).
+- `state.Text.iterLines.B6:h1`: The error names to - 1, not the argument passed.
 - fixtures (9 compared of 10; equal 4, not run 1, part 5): F1035 equal, F1036 equal, F1037 equal, F1038 equal, F1039 not run, F6005 part, F6015 part, F6025 part, ... (2 more in the behavior's row)
+- compared fixtures by text class: empty 4, ascii 9, crlf 1, lone cr 1, u2028 2
+- ops they run: capture, iter.drain, iter.steps, list, state.create, state.doc, text.iterLines, text.lines, text.of
 - ported cases: none
 - written tests: none
 
-## `state.Text.iterLines.B7` (Text.iterLines)
-- hazard: Arguments outside the domain (Q9).
+## `state.Text.iterLines.B7` (Text.iterLines, `state.cm6.241`)
+- text: Fractional line numbers (Q9) go through Text.line, which rounds up: iterLines(1.5, 3) yields ["cde"] and iterLines(2, 3.5) yields ["cde", ""] on ["ab", "cde", "", ...] (F1040, F1041).
+- `state.Text.iterLines.B7:h1`: Arguments outside the domain (Q9).
 - fixtures (5 compared of 7; not run 2, part 5): F1040 not run, F1041 not run, F6005 part, F6015 part, F6025 part, F6035 part, F6045 part
+- compared fixtures by text class: ascii 5, crlf 1, lone cr 1, u2028 2
+- ops they run: capture, iter.drain, iter.steps, list, state.create, state.doc, text.iterLines, text.lines
 - ported cases: none
 - written tests: none
 
-## `state.Text.toString.B1` (Text.toString)
-- hazard: JS string conversion protocol (toString).
-- hazard: Round trip through a separator-splitting parser is not identity when lines hold CR or other separators (D2).
+## `state.Text.toString.B1` (Text.toString, `state.cm6.242`)
+- text: The whole document as one string with "\n" between lines (sliceString(0)), whatever line separator the editor state uses; String(doc) and template literals call it. Line content is not escaped, so a line ending in "\r" followed by a break gives "\r\n" (["a\r", "b"] becomes "a\r\nb", which a split on \r\n?|\n would read back as ["a", "b"], F1050).
+- `state.Text.toString.B1:h1`: JS string conversion protocol (toString).
+- `state.Text.toString.B1:h2`: Round trip through a separator-splitting parser is not identity when lines hold CR or other separators (D2).
 - fixtures (11 compared of 11; equal 6, part 5): F1047 equal, F1048 equal, F1049 equal, F1050 equal, F1051 equal, F1052 equal, F6006 part, F6016 part, ... (3 more in the behavior's row)
+- compared fixtures by text class: empty 4, ascii 11, astral 1, crlf 5, lone cr 2, u2028 6
+- ops they run: list, not, record, same, state.create, state.doc, text.coerce, text.of, text.sliceString, text.toJSON, text.toString
 - ported cases: test-text#01 (test_cm6_text_01_handles_basic_replacement); test-text#02 (test_cm6_text_02_can_append_documents); test-text#13 (test_cm6_text_13_returns_the_correct_strings_for_slice)
 - written tests: none
 
-## `state.Text.toJSON.B1` (Text.toJSON)
-- hazard: JS JSON hook: JSON.stringify calls toJSON implicitly.
+## `state.Text.toJSON.B1` (Text.toJSON, `state.cm6.243`)
+- text: Returns a new array of the line strings (flattened from all leaves), the form JSON.stringify(doc) emits and Text.of reads back: Text.of(doc.toJSON()).eq(doc). The empty document gives [""]; each call returns a fresh array.
+- `state.Text.toJSON.B1:h1`: JS JSON hook: JSON.stringify calls toJSON implicitly.
 - fixtures (11 compared of 11; equal 1, part 10): F1053 part, F1054 part, F1055 part, F1056 part, F1057 part, F1058 equal, F6006 part, F6016 part, ... (3 more in the behavior's row)
+- compared fixtures by text class: empty 4, ascii 11, astral 1, crlf 5, lone cr 1, u2028 5
+- ops they run: count, fill, list, not, record, same, state.create, state.doc, text.eq, text.of, text.sliceString, text.stringify, text.toJSON, text.toString
 - ported cases: test-text#24 (test_cm6_text_24_can_convert_to_json)
 - written tests: none
 
-## `state.Text.children.B1` (Text.children)
-- hazard: Tree shape is observable through Text.children (Q8).
+## `state.Text.children.B1` (Text.children, `state.cm6.244`)
+- text: null on a leaf; on a node, the array of child Texts (Q8). Every document of at most 32 lines built by Text.of is a leaf.
+- `state.Text.children.B1:h1`: Tree shape is observable through Text.children (Q8).
 - fixtures (22 compared of 22; equal 22): F1059 equal, F1060 equal, F1061 equal, F1062 equal, F1063 equal, F1064 equal, F1065 equal, F1066 equal, ... (14 more in the behavior's row)
+- compared fixtures by text class: ascii 22, astral 3, crlf 2, lone cr 2, u2028 4
+- ops they run: fill, item, join, let, same, state.create, state.doc, text.children, text.className, text.isText, text.length, text.lines, text.of, text.shape
 - ported cases: test-text#04 (test_cm6_text_04_creates_a_balanced_tree_when_loading_a_document); test-text#10 (test_cm6_text_10_can_insert_on_node_boundaries); test-text#06 (test_cm6_text_06_collapses_on_delete)
 - written tests: none
 
-## `state.Text.children.B2` (Text.children)
-- hazard: Tree shape is observable through Text.children (Q8).
+## `state.Text.children.B2` (Text.children, `state.cm6.244`)
+- text: Shape produced by Text.of: up to 32 lines a leaf; more lines are cut into leaves of 32 (the last holds the remainder) and grouped by TextNode.from with chunk = max(32, lines >> 5): 33 lines [32, 1], 64 [32, 32], 1024 lines 32 leaves, 1025 lines 33 leaves, 2000 lines 62 leaves of 32 and one of 16, 5000 lines 39 nodes, the first 38 of four 32-line leaves and the last of four 32-line leaves and one of 8 ([32, 32, 32, 32, 8]: chunk is 156, and the 8-line leaf is not merged into the 32-line leaf before it because together they exceed 32 lines) (F1059-F1066). Shapes after edits: Text.replace B3-B5.
+- `state.Text.children.B2:h1`: Tree shape is observable through Text.children (Q8).
 - fixtures (26 compared of 26; equal 26): F1059 equal, F1060 equal, F1061 equal, F1062 equal, F1063 equal, F1064 equal, F1065 equal, F1066 equal, ... (18 more in the behavior's row)
+- compared fixtures by text class: ascii 26, astral 3, crlf 3, lone cr 3, u2028 6
+- ops they run: capture, fill, item, let, line.fields, same, state.create, state.doc, sum, text.children, text.className, text.isText, text.length, text.lineAt, text.lines, text.of, text.shape
 - ported cases: test-text#04 (test_cm6_text_04_creates_a_balanced_tree_when_loading_a_document); test-text#05 (test_cm6_text_05_rebalances_on_insert)
 - written tests: none
 
-## `state.Text.children.B3` (Text.children)
-- hazard: Aliasing: internal mutable array exposed; TypeScript readonly only.
+## `state.Text.children.B3` (Text.children, `state.cm6.244`)
+- text: The getter returns the node's internal array itself (same object on every access, not frozen, F1067); mutating it corrupts the document: after pushing a child onto doc.children of a 200-line document, lines and length stay cached at 200 and 20199 and toString() keeps 20199 characters (sliceString stops at the cached length), while the child count goes from 7 to 8, iteration from 399 values and 20199 characters to 401 values and 20203 characters, and toJSON from 200 to 201 lines (F7059).
+- `state.Text.children.B3:h1`: Aliasing: internal mutable array exposed; TypeScript readonly only.
 - fixtures (0 compared of 2; not run 2): F1067 not run, F7059 not run
 - ported cases: none
 - written tests: written_text.rs::text_children_are_the_same_nodes_on_every_call
 
-## `state.Text.[Symbol.iterator].B1` (Text.[Symbol.iterator])
-- hazard: Prototype method installed conditionally at module load.
+## `state.Text.[Symbol.iterator].B1` (Text.[Symbol.iterator], `state.cm6.245`)
+- text: A Text is iterable: [Symbol.iterator]() returns this.iter(), so for..of and spread yield the raw forward values, lines and "\n" for breaks with empty lines contributing nothing ([...Text.of(["a", "", ""])] is ["a", "\n", "\n"]; the empty document yields nothing). Installed on the prototype only when Symbol exists; documented as @hide.
+- `state.Text.[Symbol.iterator].B1:h1`: Prototype method installed conditionally at module load.
 - fixtures (9 compared of 9; equal 4, part 5): F1068 equal, F1069 equal, F1070 equal, F1071 equal, F6002 part, F6012 part, F6022 part, F6032 part, ... (1 more in the behavior's row)
+- compared fixtures by text class: empty 4, ascii 9, astral 1, crlf 1, lone cr 1, u2028 2
+- ops they run: forOf, iter.drain, spread, state.create, state.doc, text.iter, text.of
 - ported cases: none
 - written tests: none
 
-## `state.Text^of.B1` (Text^of)
-- hazard: Exception (RangeError); callers can check the array length in advance.
+## `state.Text^of.B1` (Text^of, `state.cm6.246`)
+- text: An empty array throws RangeError "A document must have at least one line".
+- `state.Text^of.B1:h1`: Exception (RangeError); callers can check the array length in advance.
 - fixtures (1 compared of 1; equal 1): F1072 equal
+- compared fixtures by text class: ascii 1
+- ops they run: text.of
 - ported cases: none
 - written tests: none
 
-## `state.Text^of.B2` (Text^of)
-- hazard: Identity: Text.of([""]) === Text.empty, other empty results are not (Text^empty B2).
-- hazard: The test is !text[0], any falsy single element returns Text.empty.
+## `state.Text^of.B2` (Text^of, `state.cm6.246`)
+- text: A single empty line ([""]) returns the shared Text.empty object; any other input (for example ["", ""]) returns a new document.
+- `state.Text^of.B2:h1`: Identity: Text.of([""]) === Text.empty, other empty results are not (Text^empty B2).
+- `state.Text^of.B2:h2`: The test is !text[0], any falsy single element returns Text.empty.
 - fixtures (2 compared of 2; equal 2): F1073 equal, F1074 equal
+- compared fixtures by text class: empty 2, ascii 2
+- ops they run: same, text.empty, text.length, text.lines, text.of
 - ported cases: test-text#11 (test_cm6_text_11_can_build_up_a_doc_by_repeated_appending)
 - written tests: none
 
-## `state.Text^of.B3` (Text^of)
-- hazard: Aliasing of the caller's array.
+## `state.Text^of.B3` (Text^of, `state.cm6.246`)
+- text: Up to 32 lines: one leaf that stores the given array itself (no copy) and computes the length once (aliasing, Text B3).
+- `state.Text^of.B3:h1`: Aliasing of the caller's array.
 - fixtures (14 compared of 14; equal 14): F1075 equal, F1076 equal, F1077 equal, F1527 equal, F6050 equal, F6051 equal, F6057 equal, F6058 equal, ... (6 more in the behavior's row)
+- compared fixtures by text class: ascii 14, astral 1, crlf 2, lone cr 3, u2028 5
+- ops they run: fill, let, same, state.create, state.doc, text.children, text.className, text.isText, text.length, text.lines, text.of, text.shape
 - ported cases: test-text#01 (test_cm6_text_01_handles_basic_replacement)
 - written tests: none
 
-## `state.Text^of.B4` (Text^of)
-- hazard: Tree shape is observable through Text.children (Q8).
+## `state.Text^of.B4` (Text^of, `state.cm6.246`)
+- text: More than 32 lines: TextLeaf.split copies the lines into leaves of 32 (the last with the remainder) and TextNode.from builds the tree (shapes in Text.children B2).
+- `state.Text^of.B4:h1`: Tree shape is observable through Text.children (Q8).
 - fixtures (14 compared of 14; equal 14): F1078 equal, F1079 equal, F1080 equal, F1528 equal, F6050 equal, F6051 equal, F6057 equal, F6058 equal, ... (6 more in the behavior's row)
+- compared fixtures by text class: ascii 14, astral 1, crlf 2, lone cr 2, u2028 4
+- ops they run: fill, let, same, state.create, state.doc, text.children, text.className, text.isText, text.length, text.lines, text.of, text.shape
 - ported cases: test-text#03 (test_cm6_text_03_preserves_length); test-text#04 (test_cm6_text_04_creates_a_balanced_tree_when_loading_a_document); test-text#24 (test_cm6_text_24_can_convert_to_json)
 - written tests: none
 
-## `state.Text^of.B5` (Text^of)
-- hazard: Arguments outside the domain (Q9).
+## `state.Text^of.B5` (Text^of, `state.cm6.246`)
+- text: Lines are stored as given, without splitting or validation (Q9): "a\nb", "a\r\nb", "\r" and U+2028 inside an element stay line content (Text.of(["a\nb", "c"]) has 2 lines, length 5 and toString "a\nb\nc"). Splitting a string into lines is done by the callers: EditorState.create and EditorState.toText split on the lineSeparator facet or DefaultSplit before calling Text.of (mirrors/cm6/state/src/state.ts:185 (EditorState.toText), :246 (EditorState.create), chunk state).
+- `state.Text^of.B5:h1`: Arguments outside the domain (Q9).
 - fixtures (8 compared of 8; equal 8): F1081 equal, F1082 equal, F6085 equal, F6086 equal, F6087 equal, F6088 equal, F6089 equal, F6090 equal
+- compared fixtures by text class: ascii 8, astral 1, crlf 2, lone cr 1, u2028 2
+- ops they run: line.fields, state.create, state.doc, text.length, text.line, text.lines, text.of, text.toJSON, text.toString
 - ported cases: none
 - written tests: none
 
-## `state.Text^empty.B1` (Text^empty)
-- hazard: Module-level shared object.
+## `state.Text^empty.B1` (Text^empty, `state.cm6.247`)
+- text: A single leaf [""] created at module load: length 0, lines 1, children null, toString "", toJSON [""].
+- `state.Text^empty.B1:h1`: Module-level shared object.
 - fixtures (1 compared of 1; equal 1): F1083 equal
+- compared fixtures by text class: ascii 1
+- ops they run: text.children, text.empty, text.length, text.lines, text.toJSON, text.toString
 - ported cases: test-text#06 (test_cm6_text_06_collapses_on_delete); test-text#09 (test_cm6_text_09_can_handle_deleting_the_entire_document); test-text#29 (test_cm6_text_29_clips_out_of_range_boundaries)
 - written tests: none
 
-## `state.Text^empty.B2` (Text^empty)
-- hazard: Identity: comparing with === Text.empty does not detect empty documents.
+## `state.Text^empty.B2` (Text^empty, `state.cm6.247`)
+- text: Identity: among Text's methods only Text.of([""]) returns this object, and it reaches callers through what builds documents with Text.of (EditorState.create without a document, state.EditorStateConfig.doc.B5; EditorState.toText(""), state.EditorState.toText.B3) and through ChangeSet, which uses it as the empty inserted text: the text argument of iterChanges for a run that inserts nothing (a deletion) and of iterChangedRanges on a plain ChangeDesc (change.ts:413, :420; state.ChangeDesc.iterChangedRanges.B4) is Text.empty itself, and so is the inserted text ChangeSet.invert stores for a pure insertion (change.ts:227, visible through the @internal `inserted` field) (F7169); Text operations that produce an empty document return new objects (replace of the whole document, slice(3, 3), Text.empty.replace(0, 0, Text.empty), Text.empty.slice(0) are all !== Text.empty) that are eq to it (F1084).
+- `state.Text^empty.B2:h1`: Identity: comparing with === Text.empty does not detect empty documents.
 - fixtures (2 compared of 2; equal 1, part 1): F1084 equal, F7169 part
+- compared fixtures by text class: empty 2, ascii 2
+- ops they run: changes.desc, changes.inserted, changes.invert, changes.iterChangesTexts, changes.of, desc.iterChangedRangesArg, let, map, same, state.create, state.doc, state.toText, text.empty, text.eq, text.of, text.replace, text.slice
 - ported cases: none
 - written tests: none
 
-## `state.Text.lineAt.B7` (Text.lineAt)
-- hazard: Arguments outside the domain (Q9).
-- hazard: TypeError instead of RangeError for NaN; the range check at text.ts:39 does not catch NaN, a caller can test Number.isNaN(pos) in advance.
+## `state.Text.lineAt.B7` (Text.lineAt, `state.cm6.232`)
+- text: Node documents (more than 32 lines, TextNode): lineAt(NaN) passes the range check (as state.Text.lineAt.B5) and TextNode.lineInner's scan over the root's children never finds `end >= target` (every comparison with NaN is false), so it reads past the children array and throws TypeError "Cannot read properties of undefined (reading 'length')" at `child.length` (text.ts:261) before reaching any leaf. Same name and message as the leaf case (state.Text.lineAt.B5, text.ts:177); the throw site depends on the document's tree shape. Fixtures: 40 ASCII lines (F5200); 41 lines with astral characters, CRLF and LF breaks and U+2028 inside a line, built by EditorState.create({doc}) (F5201). Both stack-verified at text.ts:261 by oracle/cm6/text/probe-gapfill.ts.
+- `state.Text.lineAt.B7:h1`: Arguments outside the domain (Q9).
+- `state.Text.lineAt.B7:h2`: TypeError instead of RangeError for NaN; the range check at text.ts:39 does not catch NaN, a caller can test Number.isNaN(pos) in advance.
 - fixtures (0 compared of 2; not run 2): F5200 not run, F5201 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.Text.line.B4` (Text.line)
-- hazard: Arguments outside the domain (Q9).
-- hazard: TypeError instead of RangeError for NaN; the range check at text.ts:46 does not catch NaN, a caller can test Number.isNaN(n) in advance.
+## `state.Text.line.B4` (Text.line, `state.cm6.233`)
+- text: Node documents (more than 32 lines, TextNode): line(NaN) passes the range check (as state.Text.line.B3) and TextNode.lineInner (isLine true) never finds `endLine >= target`, reads past the root's children array and throws TypeError "Cannot read properties of undefined (reading 'length')" at `child.length` (text.ts:261) before reaching any leaf. Same name and message as the leaf case (state.Text.line.B3, text.ts:177). Fixtures: 40 ASCII lines (F5202); 41 lines with astral characters, CRLF and LF breaks and U+2028 inside a line (F5203). Both stack-verified at text.ts:261 by oracle/cm6/text/probe-gapfill.ts.
+- `state.Text.line.B4:h1`: Arguments outside the domain (Q9).
+- `state.Text.line.B4:h2`: TypeError instead of RangeError for NaN; the range check at text.ts:46 does not catch NaN, a caller can test Number.isNaN(n) in advance.
 - fixtures (0 compared of 2; not run 2): F5202 not run, F5203 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.Text.iter.B3` (Text.iter)
-- hazard: Union-typed numeric parameter not checked at runtime.
-- hazard: TypeError from a different site than the leaf case; name and message are the same.
+## `state.Text.iter.B3` (Text.iter, `state.cm6.239`)
+- text: iter(0) on a node document (more than 32 lines): the constructor sets the root offset to children.length << 1 (dir > 0 is false, text.ts:414); the first next() finds neither the end test (`offset == 0`, text.ts:423) nor the line-break test (`(offsetValue & 1) == 1`, text.ts:432) true, takes the node branch and reads `top.children[offset]`, one past the last child, so `next.length` throws TypeError "Cannot read properties of undefined (reading 'length')" at text.ts:451. Leaf documents throw the same TypeError from the leaf branch at text.ts:444 (state.Text.iter.B2, F1014). Fixtures: 40 ASCII lines (F5204); 41 lines with astral characters, CRLF and LF breaks and U+2028 inside a line (F5205). Both stack-verified at text.ts:451 by oracle/cm6/text/probe-gapfill.ts.
+- `state.Text.iter.B3:h1`: Union-typed numeric parameter not checked at runtime.
+- `state.Text.iter.B3:h2`: TypeError from a different site than the leaf case; name and message are the same.
+- decision rows of the item: state.cm6.239.d1
 - fixtures (0 compared of 2; not run 2): F5204 not run, F5205 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.Text.iter.B4` (Text.iter)
-- hazard: Union-typed numeric parameter not checked at runtime.
-- hazard: The values depend on the tree shape (Q8): the same lines held in a leaf or in a node give different results.
+## `state.Text.iter.B4` (Text.iter, `state.cm6.239`)
+- text: dir outside 1 | -1 on a node document (more than 32 lines): the cursor steps offsets by dir (text.ts:433, :443). With dir 2 it reads every string of the first leaf it descends into, stepping over the break bits as on a leaf (B2); when that leaf ends, the parent's offset is incremented by one (text.ts:429), which lands on a break bit, and the doubled step then reports breaks and passes over children without entering them. Recorded on 70 lines (children [32, 32, 6]): iter(2) yields the non-empty lines of the first child (L0-L30), then "\n" twice with lineBreak true, then done, so the 38 lines of the other children are never yielded; iter(-2) yields the non-empty lines of the last child in reverse, then "\n" twice, then done; iter(3) yields lines and "\n" values from the first and last children only and did not throw (F7037-F7042: "\n", CRLF, lone CR and U+2028-separator sources give the same values; with U+2028 as line content the values carry it, and "\u2028" alone stands for an otherwise empty line). The leaf results differ (B2: iter(2) yields every non-empty line; iter(3) on 4 lines throws).
+- `state.Text.iter.B4:h1`: Union-typed numeric parameter not checked at runtime.
+- `state.Text.iter.B4:h2`: The values depend on the tree shape (Q8): the same lines held in a leaf or in a node give different results.
+- decision rows of the item: state.cm6.239.d1
 - fixtures (0 compared of 6; not run 6): F7037 not run, F7038 not run, F7039 not run, F7040 not run, F7041 not run, F7042 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.Text.replace.B7` (Text.replace)
-- hazard: Arguments outside the domain (Q9).
-- hazard: Untouched lines change, not only the length; the result depends on the tree shape (Q8).
+## `state.Text.replace.B7` (Text.replace, `state.cm6.234`)
+- text: Fractional positions on a node document (more than 32 lines; Q9) change lines away from the edit, and differently from a leaf document. Recorded on 40 lines (children [32, 8], k0 = children[0].length) from six sources ("\n", CRLF, lone CR, U+2028 as content, U+2028 as lineSeparator, astral lines; F7045, F7047, F7049, F7051, F7053, F7055): replace(0, 0.5, Text.of(["Q"])) keeps 40 lines but cuts the first child's last line by one unit ("L31" becomes "L3"); when that line is empty (astral source) it is dropped (39 lines). The same call on a 32-line leaf keeps every line (F7057). Mechanism: TextLeaf.replace gives the edited child a cached length half a unit below its content (text.ts:206); the node's fast path rejects the 32-line child by its balance test (text.ts:291-292) and runs the general path over the child's whole range (text.ts:297), where TextLeaf.decompose re-reads the child up to its cached length (appendText(..., 0, text.length), text.ts:190) and String.prototype.slice truncates the last line (text.ts:388). A position inside the implied break between two children (k0 + 0.5) counts as the end of the first child: replace(k0 + 0.5, k0 + 0.5, Q) appends Q to the first child's last line and keeps the break (40 lines, length + 1), while on a leaf a position inside a break (line end + 0.5) joins the two lines around it (F7057: "L30QL31", 31 lines). replace(k0 - 0.5, k0 + 0.5, Q) replaces the last unit of the first child's last line and keeps the break; replace(k0 + 0.5, k0 + 1, Q) joins the two lines and rebuilds the tree ([19, 20]).
+- `state.Text.replace.B7:h1`: Arguments outside the domain (Q9).
+- `state.Text.replace.B7:h2`: Untouched lines change, not only the length; the result depends on the tree shape (Q8).
 - fixtures (0 compared of 7; not run 7): F7045 not run, F7047 not run, F7049 not run, F7051 not run, F7053 not run, F7055 not run, F7057 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.Text.slice.B5` (Text.slice)
-- hazard: Arguments outside the domain (Q9).
-- hazard: Produces a Text breaking the lines >= 1 invariant.
+## `state.Text.slice.B5` (Text.slice, `state.cm6.236`)
+- text: Fractional positions on a node document (Q9): a range whose two ends both lie inside the implied break between two children (k0 + 0.5 to k0 + 0.5, or to k0 + 0.7, with k0 = children[0].length) is seen by no child (TextNode.decompose tests from <= end && to >= pos, text.ts:272), so slice returns a Text with 0 lines, toJSON [] and length to - from (0, or 0.2 with float rounding) (F7046, F7048, F7050, F7052, F7054, F7056), as for NaN (B4); on a leaf, a range inside a break returns one empty line (F7058). sliceString of the same range is "" in both cases. slice(0.5, length - 0.5) truncates the last line ("L39" becomes "L3", length 148), as String.prototype.slice does on a leaf.
+- `state.Text.slice.B5:h1`: Arguments outside the domain (Q9).
+- `state.Text.slice.B5:h2`: Produces a Text breaking the lines >= 1 invariant.
+- decision rows of the item: state.cm6.236.d1
 - fixtures (0 compared of 7; not run 7): F7046 not run, F7048 not run, F7050 not run, F7052 not run, F7054 not run, F7056 not run, F7058 not run
 - ported cases: none
 - written tests: none
 - hand-off: accepted: every fixture needs input excluded by type (D12)
 
-## `state.Text.slice.B6` (Text.slice)
-- hazard: Arguments outside the domain (Q9).
-- hazard: Produces a Text whose length is not an integer (B - A).
-- hazard: Fractional from inside a break: slice and sliceString disagree on the break (mirrors/cm6/state/src/text.ts:216 against :387).
+## `state.Text.slice.B6` (Text.slice, `state.cm6.236`)
+- text: Fractional positions (Q9), on documents whose lengths are integers, leaf and node: with A and B the clipped from and to (clip keeps the fraction, text.ts:580-583) and a = Math.floor(A), b = Math.floor(B), slice(from, to) has the lines of slice(a, b) and the length B - A (fractional), except when A is fractional and a is a line-break position (A inside the break after a line ending at a): then the break is left out, and the lines are those of slice(a + 1, b) when b >= a + 1; when B lies in the same break they are [""] for a break inside a leaf and [] (no line) for the break between two children of a node, at any level (state.Text.slice.B5). sliceString keeps the break in the same case (state.Text.sliceString.B6). On Text.of(["one", "two", "", "three"]) (F7113): slice(3.5, 5) is ["t"] with length 1.5, while slice(3, 5) is ["", "t"] and sliceString(3.5, 5) is "\nt"; slice(7.5, 9.5) is ["", ""] (floor [7, 9) gives three lines); slice(8.5, 14) is ["three"] with length 5.5; slice(0.5, 4.5) is ["one", ""] as slice(0, 4); slice(3.5, 3.7) is [""] with length 0.2 (0.20000000000000018). Mechanism: TextLeaf.decompose cuts with sliceText (text.ts:185-187), i.e. appendText(text, [""], from, to) (text.ts:384-396), which takes a line when its end >= from: the line ending at a < A is skipped and the next line is joined to the initial "" (first = true), so no line break is produced for the break A lies in; content is cut with String.prototype.slice (truncation, text.ts:388-389); TextNode.decompose passes from - pos to its children (text.ts:269-279). Grids of every pair of fractional positions on six source variants of a 4-line leaf and a 40-line node document, each with the floor call (F7114-F7125); seeded check (rng 4106) of 3,200 random pairs on eight documents of 1 to 5000 lines: all follow this rule (F7166).
+- `state.Text.slice.B6:h1`: Arguments outside the domain (Q9).
+- `state.Text.slice.B6:h2`: Produces a Text whose length is not an integer (B - A).
+- `state.Text.slice.B6:h3`: Fractional from inside a break: slice and sliceString disagree on the break (mirrors/cm6/state/src/text.ts:216 against :387).
+- decision rows of the item: state.cm6.236.d1
 - fixtures (14 compared of 14; part 14): F7113 part, F7114 part, F7115 part, F7116 part, F7117 part, F7118 part, F7119 part, F7120 part, ... (6 more in the behavior's row)
+- compared fixtures by text class: empty 2, ascii 14, astral 3, crlf 2, lone cr 2, u2028 4
+- ops they run: block, check.slice, floor, item, let, list, map, pairs, record, state.create, state.doc, text.length, text.of, text.slice, text.sliceString, text.toJSON
 - ported cases: none
 - written tests: none

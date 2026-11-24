@@ -3,9 +3,14 @@
 
     python3 tools/ledger.py add <kind> key=value ...     append one row to docs/progress/ledger.jsonl
     python3 tools/ledger.py report [<crate>]             cost per stage and step, escapes, open expectations
-    python3 tools/ledger.py usage <transcript.jsonl>     a run's size from its transcript: requests, `tokens` (the
-                                                         last request's four usage counts) and `consumed` (their sum
-                                                         over the requests), each request counted once by its id
+    python3 tools/ledger.py usage <transcript.jsonl> [--breakdown]   a run's size from its transcript: requests,
+                                                         `tokens` (the last request's four usage counts) and `consumed`
+                                                         (their sum over the requests), each request counted once by its
+                                                         id; --breakdown adds what filled the context (M27): the first
+                                                         request, the rules loaded by the paths it read, the results by
+                                                         tool, its own output (the output tokens of every request but
+                                                         the last) against the input added, and the bytes per token of
+                                                         the largest results that arrived alone between two requests
 
 Kinds and their keys (date defaults to today; numbers are parsed):
   step     crate stage step role model effort tokens [consumed] [attempts] [note]   one finished worker run or orchestrator step;
@@ -103,6 +108,52 @@ def report(crate=None):
             print(f"- {r['id']}: {r['change']} | expects: {r['expects']} | {state}")
 
 
+def breakdown(path):
+    """What filled a run's context, from its transcript (docs/decisions/method.md, M27)."""
+    reqs, order, between = {}, [], []   # between[k]: what arrived after request k-1 and before request k
+    pending, names, rules = {"results": [], "attach": 0}, {}, {}
+    by_tool = collections.Counter()
+    for line in open(path, encoding="utf-8"):
+        try: j = json.loads(line)
+        except ValueError: continue
+        if j.get("type") == "attachment":
+            a = j.get("attachment") or {}
+            if a.get("type") == "nested_memory":
+                body = a.get("content"); body = body if isinstance(body, str) else (body or {}).get("content") or json.dumps(body)
+                rules[os.path.relpath(a.get("path", ""), os.path.dirname(os.path.dirname(os.path.dirname(PATH))))] = len(body.encode())
+            if order: pending["attach"] += 1
+            continue
+        m = j.get("message")
+        if not isinstance(m, dict): continue
+        for b_ in m.get("content") if isinstance(m.get("content"), list) else []:
+            if b_.get("type") == "tool_use": names[b_["id"]] = b_["name"]
+            if b_.get("type") == "tool_result":
+                t = b_.get("content"); n = len(t) if isinstance(t, str) else sum(len(x.get("text", "")) for x in t or [] if isinstance(x, dict))
+                tool = names.get(b_.get("tool_use_id"), "?"); by_tool[tool] += n
+                pending["results"].append((tool, n))
+        u = m.get("usage")
+        if u and m.get("id") not in reqs:
+            reqs[m["id"]] = u; order.append(m["id"]); between.append(pending); pending = {"results": [], "attach": 0}
+    if not order: return {}
+    ctx = lambda u: sum(u.get(k) or 0 for k in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
+    first, last = ctx(reqs[order[0]]), ctx(reqs[order[-1]])
+    own = sum(reqs[i].get("output_tokens") or 0 for i in order[:-1])
+    alone = []
+    for k in range(1, len(order)):
+        b_ = between[k]
+        if len(b_["results"]) == 1 and not b_["attach"]:
+            grow = ctx(reqs[order[k]]) - ctx(reqs[order[k - 1]]) - (reqs[order[k - 1]].get("output_tokens") or 0)
+            if grow > 0: alone.append((b_["results"][0][1], grow))
+    alone.sort(reverse=True)
+    top = alone[:7]
+    ratio = sorted(c / g for c, g in top)
+    return {"first_request": first, "last_request": last, "own_output": own, "input_added": last - first - own,
+            "own_per_input": round(own / max(1, last - first - own), 2),
+            "rules_loaded_bytes": rules, "results_chars_by_tool": dict(by_tool),
+            "chars_per_token_largest_alone": [round(x, 2) for x in ratio],
+            "largest_alone": [{"chars": c, "tokens": g} for c, g in top]}
+
+
 def usage(path):
     seen, total, last = set(), 0, None
     for line in open(path, encoding="utf-8"):
@@ -113,12 +164,14 @@ def usage(path):
         seen.add(m.get("id"))
         last = sum(u.get(k) or 0 for k in ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
         total += last
-    print(json.dumps({"requests": len(seen), "tokens": last, "consumed": total}))
+    out = {"requests": len(seen), "tokens": last, "consumed": total}
+    if "--breakdown" in sys.argv: out["breakdown"] = breakdown(path)
+    print(json.dumps(out, indent=1 if "--breakdown" in sys.argv else None))
 
 
 if __name__ == "__main__":
     a = sys.argv[1:]
     if a[:1] == ["add"] and len(a) >= 2: add(a[1], a[2:])
     elif a[:1] == ["report"]: report(a[1] if len(a) > 1 else None)
-    elif a[:1] == ["usage"] and len(a) == 2: usage(a[1])
+    elif a[:1] == ["usage"] and len(a) in (2, 3): usage(a[1])
     else: print(__doc__)
