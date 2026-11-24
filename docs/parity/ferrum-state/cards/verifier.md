@@ -2,8 +2,6 @@
 
 Written by the orchestrator from `docs/parity/ferrum-state/plan.md` "Conformance", step 3, and `docs/workflow/conformance.md` Appendix A. Your assignment (the spawn prompt) names your unit. The crate is at the recorded commit c08e6da (the tree's `crates/ferrum-state/` holds it; nothing under `src/` changed since). Reference: `@codemirror/state` 6.7.6 in `mirrors/cm6/state/`.
 
-<!-- refs:planned docs/parity/ferrum-state/raw/conformance-text.jsonl -->
-
 ## What your verdicts are for
 
 The conformance verdict of the crate says whether it does what cm6 does, as the approved specification records it, and nothing else but what a decision allows. The tools have already run what data can settle (every fixture replayed with 0 mismatch, the control runs, 25,638 fresh cases, coverage, mutation; their output is in `docs/parity/ferrum-state/conformance/`, whose README lists each file). What is left is what only a reading shows: whether a test asserts what its behavior says, whether a ported case is cm6's case, whether a hazard has a check, whether a surviving mutant or a missed branch is a gap. A verdict that passes something wrong is the one error nothing after you catches; a finding you are unsure of is still written, with what you checked.
