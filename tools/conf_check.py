@@ -33,16 +33,32 @@
                                                                 logarithmic behavior, on both sides, at those sizes
     python3 tools/conf_check.py <crate> coverage-fresh [<report.json>]   Q134: G2's missed branch outcomes that G5's new
                                                                 cases reach, and the outcomes only G2's run reaches
-    python3 tools/conf_check.py <crate> mutants-missed <dir> ...  the mutants no check killed, by unit and module, with
-                                                                their source line, from cargo mutants' --output dirs
-                                                                (each <dir>/mutants.out); the timeouts listed apart;
-                                                                writes .scratch/conformance/<crate>/mutants-missed.md
+    python3 tools/conf_check.py <crate> mutants-missed <dir> ... [--rerun <dir>] ...   the mutants no check killed, by
+                                                                unit and module, with their source line, from cargo
+                                                                mutants' --output dirs (each <dir>/mutants.out); the
+                                                                timeouts of those runs sorted by the runs again at a longer
+                                                                limit (--rerun, in order): `hang` when the log shows a test
+                                                                over 60 s whose binary took under 1 s unmutated (M26), else
+                                                                `timeout`; writes .scratch/conformance/<crate>/mutants-missed.md
+    python3 tools/conf_check.py <crate> hazards <chunk>          for step 3's readings (M25): each hazard of the behaviors of
+                                                                the chunk's items, with the fixtures (and their result in
+                                                                target/replay/<crate>/named.json, which `handoff` writes),
+                                                                ported cases and written tests that name its behavior;
+                                                                writes .scratch/conformance/<crate>/hazards-<chunk>.md
+    python3 tools/conf_check.py <crate> mutant-probe <unit>|<module>,... --probe <cargo package dir> <mutation dir> ...
+                                                                step 3's gaps (M25): each surviving mutant of the unit's
+                                                                modules (the last outcome over the dirs, in order) applied
+                                                                from its diff to a copy of the crate, the probe built
+                                                                against the copy and run; prints, per mutant, `equal` or
+                                                                the first line of output that differs from the unmutated
+                                                                run (the probe is the verifier's: it depends on the crate
+                                                                by path, which the tool points at its copy)
     python3 tools/conf_check.py <crate> sample --seed <n>        the items step 3's verifiers read, drawn with the seed
     (--root <dir>: another tree than the repository, for trying the tool on a copy)
 
 Output files go to .scratch/conformance/<crate>/ (never committed: regenerated from the recorded commit).
 """
-import collections, json, os, re, subprocess, sys
+import shutil, collections, json, os, re, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import impl_check as ic  # noqa: E402
@@ -809,31 +825,126 @@ def coverage_fresh(c, crate, args):
     for r in reached: c.say("        " + r)
 
 
+def hazards(c, crate, args):
+    """Each hazard of a chunk's behaviors with the checks that name its behavior; the verifier traces each one."""
+    if not args: c.need(False, "give a chunk"); return
+    chunk = args[0]
+    inv = {r["id"]: r for r in ic.rows(ic.spec(crate, "raw", "inventory.jsonl"))}
+    if chunk not in {r["chunk"] for r in inv.values()}: c.need(False, f"chunk {chunk} exists"); return
+    tests = {r["id"]: ic.case_name(r) for r in ic.rows(ic.spec(crate, "raw", "tests.jsonl"))}
+    named_path = os.path.join(ic.ROOT, "target", "replay", crate, "named.json")
+    c.need(os.path.exists(named_path), f"{os.path.relpath(named_path, ic.ROOT)} exists (run `tools/impl_check.py {crate} handoff` first)")
+    if not os.path.exists(named_path): return
+    named = json.load(open(named_path))
+    srcs = ic.test_sources(crate)
+    fns = set()
+    covers = collections.defaultdict(list)
+    for path, text in srcs.items():
+        fns |= set(re.findall(r"\bfn\s+(\w+)", text))
+        for m in re.finditer(r"//\s*covers:([^\n]*)", text):
+            f = re.search(r"\bfn\s+(\w+)", text[m.end():])
+            for i in re.split(r"[,\s]+", m.group(1).strip()):
+                if i: covers[i].append(f"{path}::{f.group(1) if f else '?'}")
+    out = [f"# Hazards of chunk `{chunk}`, {crate} (tools/conf_check.py hazards)", "",
+           "Each hazard of a behavior of the chunk's items, and every check that names the behavior: fixtures with their result",
+           "at the hand-off (`equal`, `part`, `none`), ported cm6 cases, written tests with `// covers:`. Whether a check",
+           "exercises the hazard is the verifier's reading.", ""]
+    n_h = n_none = 0
+    unchecked = []
+    for b in ic.rows(ic.spec(crate, "raw", "behaviors.jsonl")):
+        it = inv.get(b["item_id"])
+        hz = [h for h in (b.get("hazards") or []) if h.strip().lower() not in ("none", "none found")]
+        if not it or it["chunk"] != chunk or not hz: continue
+        res = {x.split()[1]: x.split()[2] for x in named.get(b["id"], []) if x.startswith("fixture ")}
+        fx = [f"{f} {res.get(f, 'not run')}" for f in b.get("fixtures") or []]
+        ported = [f"{t} ({tests.get(t, '?')}{'' if tests.get(t) in fns else ', no such test fn'})" for t in b.get("cm6_tests") or []]
+        wr = covers.get(b["id"], [])
+        accepted = [x for x in named.get(b["id"], []) if x.startswith("accepted")]
+        compared = [f for f in fx if not f.endswith((" none", " not run"))]
+        out.append(f"## `{b['id']}` ({it['item']})")
+        for h in hz: out.append(f"- hazard: {h}")
+        byres = collections.Counter(f.split(" ", 1)[1] for f in fx)
+        out.append(f"- fixtures ({len(compared)} compared of {len(fx)}; " + ", ".join(f"{k} {v}" for k, v in sorted(byres.items())) + "): "
+                   + (", ".join(fx[:8]) + (f", ... ({len(fx) - 8} more in the behavior's row)" if len(fx) > 8 else "") if fx else "none"))
+        out.append(f"- ported cases: " + ("; ".join(ported) if ported else "none"))
+        out.append(f"- written tests: " + ("; ".join(wr) if wr else "none"))
+        if accepted: out.append(f"- hand-off: " + "; ".join(accepted))
+        out.append("")
+        n_h += len(hz)
+        if not compared and not ported and not wr:
+            n_none += 1; unchecked.append(b["id"])
+    path = os.path.join(out_dir(crate), f"hazards-{chunk}.md")
+    with open(path, "w", encoding="utf8") as fh: fh.write("\n".join(out))
+    c.say(f"chunk {chunk}: {n_h} hazards on {sum(1 for l in out if l.startswith('## '))} behaviors; behaviors with a hazard and no compared fixture, ported case or written test: {n_none}")
+    for u in unchecked: c.say(f"        {u}")
+    c.say(f"written: {os.path.relpath(path, REPO)}")
+
+
+def baseline_times(log):
+    """test name -> seconds its test binary took in the unmutated run (the `finished in` of its `test result` line)."""
+    out, cur = {}, []
+    for l in ic.read(log).split("\n"):
+        m = re.match(r"^test (\S+) \.\.\. ", l)
+        if m: cur.append(m.group(1)); continue
+        m = re.match(r"^test result: .*finished in ([\d.]+)s", l)
+        if m:
+            for t in cur: out[t] = max(out.get(t, 0.0), float(m.group(1)))
+            cur = []
+    return out
+
+
+def hang_of(log, times):
+    """M26: the tests the log shows running over 60 s whose binary finished in under a second unmutated."""
+    running = re.findall(r"^test (\S+) has been running for over 60 seconds", ic.read(log), re.M)
+    return [t for t in running if t in times and times[t] < 1.0], running
+
+
 def mutants_missed(c, crate, args):
-    """The survivors of one or more cargo-mutants runs, by unit (step 3's verifiers read their unit's part)."""
-    if not args: c.need(False, "give the --output directories of the cargo mutants runs"); return
+    """The survivors of one or more cargo-mutants runs, by unit (step 3's verifiers read their unit's part), and the
+    timeouts sorted by M26 from the logs of the runs given with --rerun (in order, the last outcome counting)."""
+    reruns = [args[i + 1] for i, a in enumerate(args) if a == "--rerun"]
+    firsts = [a for i, a in enumerate(args) if a != "--rerun" and (i == 0 or args[i - 1] != "--rerun")]
+    if not firsts: c.need(False, "give the --output directories of the cargo mutants runs"); return
     us = ic.units(crate)
     unit_of = lambda f: next((f"{u['id']} {n}" for n, u in us.items() if os.path.basename(f)[:-3] in u["modules"]), "crate-wide")
     src = ic.crate_dir(crate, "src")
-    kinds = {"missed": [], "timeout": []}
-    for d in args:
+    final = {}  # name -> (summary, log, baseline times)
+    for d in firsts + reruns:
         o = json.load(open(os.path.join(d, "mutants.out", "outcomes.json")))
-        c.say(f"{os.path.relpath(d, REPO)}: {o['total_mutants']} mutants, caught {o['caught']}, missed {o['missed']}, "
+        c.say(f"{os.path.relpath(d, REPO)}{' (rerun)' if d in reruns else ''}: {o['total_mutants']} mutants, caught {o['caught']}, missed {o['missed']}, "
               f"timeout {o['timeout']}, unviable {o['unviable']}; {o['start_time']} to {o['end_time']}")
-        for k in kinds:
-            for l in ic.read(os.path.join(d, "mutants.out", k + ".txt")).split("\n"):
-                m = re.match(r"^crates/[\w-]+/src/(\S+?):(\d+):(\d+): (.*)$", l.strip())
-                if not m:
-                    c.need(not l.strip(), f"every line of {k}.txt read", [l])
-                    continue
-                r = (m.group(1), int(m.group(2)), int(m.group(3)), m.group(4))
-                if r not in kinds[k]: kinds[k].append(r)  # a mutant the filter does not select runs in every pass
-    both = set(kinds["missed"]) & set(kinds["timeout"])
-    c.need(not both, "no mutant both missed and timed out across the runs", sorted(both))
+        times = baseline_times(os.path.join(d, "mutants.out", "log", "baseline.log"))
+        c.need(bool(times), f"{os.path.relpath(d, REPO)}: the baseline log gives each test's binary time ({len(times)} tests)")
+        for x in o["outcomes"]:
+            m = x["scenario"].get("Mutant") if isinstance(x["scenario"], dict) else None
+            if not m: continue
+            prev = final.get(m["name"])
+            if d in firsts and prev and prev[0] != x["summary"]:
+                c.need(False, f"one outcome per mutant across the first passes: {m['name']}: {prev[0]}, {x['summary']}")
+            if d in reruns and m["name"] not in final:
+                c.need(False, f"a rerun mutant was a timeout of a first pass: {m['name']}"); continue
+            final[m["name"]] = (x["summary"], os.path.join(d, "mutants.out", x["log_path"]), times)
+    kinds = {"missed": [], "hang": [], "timeout": []}
+    reasons = {}
+    for name, (summary, log, times) in final.items():
+        m = re.match(r"^crates/[\w-]+/src/(\S+?):(\d+):(\d+): (.*)$", name)
+        if not m: c.need(False, f"a mutant name read: {name}"); continue
+        r = (m.group(1), int(m.group(2)), int(m.group(3)), m.group(4))
+        if summary == "MissedMutant": kinds["missed"].append(r)
+        elif summary == "Timeout":
+            fast, running = hang_of(log, times)
+            last = log.startswith(tuple(os.path.join(d, "") for d in reruns))
+            if fast and last: kinds["hang"].append(r); reasons[r] = f"running over 60 s: {', '.join(fast)} (binary under 1 s unmutated)"
+            else:
+                kinds["timeout"].append(r)
+                reasons[r] = ("not yet run again at the longer limit" if not last else
+                              f"running over 60 s: {', '.join(running) or 'none named'}; no test of a binary under 1 s: run again at 3,000 s")
     out = [f"# Mutants no check killed, {crate} (tools/conf_check.py mutants-missed)", "",
            "Each `missed` mutant goes to its unit's verifier: a behavior no check forbids (a finding, with the input that shows the",
-           "difference) or a mutant equivalent to the code (with the reason). A `timeout` made the test run exceed cargo mutants'",
-           "limit; it is listed apart, as the run reported it.", ""]
+           "difference) or a mutant equivalent to the code (with the reason).",
+           "A timeout is sorted by `docs/workflow/conformance.md` §2 (M26): run again at about thirty times the unmutated test run, it is `hang` (caught by a hang, counted apart) when its",
+           "log shows a test still running after a minute whose test binary finished in under a second unmutated; a `timeout` left",
+           "here is run once more at ten times that limit.", ""]
     for k, rows in kinds.items():
         out += [f"## {k} ({len(rows)})", ""]
         by = collections.defaultdict(list)
@@ -841,8 +952,8 @@ def mutants_missed(c, crate, args):
         for (u, f) in sorted(by):
             lines = ic.read(os.path.join(src, f)).split("\n")
             out.append(f"### {u}: `crates/{crate}/src/{f}` ({len(by[(u, f)])})")
-            for (_, n, col, what) in sorted(by[(u, f)], key=lambda r: (r[1], r[2], r[3])):
-                out.append(f"- `src/{f}:{n}:{col}` {what}  \n  `{lines[n - 1].strip()}`")
+            for r in sorted(by[(u, f)], key=lambda r: (r[1], r[2], r[3])):
+                out.append(f"- `src/{f}:{r[1]}:{r[2]}` {r[3]}  \n  `{lines[r[1] - 1].strip()}`" + (f"  \n  {reasons[r]}" if r in reasons else ""))
             out.append("")
         c.say(f"{k}: {len(rows)} by unit: " + ", ".join(f"{u} {n}" for u, n in sorted(collections.Counter(unit_of(r[0]) for r in rows).items())))
     path = os.path.join(out_dir(crate), "mutants-missed.md")
@@ -850,11 +961,72 @@ def mutants_missed(c, crate, args):
     c.say(f"written: {os.path.relpath(path, REPO)}")
 
 
+def mutant_probe(c, crate, args):
+    """Runs a verifier's probe against each surviving mutant of a unit (M25: the U1 verifier's runmut.py, made general)."""
+    if "--probe" not in args: c.need(False, "give --probe <cargo package dir>"); return
+    i = args.index("--probe"); probe = os.path.abspath(args[i + 1]); rest = args[:i] + args[i + 2:]
+    timeout = 900
+    if "--timeout" in rest: j = rest.index("--timeout"); timeout = int(rest[j + 1]); rest = rest[:j] + rest[j + 2:]
+    if len(rest) < 2: c.need(False, "give the unit and the mutation dirs"); return
+    sel, dirs = rest[0], rest[1:]
+    us = ic.units(crate)
+    modules = us[sel]["modules"] if sel in us else sel.split(",")
+    final = {}
+    for d in dirs:
+        for x in json.load(open(os.path.join(d, "mutants.out", "outcomes.json")))["outcomes"]:
+            m = x["scenario"].get("Mutant") if isinstance(x["scenario"], dict) else None
+            if m: final[m["name"]] = (x["summary"], os.path.join(d, "mutants.out", x["diff_path"]), m["file"])
+    todo = sorted((n, dp) for n, (s_, dp, f) in final.items() if s_ == "MissedMutant" and os.path.basename(f)[:-3] in modules)
+    c.say(f"modules {modules}: {len(todo)} surviving mutants")
+    work = os.path.join(out_dir(crate), "mutant-probe")
+    copy = os.path.join(work, "crates", crate)
+    shutil.rmtree(work, ignore_errors=True)
+    shutil.copytree(ic.crate_dir(crate), copy, ignore=shutil.ignore_patterns("target"))
+    ws = re.search(r"^\[workspace\.package\]\n(.*?)(?=^\[|\Z)", ic.read(os.path.join(ic.ROOT, "Cargo.toml")), re.M | re.S)
+    vals = dict(re.findall(r"^(\S+)\s*=\s*(.+)$", ws.group(1), re.M)) if ws else {}
+    man = ic.read(os.path.join(copy, "Cargo.toml"))
+    man = re.sub(r"^(\S+)\.workspace\s*=\s*true$", lambda m: f"{m.group(1)} = {vals[m.group(1)]}" if m.group(1) in vals else "", man, flags=re.M)
+    open(os.path.join(copy, "Cargo.toml"), "w").write(man + "\n[workspace]\n")
+    pr = os.path.join(work, "probe")
+    shutil.copytree(probe, pr, ignore=shutil.ignore_patterns("target"))
+    pm = ic.read(os.path.join(pr, "Cargo.toml"))
+    pm2, n = re.subn(r'(^' + re.escape(crate) + r'\s*=\s*\{[^}\n]*path\s*=\s*")[^"]*(")', lambda m: m.group(1) + copy + m.group(2), pm, flags=re.M)
+    c.need(n == 1, f"the probe's Cargo.toml depends on {crate} by path once ({n})")
+    if n != 1: return
+    open(os.path.join(pr, "Cargo.toml"), "w").write(pm2 if "[workspace]" in pm2 else pm2 + "\n[workspace]\n")
+    env = dict(os.environ, CARGO_TARGET_DIR=os.path.join(work, "target"))
+    def run():
+        try:
+            r = subprocess.run(["cargo", "run", "-q", "--release"], cwd=pr, env=env, capture_output=True, text=True, timeout=timeout)
+            return r.returncode, (r.stdout + r.stderr).split("\n")
+        except subprocess.TimeoutExpired:
+            return "timeout", []
+    rc0, base = run()
+    c.need(rc0 == 0, f"the probe runs on the unmutated crate (exit {rc0}, {len(base)} lines)", base[-5:] if rc0 else [])
+    if rc0 != 0: return
+    src0 = os.path.join(ic.crate_dir(crate), "src")
+    differ = equal = 0
+    for name, dp in todo:
+        shutil.rmtree(os.path.join(copy, "src")); shutil.copytree(src0, os.path.join(copy, "src"))
+        r = subprocess.run(["patch", "-p0", "-s", "-d", work, "-i", dp], capture_output=True, text=True)
+        if r.returncode: c.need(False, f"{name}: its diff applies", [r.stdout + r.stderr]); continue
+        rc, out = run()
+        first = next(((k, a, b) for k, (a, b) in enumerate(zip(base, out)) if a != b), None)
+        if first is None and len(out) != len(base): first = (min(len(out), len(base)), base[len(out)] if len(out) < len(base) else "", out[len(base)] if len(out) > len(base) else "")
+        if first is None and rc == 0: equal += 1; c.say(f"equal    {name}")
+        else:
+            differ += 1
+            c.say(f"DIFFERS  {name}: exit {rc}" + (f"; line {first[0] + 1}" if first else ""))
+            if first: c.say(f"         unmutated: {first[1][:300]}"); c.say(f"         mutated:   {first[2][:300]}")
+    shutil.rmtree(os.path.join(copy, "src")); shutil.copytree(src0, os.path.join(copy, "src"))
+    c.say(f"{len(todo)} mutants: {differ} differ, {equal} equal on this probe")
+
+
 def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ic.ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed}
+    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = ic.Check()

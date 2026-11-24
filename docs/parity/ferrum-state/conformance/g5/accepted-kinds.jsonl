@@ -1,0 +1,3 @@
+{"chunk": "state", "reason": "char", "op": "state.changeByRange", "argument": "changes.from", "decision": "Q133"}
+{"chunk": "rangeset", "reason": "char", "op": "set.update", "argument": "filterFrom", "decision": "Q135"}
+{"chunk": "rangeset", "reason": "char", "op": "set.update", "argument": "filterTo", "decision": "Q135"}

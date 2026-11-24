@@ -1,8 +1,10 @@
 # Mutants no check killed, ferrum-state (tools/conf_check.py mutants-missed)
 
 Each `missed` mutant goes to its unit's verifier: a behavior no check forbids (a finding, with the input that shows the
-difference) or a mutant equivalent to the code (with the reason). A `timeout` made the test run exceed cargo mutants'
-limit; it is listed apart, as the run reported it.
+difference) or a mutant equivalent to the code (with the reason).
+A timeout is sorted by `docs/workflow/conformance.md` §2 (M26): run again at about thirty times the unmutated test run, it is `hang` (caught by a hang, counted apart) when its
+log shows a test still running after a minute whose test binary finished in under a second unmutated; a `timeout` left
+here is run once more at ten times that limit.
 
 ## missed (84)
 
@@ -188,158 +190,234 @@ limit; it is listed apart, as the run reported it.
 - `src/transaction.rs:632:26` replace < with <= in join_ranges  
   `if *last < to {`
 
-## timeout (72)
+## hang (12)
+
+### U2 change: `crates/ferrum-state/src/change.rs` (12)
+- `src/change.rs:620:27` replace < with <= in ChangeSet::filter  
+  `while pos < next || pos == next && iter.len == 0 {`  
+  running over 60 s: test_cm6_state_21_can_split_changes, test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
+- `src/change.rs:620:27` replace < with == in ChangeSet::filter  
+  `while pos < next || pos == next && iter.len == 0 {`  
+  running over 60 s: test_cm6_state_21_can_split_changes, test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
+- `src/change.rs:620:27` replace < with > in ChangeSet::filter  
+  `while pos < next || pos == next && iter.len == 0 {`  
+  running over 60 s: test_cm6_state_21_can_split_changes, test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
+- `src/change.rs:620:34` replace || with && in ChangeSet::filter  
+  `while pos < next || pos == next && iter.len == 0 {`  
+  running over 60 s: test_cm6_state_21_can_split_changes, test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
+- `src/change.rs:620:49` replace && with || in ChangeSet::filter  
+  `while pos < next || pos == next && iter.len == 0 {`  
+  running over 60 s: test_cm6_state_21_can_split_changes, test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
+- `src/change.rs:620:61` replace == with != in ChangeSet::filter  
+  `while pos < next || pos == next && iter.len == 0 {`  
+  running over 60 s: test_cm6_state_21_can_split_changes, test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
+- `src/change.rs:644:27` replace < with <= in ChangeSet::filter  
+  `while pos < end {`  
+  running over 60 s: test_cm6_state_21_can_split_changes, test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
+- `src/change.rs:796:25` replace += with -= in add_section  
+  `sections[n - 1] += ins;`  
+  running over 60 s: test_cm6_change_36_mapping_still_converges_when_mapping_through_multiple_changes (binary under 1 s unmutated)
+- `src/change.rs:888:25` replace >= with < in map_set  
+  `} else if b.ins >= 0`  
+  running over 60 s: test_cm6_change_12_can_map_a_deletion_over_an_overlapping_replace, test_cm6_change_14_joins_deletions, test_cm6_change_18_drops_duplicate_deletion, test_cm6_change_19_handles_overlapping_replaces (binary under 1 s unmutated)
+- `src/change.rs:889:13` replace && with || in map_set  
+  `&& (a.ins < 0 || inserted == a.i as isize || a.off == 0 && (b.len < a.len || b.len == a.len && !before))`  
+  running over 60 s: test_cm6_change_09_can_map_over_an_insertion, test_cm6_change_10_can_map_over_a_deletion, test_cm6_change_11_orders_insertions, test_cm6_change_12_can_map_a_deletion_over_an_overlapping_replace (binary under 1 s unmutated)
+- `src/change.rs:889:27` replace || with && in map_set  
+  `&& (a.ins < 0 || inserted == a.i as isize || a.off == 0 && (b.len < a.len || b.len == a.len && !before))`  
+  running over 60 s: test_cm6_change_14_joins_deletions, test_cm6_change_18_drops_duplicate_deletion, test_cm6_change_19_handles_overlapping_replaces, test_cm6_change_28_can_create_change_sets (binary under 1 s unmutated)
+- `src/change.rs:889:55` replace || with && in map_set  
+  `&& (a.ins < 0 || inserted == a.i as isize || a.off == 0 && (b.len < a.len || b.len == a.len && !before))`  
+  running over 60 s: test_cm6_change_14_joins_deletions, test_cm6_change_16_keeps_replacements, test_cm6_change_18_drops_duplicate_deletion, test_cm6_change_28_can_create_change_sets (binary under 1 s unmutated)
+
+## timeout (60)
 
 ### U1 text: `crates/ferrum-state/src/char.rs` (7)
 - `src/char.rs:84:24` replace + with * in is_extending_char  
-  `from = mid + 1;`
+  `from = mid + 1;`  
+  not yet run again at the longer limit
 - `src/char.rs:84:24` replace + with - in is_extending_char  
-  `from = mid + 1;`
+  `from = mid + 1;`  
+  not yet run again at the longer limit
 - `src/char.rs:124:5` replace cluster_break -> usize with 0  
-  `if forward { next_cluster_break(s, pos, include_extending) } else { prev_cluster_break(s, pos, include_extending) }`
+  `if forward { next_cluster_break(s, pos, include_extending) } else { prev_cluster_break(s, pos, include_extending) }`  
+  not yet run again at the longer limit
 - `src/char.rs:124:5` replace cluster_break -> usize with 1  
-  `if forward { next_cluster_break(s, pos, include_extending) } else { prev_cluster_break(s, pos, include_extending) }`
+  `if forward { next_cluster_break(s, pos, include_extending) } else { prev_cluster_break(s, pos, include_extending) }`  
+  not yet run again at the longer limit
 - `src/char.rs:131:5` replace next_cluster_break -> usize with 0  
-  `if pos == s.len() {`
+  `if pos == s.len() {`  
+  not yet run again at the longer limit
 - `src/char.rs:155:17` replace += with -= in next_cluster_break  
-  `pos += next.len_utf8();`
+  `pos += next.len_utf8();`  
+  not yet run again at the longer limit
 - `src/char.rs:174:25` replace - with / in prev_cluster_break  
-  `let start = end - c.len_utf8();`
+  `let start = end - c.len_utf8();`  
+  not yet run again at the longer limit
 
 ### U1 text: `crates/ferrum-state/src/column.rs` (2)
 - `src/column.rs:31:15` replace += with *= in count_column  
-  `i += 1;`
+  `i += 1;`  
+  not yet run again at the longer limit
 - `src/column.rs:31:15` replace += with -= in count_column  
-  `i += 1;`
+  `i += 1;`  
+  not yet run again at the longer limit
 
-### U2 change: `crates/ferrum-state/src/change.rs` (33)
-- `src/change.rs:620:27` replace < with <= in ChangeSet::filter  
-  `while pos < next || pos == next && iter.len == 0 {`
-- `src/change.rs:620:27` replace < with == in ChangeSet::filter  
-  `while pos < next || pos == next && iter.len == 0 {`
-- `src/change.rs:620:27` replace < with > in ChangeSet::filter  
-  `while pos < next || pos == next && iter.len == 0 {`
-- `src/change.rs:620:34` replace || with && in ChangeSet::filter  
-  `while pos < next || pos == next && iter.len == 0 {`
-- `src/change.rs:620:49` replace && with || in ChangeSet::filter  
-  `while pos < next || pos == next && iter.len == 0 {`
-- `src/change.rs:620:61` replace == with != in ChangeSet::filter  
-  `while pos < next || pos == next && iter.len == 0 {`
-- `src/change.rs:644:27` replace < with <= in ChangeSet::filter  
-  `while pos < end {`
-- `src/change.rs:796:25` replace += with -= in add_section  
-  `sections[n - 1] += ins;`
-- `src/change.rs:888:25` replace >= with < in map_set  
-  `} else if b.ins >= 0`
-- `src/change.rs:889:13` replace && with || in map_set  
-  `&& (a.ins < 0 || inserted == a.i as isize || a.off == 0 && (b.len < a.len || b.len == a.len && !before))`
-- `src/change.rs:889:27` replace || with && in map_set  
-  `&& (a.ins < 0 || inserted == a.i as isize || a.off == 0 && (b.len < a.len || b.len == a.len && !before))`
+### U2 change: `crates/ferrum-state/src/change.rs` (21)
 - `src/change.rs:889:39` replace == with != in map_set  
-  `&& (a.ins < 0 || inserted == a.i as isize || a.off == 0 && (b.len < a.len || b.len == a.len && !before))`
-- `src/change.rs:889:55` replace || with && in map_set  
-  `&& (a.ins < 0 || inserted == a.i as isize || a.off == 0 && (b.len < a.len || b.len == a.len && !before))`
+  `&& (a.ins < 0 || inserted == a.i as isize || a.off == 0 && (b.len < a.len || b.len == a.len && !before))`  
+  not yet run again at the longer limit
 - `src/change.rs:893:23` replace != with == in map_set  
-  `while len != 0 {`
+  `while len != 0 {`  
+  not yet run again at the longer limit
 - `src/change.rs:910:25` replace >= with < in map_set  
-  `} else if a.ins >= 0 {`
+  `} else if a.ins >= 0 {`  
+  not yet run again at the longer limit
 - `src/change.rs:912:24` replace != with == in map_set  
-  `while left != 0 {`
+  `while left != 0 {`  
+  not yet run again at the longer limit
 - `src/change.rs:913:26` replace == with != in map_set  
-  `if b.ins == -1 {`
+  `if b.ins == -1 {`  
+  not yet run again at the longer limit
 - `src/change.rs:913:29` delete - in map_set  
-  `if b.ins == -1 {`
+  `if b.ins == -1 {`  
+  not yet run again at the longer limit
 - `src/change.rs:960:25` replace == with != in compose_sets  
-  `} else if a.ins == 0 {`
+  `} else if a.ins == 0 {`  
+  not yet run again at the longer limit
 - `src/change.rs:964:30` replace && with || in compose_sets  
-  `} else if b.len == 0 && !b.done() {`
+  `} else if b.len == 0 && !b.done() {`  
+  not yet run again at the longer limit
 - `src/change.rs:964:33` delete ! in compose_sets  
-  `} else if b.len == 0 && !b.done() {`
+  `} else if b.len == 0 && !b.done() {`  
+  not yet run again at the longer limit
 - `src/change.rs:971:28` replace || with && in compose_sets  
-  `} else if a.done() || b.done() {`
+  `} else if a.done() || b.done() {`  
+  not yet run again at the longer limit
 - `src/change.rs:1034:9` replace SectionIter<'a>::next with ()  
-  `if self.i < self.sections.len() {`
+  `if self.i < self.sections.len() {`  
+  not yet run again at the longer limit
 - `src/change.rs:1037:20` replace += with *= in SectionIter<'a>::next  
-  `self.i += 2;`
+  `self.i += 2;`  
+  not yet run again at the longer limit
 - `src/change.rs:1040:24` delete - in SectionIter<'a>::next  
-  `self.ins = -2;`
+  `self.ins = -2;`  
+  not yet run again at the longer limit
 - `src/change.rs:1046:9` replace SectionIter<'a>::done -> bool with false  
-  `self.ins == -2`
+  `self.ins == -2`  
+  not yet run again at the longer limit
 - `src/change.rs:1046:21` delete - in SectionIter<'a>::done  
-  `self.ins == -2`
+  `self.ins == -2`  
+  not yet run again at the longer limit
 - `src/change.rs:1050:9` replace SectionIter<'a>::len2 -> isize with -1  
-  `if self.ins < 0 { self.len } else { self.ins }`
+  `if self.ins < 0 { self.len } else { self.ins }`  
+  not yet run again at the longer limit
 - `src/change.rs:1050:9` replace SectionIter<'a>::len2 -> isize with 0  
-  `if self.ins < 0 { self.len } else { self.ins }`
+  `if self.ins < 0 { self.len } else { self.ins }`  
+  not yet run again at the longer limit
 - `src/change.rs:1050:21` replace < with == in SectionIter<'a>::len2  
-  `if self.ins < 0 { self.len } else { self.ins }`
+  `if self.ins < 0 { self.len } else { self.ins }`  
+  not yet run again at the longer limit
 - `src/change.rs:1050:21` replace < with > in SectionIter<'a>::len2  
-  `if self.ins < 0 { self.len } else { self.ins }`
+  `if self.ins < 0 { self.len } else { self.ins }`  
+  not yet run again at the longer limit
 - `src/change.rs:1075:9` replace SectionIter<'a>::forward with ()  
-  `if len == self.len {`
+  `if len == self.len {`  
+  not yet run again at the longer limit
 - `src/change.rs:1075:16` replace == with != in SectionIter<'a>::forward  
-  `if len == self.len {`
+  `if len == self.len {`  
+  not yet run again at the longer limit
 
 ### U3 rangeset: `crates/ferrum-state/src/rangeset.rs` (26)
 - `src/rangeset.rs:391:26` replace + with - in Chunk<T>::find_index  
-  `lo = mid + 1;`
+  `lo = mid + 1;`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:485:27` replace -= with /= in Chunk<T>::map  
-  `j -= 1;`
+  `j -= 1;`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:632:114` replace >= with < in RangeSet<T>::update_inner  
-  `.is_some_and(|r| or(cur.from - r.from as i64, || cur.start_side() - r.value.start_side() as i64) >= 0);`
+  `.is_some_and(|r| or(cur.from - r.from as i64, || cur.start_side() - r.value.start_side() as i64) >= 0);`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:878:26` replace > with == in RangeSet<T>::spans  
-  `if cursor.to > to {`
+  `if cursor.to > to {`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1219:30` replace += with *= in LayerCursor<T>::goto_inner  
-  `self.chunk_index += 1;`
+  `self.chunk_index += 1;`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1229:16` delete ! in LayerCursor<T>::goto_inner  
-  `if !forward || self.range_index < range_index {`
+  `if !forward || self.range_index < range_index {`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1229:45` replace < with > in LayerCursor<T>::goto_inner  
-  `if !forward || self.range_index < range_index {`
+  `if !forward || self.range_index < range_index {`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1243:9` replace LayerCursor<T>::next with ()  
-  `loop {`
+  `loop {`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1269:38` replace += with *= in LayerCursor<T>::set_range_index  
-  `self.chunk_index += 1;`
+  `self.chunk_index += 1;`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1269:38` replace += with -= in LayerCursor<T>::set_range_index  
-  `self.chunk_index += 1;`
+  `self.chunk_index += 1;`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1359:38` replace << with >> in heap_bubble  
-  `let mut child_index = (index << 1) + 1;`
+  `let mut child_index = (index << 1) + 1;`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1359:44` replace + with * in heap_bubble  
-  `let mut child_index = (index << 1) + 1;`
+  `let mut child_index = (index << 1) + 1;`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1359:44` replace + with - in heap_bubble  
-  `let mut child_index = (index << 1) + 1;`
+  `let mut child_index = (index << 1) + 1;`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1364:25` replace += with -= in heap_bubble  
-  `child_index += 1;`
+  `child_index += 1;`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1509:9` replace SpanCursor<T>::remove_active with ()  
-  `self.active.remove(index);`
+  `self.active.remove(index);`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1521:15` replace += with *= in SpanCursor<T>::add_active  
-  `i += 1;`
+  `i += 1;`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1535:9` replace SpanCursor<T>::next with ()  
-  `let from = self.to;`
+  `let from = self.to;`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1547:38` replace > with == in SpanCursor<T>::next  
-  `if self.active_to[a] > from {`
+  `if self.active_to[a] > from {`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1547:38` replace > with >= in SpanCursor<T>::next  
-  `if self.active_to[a] > from {`
+  `if self.active_to[a] > from {`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1560:42` replace > with == in SpanCursor<T>::next  
-  `} else if self.cursor.from() > from {`
+  `} else if self.cursor.from() > from {`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1560:42` replace > with >= in SpanCursor<T>::next  
-  `} else if self.cursor.from() > from {`
+  `} else if self.cursor.from() > from {`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1650:38` replace + with * in compare  
-  `let end = if diff < 0 { a.to + d_pos } else { b.to };`
+  `let end = if diff < 0 { a.to + d_pos } else { b.to };`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1675:16` replace > with < in compare  
-  `if end > end_b {`
+  `if end > end_b {`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1675:16` replace > with == in compare  
-  `if end > end_b {`
+  `if end > end_b {`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1679:17` replace <= with > in compare  
-  `if diff <= 0 {`
+  `if diff <= 0 {`  
+  not yet run again at the longer limit
 - `src/rangeset.rs:1682:17` replace >= with < in compare  
-  `if diff >= 0 {`
+  `if diff >= 0 {`  
+  not yet run again at the longer limit
 
 ### U4 state: `crates/ferrum-state/src/transaction.rs` (4)
 - `src/transaction.rs:615:5` replace join_ranges -> Vec<usize> with vec![0]  
-  `let mut result: Vec<usize> = Vec::new();`
+  `let mut result: Vec<usize> = Vec::new();`  
+  not yet run again at the longer limit
 - `src/transaction.rs:615:5` replace join_ranges -> Vec<usize> with vec![1]  
-  `let mut result: Vec<usize> = Vec::new();`
+  `let mut result: Vec<usize> = Vec::new();`  
+  not yet run again at the longer limit
 - `src/transaction.rs:622:16` replace += with *= in join_ranges  
-  `ia += 2;`
+  `ia += 2;`  
+  not yet run again at the longer limit
 - `src/transaction.rs:626:16` replace += with *= in join_ranges  
-  `ib += 2;`
+  `ib += 2;`  
+  not yet run again at the longer limit

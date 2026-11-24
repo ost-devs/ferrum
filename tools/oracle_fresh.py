@@ -106,6 +106,15 @@ def main():
     total = sum(info["new"][c] for c in info["seeded_chunks"])
     if len([x for x in got if x["chunk"] in info["seeded_chunks"]]) != total: failures.append(f"replayed {len(got)} of {total} new cases")
     if bad: failures.append(f"{len(bad)} new cases mismatch or pending: " + "; ".join(bad[:30]))
+    left_out_check(base, got, failures)
+    if failures:
+        print("\n%d check(s) failed:" % len(failures)); [print("  " + f[:2000]) for f in failures]; return 1
+    print("\nchecks passed"); return 0
+
+
+def left_out_check(base, got, failures):
+    """What the replayer left out of the new cases: kinds the approved file holds, kinds a decision accepted (each
+    counted, and stale when no new case produces it), and kinds neither holds."""
     # what the replayer left out of the new cases, against what the approved file holds
     approved = set()
     for e in rows(os.path.join(base, "fixtures", "no-counterpart.jsonl")):
@@ -115,12 +124,17 @@ def main():
         for l in x.get("left_out", []):
             k = (x["chunk"], l.get("reason"), l.get("op"), l.get("argument", l.get("part")))
             if k not in approved: novel[k] += 1
-    print(f"entries left out of new cases whose reason, op and argument the approved file does not hold: {len(novel)} kinds")
-    for k, n in novel.most_common(): print(f"        {k}: {n} case(s)")
-    if novel: failures.append(f"{len(novel)} kinds of entry left out that the approved file does not hold (read each)")
-    if failures:
-        print("\n%d check(s) failed:" % len(failures)); [print("  " + f[:2000]) for f in failures]; return 1
-    print("\nchecks passed"); return 0
+    # kinds a decision accepted after reading them (conformance/g5/accepted-kinds.jsonl; Q133, Q135)
+    acc_path = os.path.join(base, "conformance", "g5", "accepted-kinds.jsonl")
+    accepted = {(a["chunk"], a["reason"], a["op"], a["argument"]): a["decision"] for a in (rows(acc_path) if os.path.exists(acc_path) else [])}
+    print(f"kinds of left-out entry accepted by a decision ({os.path.relpath(acc_path, ROOT)}): {len(accepted)}")
+    for k, d in accepted.items(): print(f"        {k} ({d}): {novel.get(k, 0)} case(s)")
+    stale = [k for k in accepted if not novel.get(k)]
+    if stale: failures.append(f"{len(stale)} accepted kinds no new case produces (stale): {stale}")
+    unread = collections.Counter({k: n for k, n in novel.items() if k not in accepted})
+    print(f"entries left out of new cases whose reason, op and argument neither the approved file nor an accepted kind holds: {len(unread)} kinds")
+    for k, n in unread.most_common(): print(f"        {k}: {n} case(s)")
+    if unread: failures.append(f"{len(unread)} kinds of entry left out that neither the approved file nor a decision holds (read each)")
 
 
 CLASSES = ("empty", "ascii", "bmp", "astral", "lone surrogate", "crlf", "lone cr", "u2028")

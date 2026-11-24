@@ -1,16 +1,12 @@
 .scratch/conformance/ferrum-state/mutation: 1328 mutants, caught 1080, missed 76, timeout 72, unviable 100; 2026-11-24T13:35:37.535808336Z to 2026-11-24T15:17:15.409839377Z
-ok    every line of missed.txt read
-        
-ok    every line of timeout.txt read
-        
+ok    .scratch/conformance/ferrum-state/mutation: the baseline log gives each test's binary time (340 tests)
 .scratch/conformance/ferrum-state/mutation-2: 120 mutants, caught 97, missed 13, timeout 0, unviable 10; 2026-11-24T16:36:23.774857114Z to 2026-11-24T16:44:43.029330624Z
-ok    every line of missed.txt read
-        
-ok    every line of timeout.txt read
-        
-ok    no mutant both missed and timed out across the runs
+ok    .scratch/conformance/ferrum-state/mutation-2: the baseline log gives each test's binary time (340 tests)
+.scratch/conformance/ferrum-state/mutation-timeout (rerun): 12 mutants, caught 0, missed 0, timeout 12, unviable 0; 2026-11-24T16:45:31.339247616Z to None
+ok    .scratch/conformance/ferrum-state/mutation-timeout: the baseline log gives each test's binary time (340 tests)
 missed: 84 by unit: U1 text 26, U2 change 13, U3 rangeset 29, U4 state 16
-timeout: 72 by unit: U1 text 9, U2 change 33, U3 rangeset 26, U4 state 4
+hang: 12 by unit: U2 change 12
+timeout: 60 by unit: U1 text 9, U2 change 21, U3 rangeset 26, U4 state 4
 written: .scratch/conformance/ferrum-state/mutants-missed.md
 
 checks passed
