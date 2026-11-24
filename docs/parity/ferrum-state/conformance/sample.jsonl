@@ -1,0 +1,220 @@
+{"item_id": "state.cm6.001", "item": "EditorStateConfig", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.002", "item": "EditorStateConfig.doc", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.003", "item": "EditorStateConfig.selection", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.004", "item": "EditorStateConfig.extensions", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.005", "item": "EditorState", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.006", "item": "EditorState.doc", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.007", "item": "EditorState.selection", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.008", "item": "EditorState.field", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.009", "item": "EditorState.update", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.010", "item": "EditorState.replaceSelection", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.011", "item": "EditorState.changeByRange", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.012", "item": "EditorState.changes", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.013", "item": "EditorState.toText", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.014", "item": "EditorState.sliceDoc", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.015", "item": "EditorState.facet", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.016", "item": "EditorState.toJSON", "unit": "U4 state (state)", "why": ["hazard", "deviation row"]}
+{"item_id": "state.cm6.017", "item": "EditorState^fromJSON", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.018", "item": "EditorState^create", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.019", "item": "EditorState^allowMultipleSelections", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.020", "item": "EditorState^tabSize", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.022", "item": "EditorState^lineSeparator", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.023", "item": "EditorState.lineBreak", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.024", "item": "EditorState^readOnly", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.026", "item": "EditorState^phrases", "unit": "U4 state (state)", "why": ["hazard", "deviation row"]}
+{"item_id": "state.cm6.027", "item": "EditorState.phrase", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.028", "item": "EditorState^languageData", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.029", "item": "EditorState.languageDataAt", "unit": "U4 state (state)", "why": ["hazard", "deviation row"]}
+{"item_id": "state.cm6.030", "item": "EditorState.charCategorizer", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.031", "item": "EditorState.wordAt", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.032", "item": "EditorState^changeFilter", "unit": "U4 state (state)", "why": ["hazard", "deviation row", "behavior added"]}
+{"item_id": "state.cm6.033", "item": "EditorState^transactionFilter", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.034", "item": "EditorState^transactionExtender", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.036", "item": "Facet", "unit": "U4 state (facet)", "why": ["drawn (seed 20261124)", "hazard", "deviation row"]}
+{"item_id": "state.cm6.037", "item": "Facet.reader", "unit": "U4 state (facet)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.038", "item": "Facet^define", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.039", "item": "Facet.of", "unit": "U4 state (facet)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.040", "item": "Facet.compute", "unit": "U4 state (facet)", "why": ["hazard", "behavior added"]}
+{"item_id": "state.cm6.041", "item": "Facet.computeN", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.042", "item": "Facet.from", "unit": "U4 state (facet)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.044", "item": "FacetReader", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.046", "item": "StateField", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.047", "item": "StateField^define", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.048", "item": "StateField.init", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.049", "item": "StateField.extension", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.050", "item": "Extension", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.051", "item": "Prec", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.052", "item": "Prec.highest", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.053", "item": "Prec.high", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.054", "item": "Prec.default", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.055", "item": "Prec.low", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.056", "item": "Prec.lowest", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.057", "item": "Compartment", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.059", "item": "Compartment.reconfigure", "unit": "U4 state (facet)", "why": ["hazard", "deviation row"]}
+{"item_id": "state.cm6.060", "item": "Compartment.get", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.061", "item": "EditorSelection", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.062", "item": "EditorSelection.ranges", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.063", "item": "EditorSelection.mainIndex", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.064", "item": "EditorSelection.map", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.066", "item": "EditorSelection.main", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.067", "item": "EditorSelection.asSingle", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.068", "item": "EditorSelection.addRange", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.069", "item": "EditorSelection.replaceRange", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.070", "item": "EditorSelection.toJSON", "unit": "U2 change", "why": ["drawn (seed 20261124)"]}
+{"item_id": "state.cm6.071", "item": "EditorSelection^fromJSON", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.072", "item": "EditorSelection^single", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.073", "item": "EditorSelection^create", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard", "deviation row"]}
+{"item_id": "state.cm6.074", "item": "EditorSelection^cursor", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.075", "item": "EditorSelection^range", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.076", "item": "EditorSelection^undirectionalRange", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.077", "item": "SelectionRange", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.078", "item": "SelectionRange.from", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.080", "item": "SelectionRange.goalColumn", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.084", "item": "SelectionRange.assoc", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.085", "item": "SelectionRange.undirectional", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.086", "item": "SelectionRange.bidiLevel", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.087", "item": "SelectionRange.map", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.088", "item": "SelectionRange.extend", "unit": "U2 change", "why": ["drawn (seed 20261124)"]}
+{"item_id": "state.cm6.089", "item": "SelectionRange.eq", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.091", "item": "SelectionRange^fromJSON", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.092", "item": "Transaction", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.093", "item": "Transaction.startState", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.095", "item": "Transaction.selection", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.096", "item": "Transaction.effects", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)"]}
+{"item_id": "state.cm6.097", "item": "Transaction.scrollIntoView", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.098", "item": "Transaction.newDoc", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.099", "item": "Transaction.newSelection", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.100", "item": "Transaction.state", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.101", "item": "Transaction.annotation", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.103", "item": "Transaction.reconfigured", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.104", "item": "Transaction.isUserEvent", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.105", "item": "Transaction^time", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.109", "item": "TransactionSpec", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.110", "item": "TransactionSpec.changes", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.111", "item": "TransactionSpec.selection", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.112", "item": "TransactionSpec.effects", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.114", "item": "TransactionSpec.userEvent", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.115", "item": "TransactionSpec.scrollIntoView", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.116", "item": "TransactionSpec.filter", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.117", "item": "TransactionSpec.sequential", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.118", "item": "Annotation", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.119", "item": "Annotation.type", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.120", "item": "Annotation.value", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.121", "item": "Annotation^define", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.122", "item": "AnnotationType", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.124", "item": "StateEffect", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.125", "item": "StateEffect.value", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.126", "item": "StateEffect.map", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.127", "item": "StateEffect.is", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.129", "item": "StateEffect^mapEffects", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.130", "item": "StateEffect^reconfigure", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.131", "item": "StateEffect^appendConfig", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.132", "item": "StateEffectType", "unit": "U4 state (state)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.134", "item": "combineConfig", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.135", "item": "ChangeSpec", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.136", "item": "ChangeSet", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.137", "item": "ChangeSet.apply", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.138", "item": "ChangeSet.mapDesc", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.139", "item": "ChangeSet.invert", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.140", "item": "ChangeSet.compose", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.141", "item": "ChangeSet.map", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.143", "item": "ChangeSet.desc", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.145", "item": "ChangeSet^of", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.146", "item": "ChangeSet^empty", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.147", "item": "ChangeSet^fromJSON", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.148", "item": "ChangeDesc", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.149", "item": "ChangeDesc.length", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.150", "item": "ChangeDesc.newLength", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.151", "item": "ChangeDesc.empty", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.152", "item": "ChangeDesc.iterGaps", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.153", "item": "ChangeDesc.iterChangedRanges", "unit": "U2 change", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.154", "item": "ChangeDesc.invertedDesc", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.155", "item": "ChangeDesc.composeDesc", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.156", "item": "ChangeDesc.mapDesc", "unit": "U2 change", "why": ["hazard", "deviation row"]}
+{"item_id": "state.cm6.157", "item": "ChangeDesc.mapPos", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.158", "item": "ChangeDesc.touchesRange", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.159", "item": "ChangeDesc.toJSON", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.160", "item": "ChangeDesc^fromJSON", "unit": "U2 change", "why": ["hazard", "deviation row"]}
+{"item_id": "state.cm6.161", "item": "MapMode", "unit": "U2 change", "why": ["hazard"]}
+{"item_id": "state.cm6.166", "item": "CharCategory", "unit": "U1 text", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.167", "item": "CharCategory.Word", "unit": "U1 text", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.168", "item": "CharCategory.Space", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.169", "item": "CharCategory.Other", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.170", "item": "RangeValue", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.171", "item": "RangeValue.eq", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.172", "item": "RangeValue.startSide", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.173", "item": "RangeValue.endSide", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.174", "item": "RangeValue.mapMode", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.175", "item": "RangeValue.point", "unit": "U3 rangeset", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.176", "item": "RangeValue.range", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.177", "item": "Range", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.180", "item": "Range.value", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.181", "item": "RangeSet", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.183", "item": "RangeSet.update", "unit": "U3 rangeset", "why": ["drawn (seed 20261124)", "hazard", "behavior added"]}
+{"item_id": "state.cm6.184", "item": "RangeSet.map", "unit": "U3 rangeset", "why": ["hazard", "behavior added"]}
+{"item_id": "state.cm6.185", "item": "RangeSet.between", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.186", "item": "RangeSet.iter", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.187", "item": "RangeSet^iter", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.188", "item": "RangeSet^compare", "unit": "U3 rangeset", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.189", "item": "RangeSet^eq", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.190", "item": "RangeSet^spans", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.191", "item": "RangeSet^of", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.192", "item": "RangeSet^join", "unit": "U3 rangeset", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.193", "item": "RangeSet^empty", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.195", "item": "RangeCursor.next", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.196", "item": "RangeCursor.goto", "unit": "U3 rangeset", "why": ["drawn (seed 20261124)"]}
+{"item_id": "state.cm6.197", "item": "RangeCursor.value", "unit": "U3 rangeset", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.198", "item": "RangeCursor.from", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.199", "item": "RangeCursor.to", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.200", "item": "RangeCursor.rank", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.201", "item": "RangeSetBuilder", "unit": "U3 rangeset", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.203", "item": "RangeSetBuilder.add", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.205", "item": "RangeComparator", "unit": "U3 rangeset", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.206", "item": "RangeComparator.compareRange", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.207", "item": "RangeComparator.comparePoint", "unit": "U3 rangeset", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.210", "item": "SpanIterator.span", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.211", "item": "SpanIterator.point", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.212", "item": "findClusterBreak", "unit": "U1 text", "why": ["hazard", "deviation row"]}
+{"item_id": "state.cm6.213", "item": "codePointAt", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.215", "item": "codePointSize", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.216", "item": "countColumn", "unit": "U1 text", "why": ["drawn (seed 20261124)", "hazard", "deviation row"]}
+{"item_id": "state.cm6.217", "item": "findColumn", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.218", "item": "Line", "unit": "U1 text", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.222", "item": "Line.text", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.223", "item": "Line.length", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.224", "item": "TextIterator", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.225", "item": "TextIterator.next", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.226", "item": "TextIterator.value", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.227", "item": "TextIterator.done", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.228", "item": "TextIterator.lineBreak", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.229", "item": "Text", "unit": "U1 text", "why": ["drawn (seed 20261124)", "hazard", "deviation row"]}
+{"item_id": "state.cm6.230", "item": "Text.length", "unit": "U1 text", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.231", "item": "Text.lines", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.232", "item": "Text.lineAt", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.233", "item": "Text.line", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.234", "item": "Text.replace", "unit": "U1 text", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.236", "item": "Text.slice", "unit": "U1 text", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.237", "item": "Text.sliceString", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.238", "item": "Text.eq", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.239", "item": "Text.iter", "unit": "U1 text", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.240", "item": "Text.iterRange", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.241", "item": "Text.iterLines", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.242", "item": "Text.toString", "unit": "U1 text", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.243", "item": "Text.toJSON", "unit": "U1 text", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.244", "item": "Text.children", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.245", "item": "Text.[Symbol.iterator]", "unit": "U1 text", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.246", "item": "Text^of", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.247", "item": "Text^empty", "unit": "U1 text", "why": ["hazard"]}
+{"item_id": "state.cm6.248", "item": "Facet^define config FacetConfig.combine", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.249", "item": "Facet^define config FacetConfig.compare", "unit": "U4 state (facet)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.250", "item": "Facet^define config FacetConfig.compareInput", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.251", "item": "Facet^define config FacetConfig.static", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.252", "item": "Facet^define config FacetConfig.enables", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.253", "item": "StateField^define config StateFieldSpec.create", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.254", "item": "StateField^define config StateFieldSpec.update", "unit": "U4 state (facet)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.255", "item": "StateField^define config StateFieldSpec.compare", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.256", "item": "StateField^define config StateFieldSpec.provide", "unit": "U4 state (facet)", "why": ["hazard"]}
+{"item_id": "state.cm6.257", "item": "StateField^define config StateFieldSpec.toJSON", "unit": "U4 state (facet)", "why": ["drawn (seed 20261124)", "hazard"]}
+{"item_id": "state.cm6.259", "item": "StateEffect^define config StateEffectSpec.map", "unit": "U4 state (state)", "why": ["hazard"]}
+{"item_id": "state.cm6.261", "item": "RangeSet.update config RangeSetUpdate.sort", "unit": "U3 rangeset", "why": ["hazard"]}
+{"item_id": "state.cm6.262", "item": "RangeSet.update config RangeSetUpdate.filter", "unit": "U3 rangeset", "why": ["hazard"]}

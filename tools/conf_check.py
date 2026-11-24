@@ -31,6 +31,7 @@
                                                                 gives by pattern, or `unsorted`; conformance/costs.jsonl
     python3 tools/conf_check.py <crate> g8 [--sizes n,10n,100n]  the G8 benchmarks cover every item with a local or
                                                                 logarithmic behavior, on both sides, at those sizes
+    python3 tools/conf_check.py <crate> sample --seed <n>        the items step 3's verifiers read, drawn with the seed
     (--root <dir>: another tree than the repository, for trying the tool on a copy)
 
 Output files go to .scratch/conformance/<crate>/ (never committed: regenerated from the recorded commit).
@@ -745,11 +746,35 @@ def g8(c, crate, args):
     c.say(f"long-line entries (state.imp.010) on the Rust side: {len(longs)}")
 
 
+def sample(c, crate, args):
+    """The items step 3's verifiers read (docs/workflow/conformance.md §3): at least a quarter of the CORE items drawn
+    with the recorded seed (--seed), plus every item with a hazard, every item a deviation row touches, every item with
+    a behavior row that has `added`. Writes conformance/sample.jsonl: {item_id, item, unit, why[]}."""
+    import random
+    seed = int(args[args.index("--seed") + 1]) if "--seed" in args else sys.exit("sample --seed <n>")
+    inv = [r for r in ic.rows(ic.spec(crate, "raw", "inventory.jsonl")) if r["disposition"] == "CORE"]
+    B = ic.rows(ic.spec(crate, "raw", "behaviors.jsonl"))
+    D = ic.rows(ic.spec(crate, "raw", "decisions.jsonl"))
+    why = collections.defaultdict(list)
+    for i in random.Random(seed).sample(sorted(r["id"] for r in inv), -(-len(inv) // 4)): why[i].append(f"drawn (seed {seed})")
+    for i in sorted({b["item_id"] for b in B if b.get("hazards")}): why[i].append("hazard")
+    for i in sorted({d["item_id"] for d in D if d["class"].startswith("deviation")}): why[i].append("deviation row")
+    for i in sorted({b["item_id"] for b in B if b.get("added")}): why[i].append("behavior added")
+    us = ic.units(crate)
+    unit = lambda r: next((f"{u['id']} {n}" + (f" ({r['chunk']})" if len(u["chunks"]) > 1 else "") for n, u in us.items() if r["chunk"] in u["chunks"]), "?")
+    path = ic.spec(crate, "conformance", "sample.jsonl")
+    with open(path, "w", encoding="utf8") as f:
+        for r in inv:
+            if r["id"] in why: f.write(json.dumps({"item_id": r["id"], "item": r["item"], "unit": unit(r), "why": why[r["id"]]}, ensure_ascii=False) + "\n")
+    per = collections.Counter(unit(r) for r in inv if r["id"] in why)
+    c.say(f"sample: {len(why)} of {len(inv)} CORE items (seed {seed}); by unit {dict(per)}; written {os.path.relpath(path, REPO)}")
+
+
 def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ic.ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8}
+    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = ic.Check()
