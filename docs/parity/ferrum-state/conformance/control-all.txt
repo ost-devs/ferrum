@@ -1,0 +1,8 @@
+ok    exhaustive control run: exit 0, 4204 lines for 4204 fixtures compared whole or in part, 0 malformed
+ok    exhaustive control run on text, change, rangeset, facet, state: 207929 paths altered in 4204 fixtures ({'lang': 48, 'text': 1362, 'change': 1084, 'rangeset': 366, 'facet': 412, 'state': 932}), 0 still pass
+
+checks passed
+
+real	27m55.827s
+user	19m59.438s
+sys	0m1.301s
