@@ -815,6 +815,15 @@ def handoff(c, crate, args):
     tested = {b for r_ in mine if len(found.get(case_name(r_), [])) == 1 for b in r_["behaviors"]}
     bare = unnamed(c, crate, chunks, got, named, tested)
     c.need(not bare, f"every behavior is named by a check that runs: {len(bare)} are not", bare)
+    # what names each behavior, for tools/conf_check.py g10: {behavior: [fixture <id> <result> | ported | covers]}
+    res, by = {(f["chunk"], f["fixture"]): f["result"] for f in got}, collections.defaultdict(list)
+    for ch in chunks:
+        for f in rows(spec(crate, "fixtures", ch + ".jsonl")):
+            if res.get((ch, f["id"])) in ("equal", "part"):
+                for b in f["behaviors"]: by[b].append(f"fixture {f['id']} {res[(ch, f['id'])]}")
+    for b in tested: by[b].append("ported")
+    for b in named: by[b].append("covers")
+    with open(target(crate, "named.json"), "w", encoding="utf8") as fh: json.dump(by, fh, sort_keys=True)
     # checks unchanged since their unit's code
     names = list(us)
     for n in names:
