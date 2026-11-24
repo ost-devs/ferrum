@@ -1,0 +1,47 @@
+== change: an assoc sign in map_pos: change.rs: `if end_a > pos || end_a == pos && assoc < 0 && len == 0 {` -> `if end_a > pos || end_a == pos && assoc > 0 && len == 0 {`
+replay of new cases, lang: {'equal': 48}
+replay of new cases, text: {'none': 819, 'part': 2519, 'equal': 1762, 'mismatch': 1}
+replay of new cases, change: {'equal': 2743, 'none': 664, 'part': 1577, 'mismatch': 236}
+replay of new cases, rangeset: {'equal': 3137, 'none': 694, 'mismatch': 1012, 'part': 179}
+replay of new cases, facet: {'equal': 4637, 'mismatch': 314, 'none': 166}
+replay of new cases, state: {'equal': 3333, 'part': 621, 'none': 1206, 'mismatch': 18}
+  1581 new cases mismatch or pending: text S7.F7168: mismatch; change S1.F5227: mismatch; change S1.F5231: mismatch; change S1.F5235: mismatch; change S1.F5236: mismatch; change S1.F5244: mismatch; change S1.F5415: mismatch; change S1.F5416: mismatch; change S1.F5417: mismatch; change S1.F5420: mismatch; change S1.F5423: mismatch; change S1.F5426: mismatch; change S1.F5428: mismatch; change S1.F54
+== facet: a deduplication dropped: facet.rs: `                if known <= prec {
+                    return;
+                }` -> `                if known <= prec && false {
+                    return;
+                }`
+== rangeset: a side order flipped in the sort: rangeset.rs: `a.from.cmp(&b.from).then_with(|| a.value.start_side().cmp(&b.value.start_side()))` -> `a.from.cmp(&b.from).then_with(|| b.value.start_side().cmp(&a.value.start_side()))`
+replay of new cases, lang: {'equal': 48}
+replay of new cases, text: {'none': 819, 'part': 2519, 'equal': 1762, 'mismatch': 1}
+replay of new cases, change: {'equal': 2784, 'none': 664, 'part': 1772}
+replay of new cases, rangeset: {'equal': 1736, 'mismatch': 2492, 'none': 648, 'part': 146}
+replay of new cases, facet: {'equal': 4951, 'none': 166}
+replay of new cases, state: {'equal': 3351, 'part': 621, 'none': 1206}
+  2493 new cases mismatch or pending: text S7.F7168: mismatch; rangeset S1.F5002: mismatch; rangeset S1.F5003: mismatch; rangeset S1.F5004: mismatch; rangeset S1.F5006: mismatch; rangeset S1.F5007: mismatch; rangeset S1.F5010: mismatch; rangeset S1.F5014: mismatch; rangeset S1.F5016: mismatch; rangeset S1.F5020: mismatch; rangeset S1.F5023: mismatch; rangeset S1.F5024: mismatch; rangeset S1.F5025:
+== text: the cluster rule's ZWJ case: char.rs: `if prev == ZWJ || next == ZWJ ||` -> `if next == ZWJ ||`
+replay of new cases, lang: {'equal': 48}
+replay of new cases, text: {'none': 819, 'part': 1957, 'mismatch': 563, 'equal': 1762}
+replay of new cases, change: {'equal': 2784, 'none': 664, 'part': 1772}
+replay of new cases, rangeset: {'equal': 4063, 'none': 694, 'part': 264, 'mismatch': 1}
+replay of new cases, facet: {'equal': 4951, 'none': 166}
+replay of new cases, state: {'equal': 3351, 'part': 621, 'none': 1206}
+  564 new cases mismatch or pending: text S1.F2011: mismatch; text S1.F2013: mismatch; text S1.F2017: mismatch; text S1.F2021: mismatch; text S1.F2023: mismatch; text S1.F2026: mismatch; text S1.F2030: mismatch; text S1.F2034: mismatch; text S1.F2037: mismatch; text S1.F2042: mismatch; text S1.F2045: mismatch; text S1.F2051: mismatch; text S1.F2055: mismatch; text S1.F2059: mismatch; text S1.F2061
+== state: the merge of sequential specs: transaction.rs: `        map_for_a = b.changes.desc();` -> `        map_for_a = ChangeSet::empty(b.changes.length()).desc();`
+replay of new cases, lang: {'equal': 48}
+replay of new cases, text: {'none': 819, 'part': 2519, 'equal': 1762, 'mismatch': 1}
+replay of new cases, change: {'equal': 2784, 'none': 664, 'part': 1772}
+replay of new cases, rangeset: {'equal': 4063, 'none': 694, 'part': 264, 'mismatch': 1}
+replay of new cases, facet: {'equal': 4951, 'none': 166}
+replay of new cases, state: {'equal': 3323, 'part': 621, 'none': 1206, 'mismatch': 28}
+  30 new cases mismatch or pending: text S7.F7168: mismatch; rangeset S57.F5063: mismatch; state S1.F1139: mismatch; state S1.F1140: mismatch; state S1.F1152: mismatch; state S1.F1165: mismatch; state S2.F1138: mismatch; state S2.F1140: mismatch; state S2.F1169: mismatch; state S3.F1146: mismatch; state S3.F1157: mismatch; state S4.F1144: mismatch; state S4.F1153: mismatch; state S4.F1168: mismatc
+== done
+== facet, first form: the replay aborts: `thread 'replay_fixtures' has overflowed its stack` (exit 101), no case reported
+== facet, second form: a deduplication dropped: facet.rs: `self.result[known].remove(found);` -> `let _ = found;`
+replay of new cases, lang: {'equal': 48}
+replay of new cases, text: {'none': 819, 'part': 2519, 'equal': 1762, 'mismatch': 1}
+replay of new cases, change: {'equal': 2784, 'none': 664, 'part': 1772}
+replay of new cases, rangeset: {'equal': 4063, 'none': 694, 'part': 264, 'mismatch': 1}
+replay of new cases, facet: {'equal': 4834, 'mismatch': 117, 'none': 166}
+replay of new cases, state: {'equal': 3351, 'part': 621, 'none': 1206}
+  119 new cases mismatch or pending: text S7.F7168: mismatch; rangeset S57.F5063: mismatch; facet S1.F5024: mismatch; facet S1.F5028: mismatch; facet S2.F5016: mismatch; facet S2.F5022: mismatch; facet S2.F5023: mismatch; facet S2.F5033: mismatch; facet S2.F5042: mismatch; facet S3.F5014: mismatch; facet S3.F5022: mismatch; facet S3.F5042: mismatch; facet S4.F5002: mismatch; facet S4.F5007: mismat
