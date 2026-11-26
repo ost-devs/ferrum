@@ -1,0 +1,12 @@
+--- cm6/state/src/state.ts
++++ cm6/state/src/state.ts
+@@ -94,6 +94,9 @@
+ 
+   /// @internal
+   applyTransaction(tr: Transaction) {
++    // state.cm6.100.d2: a transaction cannot start from a state whose construction has not finished (cm6 goes on with
++    // the null it holds for every slot it has not computed)
++    if (this.computeSlot) throw new Error("A transaction cannot start from a state whose construction has not finished")
+     let conf: Configuration | null = this.config, {base, compartments} = conf
+     for (let effect of tr.effects) {
+       if (effect.is(Compartment.reconfigure)) {

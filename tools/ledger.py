@@ -120,7 +120,7 @@ def breakdown(path):
     """What filled a run's context, from its transcript (docs/decisions/method.md, M27)."""
     reqs, order, between = {}, [], []   # between[k]: what arrived after request k-1 and before request k
     pending, names, rules = {"results": [], "attach": 0}, {}, {}
-    by_tool = collections.Counter()
+    by_tool, seen_results = collections.Counter(), set()
     for line in open(path, encoding="utf-8"):
         try: j = json.loads(line)
         except ValueError: continue
@@ -136,6 +136,9 @@ def breakdown(path):
         for b_ in m.get("content") if isinstance(m.get("content"), list) else []:
             if b_.get("type") == "tool_use": names[b_["id"]] = b_["name"]
             if b_.get("type") == "tool_result":
+                # a transcript can log one result twice (seen on 3 or 4 results of a run, M29): count it once
+                if b_.get("tool_use_id") in seen_results: continue
+                seen_results.add(b_.get("tool_use_id"))
                 t = b_.get("content"); n = len(t) if isinstance(t, str) else sum(len(x.get("text", "")) for x in t or [] if isinstance(x, dict))
                 tool = names.get(b_.get("tool_use_id"), "?"); by_tool[tool] += n
                 pending["results"].append((tool, n))

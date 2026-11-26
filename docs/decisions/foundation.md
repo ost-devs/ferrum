@@ -457,3 +457,19 @@ mechanical conversion settles anyway) or misses cases implementers hit.
 **D11 (a).** cm6 failing because the engine's stack is exhausted is counted with not terminating: the depth is the engine's (it varied between two runs of the same program), and a Rust stack overflow aborts the process, which D13's protection of the person editing cannot contain. Ferrum gives cm6's result with a stack large enough, which is a reference that runs (`node --stack-size` under `ulimit -s unlimited`), and makes iterative the recursion whose depth grows with a document or data made from it. Recursion over structure a program builds (extension nesting) is left as cm6 has it.
 
 **Confidence.** High. **Reopens.** A bound cm6 uses in arithmetic beyond a comparison; a platform whose largest stack cannot run the reference.
+
+## 2026-11-26 · D11 (c): the `undefined` of a missing lookup and the `null` of a value not computed
+
+*Decided by the consultant (from Q141 and Q142 of `ferrum-state`; the crate's part: `docs/decisions/ferrum-state.md`, "Q141 and Q142"). Binding text: `.claude/rules/decisions.md` D11 (c).*
+
+**Question.** Two findings of `ferrum-state` met cm6 using `null` and `undefined` as stand-ins that flow into a result: `==` equating a field's stored `null` with the `undefined` a missing field gives, and the `null` a state holds for each slot it has not computed, handed to a user's `update`. D11 (c) named "computing with `NaN` or `undefined`"; whether a comparison is computing, and whether the placeholder `null` is covered, was for each verifier to guess.
+
+**Decision.** D11 (c) names both: computing with the `null` cm6 holds for a value it has not computed, and comparing a stored value with the `undefined` of a lookup that found nothing, which is computing with `undefined`. Each case still needs its row (`raw/decisions.jsonl`) with a patch of cm6 that writes Ferrum's rule, so that the oracle attributes what it changes.
+
+**Why.** The reason of class (c) holds for both: Ferrum's types have no value to stand where cm6's stand-in stands (a field's value is a `T` of the caller's type, with no `null` of its own), so no Rust value reproduces the result, and giving it would take API that serves no caller. It is not D12: D12's absent value is the `None` of a type that has one; these are values the caller's type does not have.
+
+**Where it reaches.** Every crate that stores user values in typed slots: `ferrum-view`'s plugins and view fields, `ferrum-language`'s language data and parse state. Where cm6 compares such a slot loosely or reads one not yet computed, the row names this class.
+
+**Lost.** Leaving the text as it was (each verifier would raise the same question per crate). Folding these into D12 (D12 maps to a `None` that exists; here none does).
+
+**Confidence.** High. **Reopens.** A case where the caller's type does hold a value cm6's stand-in means, and callers rely on cm6's result.

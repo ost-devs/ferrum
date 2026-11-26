@@ -1,0 +1,15 @@
+--- cm6/state/src/facet.ts
++++ cm6/state/src/facet.ts
+@@ -175,8 +175,11 @@
+         if (oldAddr != null) {
+           let oldVal = getAddr(oldState, oldAddr)
+           if (this.dependencies.every(dep => {
++            // state.cm6.040.d1: a field present in one state and missing from the other has changed, whatever its
++            // value (cm6's == takes a stored null or undefined for the undefined of the missing field)
+             return dep instanceof Facet ? oldState.facet(dep) === state.facet(dep) :
+-              dep instanceof StateField ? oldState.field(dep, false) == state.field(dep, false) : true
++              dep instanceof StateField ? (oldState.config.address[dep.id] == null) == (state.config.address[dep.id] == null) &&
++                oldState.field(dep, false) == state.field(dep, false) : true
+           }) || (multi ? compareArray(newVal = getter(state), oldVal, compare) : compare(newVal = getter(state), oldVal))) {
+             state.values[idx] = oldVal
+             return 0
