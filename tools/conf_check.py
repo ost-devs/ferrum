@@ -71,7 +71,7 @@
 
 Output files go to .scratch/conformance/<crate>/ (never committed: regenerated from the recorded commit).
 """
-import shutil, collections, json, os, re, subprocess, sys
+import shutil, collections, hashlib, json, os, re, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import impl_check as ic  # noqa: E402
@@ -937,6 +937,8 @@ def hazards(c, crate, args):
         out.append("")
         if not comp_ids and not ported and not wr: unchecked.append(b["id"])
     tag = chunk + ("-" + "-".join(sorted(groups)) if groups else "") + ("-m-" + re.sub(r"[^\w-]+", "_", "-".join(sorted(members))) if members else "") + ("-sampled" if sampled is not None else "")
+    if len(tag) > 120:  # a file name is limited to 255 bytes: a long selection keeps its start and a digest of the whole
+        tag = tag[:100] + "-" + hashlib.sha1(tag.encode()).hexdigest()[:10]
     path = os.path.join(out_dir(crate), f"hazards-{tag}.md")
     with open(path, "w", encoding="utf8") as fh: fh.write("\n".join(out))
     c.say(f"chunk {chunk}: {len(ids)} hazards on {sum(1 for l in out if l.startswith('## '))} behaviors; by item group: "
