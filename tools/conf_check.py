@@ -999,7 +999,8 @@ def hang_of(log, times):
 
 def mutants_missed(c, crate, args):
     """The survivors of one or more cargo-mutants runs, by unit (step 3's verifiers read their unit's part), and the
-    timeouts sorted by M26 from the logs of the runs given with --rerun (in order, the last outcome counting)."""
+    timeouts sorted by M26 from the logs of the runs given with --rerun (in order, the last outcome counting; a timeout
+    in the second or a later rerun, the one at ten times the limit, counts as a hang)."""
     reruns = [args[i + 1] for i, a in enumerate(args) if a == "--rerun"]
     firsts = [a for i, a in enumerate(args) if a != "--rerun" and (i == 0 or args[i - 1] != "--rerun")]
     if not firsts: c.need(False, "give the --output directories of the cargo mutants runs"); return
@@ -1032,7 +1033,11 @@ def mutants_missed(c, crate, args):
         elif summary == "Timeout":
             fast, running = hang_of(log, times)
             last = log.startswith(tuple(os.path.join(d, "") for d in reruns))
+            longer = log.startswith(tuple(os.path.join(d, "") for d in reruns[1:]))
             if fast and last: kinds["hang"].append(r); reasons[r] = f"running over 60 s: {', '.join(fast)} (binary under 1 s unmutated)"
+            elif longer:
+                kinds["hang"].append(r)
+                reasons[r] = f"a timeout again at the longer limit, counted as a hang (M26); running over 60 s: {', '.join(running) or 'none named'}"
             else:
                 kinds["timeout"].append(r)
                 reasons[r] = ("not yet run again at the longer limit" if not last else
@@ -1042,7 +1047,7 @@ def mutants_missed(c, crate, args):
            "difference) or a mutant equivalent to the code (with the reason).",
            "A timeout is sorted by `docs/workflow/conformance.md` §2 (M26): run again at about thirty times the unmutated test run, it is `hang` (caught by a hang, counted apart) when its",
            "log shows a test still running after a minute whose test binary finished in under a second unmutated; a `timeout` left",
-           "here is run once more at ten times that limit.", ""]
+           "here is run once more at ten times that limit (the second --rerun), and one that times out there too is `hang`.", ""]
     for k, rows in kinds.items():
         out += [f"## {k} ({len(rows)})", ""]
         by = collections.defaultdict(list)

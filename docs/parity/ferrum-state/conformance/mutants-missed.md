@@ -4,7 +4,7 @@ Each `missed` mutant goes to its unit's verifier: a behavior no check forbids (a
 difference) or a mutant equivalent to the code (with the reason).
 A timeout is sorted by `docs/workflow/conformance.md` §2 (M26): run again at about thirty times the unmutated test run, it is `hang` (caught by a hang, counted apart) when its
 log shows a test still running after a minute whose test binary finished in under a second unmutated; a `timeout` left
-here is run once more at ten times that limit.
+here is run once more at ten times that limit (the second --rerun), and one that times out there too is `hang`.
 
 ## missed (84)
 
@@ -190,18 +190,38 @@ here is run once more at ten times that limit.
 - `src/transaction.rs:632:26` replace < with <= in join_ranges  
   `if *last < to {`
 
-## hang (62)
+## hang (70)
 
-### U1 text: `crates/ferrum-state/src/char.rs` (3)
+### U1 text: `crates/ferrum-state/src/char.rs` (7)
 - `src/char.rs:84:24` replace + with * in is_extending_char  
   `from = mid + 1;`  
   running over 60 s: char::tests::prev_cluster_break_is_cm6s_loop, char::tests::the_table_decodes_as_the_package_decodes_it (binary under 1 s unmutated)
 - `src/char.rs:84:24` replace + with - in is_extending_char  
   `from = mid + 1;`  
   running over 60 s: char::tests::prev_cluster_break_is_cm6s_loop, char::tests::the_table_decodes_as_the_package_decodes_it (binary under 1 s unmutated)
+- `src/char.rs:124:5` replace cluster_break -> usize with 0  
+  `if forward { next_cluster_break(s, pos, include_extending) } else { prev_cluster_break(s, pos, include_extending) }`  
+  a timeout again at the longer limit, counted as a hang (M26); running over 60 s: replay_fixtures
+- `src/char.rs:124:5` replace cluster_break -> usize with 1  
+  `if forward { next_cluster_break(s, pos, include_extending) } else { prev_cluster_break(s, pos, include_extending) }`  
+  a timeout again at the longer limit, counted as a hang (M26); running over 60 s: replay_fixtures
+- `src/char.rs:131:5` replace next_cluster_break -> usize with 0  
+  `if pos == s.len() {`  
+  a timeout again at the longer limit, counted as a hang (M26); running over 60 s: replay_fixtures
+- `src/char.rs:155:17` replace += with -= in next_cluster_break  
+  `pos += next.len_utf8();`  
+  a timeout again at the longer limit, counted as a hang (M26); running over 60 s: replay_fixtures
 - `src/char.rs:174:25` replace - with / in prev_cluster_break  
   `let start = end - c.len_utf8();`  
   running over 60 s: char::tests::prev_cluster_break_is_cm6s_loop (binary under 1 s unmutated)
+
+### U1 text: `crates/ferrum-state/src/column.rs` (2)
+- `src/column.rs:31:15` replace += with *= in count_column  
+  `i += 1;`  
+  a timeout again at the longer limit, counted as a hang (M26); running over 60 s: replay_fixtures
+- `src/column.rs:31:15` replace += with -= in count_column  
+  `i += 1;`  
+  a timeout again at the longer limit, counted as a hang (M26); running over 60 s: replay_fixtures
 
 ### U2 change: `crates/ferrum-state/src/change.rs` (33)
 - `src/change.rs:620:27` replace < with <= in ChangeSet::filter  
@@ -304,7 +324,7 @@ here is run once more at ten times that limit.
   `if len == self.len {`  
   running over 60 s: test_cm6_change_09_can_map_over_an_insertion, test_cm6_change_10_can_map_over_a_deletion, test_cm6_change_11_orders_insertions, test_cm6_change_12_can_map_a_deletion_over_an_overlapping_replace (binary under 1 s unmutated)
 
-### U3 rangeset: `crates/ferrum-state/src/rangeset.rs` (22)
+### U3 rangeset: `crates/ferrum-state/src/rangeset.rs` (24)
 - `src/rangeset.rs:391:26` replace + with - in Chunk<T>::find_index  
   `lo = mid + 1;`  
   running over 60 s: helper_mk_and_check_set, test_cm6_rangeset_01_divides_a_set_into_chunks_and_layers, test_cm6_rangeset_04_can_add_a_large_amount_of_ranges, test_cm6_rangeset_05_can_filter_ranges (binary under 1 s unmutated)
@@ -323,6 +343,12 @@ here is run once more at ten times that limit.
 - `src/rangeset.rs:1243:9` replace LayerCursor<T>::next with ()  
   `loop {`  
   running over 60 s: test_cm6_rangeset_03_can_add_ranges, test_cm6_rangeset_04_can_add_a_large_amount_of_ranges, test_cm6_rangeset_25_notices_added_ranges, test_cm6_rangeset_27_recognizes_identical_ranges (binary under 1 s unmutated)
+- `src/rangeset.rs:1269:38` replace += with *= in LayerCursor<T>::set_range_index  
+  `self.chunk_index += 1;`  
+  a timeout again at the longer limit, counted as a hang (M26); running over 60 s: replay_fixtures
+- `src/rangeset.rs:1269:38` replace += with -= in LayerCursor<T>::set_range_index  
+  `self.chunk_index += 1;`  
+  a timeout again at the longer limit, counted as a hang (M26); running over 60 s: replay_fixtures
 - `src/rangeset.rs:1359:38` replace << with >> in heap_bubble  
   `let mut child_index = (index << 1) + 1;`  
   running over 60 s: test_cm6_rangeset_16_shrinks_ranges, test_cm6_rangeset_19_rearranges_points_that_change_order, test_cm6_rangeset_21_spills_ranges_that_mapping_puts_out_of_order, test_cm6_rangeset_24_keeps_a_point_after_a_range_that_starts_before_it (binary under 1 s unmutated)
@@ -386,34 +412,4 @@ here is run once more at ten times that limit.
   `ib += 2;`  
   running over 60 s: test_cm6_state_22_combines_filter_masks (binary under 1 s unmutated)
 
-## timeout (8)
-
-### U1 text: `crates/ferrum-state/src/char.rs` (4)
-- `src/char.rs:124:5` replace cluster_break -> usize with 0  
-  `if forward { next_cluster_break(s, pos, include_extending) } else { prev_cluster_break(s, pos, include_extending) }`  
-  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
-- `src/char.rs:124:5` replace cluster_break -> usize with 1  
-  `if forward { next_cluster_break(s, pos, include_extending) } else { prev_cluster_break(s, pos, include_extending) }`  
-  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
-- `src/char.rs:131:5` replace next_cluster_break -> usize with 0  
-  `if pos == s.len() {`  
-  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
-- `src/char.rs:155:17` replace += with -= in next_cluster_break  
-  `pos += next.len_utf8();`  
-  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
-
-### U1 text: `crates/ferrum-state/src/column.rs` (2)
-- `src/column.rs:31:15` replace += with *= in count_column  
-  `i += 1;`  
-  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
-- `src/column.rs:31:15` replace += with -= in count_column  
-  `i += 1;`  
-  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
-
-### U3 rangeset: `crates/ferrum-state/src/rangeset.rs` (2)
-- `src/rangeset.rs:1269:38` replace += with *= in LayerCursor<T>::set_range_index  
-  `self.chunk_index += 1;`  
-  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
-- `src/rangeset.rs:1269:38` replace += with -= in LayerCursor<T>::set_range_index  
-  `self.chunk_index += 1;`  
-  running over 60 s: replay_fixtures; no test of a binary under 1 s: run again at 3,000 s
+## timeout (0)
