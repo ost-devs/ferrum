@@ -53,8 +53,6 @@ One line per verdict to `docs/parity/ferrum-state/raw/conformance-<unit>.jsonl` 
 
 ## Step 4: the re-check of step 3's verdicts
 
-<!-- refs:planned docs/parity/ferrum-state/raw/recheck.jsonl -->
-
 Written by the consultant from `plan.md` "Conformance" step 4 (M30). Your assignment names your unit and the sample file (`.scratch/conformance/ferrum-state/recheck-sample.jsonl`, the lines of your unit). The "Sources" above and the decisions in force are yours too; your first read is the same `lib.rs`.
 
 **What it is for.** A step-3 verdict that passes something wrong (a hazard called exercised by a check that does not reach it, an equivalent mutant that is not, a test called equivalent that asserts less) is the one error nothing later shows: the consultant reads every finding, and nobody reads the passes again. Your rows measure how often such a verdict is wrong, by kind and by run, and any wrong one makes the consultant correct its whole kind. So a row that agrees because you read the recorded line first is worth nothing.

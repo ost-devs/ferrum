@@ -67,7 +67,16 @@
                                                                 run (the probe is the verifier's: it depends on the crate
                                                                 by path, which the tool points at its copy)
     python3 tools/conf_check.py <crate> sample --seed <n>        the items step 3's verifiers read, drawn with the seed
-    python3 tools/conf_check.py <crate> recheck --seed <n> [--share <f>] [--min <n>]
+    python3 tools/conf_check.py <crate> items [--report <report.jsonl>]
+                                                                each sampled item's verdict derived from the verdict lines
+                                                                (Q143, M30): NONCONFORMANT for a finding tied to it (a
+                                                                hazard by behavior, a test by its covers or cm6 case, a code
+                                                                line by its item's cm6: line), a fixture mismatch of a
+                                                                replay report holding one run, or a deviation row with no
+                                                                cm6 deviation line; then UNVERIFIED, DECIDED DEVIATION,
+                                                                CONFORMANT; prints the disagreements with the recorded item
+                                                                lines and the findings tied to no item
+    python3 tools/conf_check.py <crate> recheck --seed <n> [--results <file> [--unit <u>]]
                                                                 step 4's sample: each line of raw/conformance-*.jsonl
                                                                 given to the run that wrote it (the first commit where
                                                                 its kind and id appear, so a relabel keeps its writer),
@@ -983,6 +992,127 @@ def recheck(c, crate, args):
     count("hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart)", lambda r: listed(r) and run_of.get((r["file"], r["line"])) not in RECHECK_ABOVE)
 
 
+def cm6_of_line(texts, path, line):
+    """The `/// cm6:` (or `cm6 contract:`) name of the innermost declaration that encloses src/<path>:<line> (a fn, a
+    struct or enum and its fields, a static, a const), `impl` and `mod` blocks passed through; None when that
+    declaration has no such line (a private helper)."""
+    lines = texts.get(path, "").split("\n")
+    decl = re.compile(r"^\s*(pub(\([^)]*\))?\s+)?((const|unsafe|async|extern)\s+)*(fn|static|const|struct|enum|impl|trait|type|mod)\b")
+    def end_of(n):
+        depth, opened = 0, False
+        for k in range(n, len(lines)):
+            code = re.sub(r"//.*$|\"(\\.|[^\"\\])*\"|'(\\.|[^'\\])'", "", lines[k])
+            depth += code.count("{") - code.count("}")
+            opened = opened or "{" in code
+            if opened and depth <= 0: return k + 1
+            if not opened and code.rstrip().endswith(";"): return k + 1
+        return len(lines)
+    for n in range(min(line, len(lines)) - 1, -1, -1):
+        m = decl.match(lines[n])
+        if not m or end_of(n) < line: continue
+        if m.group(5) in ("impl", "mod", "trait"): continue
+        k = n - 1
+        while k >= 0 and re.match(r"^\s*(///|#\[|//)", lines[k]):
+            q = re.match(r"^\s*///\s*cm6(?: contract)?:\s*(\S+)", lines[k])
+            if q: return q.group(1)
+            k -= 1
+        return None
+    return None
+
+
+def items(c, crate, args):
+    """Q143 and M30: the verdict of every sampled item derived from step 3's lines, against its recorded `item` line."""
+    raw = lambda f: ic.rows(ic.spec(crate, "raw", f))
+    inv = {r["id"]: r for r in raw("inventory.jsonl")}
+    by_name = {r["item"]: r["id"] for r in inv.values()}
+    beh = {b["id"]: b["item_id"] for b in raw("behaviors.jsonl")}
+    tests = {t["id"]: t for t in raw("tests.jsonl")}
+    rows = raw("decisions.jsonl")
+    sampled = {json.loads(l)["item_id"] for l in ic.read(ic.spec(crate, "conformance", "sample.jsonl")).split("\n") if l.strip()}
+    fixture_item = {}
+    for f in os.listdir(ic.spec(crate, "fixtures")):
+        if f.endswith(".jsonl") and f != "no-counterpart.jsonl":
+            for r in ic.rows(ic.spec(crate, "fixtures", f)): fixture_item[(f[:-6], r["id"])] = r.get("item_id")
+    texts = src_files(crate)
+    tdir = ic.crate_dir(crate, "tests")
+    def covers(path, fn):
+        text = ic.read(os.path.join(REPO, path)) if os.path.exists(os.path.join(REPO, path)) else ""
+        m = re.search(rf"\bfn\s+{re.escape(fn)}\b", text)
+        if not m: return []
+        head = text[:m.start()].split("\n")[-12:]; body = text[m.end():].split("\nfn ", 1)[0]
+        ids = []
+        for l in head + body.split("\n"):
+            if "// covers:" in l: ids += re.findall(r"[a-z]+\.[\w^.]+\.B\d+|[a-z]+\.cm6\.\d+(?:\.d\d+)?", l.split("// covers:", 1)[1])
+        cm = re.match(r"test_cm6_(\w+?)_(\d+)_", fn)
+        if cm and f"test-{cm.group(1)}#{cm.group(2)}" in tests: ids += tests[f"test-{cm.group(1)}#{cm.group(2)}"].get("behaviors", [])
+        return ids
+    def tie(x):
+        """The items a verdict line is about."""
+        k, i = x["kind"], x["id"]
+        if k == "item": return {i}
+        if k == "hazard": return {beh.get(i.rsplit(":h", 1)[0])} - {None}
+        if k == "test":
+            path, _, fn = i.partition("::")
+            return {beh.get(b) or (b.rsplit(".d", 1)[0] if ".cm6." in b else None) for b in covers(path, fn)} - {None}
+        if k == "behavior":
+            m = re.match(r"g5:(\w+):S\d+\.(F\d+)", i)
+            if m: return {fixture_item.get((m.group(1), m.group(2)))} - {None}
+            return {beh[i]} if i in beh else set()
+        m = re.match(r"src/(\S+?):(\d+)", i)
+        if m:
+            name = cm6_of_line(texts, m.group(1), int(m.group(2)))
+            return {by_name[name]} if name in by_name else set()
+        return set()
+    lines = []
+    for f in sorted(os.listdir(ic.spec(crate, "raw"))):
+        if re.fullmatch(r"conformance-[\w-]+\.jsonl", f):
+            for n, r in enumerate(raw(f), 1): lines.append({**r, "file": f, "line": n})
+    dev_rows = collections.defaultdict(list)
+    for r in rows:
+        if r["class"].startswith("deviation"): dev_rows[r["item_id"]].append(r["id"])
+    q = qualifiers(crate)
+    lined = {i for (_, _, kind, _, cited) in q if kind == "cm6 deviation" for i in cited}
+    cited_items = {r["item_id"] for r in rows if r["id"] in lined}
+    mism = collections.defaultdict(list)
+    report = ic.target(crate, "report.jsonl")
+    if "--report" in args: report = args[args.index("--report") + 1]
+    rep = [x for x in ic.rows(report) if "fixture" in x] if os.path.exists(report) else []
+    c.need(bool(rep), f"a replay report to read ({os.path.relpath(report, REPO)}: {len(rep)} fixtures)")
+    seen = collections.Counter((x["chunk"], x["fixture"]) for x in rep)
+    c.need(all(v == 1 for v in seen.values()), f"the report holds one run: {sum(1 for v in seen.values() if v > 1)} fixtures repeat")
+    for x in rep:
+        if x["result"] in ("mismatch", "pending"): mism[fixture_item.get((x["chunk"], x["fixture"]))].append(f"{x['chunk']}:{x['fixture']} {x['result']}")
+    finding = RECHECK_FINDINGS - {"UNVERIFIED"}
+    why = collections.defaultdict(list); unver = collections.defaultdict(list); untied = []
+    for x in lines:
+        if x["kind"] == "item": continue
+        if x["verdict"] not in finding and x["verdict"] != "UNVERIFIED": continue
+        t = tie(x) & set(inv)
+        if not t: untied.append(f"{x['file']}:{x['line']} {x['kind']} {x['id']} {x['verdict']}"); continue
+        for i in t: (why if x["verdict"] in finding else unver)[i].append(f"{x['kind']} {x['id']} {x['verdict']}")
+    recorded = {x["id"]: x["verdict"] for x in lines if x["kind"] == "item"}
+    derived, reasons = {}, {}
+    for i in sorted(sampled):
+        miss = [r for r in dev_rows.get(i, []) if r not in lined]
+        r_ = why[i] + [f"fixture {m}" for m in mism.get(i, [])] + [f"deviation row {r} with no cm6 deviation line" for r in miss]
+        if r_: derived[i], reasons[i] = "NONCONFORMANT", r_
+        elif unver[i]: derived[i], reasons[i] = "UNVERIFIED", unver[i]
+        elif dev_rows.get(i) or i in cited_items: derived[i], reasons[i] = "DECIDED DEVIATION", dev_rows.get(i, []) or ["cited by a cm6 deviation line"]
+        else: derived[i], reasons[i] = "CONFORMANT", []
+    out = os.path.join(out_dir(crate), "items.jsonl")
+    with open(out, "w", encoding="utf8") as fh:
+        for i in sorted(derived):
+            fh.write(json.dumps({"item_id": i, "item": inv[i]["item"], "derived": derived[i], "recorded": recorded.get(i), "because": reasons[i]}, ensure_ascii=False) + "\n")
+    c.say(f"items: {len(derived)} sampled; derived {dict(collections.Counter(derived.values()))}; written {os.path.relpath(out, REPO)}")
+    c.need(all(i in recorded for i in derived), f"every sampled item has a recorded item line: {sum(1 for i in derived if i not in recorded)} have none",
+           [i for i in derived if i not in recorded])
+    diff = [f"{i} {inv[i]['item']}: recorded {recorded.get(i)}, derived {derived[i]}: " + "; ".join(reasons[i][:4]) for i in sorted(derived) if recorded.get(i) != derived[i]]
+    c.say(f"disagreements with the recorded item lines, for the consultant: {len(diff)}")
+    for d in diff: c.say("    " + d)
+    c.say(f"finding or UNVERIFIED lines tied to no item, for the consultant: {len(untied)}")
+    for u in untied: c.say("    " + u)
+
+
 def outcome_counts(path, src_marker):
     data = json.load(open(path))
     out = collections.defaultdict(lambda: [0, 0])
@@ -1313,7 +1443,7 @@ def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ic.ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe, "recheck": recheck}
+    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe, "recheck": recheck, "items": items}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = ic.Check()
