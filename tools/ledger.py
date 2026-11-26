@@ -11,6 +11,14 @@
                                                          tool, its own output (the output tokens of every request but
                                                          the last) against the input added, and the bytes per token of
                                                          the largest results that arrived alone between two requests
+    python3 tools/ledger.py watch <agent id | transcript.jsonl> --stop <tokens> [--poll <s>]
+                                                         waits, printing nothing, until a running worker's context (the
+                                                         `tokens` of `usage`) reaches its stop line, then prints one line
+                                                         and exits: run it with Bash `run_in_background` and the session
+                                                         is woken once, only if the line is reached (a Monitor is cut at
+                                                         30 minutes and wakes the session at each line it prints); stop
+                                                         it with TaskStop when the worker returns. An agent id is looked
+                                                         up as ~/.claude/projects/*/*/subagents/agent-<id>.jsonl
 
 Kinds and their keys (date defaults to today; numbers are parsed):
   step     crate stage step role model effort tokens [consumed] [attempts] [note]   one finished worker run or orchestrator step;
@@ -154,7 +162,9 @@ def breakdown(path):
             "largest_alone": [{"chars": c, "tokens": g} for c, g in top]}
 
 
-def usage(path):
+def sizes(path):
+    """(requests, tokens, consumed) of a transcript, each request counted once by its id. `tokens` is the last request
+    with usage counts: a request refused by a usage limit is recorded with all four at 0 and is not the run's size."""
     seen, total, last = set(), 0, None
     for line in open(path, encoding="utf-8"):
         try: m = json.loads(line).get("message")
@@ -162,11 +172,34 @@ def usage(path):
         u = m.get("usage") if isinstance(m, dict) else None
         if not u or m.get("id") in seen: continue
         seen.add(m.get("id"))
-        last = sum(u.get(k) or 0 for k in ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
-        total += last
-    out = {"requests": len(seen), "tokens": last, "consumed": total}
+        n = sum(u.get(k) or 0 for k in ("input_tokens", "output_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
+        total += n
+        if n: last = n
+    return len(seen), last, total
+
+
+def usage(path):
+    n, last, total = sizes(path)
+    out = {"requests": n, "tokens": last, "consumed": total}
     if "--breakdown" in sys.argv: out["breakdown"] = breakdown(path)
     print(json.dumps(out, indent=1 if "--breakdown" in sys.argv else None))
+
+
+def watch(target, args):
+    import glob, time
+    if "--stop" not in args: sys.exit("watch needs --stop <tokens>")
+    stop = int(args[args.index("--stop") + 1])
+    poll = float(args[args.index("--poll") + 1]) if "--poll" in args else 20
+    pattern = target if target.endswith(".jsonl") else os.path.expanduser(f"~/.claude/projects/*/*/subagents/agent-{target}.jsonl")
+    while True:
+        found = glob.glob(pattern)
+        if len(found) > 1: sys.exit(f"{len(found)} transcripts match {pattern}: give the path")
+        if found:
+            n, last, total = sizes(found[0])
+            if (last or 0) >= stop:
+                print(f"STOP LINE reached: {last:,} tokens of {stop:,} after {n} requests ({total:,} consumed): stop the worker (TaskStop)")
+                return
+        time.sleep(poll)
 
 
 if __name__ == "__main__":
@@ -174,4 +207,5 @@ if __name__ == "__main__":
     if a[:1] == ["add"] and len(a) >= 2: add(a[1], a[2:])
     elif a[:1] == ["report"]: report(a[1] if len(a) > 1 else None)
     elif a[:1] == ["usage"] and len(a) in (2, 3): usage(a[1])
+    elif a[:1] == ["watch"] and len(a) >= 4: watch(a[1], a[2:])
     else: print(__doc__)
