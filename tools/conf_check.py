@@ -818,49 +818,169 @@ def sample(c, crate, args):
     c.say(f"sample: {len(why)} of {len(inv)} CORE items (seed {seed}); by unit {dict(per)}; written {os.path.relpath(path, REPO)}")
 
 
-def recheck(c, crate, args):
-    """Step 4's sample (plan step 4): the verdict lines of step 3 by the run that wrote them, a share of each run drawn
-    with the recorded seed. A run is a commit: the first commit of a file where a line's (kind, id, occurrence) appears."""
-    import math, random
-    opt = lambda k, d: type(d)(args[args.index(k) + 1]) if k in args else d
-    seed = int(args[args.index("--seed") + 1]) if "--seed" in args else sys.exit("recheck --seed <n>")
-    share, least = opt("--share", 0.1), opt("--min", 20)
+# Step 4's draw (plan.md "Conformance" step 4, M30): the runs that judged without the rules of crates/** (M28), and the
+# runs whose ledger tokens ended above 200,000; a run is the commit that first wrote a line.
+RECHECK_M28 = {"ccacc71", "eb1e4d9", "c118331", "bb051c6", "d35c6e3", "3af890d"}
+RECHECK_ABOVE = {"ccacc71", "1d41c6e", "c9f4511", "449481e", "04f24b8", "0081109", "442f5cc", "0ef58be"}
+RECHECK_FINDINGS = {"FINDING", "NONCONFORMANT", "UNVERIFIED", "WEAKER", "DIFFERENT", "MISSING"}
+RECHECK_LISTED = {"hazard", "panic", "shared", "sentinel"}
+RECHECK_OUTCOMES = {"agree", "agree, evidence wrong", "overturn", "later decision"}
+RECHECK_KEYS = ["file", "line", "kind", "id", "derived", "evidence", "repro", "recorded", "outcome", "severity"]
+RECHECK_UNITS = {"text": "U1", "change": "U2", "rangeset": "U3", "facet": "U4a", "state": "U4b"}
+
+
+def recheck_lines(c, crate):
+    """Every verdict line of raw/conformance-*.jsonl with the run (commit) that first wrote its (kind, id, occurrence)."""
     rel = os.path.relpath(ic.spec(crate, "raw"), REPO)
     files = sorted(f for f in os.listdir(ic.spec(crate, "raw")) if re.fullmatch(r"conformance-[\w-]+\.jsonl", f))
     git = lambda *a: subprocess.run(["git", "-C", REPO, *a], capture_output=True, text=True, check=True).stdout
-    keyed = lambda text: [(json.loads(l)) for l in text.split("\n") if l.strip()]
+    parse = lambda text: [json.loads(l) for l in text.split("\n") if l.strip()]
     def keys(rows):
         seen = collections.Counter(); out = []
         for r in rows: k = (r["kind"], r["id"]); out.append((k, seen[k])); seen[k] += 1
         return out
     lines, title = [], {}
     for f in files:
-        path = f"{rel}/{f}"
-        writer = {}
+        path = f"{rel}/{f}"; writer = {}
         for h in git("log", "--reverse", "--format=%h", "--", path).split():
             title.setdefault(h, git("log", "-1", "--format=%s", h).strip())
-            try: rows = keyed(git("show", f"{h}:{path}"))
+            try: rows = parse(git("show", f"{h}:{path}"))
             except subprocess.CalledProcessError: continue
             for k in keys(rows): writer.setdefault(k, h)
-        rows = keyed(ic.read(os.path.join(REPO, path)))
+        rows = parse(ic.read(os.path.join(REPO, path)))
         for n, (r, k) in enumerate(zip(rows, keys(rows)), 1):
-            c.need(k in writer, f"{f}:{n}: a commit wrote {k[0]} {k[1]}") if k not in writer else None
-            lines.append({"file": f, "line": n, "kind": r["kind"], "id": r["id"], "verdict": r["verdict"], "run": writer.get(k, "uncommitted")})
+            if k not in writer: c.need(False, f"{f}:{n}: a commit wrote {k[0]} {k[1]}")
+            lines.append({"file": f, "line": n, "kind": r["kind"], "id": r["id"], "row": r, "run": writer.get(k, "uncommitted")})
+    return files, lines, title
+
+
+def recheck_sources(c, crate, lines):
+    """What step 3's verifier was given for each line, by kind (never the recorded verdict or evidence)."""
+    S = out_dir(crate)
+    blocks = {}
+    for chunk in sorted({f[len("conformance-"):-len(".jsonl")] for f in (x["file"] for x in lines)}):
+        quiet = ic.Check(); quiet.say = lambda *a, **k: None; quiet.need = lambda *a, **k: None
+        hazards(quiet, crate, [chunk])
+        text = ic.read(os.path.join(S, f"hazards-{chunk}.md"))
+        for b in re.split(r"(?m)^(?=## `)", text)[1:]:
+            for h in re.findall(r"(?m)^- `([^`]+:h\d+)`", b): blocks[h] = b.strip()
+    lists_text = ic.read(os.path.join(S, "lists.md"))
+    section = {"panic": "panics (G9)", "shared": "shared state (G7)", "sentinel": "sentinels and their arithmetic (G7)"}
+    def list_entry(kind, id_):
+        part = lists_text.split(f"## {section[kind]}", 1)[1].split("\n## ", 1)[0]
+        loc, _, rest = id_.partition(" ")  # a few ids carry the entry's text after the location
+        return [l for l in part.split("\n") if l.startswith(f"- `{loc}`") and l[len(loc) + 4:].strip().startswith(rest.strip())]
+    cov = ic.read(ic.spec(crate, "conformance", "coverage.txt")).split("\n")
+    mm = ic.read(ic.spec(crate, "conformance", "mutants-missed.md")).split("\n")
+    tests = {t["id"]: t for t in ic.rows(ic.spec(crate, "raw", "tests.jsonl"))}
+    for x in lines:
+        k, i = x["kind"], x["id"]
+        if k == "hazard": src = blocks.get(i)
+        elif k in section: src = "\n".join(list_entry(k, i)) or None
+        elif k in ("branch", "line"): src = next((l.strip() for l in cov if re.search(rf"\s{re.escape(i)}[\s`]", l + " ")), None)
+        elif k == "mutant":
+            loc, _, what = i.partition(" ")
+            n = next((n for n, l in enumerate(mm) if l.startswith(f"- `{loc}` {what}")), None)
+            src = None if n is None else "\n".join(l.rstrip() for l in mm[n:n + 2])
+        elif k == "test":
+            path, _, fn = i.partition("::")
+            m = re.match(r"test_cm6_(\w+?)_(\d+)_", fn)
+            case = tests.get(f"test-{m.group(1)}#{m.group(2)}") if m else None
+            src = {"test file": path, "test": fn, "cm6 case": case} if os.path.exists(os.path.join(REPO, path)) else None
+        elif k == "behavior": src = "docs/parity/ferrum-state/cards/verifier.md \"Per unit\" (the unit's replayer read)"
+        else: src = None
+        x["sources"] = src
+        if src is None: c.need(False, f"{x['file']}:{x['line']}: the sources of {k} {i} found")
+
+
+def recheck_citations(c, crate, lines):
+    """Every fixture id and test name cited in a line exists (M30)."""
+    fx = set()
+    for f in os.listdir(ic.spec(crate, "fixtures")):
+        if f.endswith(".jsonl"): fx |= {r["id"] for r in ic.rows(ic.spec(crate, "fixtures", f)) if "id" in r}
+    fns = {}
+    tdir = ic.crate_dir(crate, "tests")
+    for root, _, names in os.walk(tdir):
+        for n in names:
+            if n.endswith(".rs"): fns.setdefault(n, set()).update(re.findall(r"\bfn\s+(\w+)", ic.read(os.path.join(root, n))))
+    nf = nt = 0; bad = []
+    for x in lines:
+        text = json.dumps(x["row"], ensure_ascii=False)
+        for f in set(re.findall(r"(?<![\w.])F\d{4}(?!\d)", text)):
+            nf += 1
+            if f not in fx: bad.append(f"{x['file']}:{x['line']}: fixture {f}")
+        for file, fn in set(re.findall(r"(\w+\.rs)::(\w+)", text)):
+            if not file.startswith(("cm6_", "written_")): continue
+            nt += 1
+            if fn not in fns.get(file, set()): bad.append(f"{x['file']}:{x['line']}: test {file}::{fn}")
+    c.need(not bad, f"every cited fixture and test exists ({nf} fixture and {nt} test citations): {len(bad)} do not", bad)
+
+
+def recheck(c, crate, args):
+    """Step 4's sample (plan step 4, M30): the lines that close a question, drawn per run with the recorded seed, and
+    beside each what step 3's verifier was given for it; with --results, a re-check file checked against the draw."""
+    import math, random
+    seed = int(args[args.index("--seed") + 1]) if "--seed" in args else sys.exit("recheck --seed <n> [--results <file> [--unit <u>]]")
+    files, lines, title = recheck_lines(c, crate)
+    recheck_citations(c, crate, lines)
+    pool = [x for x in lines if x["kind"] != "item" and x["id"] != "replayer:core" and x["row"]["verdict"] not in RECHECK_FINDINGS]
+    c.say(f"lines {len(lines)}; pool {len(pool)} (findings, item lines and replayer:core left out); by kind {dict(collections.Counter(x['kind'] for x in pool))}")
     by = collections.defaultdict(list)
-    for x in lines: by[x["run"]].append(x)
+    for x in pool: by[x["run"]].append(x)
     rnd = random.Random(seed); drawn = []
     for run in sorted(by):
-        pool = by[run]; drawn += rnd.sample(pool, min(len(pool), math.ceil(share * len(pool))))
-    rest = [x for x in lines if x not in drawn]
-    if len(drawn) < least: drawn += rnd.sample(rest, min(len(rest), least - len(drawn)))
-    out = os.path.join(out_dir(crate), "recheck-sample.jsonl")
-    with open(out, "w", encoding="utf8") as fh:
-        for x in sorted(drawn, key=lambda x: (x["file"], x["line"])):
-            fh.write(json.dumps({**x, "run_title": title.get(x["run"], "")}, ensure_ascii=False) + "\n")
-    for run in sorted(by, key=lambda h: title.get(h, h)):
-        c.say(f"{run} {len(by[run]):4} lines, {sum(1 for x in drawn if x['run'] == run):3} drawn: {title.get(run, run)}")
-    c.say(f"recheck: {len(drawn)} of {len(lines)} lines in {len(files)} files, {len(by)} runs (seed {seed}, share {share}); "
-          f"by kind {dict(collections.Counter(x['kind'] for x in drawn))}; written {os.path.relpath(out, REPO)}")
+        if run in RECHECK_M28: groups = [(0.2, by[run])]
+        elif run in RECHECK_ABOVE: groups = [(0.1, by[run])]
+        else: groups = [(0.3, [x for x in by[run] if x["kind"] in RECHECK_LISTED]), (0.1, [x for x in by[run] if x["kind"] not in RECHECK_LISTED])]
+        for rate, g in groups:
+            if g: drawn += rnd.sample(g, min(len(g), math.ceil(rate * len(g))))
+    ids = {(x["file"], x["line"]) for x in drawn}
+    for kind in sorted({x["kind"] for x in pool}):
+        have = sum(1 for x in drawn if x["kind"] == kind)
+        rest = [x for x in pool if x["kind"] == kind and (x["file"], x["line"]) not in ids]
+        if have < 10:
+            more = rnd.sample(rest, min(len(rest), 10 - have)); drawn += more; ids |= {(x["file"], x["line"]) for x in more}
+    drawn.sort(key=lambda x: (x["file"], x["line"]))
+    unit_of = lambda f: RECHECK_UNITS.get(f[len("conformance-"):-len(".jsonl")], "?")
+    if "--results" not in args:
+        recheck_sources(c, crate, drawn)
+        out = os.path.join(out_dir(crate), "recheck-sample.jsonl")
+        with open(out, "w", encoding="utf8") as fh:
+            for x in drawn:
+                fh.write(json.dumps({"file": x["file"], "line": x["line"], "unit": unit_of(x["file"]), "kind": x["kind"], "id": x["id"],
+                                     "run": x["run"], "run_title": title.get(x["run"], ""), "sources": x["sources"]}, ensure_ascii=False) + "\n")
+        for run in sorted(by, key=lambda h: title.get(h, h)):
+            tag = " (M28)" if run in RECHECK_M28 else " (above 200,000)" if run in RECHECK_ABOVE else ""
+            c.say(f"{run} {len(by[run]):4} in pool, {sum(1 for x in drawn if x['run'] == run):3} drawn{tag}: {title.get(run, run)}")
+        c.say(f"recheck: {len(drawn)} of {len(pool)} (seed {seed}); by kind {dict(collections.Counter(x['kind'] for x in drawn))}; "
+              f"by unit {dict(collections.Counter(unit_of(x['file']) for x in drawn))}; written {os.path.relpath(out, REPO)}")
+        return
+    path = args[args.index("--results") + 1]
+    unit = args[args.index("--unit") + 1] if "--unit" in args else None
+    if unit: unit = RECHECK_UNITS.get(unit, unit)
+    want = {(x["file"], x["line"]): x for x in drawn if unit is None or unit_of(x["file"]) == unit}
+    rows = [json.loads(l) for l in ic.read(path).split("\n") if l.strip()] if os.path.exists(path) else []
+    if unit: rows = [r for r in rows if unit_of(r.get("file", "")) == unit]
+    got = collections.Counter((r.get("file"), r.get("line")) for r in rows)
+    c.need(all(k in got for k in want), f"every drawn line has a row: {sum(1 for k in want if k not in got)} have none",
+           [f"{f}:{n}" for (f, n) in want if (f, n) not in got])
+    c.need(all(k in want for k in got), f"no row for a line not drawn: {sum(1 for k in got if k not in want)}", [f"{f}:{n}" for (f, n) in got if (f, n) not in want])
+    c.need(all(v == 1 for v in got.values()), f"one row per line: {sum(1 for v in got.values() if v > 1)} repeated", [f"{f}:{n}" for (f, n), v in got.items() if v > 1])
+    bad = [f"{r.get('file')}:{r.get('line')}" for r in rows if sorted(r) != sorted(RECHECK_KEYS) or r.get("outcome") not in RECHECK_OUTCOMES
+           or (r.get("outcome") == "overturn") != (r.get("severity") in ("high", "low")) or (r.get("outcome") != "overturn" and r.get("severity"))
+           or ((r.get("file"), r.get("line")) in want and (r.get("kind"), r.get("id")) != (want[(r["file"], r["line"])]["kind"], want[(r["file"], r["line"])]["id"]))]
+    c.need(not bad, f"each row has the ten keys, an outcome of M30, a severity exactly on an overturn, and its line's kind and id: {len(bad)} do not", bad)
+    run_of = {(x["file"], x["line"]): x["run"] for x in drawn}
+    def count(name, sel):
+        cnt = collections.Counter((r["kind"], r["outcome"]) for r in rows if sel(r))
+        c.say(f"{name}: {sum(cnt.values())} rows; " + ", ".join(f"{k} {o} {n}" for (k, o), n in sorted(cnt.items())))
+    count("all", lambda r: True)
+    for run in sorted({run_of.get((r.get("file"), r.get("line"))) for r in rows} - {None}):
+        count(f"run {run} {title.get(run, '')}", lambda r, run=run: run_of.get((r.get("file"), r.get("line"))) == run)
+    count("the six runs of M28", lambda r: run_of.get((r.get("file"), r.get("line"))) in RECHECK_M28)
+    listed = lambda r: r.get("kind") in RECHECK_LISTED and run_of.get((r.get("file"), r.get("line"))) not in RECHECK_M28
+    count("hazard, panic, shared, sentinel of runs above 200,000 (M28 runs apart)", lambda r: listed(r) and run_of.get((r["file"], r["line"])) in RECHECK_ABOVE)
+    count("hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart)", lambda r: listed(r) and run_of.get((r["file"], r["line"])) not in RECHECK_ABOVE)
 
 
 def outcome_counts(path, src_marker):
