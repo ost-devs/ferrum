@@ -488,3 +488,21 @@ checks passed
 ```
 
 All 21 agree. Noted on lines that stand: `raw/conformance-rangeset.jsonl:120` cites `src/change.rs:229` for the `assoc < 0` test, which is at `:226-227` at c08e6da; `:112`'s exclusion rests on the contract of `state.cm6.229.d1` (a `RangeValue` with interior mutability compiles); for `:309` the re-checker printed the recorded line in the same command as its reading of the callers, after settling the verdict.
+
+### U3, part b: 22 test, sentinel and mutant lines (verifier, 2026-11-26)
+
+```
+lines 1627; pool 1253 (findings, item lines and replayer:core left out); by kind {'test': 197, 'hazard': 681, 'panic': 36, 'sentinel': 152, 'branch': 38, 'mutant': 39, 'shared': 108, 'line': 1, 'behavior': 1}
+all: 22 rows; mutant agree 4, mutant overturn 1, sentinel agree 7, test agree 10
+run 342e254 conformance(ferrum-state): step 3, U3 gaps part C: 1 rows; mutant agree 1
+run 3af890d conformance(ferrum-state): step 3, U3 tests run; M28 widened: 10 rows; test agree 10
+run c9f4511 conformance(ferrum-state): step 3, U3 hazards of the other groups and the lists; Q140: 7 rows; sentinel agree 7
+run cba4763 conformance(ferrum-state): step 3, U3 gaps part B: 2 rows; mutant agree 1, mutant overturn 1
+run de2039f conformance(ferrum-state): step 3, U3 gaps part A (the G5 case is a replayer conversion): 2 rows; mutant agree 2
+the six runs of M28: 10 rows; test agree 10
+hazard, panic, shared, sentinel of runs above 200,000 (M28 runs apart): 7 rows; sentinel agree 7
+hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart): 0 rows; 
+checks passed
+```
+
+Not `agree`: `raw/conformance-rangeset.jsonl:319` `src/rangeset.rs:1082:46 replace + with - in RangeSetBuilder<T>::add_chunk` overturn low (recorded `EQUIVALENT MUTANT`; a filter that drops the range after a chunk taken whole lets a later range with `from` after `to`, stored as given by `state.cm6.201.d1`, start before the chunk's end, and the mutant moves it to the first layer, so `iter` yields it last: 249 ranges `[100+i, 101+i]`, then `L [349,50]`, `X1 [60,30]`, `Y [40,45]`, filter dropping `X1` over 0 to 99; probe `.scratch/verify-recheck/u3-probe`, `add1082`). The re-checker's sentinel row of `:210` (`src/rangeset.rs:867`) was written after the recorded line appeared in one of its greps, the verdict reached before (its evidence says so). The probe also kills `:1150:41` and `:1152:21`, which step 3 recorded as findings.
