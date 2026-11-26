@@ -472,3 +472,19 @@ hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart): 4 rows; 
 
 Not `agree`: `raw/conformance-change.jsonl:74` `state.ChangeDesc.length.B1:h1` overturn low (`EXCLUDED` by D11 (b), not `EXERCISED`); `:115` `src/change.rs:1012` overturn low (the `# Panics` texts of `ChangeSet::map`, `ChangeSet::map_desc` and `ChangeDesc::map_desc` omit the equal-length case of `state.cm6.156.d2`); `:178` `state.SelectionRange.B2:h1` overturn low (no fixture or test reaches `checkSelection` with a `from > to` range); `:197` `state.EditorSelection^create.B6:h1` later decision (Q137 makes a constructor's refusal `EXCLUDED`). Noted by the re-checker on lines that stand: `src/change.rs:515`, already a finding, also has a silent consequence (`ChangeSet::of(ChangeSpec::List(vec![]), usize::MAX, None)` returns a set of length 0 with no panic); the definitions of `CHANGED` disagree (M31).
 
+### U3, part a: 21 hazard and branch lines (verifier, 2026-11-26)
+
+```
+lines 1627; pool 1253 (findings, item lines and replayer:core left out); by kind {'test': 197, 'hazard': 681, 'panic': 36, 'sentinel': 152, 'branch': 38, 'mutant': 39, 'shared': 108, 'line': 1, 'behavior': 1}
+all: 21 rows; branch agree 4, hazard agree 17
+run 342e254 conformance(ferrum-state): step 3, U3 gaps part C: 3 rows; branch agree 3
+run c118331 conformance(ferrum-state): step 3, U3 hazards of RangeSet; Q139: 10 rows; hazard agree 10
+run c9f4511 conformance(ferrum-state): step 3, U3 hazards of the other groups and the lists; Q140: 7 rows; hazard agree 7
+run cba4763 conformance(ferrum-state): step 3, U3 gaps part B: 1 rows; branch agree 1
+the six runs of M28: 10 rows; hazard agree 10
+hazard, panic, shared, sentinel of runs above 200,000 (M28 runs apart): 7 rows; hazard agree 7
+hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart): 0 rows; 
+checks passed
+```
+
+All 21 agree. Noted on lines that stand: `raw/conformance-rangeset.jsonl:120` cites `src/change.rs:229` for the `assoc < 0` test, which is at `:226-227` at c08e6da; `:112`'s exclusion rests on the contract of `state.cm6.229.d1` (a `RangeValue` with interior mutability compiles); for `:309` the re-checker printed the recorded line in the same command as its reading of the callers, after settling the verdict.
