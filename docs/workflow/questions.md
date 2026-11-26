@@ -1,3 +1,11 @@
 # Open questions about the method
 
-Questions for the consultant about how the work runs (`docs/workflow/README.md` §7), in the shape of `CLAUDE.md` "Raising a question", ids `M<n>` (the next is M28). The orchestrator adds one when an observation calls the method into question or a stop-loss fires; the consultant removes it when it records the decision (`docs/decisions/method.md`).
+Questions for the consultant about how the work runs (`docs/workflow/README.md` §7), in the shape of `CLAUDE.md` "Raising a question", ids `M<n>` (the next is M29). The orchestrator adds one when an observation calls the method into question or a stop-loss fires; the consultant removes it when it records the decision (`docs/decisions/method.md`).
+
+## M28. The M27 budget rule overestimates a gaps run
+- **Found.** U2's two *gaps* runs ended at 0.73 and 0.59 times their estimates by `docs/workflow/README.md` §5 "Budgets" (M27): 104,663 against 143,000 for `change.rs` (12 mutants, 6 branch outcomes) and 58,817 against 99,000 for `selection.rs` (1 mutant, 5 outcomes) (`docs/progress/ledger.jsonl`, steps of 2026-11-26; `docs/workflow/learnings.md` W54). The tests and hazards runs of U1 and U2 ended between 0.90 and 1.15. E54 expects 0.75 to 1.25.
+- **Open because.** M27 (`docs/decisions/method.md`) sets one rule for every kind of run, measured on U1's hazards and readings runs; no gaps run had been measured then. The rule counts what a run reads; a gaps run reads the files by the lines a mutant or a branch names, and its cost is also the probe it writes and the `mutant-probe` runs, which the rule does not name.
+- **Bears on it.** The 1.5 times stop line is set from the estimate, so an estimate too high leaves a run that goes wrong more room before it is stopped (214,000 for a run that needed 104,663). The split above 140,000 is decided from the estimate too: U2's gaps were split in two by file because one run was estimated at 164,000, and the two parts together cost 163,480, so one run would likely have fitted below 140,000 (a deduction: the second part re-read the card and the rules, about 11,000). The next gaps runs are U3's (29 mutants, 16 branch outcomes and the G5 case `g5/rangeset-S57.F5063*`, planned at about 130,000), U4a's and U4b's. Two runs are a small sample.
+- **Blocks.** The estimate and the split of U3's gaps run, after U3's tests and hazards runs.
+- **Raised by.** The orchestrator, 2026-11-26.
+
