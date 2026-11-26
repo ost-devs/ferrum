@@ -1,4 +1,4 @@
-# ferrum-state: verifier card (conformance, step 3)
+# ferrum-state: verifier card (conformance, steps 3 and 4)
 
 Written by the orchestrator from `docs/parity/ferrum-state/plan.md` "Conformance", step 3, and `docs/workflow/conformance.md` Appendix A. Your assignment (the spawn prompt) names your unit, your run (*tests*, *hazards* or *gaps*, or two of them; `plan.md` step 3, M27) and your budget. The crate is at the recorded commit c08e6da (the tree's `crates/ferrum-state/` holds it; nothing under `src/` changed since). Reference: `@codemirror/state` 6.7.6 in `mirrors/cm6/state/`.
 
@@ -50,3 +50,21 @@ One line per verdict to `docs/parity/ferrum-state/raw/conformance-<unit>.jsonl` 
 - **U3 `rangeset`** (module `rangeset`).
 - **U4a `facet`** (modules `facet`, `config`; items of chunk `facet`).
 - **U4b `state`** (modules `extension`, `transaction`, `state`; items of chunk `state`): also the two `thread_local!` of the replayer (`tests/replay/driver.rs`, the panic hook's message; `tests/replay/state/values.rs`, `ARGS`, the position arguments rule 10 reads), and whether a nested call of Ferrum could make either report a wrong conversion that passes (`docs/decisions/ferrum-state.md`, "The end of the implementation stage"). A state under construction that a callback keeps (`EditorState` is `Clone`) is judged by `design.md` §6 and the row `state.cm6.100.d2` (Q142): the code at c08e6da does not yet have the two panics they name, so a hazard or list entry that turns on them is a `FINDING` citing them, and the round of step 5 makes the code. A cm6 `==` between a value a program stored and the `undefined` of a lookup that found nothing is D11 (c) (Q141, `state.cm6.040.d1`): where Ferrum's result differs and the item has no row for it, the line is a `FINDING` naming D11 (c), not `UNVERIFIED`.
+
+## Step 4: the re-check of step 3's verdicts
+
+<!-- refs:planned docs/parity/ferrum-state/raw/recheck.jsonl -->
+
+Written by the consultant from `plan.md` "Conformance" step 4 (M30). Your assignment names your unit and the sample file (`.scratch/conformance/ferrum-state/recheck-sample.jsonl`, the lines of your unit). The "Sources" above and the decisions in force are yours too; your first read is the same `lib.rs`.
+
+**What it is for.** A step-3 verdict that passes something wrong (a hazard called exercised by a check that does not reach it, an equivalent mutant that is not, a test called equivalent that asserts less) is the one error nothing later shows: the consultant reads every finding, and nobody reads the passes again. Your rows measure how often such a verdict is wrong, by kind and by run, and any wrong one makes the consultant correct its whole kind. So a row that agrees because you read the recorded line first is worth nothing.
+
+**For each drawn line, in this order.** (1) From the sources the sample file gives beside the line, the code at c08e6da, cm6 and the decisions in force, derive the verdict as "What you check" items 3 to 7 or 1 and 2 define it for its kind, and write `derived` and `evidence`. (2) Only then read the recorded line (`file`, `line`) and write `recorded` and `outcome`. (3) Where they differ, re-run what settles it: the test (`cargo test -p ferrum-state --features __test <name>`), a probe through `mutant-probe` for a mutant, a probe on cm6 in the harness or one against Ferrum for a hazard, an input for an outcome. What each kind's check is: `plan.md` step 4, "What a re-check does". A `SAFE` written before D17 was judged against every value of the type; judge it under D17, and where only D17 changes the answer the outcome is `later decision`.
+
+**What you write.** One row per drawn line, appended as you go, to `docs/parity/ferrum-state/raw/recheck.jsonl`: `{"file", "line", "kind", "id", "derived", "evidence", "repro", "recorded", "outcome", "severity"}`. `outcome`: `agree`; `agree, evidence wrong` (the verdict stands on another reason than the one recorded: say which); `overturn`; `later decision`. `severity` (`high` when the wrong verdict hides a difference a caller observes, `low` otherwise) only for an overturn, empty otherwise. `repro` is the input or command that shows an overturn. You change no line of `raw/conformance-*.jsonl`.
+
+**Check before you report:** `python3 tools/conf_check.py ferrum-state recheck --results docs/parity/ferrum-state/raw/recheck.jsonl --unit <your unit>` (every drawn line of your unit has one row).
+
+**Budget.** Your assignment gives it (`docs/workflow/README.md` §5 "Budgets"): a fixed part and a figure per line. Settle one line, append its row, and do not reread code you have judged; lines on the same function share their reading, so take them together.
+
+**Report:** counts by kind and outcome; every row that is not `agree`, one line each; the ids you could not check and why; then the two lines of `CLAUDE.md` "Reporting from a card".

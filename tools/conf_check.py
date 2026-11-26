@@ -442,6 +442,12 @@ def g6(c, crate, args):
     for f, l, _, t, ids in dev: c.say(f"        src/{f}:{l}: {t[:160]} -> {', '.join(f'{i} ({kinds.get(i, 'missing')})' for i in ids)}")
     notrow = [f"src/{f}:{l}: cites {', '.join(f'{i} ({kinds.get(i, 'missing')})' for i in ids) or 'nothing'}" for f, l, _, _, ids in dev if not any(kinds.get(i) == "row" for i in ids)]
     c.need(not notrow, f"every `cm6 deviation:` names a row of raw/decisions.jsonl: {len(notrow)} do not", notrow)
+    # Q143: the other direction. A row of a deviation class is a difference a caller observes; prose naming it is not
+    # the annotation, because neither this join nor a reader searching one form finds it.
+    cited = {i for *_, ids in dev for i in ids}
+    devrows = [r for r in ic.rows(ic.spec(crate, "raw", "decisions.jsonl")) if r["class"].startswith("deviation")]
+    bare = [f"{r['id']} ({r['class']})" for r in devrows if r["id"] not in cited]
+    c.need(not bare, f"every row of a deviation class is cited by a `cm6 deviation:` line: {len(bare)} of {len(devrows)} are not", bare)
     imp = [f"src/{f}:{l}: {i}" for f, l, _, _, ids in dev for i in ids if kinds.get(i) == "improvement"]
     c.need(not imp, f"no `cm6 deviation:` names an improvement (none is adopted before the delta): {len(imp)}", imp)
     rows = ic.rows(ic.spec(crate, "raw", "improvements.jsonl"))

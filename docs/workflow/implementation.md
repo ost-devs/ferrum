@@ -61,7 +61,7 @@ Only the mapping annotations and the doc comments needed to use the API. The cra
 ## 7. Hand-off
 
 The crate goes to conformance when every in-scope item is implemented or `BLOCKED`, and these checks pass:
-- the annotation scan: every in-scope item found, every public item annotated;
+- the annotation scan: every in-scope item found, every public item annotated, every row of a `deviation-*` class of `raw/decisions.jsonl` cited by a `/// cm6 deviation:` line (Q143; the code step of each unit checks its own rows);
 - every cm6 case ported under its test name;
 - every behavior id named by a check that runs (§2 item 5), and every `// covers:` id exists;
 - test files and the replayer unchanged since the commit that preceded their unit's code, except changes the consultant decided, listed;

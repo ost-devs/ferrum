@@ -94,6 +94,8 @@
 - A verdict-writing run's own work follows the lines it writes (~28k + ~324 a line), not its reading; check what the assignments computed against what the plan says, fit on every finished run of the kind. M29
 - Estimating runs: [budgets.md](budgets.md) — context size, decomposition, what the ledger's tokens mean
 - cm6's null/undefined stand-ins (loose `==` with a missing lookup, the null of an uncomputed slot) where Ferrum's type has no such value: D11 (c) row + patch, run on cm6 first; a design promise is made true by a check. `docs/decisions/ferrum-state.md` Q141 and Q142
+- A re-check of verdicts: sample only what closes a question (findings are read at acceptance anyway); a verdict data define (an item's, from its lines) goes to a tool for all; the re-checker derives before it reads the line; size per kind by the chance of finding a 5% class, and give an expectation's comparison group enough lines. `docs/decisions/method.md` M30
+- A join checked one way hides the other: G6 passed with 18 of 18 deviation rows unannotated. Ask of every join whether both directions are checked. `docs/decisions/ferrum-state.md` Q143
 
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.

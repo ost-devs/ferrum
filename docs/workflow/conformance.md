@@ -78,7 +78,7 @@ Mechanical gates run first, for the whole crate, by the orchestrator, each as a 
 - **Sensitivity:** in a scratch copy, introduce one deliberate deviation per item group (flip an `assoc` sign, drop a deduplication) and confirm the oracle reports it. An oracle that stays at 0 does not pass.
 
 **G6. Deviations.**
-- Every `/// cm6 deviation:` maps to a decision or to an `adopted` row of `raw/improvements.jsonl`; no row with another status has code.
+- Every `/// cm6 deviation:` maps to a decision or to an `adopted` row of `raw/improvements.jsonl`; no row with another status has code. Every row of a `deviation-*` class is cited by at least one such line (Q143).
 - Every `candidate` row names the point at which it is evaluated, and none is past it.
 - Every decision that requires a deviation is applied wherever it applies, for example the D1 conversions at every position-taking API.
 - No other difference exists.
@@ -112,7 +112,7 @@ Mechanical gates run first, for the whole crate, by the orchestrator, each as a 
   - every `CONTRACT` item;
   - every item a deviation touches;
   - every item with a behavior row that has the key `added` (written or corrected during implementation, after the specification's own verification: `specification.md` §4).
-- A `verifier` that ran no gate then re-checks at least 10% of the verdicts (minimum 20). It re-runs their reproductions, and appends to `verification.md` the mismatches and their rate. The gate scripts are tools the orchestrator runs; no worker rewrites them.
+- A `verifier` that ran no gate then re-checks at least 10% of the verdicts that close a question (minimum 20): those that pass a test, a hazard, a mutant, an outcome or a list entry. A finding is not in that sample, because the consultant reads every finding before the verdict, and a wrong one shows there; a wrong pass shows nowhere else. The re-check derives each verdict from the sources the first verifier had before it reads the recorded line, re-runs the reproduction, and writes one row per line; a tool counts the rate by kind and by run, and its output goes to `verification.md` (M30, `docs/decisions/method.md`). The gate scripts are tools the orchestrator runs; no worker rewrites them.
 - A wrong verdict is corrected as a class: the condition a correct verdict meets is tested on every verdict of that kind, not on the sampled ones. The sample is a measurement and is not repeated until clean; a second one is drawn only when the first found a verdict that passed a failing item, after the gate that let it pass is fixed for every item (`docs/workflow/specification.md` §8 items 4–5 give the reason).
 
 ## 4. Report and acceptance
