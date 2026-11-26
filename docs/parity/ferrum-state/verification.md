@@ -449,3 +449,26 @@ How the 13 `artifact` rows were settled: tsx compiles each module of the package
 | `mirrors/cm6/state/src/text.ts:321` (TextNode.scanIdentical) | branch | fixture | Chunk `text`, F7203, F7204, behaviors `state.Text.eq.B5`, `state.Text.eq.B4` (item `state.cm6.238`). Not D12. The range is `return 0` when the other Text is not a node; `Text.eq` calls `scanIdentical` only after equal length and line counts (text.ts:87-89), a node holds at least 32 lines (`TextNode.from`, :336-340) and a leaf at most 32, so it needs a 32-line node against a 32-line leaf: a 33-line document with its first line deleted, compared with `Text.of` of the same 32 lines (true both ways, F7203) or of 32 lines of the same length with line 31 different (false both ways, F7204). |
 | `mirrors/cm6/state/src/text.ts:326` (TextNode.scanIdentical) | branch | fixture | Chunk `text`, F7205, behavior `state.Text.eq.B5` (item `state.cm6.238`). Not D12. The range is `return length` when one side's children run out with every child identical: `doc.slice(0)` of a 2000-line document is a new root over the same children (`text.sharedChildren` all true), and `eq` is true both ways. |
 | `mirrors/cm6/state/src/transaction.ts:405` (asArray) | branch | artifact | The line holds `export function asArray<T>(value: undefined \| T \| readonly T[]): readonly T[] {`, a declaration. The range is compiled offsets 7793-7906 of `transaction.ts`, the export annotation `0&&(module.exports={...})`, mapped to 405:16. |
+
+## Conformance step 4: the re-check of step 3's verdicts
+
+The sample: `python3 tools/conf_check.py ferrum-state recheck --seed 20261126` at 658d643 (M30, `plan.md` "Conformance" step 4): 203 of the 1,253 lines that close a question. The rows: `raw/recheck.jsonl`. Each run's counts below are the output of `recheck --results raw/recheck.jsonl --unit <unit>`; the consultant classifies every row that is not `agree` after the runs, before any rate is used.
+
+### U2, the pilot (verifier, 2026-11-26)
+
+```
+lines 1627; pool 1253 (findings, item lines and replayer:core left out); by kind {'test': 197, 'hazard': 681, 'panic': 36, 'sentinel': 152, 'branch': 38, 'mutant': 39, 'shared': 108, 'line': 1, 'behavior': 1}
+all: 32 rows; branch agree 1, hazard agree 14, hazard later decision 1, hazard overturn 2, mutant agree 3, panic agree 1, panic overturn 1, sentinel agree 3, test agree 6
+run 1d41c6e conformance(ferrum-state): step 3, U2 hazards of ChangeDesc, ChangeSet, MapMode, ChangeSpec done; Q138: 8 rows; hazard agree 3, hazard overturn 1, panic overturn 1, sentinel agree 3
+run 3b061c5 conformance(ferrum-state): step 3, U2 tests run: 6 rows; test agree 6
+run 60726ac conformance(ferrum-state): step 3, U2 hazards run stopped at the usage limit, 13 lines kept: 4 rows; hazard agree 4
+run bb051c6 conformance(ferrum-state): step 3, U2 gaps of change.rs: 3 rows; branch agree 1, mutant agree 2
+run d35c6e3 conformance(ferrum-state): step 3, U2 gaps of selection.rs; U2 done; M28: 1 rows; mutant agree 1
+run eb1e4d9 conformance(ferrum-state): step 3, U2 hazards of EditorSelection and SelectionRange done; U2 hazards complete: 10 rows; hazard agree 7, hazard later decision 1, hazard overturn 1, panic agree 1
+the six runs of M28: 14 rows; branch agree 1, hazard agree 7, hazard later decision 1, hazard overturn 1, mutant agree 3, panic agree 1
+hazard, panic, shared, sentinel of runs above 200,000 (M28 runs apart): 8 rows; hazard agree 3, hazard overturn 1, panic overturn 1, sentinel agree 3
+hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart): 4 rows; hazard agree 4
+```
+
+Not `agree`: `raw/conformance-change.jsonl:74` `state.ChangeDesc.length.B1:h1` overturn low (`EXCLUDED` by D11 (b), not `EXERCISED`); `:115` `src/change.rs:1012` overturn low (the `# Panics` texts of `ChangeSet::map`, `ChangeSet::map_desc` and `ChangeDesc::map_desc` omit the equal-length case of `state.cm6.156.d2`); `:178` `state.SelectionRange.B2:h1` overturn low (no fixture or test reaches `checkSelection` with a `from > to` range); `:197` `state.EditorSelection^create.B6:h1` later decision (Q137 makes a constructor's refusal `EXCLUDED`). Noted by the re-checker on lines that stand: `src/change.rs:515`, already a finding, also has a silent consequence (`ChangeSet::of(ChangeSpec::List(vec![]), usize::MAX, None)` returns a set of length 0 with no panic); the definitions of `CHANGED` disagree (M31).
+

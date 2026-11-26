@@ -76,7 +76,7 @@
                                                                 cm6 deviation line; then UNVERIFIED, DECIDED DEVIATION,
                                                                 CONFORMANT; prints the disagreements with the recorded item
                                                                 lines and the findings tied to no item
-    python3 tools/conf_check.py <crate> recheck --seed <n> [--results <file> [--unit <u>]]
+    python3 tools/conf_check.py <crate> recheck --seed <n> [--results <file> [--unit <u>] [--lines <part.jsonl>]]
                                                                 step 4's sample: each line of raw/conformance-*.jsonl
                                                                 given to the run that wrote it (the first commit where
                                                                 its kind and id appear, so a relabel keeps its writer),
@@ -968,8 +968,13 @@ def recheck(c, crate, args):
     unit = args[args.index("--unit") + 1] if "--unit" in args else None
     if unit: unit = RECHECK_UNITS.get(unit, unit)
     want = {(x["file"], x["line"]): x for x in drawn if unit is None or unit_of(x["file"]) == unit}
+    if "--lines" in args:  # a run that takes part of a unit: the drawn lines of a sample file cut from recheck-sample.jsonl
+        part = {(r["file"], r["line"]) for r in ic.rows(args[args.index("--lines") + 1])}
+        c.need(part <= set(want), f"the part's lines are drawn lines of the unit: {len(part - set(want))} are not", sorted(part - set(want)))
+        want = {k: v for k, v in want.items() if k in part}
     rows = [json.loads(l) for l in ic.read(path).split("\n") if l.strip()] if os.path.exists(path) else []
     if unit: rows = [r for r in rows if unit_of(r.get("file", "")) == unit]
+    if "--lines" in args: rows = [r for r in rows if (r.get("file"), r.get("line")) in want or (r.get("file"), r.get("line")) not in {(x["file"], x["line"]) for x in drawn}]
     got = collections.Counter((r.get("file"), r.get("line")) for r in rows)
     c.need(all(k in got for k in want), f"every drawn line has a row: {sum(1 for k in want if k not in got)} have none",
            [f"{f}:{n}" for (f, n) in want if (f, n) not in got])
