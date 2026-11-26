@@ -997,6 +997,57 @@ def recheck(c, crate, args):
     count("hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart)", lambda r: listed(r) and run_of.get((r["file"], r["line"])) not in RECHECK_ABOVE)
 
 
+def recheck_audit(c, crate, args):
+    """M32: for each row a re-check run wrote, whether its recorded line reached the run's context (a tool result
+    holding that line's text) before the run first wrote the row's own evidence (a tool call holding it). Reads the
+    run's transcript: an agent id (~/.claude/projects/*/*/subagents/agent-<id>.jsonl) or a path; --lines <part>."""
+    import glob
+    if not args: c.need(False, "give the agent id or transcript of a re-check run"); return
+    t = args[0] if os.path.exists(args[0]) else next(iter(glob.glob(os.path.expanduser(f"~/.claude/projects/*/*/subagents/agent-{args[0]}.jsonl"))), None)
+    if not t: c.need(False, f"a transcript for {args[0]}"); return
+    events = []  # (index, "use" | "result", text)
+    for n, l in enumerate(ic.read(t).split("\n")):
+        if not l.strip(): continue
+        m = json.loads(l).get("message", {})
+        for x in m.get("content") if isinstance(m.get("content"), list) else []:
+            if x.get("type") == "tool_use": events.append((n, "use", json.dumps(x.get("input"), ensure_ascii=False)))
+            elif x.get("type") == "tool_result":
+                cont = x.get("content")
+                events.append((n, "result", cont if isinstance(cont, str) else json.dumps(cont, ensure_ascii=False)))
+    def mark(text):
+        """A 48-character piece of a text with no quote, backslash or newline, so that it reads the same escaped."""
+        for k in range(0, max(1, len(text) - 48), 16):
+            w = text[k:k + 48]
+            if len(w) == 48 and not re.search(r"[\"\\\n\t]", w) and not w.isspace(): return w
+        return None
+    rows = [json.loads(l) for l in ic.read(ic.spec(crate, "raw", "recheck.jsonl")).split("\n") if l.strip()]
+    if "--lines" in args:
+        part = {(r["file"], r["line"]) for r in ic.rows(args[args.index("--lines") + 1])}
+        rows = [r for r in rows if (r["file"], r["line"]) in part]
+    # every verdict line of the files, to tell a read of one recorded line from a read of many
+    allmarks = {}
+    for f in sorted(os.listdir(ic.spec(crate, "raw"))):
+        if re.fullmatch(r"conformance-[\w-]+\.jsonl", f):
+            for k, l in enumerate(ic.rows(ic.spec(crate, "raw", f)), 1):
+                m_ = mark(l.get("evidence", ""))
+                if m_: allmarks[(f, k)] = m_
+    targeted, broad, after, unknown = [], [], 0, []
+    for r in rows:
+        rm, em = allmarks.get((r["file"], r["line"])), mark(r.get("evidence", ""))
+        if not rm or not em: unknown.append(f"{r['file']}:{r['line']}"); continue
+        i = next((n for n, k, x in events if k == "result" and rm in x), None)
+        j = next((n for n, k, x in events if k == "use" and em in x), None)
+        if j is None: unknown.append(f"{r['file']}:{r['line']} (its evidence is in no tool call)"); continue
+        if i is None or i > j: after += 1; continue
+        held = sum(1 for m_ in allmarks.values() if m_ in next(x for n, k, x in events if n == i and k == "result" and rm in x))
+        (targeted if held == 1 else broad).append(f"{r['file']}:{r['line']} {r['kind']} {r['id'][:60]}: result at transcript line {i} holding {held} recorded lines, row's evidence first in a call at {j}")
+    c.say(f"{os.path.basename(t)}: {len(rows)} rows; the row's evidence written before its recorded line was seen: {after}; "
+          f"recorded line seen first, by a read of that line alone: {len(targeted)}; by a read of several: {len(broad)}; not decidable: {len(unknown)}")
+    c.say("    (a derivation kept in the run's own reasoning leaves no trace: thinking is not in the transcript, so a targeted read before the row is the card's order unless the row says otherwise)")
+    for x in broad: c.say("    several: " + x)
+    for x in unknown: c.say("    not decidable: " + x)
+
+
 def cm6_of_line(texts, path, line):
     """The `/// cm6:` (or `cm6 contract:`) name of the innermost declaration that encloses src/<path>:<line> (a fn, a
     struct or enum and its fields, a static, a const), `impl` and `mod` blocks passed through; None when that
@@ -1448,7 +1499,7 @@ def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ic.ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe, "recheck": recheck, "items": items}
+    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe, "recheck": recheck, "items": items, "recheck-audit": recheck_audit}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = ic.Check()
