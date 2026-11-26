@@ -67,6 +67,13 @@
                                                                 run (the probe is the verifier's: it depends on the crate
                                                                 by path, which the tool points at its copy)
     python3 tools/conf_check.py <crate> sample --seed <n>        the items step 3's verifiers read, drawn with the seed
+    python3 tools/conf_check.py <crate> recheck --seed <n> [--share <f>] [--min <n>]
+                                                                step 4's sample: each line of raw/conformance-*.jsonl
+                                                                given to the run that wrote it (the first commit where
+                                                                its kind and id appear, so a relabel keeps its writer),
+                                                                then from each run ceil(share x its lines) drawn with the
+                                                                seed (share 0.1), raised to at least --min (20) in all;
+                                                                writes .scratch/conformance/<crate>/recheck-sample.jsonl
     (--root <dir>: another tree than the repository, for trying the tool on a copy)
 
 Output files go to .scratch/conformance/<crate>/ (never committed: regenerated from the recorded commit).
@@ -805,6 +812,51 @@ def sample(c, crate, args):
     c.say(f"sample: {len(why)} of {len(inv)} CORE items (seed {seed}); by unit {dict(per)}; written {os.path.relpath(path, REPO)}")
 
 
+def recheck(c, crate, args):
+    """Step 4's sample (plan step 4): the verdict lines of step 3 by the run that wrote them, a share of each run drawn
+    with the recorded seed. A run is a commit: the first commit of a file where a line's (kind, id, occurrence) appears."""
+    import math, random
+    opt = lambda k, d: type(d)(args[args.index(k) + 1]) if k in args else d
+    seed = int(args[args.index("--seed") + 1]) if "--seed" in args else sys.exit("recheck --seed <n>")
+    share, least = opt("--share", 0.1), opt("--min", 20)
+    rel = os.path.relpath(ic.spec(crate, "raw"), REPO)
+    files = sorted(f for f in os.listdir(ic.spec(crate, "raw")) if re.fullmatch(r"conformance-[\w-]+\.jsonl", f))
+    git = lambda *a: subprocess.run(["git", "-C", REPO, *a], capture_output=True, text=True, check=True).stdout
+    keyed = lambda text: [(json.loads(l)) for l in text.split("\n") if l.strip()]
+    def keys(rows):
+        seen = collections.Counter(); out = []
+        for r in rows: k = (r["kind"], r["id"]); out.append((k, seen[k])); seen[k] += 1
+        return out
+    lines, title = [], {}
+    for f in files:
+        path = f"{rel}/{f}"
+        writer = {}
+        for h in git("log", "--reverse", "--format=%h", "--", path).split():
+            title.setdefault(h, git("log", "-1", "--format=%s", h).strip())
+            try: rows = keyed(git("show", f"{h}:{path}"))
+            except subprocess.CalledProcessError: continue
+            for k in keys(rows): writer.setdefault(k, h)
+        rows = keyed(ic.read(os.path.join(REPO, path)))
+        for n, (r, k) in enumerate(zip(rows, keys(rows)), 1):
+            c.need(k in writer, f"{f}:{n}: a commit wrote {k[0]} {k[1]}") if k not in writer else None
+            lines.append({"file": f, "line": n, "kind": r["kind"], "id": r["id"], "verdict": r["verdict"], "run": writer.get(k, "uncommitted")})
+    by = collections.defaultdict(list)
+    for x in lines: by[x["run"]].append(x)
+    rnd = random.Random(seed); drawn = []
+    for run in sorted(by):
+        pool = by[run]; drawn += rnd.sample(pool, min(len(pool), math.ceil(share * len(pool))))
+    rest = [x for x in lines if x not in drawn]
+    if len(drawn) < least: drawn += rnd.sample(rest, min(len(rest), least - len(drawn)))
+    out = os.path.join(out_dir(crate), "recheck-sample.jsonl")
+    with open(out, "w", encoding="utf8") as fh:
+        for x in sorted(drawn, key=lambda x: (x["file"], x["line"])):
+            fh.write(json.dumps({**x, "run_title": title.get(x["run"], "")}, ensure_ascii=False) + "\n")
+    for run in sorted(by, key=lambda h: title.get(h, h)):
+        c.say(f"{run} {len(by[run]):4} lines, {sum(1 for x in drawn if x['run'] == run):3} drawn: {title.get(run, run)}")
+    c.say(f"recheck: {len(drawn)} of {len(lines)} lines in {len(files)} files, {len(by)} runs (seed {seed}, share {share}); "
+          f"by kind {dict(collections.Counter(x['kind'] for x in drawn))}; written {os.path.relpath(out, REPO)}")
+
+
 def outcome_counts(path, src_marker):
     data = json.load(open(path))
     out = collections.defaultdict(lambda: [0, 0])
@@ -1135,7 +1187,7 @@ def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ic.ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe}
+    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe, "recheck": recheck}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = ic.Check()
