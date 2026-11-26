@@ -40,9 +40,12 @@
                                                                 limit (--rerun, in order): `hang` when the log shows a test
                                                                 over 60 s whose binary took under 1 s unmutated (M26), else
                                                                 `timeout`; writes .scratch/conformance/<crate>/mutants-missed.md
-    python3 tools/conf_check.py <crate> hazards <chunk> [--groups <g>,...] [--sampled] [--verdicts <file>]
+    python3 tools/conf_check.py <crate> hazards <chunk> [--groups <g>,...] [--members <m>,...] [--sampled] [--verdicts <file>]
                                                                 for step 3's hazards runs (M25, M27): each hazard of the
                                                                 behaviors of the chunk's items (of the named item groups,
+                                                                or of the named members: the second segment of a behavior
+                                                                id whole, `EditorState`, `EditorState^fromJSON`, M29; a
+                                                                behavior of either is listed;
                                                                 the second segment of a behavior id; of the sampled items),
                                                                 with an id `<behavior id>:h<n>`, the behavior's text, its
                                                                 item's decision rows, the fixtures (their result in
@@ -845,6 +848,11 @@ def ops_of(v, out):
         for x in v: ops_of(x, out)
 
 
+def member_of(behavior_id):
+    """The member of a behavior (M29): the second segment of its id whole, `EditorState^fromJSON` as well as `EditorState`."""
+    return behavior_id.split(".")[1]
+
+
 def group_of(behavior_id):
     """The item group of a behavior: the cm6 class or function, the second segment of its id (before a `^`)."""
     return behavior_id.split(".")[1].split("^")[0]
@@ -855,6 +863,7 @@ def hazards(c, crate, args):
     if not args: c.need(False, "give a chunk"); return
     chunk = args[0]
     groups = set(args[args.index("--groups") + 1].split(",")) if "--groups" in args else None
+    members = set(args[args.index("--members") + 1].split(",")) if "--members" in args else None
     verdicts = args[args.index("--verdicts") + 1] if "--verdicts" in args else None
     sampled = None
     if "--sampled" in args:
@@ -889,14 +898,14 @@ def hazards(c, crate, args):
            "line), the behavior's text, its item's decision rows, and every check that names the behavior: fixtures with their",
            "result at the hand-off (`equal`, `part`, `none`), the text classes and ops of the compared ones, ported cm6 cases,",
            "written tests with `// covers:`. Whether a check exercises the hazard is the verifier's reading."
-           + (f" Item groups: {', '.join(sorted(groups))}." if groups else "") + (" Sampled items only." if sampled is not None else ""), ""]
+           + (f" Item groups: {', '.join(sorted(groups))}." if groups else "") + (f" Members: {', '.join(sorted(members))}." if members else "") + (" Sampled items only." if sampled is not None else ""), ""]
     ids, unchecked = [], []
     per_group = collections.Counter()
     for b in ic.rows(ic.spec(crate, "raw", "behaviors.jsonl")):
         it = inv.get(b["item_id"])
         hz = [h for h in (b.get("hazards") or []) if h.strip().lower() not in ("none", "none found")]
         if not it or it["chunk"] != chunk or not hz: continue
-        if groups and group_of(b["id"]) not in groups: continue
+        if (groups or members) and not ((groups and group_of(b["id"]) in groups) or (members and member_of(b["id"]) in members)): continue
         if sampled is not None and b["item_id"] not in sampled: continue
         per_group[group_of(b["id"])] += len(hz)
         res = {x.split()[1]: x.split()[2] for x in named.get(b["id"], []) if x.startswith("fixture ")}
@@ -927,7 +936,7 @@ def hazards(c, crate, args):
         if accepted: out.append(f"- hand-off: " + "; ".join(accepted))
         out.append("")
         if not comp_ids and not ported and not wr: unchecked.append(b["id"])
-    tag = chunk + ("-" + "-".join(sorted(groups)) if groups else "") + ("-sampled" if sampled is not None else "")
+    tag = chunk + ("-" + "-".join(sorted(groups)) if groups else "") + ("-m-" + re.sub(r"[^\w-]+", "_", "-".join(sorted(members))) if members else "") + ("-sampled" if sampled is not None else "")
     path = os.path.join(out_dir(crate), f"hazards-{tag}.md")
     with open(path, "w", encoding="utf8") as fh: fh.write("\n".join(out))
     c.say(f"chunk {chunk}: {len(ids)} hazards on {sum(1 for l in out if l.startswith('## '))} behaviors; by item group: "
