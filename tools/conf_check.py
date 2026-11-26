@@ -49,7 +49,11 @@
                                                                 target/replay/<crate>/named.json, which `handoff` writes),
                                                                 the text classes and ops of the compared ones, ported cases
                                                                 and written tests that name it; with --verdicts, the `hazard`
-                                                                lines of a verdict file counted against the list; writes
+                                                                lines of a verdict file counted against the list, each with
+                                                                a verdict of Q137 (EXERCISED, EXCLUDED, UNOBSERVABLE,
+                                                                FINDING), an EXCLUDED one citing a decision (a D id of
+                                                                .claude/rules/decisions.md, a row of raw/decisions.jsonl, or
+                                                                design.md) and an UNOBSERVABLE one a line of cm6; writes
                                                                 .scratch/conformance/<crate>/hazards-<chunk>[-<groups>].md
     python3 tools/conf_check.py <crate> mutant-probe <unit>|<module>,... --probe <cargo package dir> <mutation dir> ...
                                                                 step 3's gaps (M25): each surviving mutant of the unit's
@@ -936,7 +940,33 @@ def hazards(c, crate, args):
         c.need(not missing, f"`hazard` lines of {os.path.relpath(verdicts, REPO)} for the hazards listed: {len(ids) - len(missing)} of {len(ids)}", missing)
         stray = sorted(i for i in got if i.startswith(tuple(f"{x.rsplit(':h', 1)[0]}:h" for x in ids)) and i not in ids)
         c.need(not stray, "no `hazard` line names a hazard the list does not hold", stray)
+        lines = [json.loads(l) for l in open(verdicts, encoding="utf8").read().split("\n") if l.strip()]
+        mine = [x for x in lines if x.get("kind") == "hazard" and x["id"] in set(ids)]
+        bad = [f"{x['id']}: {x['verdict']}" for x in mine if x["verdict"] not in HAZARD_VERDICTS]
+        c.need(not bad, f"every `hazard` line has a verdict of Q137 ({', '.join(HAZARD_VERDICTS)})", bad)
+        ex = [x["id"] for x in mine if x["verdict"] == "EXCLUDED" and not cites_decision(crate, x["evidence"])]
+        c.need(not ex, "every EXCLUDED `hazard` line cites a decision (a D id, a row of raw/decisions.jsonl, or design.md)", ex)
+        un = [x["id"] for x in mine if x["verdict"] == "UNOBSERVABLE" and not cites_cm6(x["evidence"])]
+        c.need(not un, "every UNOBSERVABLE `hazard` line cites a line of cm6 (mirrors/cm6/... or <file>.ts:<line>)", un)
     c.say(f"written: {os.path.relpath(path, REPO)}")
+
+
+HAZARD_VERDICTS = ("EXERCISED", "EXCLUDED", "UNOBSERVABLE", "FINDING")
+
+
+def cites_decision(crate, text):
+    """Q137: the evidence names a D id of .claude/rules/decisions.md, an existing row id of raw/decisions.jsonl, or design.md."""
+    if not hasattr(cites_decision, "ids"):
+        d = set(re.findall(r"^\| (D\d+) \|", ic.read(os.path.join(REPO, ".claude", "rules", "decisions.md")), re.M))
+        rows = {json.loads(l)["id"] for l in ic.read(os.path.join(REPO, "docs", "parity", crate, "raw", "decisions.jsonl")).split("\n") if l.strip()}
+        cites_decision.ids = (d, rows)
+    d, rows = cites_decision.ids
+    return ("design.md" in text or any(m in d for m in re.findall(r"\bD\d+\b", text))
+            or any(m in rows for m in re.findall(r"\b[\w-]+\.cm6\.\d+\.d\d+\b", text)))
+
+
+def cites_cm6(text):
+    return "mirrors/cm6/" in text or re.search(r"\b[\w.-]+\.ts:\d+", text) is not None
 
 
 def baseline_times(log):
