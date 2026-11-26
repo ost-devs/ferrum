@@ -445,3 +445,15 @@ mechanical conversion settles anyway) or misses cases implementers hit.
 **Lost.** Bounds on the callbacks; a G1 check that excuses a type by a general test (whether any function returns it: constructors do).
 
 **Confidence.** High. **Reopens.** A caller that must build such a type on one thread and use it on another.
+
+## 2026-11-26 · D11 (a) widened to an exhausted stack, and D17: the integer domain
+
+*Decided by the consultant (from Q138 to Q140 of `ferrum-state`; the crate's part: `docs/decisions/ferrum-state.md`, "Q137 to Q140"). Binding text: `.claude/rules/decisions.md` D11, D17.*
+
+**Question.** Three units of `ferrum-state` met the same shape: a `usize` at or above 2^63 cast to a signed type wraps, or a sum of in-domain values overflows, and no decision said which values are Ferrum's to handle. The same verification found that cm6 fails with a JavaScript stack overflow on deep layers, where Ferrum aborts its process.
+
+**D17.** A bound a caller passes that cm6 only compares takes every `usize` and gives cm6's result; every length and position Ferrum holds is at most `isize::MAX`, a construction in memory that would exceed it panics at that construction, and a reader of outside data returns `Err` for a total beyond it; a position cm6 checks against the document keeps D13's panic. *Why.* Rust callers write `usize::MAX` for "to the end", as cm6 callers write `1e9`, and cm6 gives a result for it; a wrap gives a wrong answer that no test of an ordinary document shows (a change filter that blocks nothing, two different sets reported equal). The bound on held values costs nothing a document can reach and is what makes every later cast in range, so the rule asks for a check at the few places that build or read lengths and none elsewhere. The panic at a construction follows the precedent that a precondition fails on the argument that breaks it, not where the data first trigger it. *For the crates above:* `ferrum-view`'s viewport bounds, heights and coordinates, and the LSP and input-method readers of D13, meet the same three cases. *Lost:* a precondition at every bound (a panic where cm6 gives a result, on the commonest call); checked arithmetic everywhere (a cost on every path for values no document reaches).
+
+**D11 (a).** cm6 failing because the engine's stack is exhausted is counted with not terminating: the depth is the engine's (it varied between two runs of the same program), and a Rust stack overflow aborts the process, which D13's protection of the person editing cannot contain. Ferrum gives cm6's result with a stack large enough, which is a reference that runs (`node --stack-size` under `ulimit -s unlimited`), and makes iterative the recursion whose depth grows with a document or data made from it. Recursion over structure a program builds (extension nesting) is left as cm6 has it.
+
+**Confidence.** High. **Reopens.** A bound cm6 uses in arithmetic beyond a comparison; a platform whose largest stack cannot run the reference.
