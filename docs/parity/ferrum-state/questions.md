@@ -2,7 +2,7 @@
 
 Open questions only (`docs/workflow/README.md` §3): a decided entry is removed in the commit that records the decision. Ids are stable and never reused.
 
-The next id is Q139.
+The next id is Q140.
 
 ## Q137. A hazard that cannot arise with Ferrum's types has no verdict in the verifier card
 - **Found.** The card `docs/parity/ferrum-state/cards/verifier.md` (M27) gives a `hazard` line the verdicts `EXERCISED` (with its check) or `FINDING`. The U1 hazards run for `Text` and `Line` wrote 36 of its 84 lines as `UNREACHABLE`: about 30 because the hazard's input is outside what Ferrum's types can express (negative, fractional or NaN positions and line numbers under `usize`, a `dir` other than plus or minus one under `IterDirection`; D12, Q9, N11, `state.cm6.239.d1`; the fixtures that hold such input are left out with reason `type`), and the rest because cm6 itself cannot observe the hazard (`Line` fields `readonly` at `mirrors/cm6/state/src/text.ts:566-574`; `Line.text` aliasing of an immutable string). Example: `state.Line.B1:h1` in `docs/parity/ferrum-state/raw/conformance-text.jsonl`. Where part of such a hazard can be written in Ferrum's types, the run traced that part to compared fixtures.
@@ -17,3 +17,11 @@ The next id is Q139.
 - **Bears on it.** No document can be this long; the input reaches Ferrum only through `from_json`, that is outside data (D13). cm6's own result is past 2^53, so imprecise there too. A release build returns a wrapped `usize` with no error. The same run found ten more sentinel findings of one shape, `as isize` on a `usize` above `isize::MAX` (`raw/conformance-change.jsonl`, kind `sentinel`, `src/change.rs:207`, `:214`, `:244`, `:515`, `:529`, `:617`, `:643`, `:715`, `:718`), as U1's run did at `src/text.rs:1051-1052` (item `state.cm6.240`, NONCONFORMANT): those are findings for the round of step 5, this one is open because the domain of a sum is not stated.
 - **Blocks.** The item verdicts of `state.cm6.149` (`length`) and `state.cm6.150` (`newLength`), `UNVERIFIED` in step 3; nothing before step 5.
 - **Raised by.** The U2 verifier (hazards run), 2026-11-24; queued by the orchestrator.
+
+## Q139. Ferrum aborts on deep layer recursion where cm6 throws an error that can be caught
+- **Found.** Ferrum recurses once per layer in `update_inner` (`crates/ferrum-state/src/rangeset.rs:665-670`), `map` (`:711`), `RangeSetBuilder::finish_inner` (`:1103-1105`) and in the drop of the `Arc<RangeSetInner>` chain (no `Drop` impl); cm6 recurses in `update` (`mirrors/cm6/state/src/rangeset.ts:298-299`), `map` (`:330`), `addRange`, `finishInner`, `size` and `length`. The U3 verifier's probe (`.scratch/verify-rangeset/depth`, n nested ranges `[i, 2n-i]`, one layer each, on the 8 MiB main thread): cm6 under node throws `RangeError` from `update` at 5,000 layers, completes `map` at 5,000, throws from `of` at 10,000; Ferrum's debug build aborts with a stack overflow in `map` at 5,000; its release build completes at 10,000 and aborts at 20,000 (hazard `state.RangeSet.update.B9:h1`, `FINDING`, in `raw/conformance-rangeset.jsonl`).
+- **Open because.** The rows `state.cm6.183.d1`, `state.cm6.184.d1` and `state.cm6.184.d2` and `design.md` settle neither the depth a set may reach nor how a too deep one fails; no check exercises it.
+- **Bears on it.** cm6's failure is an exception a caller can catch; Ferrum's aborts the process. Both fail only at thousands of nested layers, which nested ranges each needing a layer of their own produce. A debug build fails earlier than cm6, a release build later. A spawned Rust thread has a 2 MiB stack by default, so it would fail earlier still (a deduction, not measured).
+- **Blocks.** The verdict of hazard `state.RangeSet.update.B9:h1` at step 5; nothing before.
+- **Raised by.** The U3 verifier (hazards run), 2026-11-26; queued by the orchestrator.
+
