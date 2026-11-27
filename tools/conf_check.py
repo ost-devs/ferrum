@@ -98,6 +98,11 @@
     python3 tools/conf_check.py <crate> recheck-audit <agent id | transcript> [--lines <part.jsonl>]
                                                                 M32: each row's recorded line reached the run only through
                                                                 the reveal that named it
+    python3 tools/conf_check.py <crate> tests                    each ported test's label derived from its `// literal`
+                                                                comments (CHANGED when one marks a decided difference, else
+                                                                EQUIVALENT) against its `test` line; fails on a comment that
+                                                                marks only a D14 default (conformance.md §0); lists the
+                                                                D14 comments that name no default
     (--root <dir>: another tree than the repository, for trying the tool on a copy)
 
 Output files go to .scratch/conformance/<crate>/ (never committed: regenerated from the recorded commit).
@@ -896,6 +901,47 @@ RECHECK_CLASSES = {"C1": {"modules": {"text", "char"}, "named": set()},
                           "named": {("conformance-change.jsonl", 98), ("conformance-change.jsonl", 151)}},
                    "C3": {"modules": {"rangeset"}, "named": set()}}
 RECHECK_UNITS = {"text": "U1", "change": "U2", "rangeset": "U3", "facet": "U4a", "state": "U4b"}
+
+
+def tests(c, crate, args):
+    """Each ported test's label derived from its comments (conformance.md §0, M31, 2026-11-27): `CHANGED` when it holds
+    a `// literal` comment that marks a decided difference, `EQUIVALENT` otherwise, against its `test` line; a comment
+    that marks only an argument cm6 omits and the Rust call writes with cm6's default (D14: its cause names D14 and no
+    other decision, and says the caller writes the default) is no difference and fails, since it labels a test CHANGED."""
+    src = ic.test_sources(crate)
+    fns = {f: {fn["name"]: fn for fn in ic.functions(t)} for f, t in src.items()}
+    def kind(cm):
+        m = re.match(r"//\s*literal\s+(.*)", cm)
+        if not m: return None
+        ids = set(ic.DECISION.findall(m.group(1)))
+        return "default" if ids == {"D14"} and re.search(r"\bdefault\b", m.group(1)) else "D14 only" if ids == {"D14"} else "decided"
+    lines, n_cmp, bad, default, d14, missing, findings = [], 0, [], [], [], [], collections.Counter()
+    for f in sorted(os.listdir(ic.spec(crate, "raw"))):
+        if not re.fullmatch(r"conformance-[\w-]+\.jsonl", f): continue
+        for n, r in enumerate(ic.rows(ic.spec(crate, "raw", f)), 1):
+            if r["kind"] != "test": continue
+            path, _, name = r["id"].partition("::")
+            if not os.path.basename(path).startswith("cm6_"): continue
+            rel = os.path.relpath(os.path.join(REPO, path), ic.crate_dir(crate, "tests"))
+            fn = fns.get(rel, {}).get(name)
+            if fn is None: missing.append(f"{f}:{n} {r['id']}"); continue
+            joined = []  # a comment line that starts no marker continues the one before it
+            for cm in fn["comments"]:
+                if joined and not re.match(r"//\s*(literal|covers:|passes against)", cm) and re.match(r"//\s*literal", joined[-1]): joined[-1] += " " + cm[2:].strip()
+                else: joined.append(cm)
+            kinds = [k for k in map(kind, joined) if k]
+            default += [f"{rel}::{name}: {cm[:130]}" for cm in joined if kind(cm) == "default"]
+            d14 += [f"{rel}::{name}: {cm[:130]}" for cm in joined if kind(cm) == "D14 only"]
+            derived = "CHANGED" if any(k != "default" for k in kinds) else "EQUIVALENT"
+            if r["verdict"] not in ("CHANGED", "EQUIVALENT"): findings[r["verdict"]] += 1; continue
+            n_cmp += 1
+            if derived != r["verdict"]: bad.append(f"{f}:{n} {name}: recorded {r['verdict']}, its comments give {derived}")
+    c.need(not missing, f"every ported test a `test` line names exists: {len(missing)} do not", missing)
+    c.say(f"ported test lines: {n_cmp} labelled EQUIVALENT or CHANGED compared; findings not compared: {dict(findings)}")
+    c.need(not bad, f"each label is the one its `// literal` comments give: {len(bad)} differ", bad)
+    c.need(not default, f"no `// literal` comment marks only a D14 default (no difference, conformance.md §0): {len(default)} do", default)
+    c.say(f"`// literal` comments citing D14 alone that do not say the caller writes a default (a decided difference, counted CHANGED): {len(d14)}")
+    for x in d14: c.say("    " + x)
 
 
 def recheck_lines(c, crate, at=None):
@@ -1754,7 +1800,7 @@ def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ic.ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe, "recheck": recheck, "items": items, "recheck-audit": recheck_audit, "recheck-derive": recheck_derive, "recheck-reveal": recheck_reveal, "recheck-settle": recheck_settle}
+    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe, "recheck": recheck, "items": items, "recheck-audit": recheck_audit, "recheck-derive": recheck_derive, "recheck-reveal": recheck_reveal, "recheck-settle": recheck_settle, "tests": tests}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = ic.Check()
