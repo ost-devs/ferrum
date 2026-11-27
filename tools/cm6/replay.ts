@@ -25,7 +25,7 @@
 //   opsNotInHeader: [ops]      not named in the header of interp.ts (for an op of the language: of program.ts)
 //   evalUse: [files]           eval or Function in a file of the chunk
 //   ops: [{op, kinds, fixtures, behaviors}]   per op that ran: what tools/spec_check.py writes to raw/fixture-ops.jsonl
-import {readFileSync, readdirSync, existsSync} from "node:fs"
+import {readFileSync, readdirSync, existsSync, writeFileSync} from "node:fs"
 import {resolve, join} from "node:path"
 import {pathToFileURL, fileURLToPath} from "node:url"
 import {decode, encode, runIsolated, isolatedMain} from "@harness/lib"
@@ -83,6 +83,8 @@ function replayOne(lang: Language, input: any): One {
 
 const interpPath = (crate: string, chunk: string) => resolve("docs", "parity", crate, "oracle", "cm6", chunk, "interp.ts")
 // REPLAY_FIXTURES=<dir>: the fixture files of that directory (the fresh cases of tools/oracle_fresh.py), not the crate's
+// REPLAY_WRITE=<dir>: also write <dir>/<chunk>.jsonl, every fixture with the output this run gave in place of the
+// recorded one (tools/oracle_patch.py `against`: the outputs of cm6 with a row's patch written in)
 const fixtures = (crate: string, chunk: string): any[] =>
   readFileSync(process.env.REPLAY_FIXTURES ? resolve(process.env.REPLAY_FIXTURES, chunk + ".jsonl") : resolve("docs", "parity", crate, "fixtures", chunk + ".jsonl"), "utf8").split("\n").filter(l => l.trim()).map(l => JSON.parse(l))
 
@@ -103,6 +105,7 @@ async function chunkReport(crate: string, chunk: string) {
     evalUse: readdirSync(dir).filter(f => f.endsWith(".ts") && /\beval\s*\(|\bFunction\s*\(/.test(readFileSync(join(dir, f), "utf8"))),
     thrown: {} as Record<string, string>, ops: [] as any[]}
   const byOp = new Map<string, {fixtures: number, behaviors: Set<string>}>()
+  const written: string[] = []
   for (const fx of fixtures(crate, chunk)) {
     rep.fixtures++
     const limit = fx.output && typeof fx.output == "object" && Object.keys(fx.output).length == 1 && typeof fx.output.timeout == "number" ? fx.output.timeout : null
@@ -113,6 +116,7 @@ async function chunkReport(crate: string, chunk: string) {
       one = "timeout" in r ? {output: r, unread: [], ran: [], thrownAt: null} : r
     }
     if (JSON.stringify(one.output) != JSON.stringify(fx.output)) rep.differ.push(fx.id)
+    if (process.env.REPLAY_WRITE) written.push(JSON.stringify({...fx, output: one.output}))
     if (one.thrownAt != null) rep.thrown[fx.id] = one.thrownAt
     for (const p of one.unread) rep.unread[p] = (rep.unread[p] ?? 0) + 1
     if (one.unread.length) rep.unreadFixtures++
@@ -125,6 +129,7 @@ async function chunkReport(crate: string, chunk: string) {
       e.fixtures++; for (const b of fx.behaviors) e.behaviors.add(b)
     }
   }
+  if (process.env.REPLAY_WRITE) writeFileSync(resolve(process.env.REPLAY_WRITE, chunk + ".jsonl"), written.map(l => l + "\n").join(""))
   rep.ops = [...byOp].sort(([a], [b]) => a < b ? -1 : 1).map(([op, e]) => ({op, kinds: lang.ops.get(op)!.kinds, fixtures: e.fixtures, behaviors: [...e.behaviors].sort()}))
   return rep
 }

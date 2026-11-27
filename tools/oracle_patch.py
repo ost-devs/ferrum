@@ -4,6 +4,8 @@
 
     python3 tools/oracle_patch.py <crate> check [<row id> ...]
     python3 tools/oracle_patch.py <crate> attribute --fresh <dir> [--notes <file>]
+    python3 tools/oracle_patch.py <crate> against [<row id> ...]
+    python3 tools/oracle_patch.py <crate> run <row id> <script.ts> [<arg> ...]
 
 A row's patch is docs/parity/<crate>/oracle/patches/<row id>.patch, a unified diff of the harness's copy of cm6
 (paths `cm6/<package>/src/<file>.ts`). The tool copies the harness's cm6 under .scratch/patches/<crate>/<row id>/,
@@ -14,6 +16,20 @@ the fixtures whose output is not their recorded one are the patch's.
 fails this is not used. A patch writes what Ferrum's output differs in and nothing Ferrum does not hold: where the
 replayer leaves a record out as having no counterpart (an object's identity), the patch keeps cm6's, so a fixture that
 changes only in such records is a patch that writes too much, never an entry for the list (Q149).
+
+`against` (G4, docs/workflow/conformance.md; docs/decisions/method.md "M40" Decision 3): the crate replayed against
+the patched cm6's output of each fixture the row lists. A listed fixture is `none` in the plain replay whatever the
+crate gives (the row states no condition); here its recorded output is the one cm6 gives under the patch, regenerated
+at each run (tools/cm6/replay.ts with REPLAY_WRITE), and it is compared: under .scratch/patches/<crate>/<row id>/against/
+the listed fixtures with those outputs, and a copy of raw/decisions.jsonl in which no row lists them, which the
+replayer reads in place of the committed file (FERRUM_REPLAY_FIXTURES). Each must compare `equal` or `part`; it also
+checks first that the fixtures the patch changes are the row's list, as `check` does. A row that lists no fixture, or
+that states a condition for the replayer (its `decision` holds "Condition for the replayer": the replay compares its
+fixtures already), is printed and skipped.
+
+`run`: a script run under the row's patched cm6 (`@codemirror/<package>` resolves to the patched copy), its output
+printed: the reference of a written test whose expected value is the row's decided one (docs/decisions/method.md,
+"2026-11-27 · M41").
 
 `attribute`: the new cases of <dir> (tools/oracle_fresh.py) replayed under each patch; those that change go on the
 row's list in a copy of raw/decisions.jsonl written to <dir>/decisions.jsonl, which the fresh replay reads in place
@@ -50,9 +66,10 @@ def patched(crate, row):
     return os.path.join(d, "tsconfig.json")
 
 
-def differ(crate, tsconfig, chunks, fixtures_dir=None):
+def differ(crate, tsconfig, chunks, fixtures_dir=None, write_dir=None):
     env = dict(os.environ)
     if fixtures_dir: env["REPLAY_FIXTURES"] = fixtures_dir
+    if write_dir: env["REPLAY_WRITE"] = write_dir
     r = subprocess.run(["npx", "--yes", "tsx", "--tsconfig", tsconfig, "tools/cm6/replay.ts", crate, *chunks],
                        cwd=ROOT, env=env, capture_output=True, text=True, timeout=7200)
     out = set()
@@ -82,6 +99,55 @@ def check(crate, wanted):
               f"only under the patch {sorted(got - want)[:20]}, only in the list {sorted(want - got)[:20]}")
         if not ok: failures.append(row)
     return failures
+
+
+def against(crate, wanted):
+    base = os.path.join(ROOT, "docs", "parity", crate)
+    dec = rows(os.path.join(base, "raw", "decisions.jsonl"))
+    by = {r["id"]: r for r in dec}
+    failures = []
+    for row in wanted or patch_rows(crate):
+        listed = sorted(by[row].get("fixtures") or [])
+        if not listed:
+            print(f"--    {row}: the row lists no fixture"); continue
+        if "Condition for the replayer" in by[row].get("decision", ""):
+            print(f"--    {row}: the row states a condition for the replayer, which compares its fixtures (G4 compares the rows that state none)"); continue
+        chunks = sorted({f.split(":")[0] for f in listed})
+        ts = patched(crate, row); d = os.path.dirname(ts)
+        outs, fxdir = os.path.join(d, "outputs"), os.path.join(d, "against")
+        os.makedirs(outs); os.makedirs(fxdir)
+        got = differ(crate, ts, chunks, write_dir=outs)
+        if got != set(listed):
+            print(f"FAIL  {row}: the patch changes {sorted(got)[:20]}, the row lists {listed[:20]}: not compared (run `check`)")
+            failures.append(row); continue
+        for c in chunks:
+            ids = {f.split(":")[1] for f in listed if f.startswith(c + ":")}
+            with open(os.path.join(outs, c + ".jsonl"), encoding="utf-8") as f:
+                keep = [l for l in f.read().split("\n") if l.strip() and json.loads(l)["id"] in ids]
+            with open(os.path.join(fxdir, c + ".jsonl"), "w", encoding="utf-8") as f: f.write("".join(l + "\n" for l in keep))
+        with open(os.path.join(fxdir, "decisions.jsonl"), "w", encoding="utf-8") as f:
+            for r in dec:
+                if r.get("fixtures"): r = dict(r, fixtures=[x for x in r["fixtures"] if x not in listed])
+                f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        env = dict(os.environ, FERRUM_REPLAY_FIXTURES=os.path.relpath(fxdir, ROOT), FERRUM_REPLAY_CHUNKS=",".join(chunks))
+        env.pop("FERRUM_REPLAY_WRITE_NO_COUNTERPART", None)
+        t = subprocess.run(["cargo", "test", "-q", "-p", crate, "--features", "__test", "--test", "replay"], cwd=ROOT,
+                           env=env, capture_output=True, text=True, timeout=7200)
+        notes = {f"{m.group(1)}:{m.group(2)}": m.group(3) for m in re.finditer(r"^(\w+) (F\d+): (ours .*)$", t.stdout + t.stderr, re.M)}
+        report = os.path.join(ROOT, "target", "replay", crate, "report.jsonl")
+        res = {f"{r['chunk']}:{r['fixture']}": r["result"] for r in rows(report) if "fixture" in r} if os.path.exists(report) else {}
+        results = {f: res.get(f, "absent") for f in listed}
+        bad = [f for f, v in results.items() if v not in ("equal", "part")]
+        counts = {v: sum(1 for x in results.values() if x == v) for v in sorted(set(results.values()))}
+        print(f"{'ok   ' if not bad else 'FAIL '} {row}: {len(listed)} listed fixtures against the patched cm6: {counts}")
+        for f in bad: print(f"        {f} {results[f]}: {notes.get(f, '')[:400]}")
+        if bad: failures.append(row)
+    return failures
+
+
+def run_script(crate, row, script, args):
+    ts = patched(crate, row)
+    return subprocess.run(["npx", "--yes", "tsx", "--tsconfig", ts, script, *args], cwd=ROOT).returncode
 
 
 def non_ascii_change(program):
@@ -146,6 +212,11 @@ def main():
     if cmd == "check":
         f = check(crate, a[2:])
         print("\nchecks passed" if not f else f"\n{len(f)} check(s) failed: {f}"); return 1 if f else 0
+    if cmd == "against":
+        f = against(crate, a[2:])
+        print("\nchecks passed" if not f else f"\n{len(f)} check(s) failed: {f}"); return 1 if f else 0
+    if cmd == "run" and len(a) >= 4:
+        return run_script(crate, a[2], a[3], a[4:])
     if cmd == "attribute":
         attribute(crate, os.path.abspath(a[a.index("--fresh") + 1]), a[a.index("--notes") + 1] if "--notes" in a else None); return 0
     print(__doc__); return 2

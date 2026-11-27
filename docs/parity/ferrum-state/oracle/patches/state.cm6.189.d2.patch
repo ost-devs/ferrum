@@ -1,0 +1,11 @@
+--- cm6/state/src/rangeset.ts
++++ cm6/state/src/rangeset.ts
+@@ -815,7 +815,7 @@
+         this.removeActive(a)
+         if (trackOpen) remove(trackOpen, a)
+       } else if (!this.cursor.value) {
+-        this.to = this.endSide = C.Far
++        this.to = Infinity; this.endSide = C.Far
+         break
+       } else if (this.cursor.from > from) {
+         this.to = this.cursor.from
