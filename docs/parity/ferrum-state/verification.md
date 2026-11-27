@@ -523,3 +523,22 @@ checks passed
 ```
 
 Not `agree`: `raw/conformance-text.jsonl:212` `state.Text.iterRange.B2:h1` overturn low (recorded `EXERCISED`; bounds above the length take every `usize` by D17, cm6 only compares them, `mirrors/cm6/state/src/text.ts:480-503`, and Ferrum casts them `as isize` at `src/text.rs:1051-1052`, so `iter_range(0, usize::MAX)`, `(0, isize::MAX + 1)`, `(10, usize::MAX)` and `(usize::MAX, 0)` yield nothing where cm6 yields the range cut to the document; the compared fixtures go to 100; probe `.scratch/recheck-U1-a2/probe`; the recorded evidence names the cast as the file's sentinel finding, `conformance/lists.md:227-228`, and says no compared fixture runs a reverse range from past the end, where F1518, `iterRange(100, 15)`, is one). The four derivations the reveal corrected (`:173`, `:177`, `:228` under D11 (b) and `state.cm6.229.d1`; `:197` under D1) were `EXCLUDED` where step 3 wrote `EXERCISED` by a written test asserting the decided result (`written_text.rs::text_of_copies_its_input`, `text_children_are_the_same_nodes_on_every_call`, `text_slice_inside_a_character_panics`, each re-run and passing): Q145. `:173` cites `src/text.rs:448` and `:450` for `:447` and `:449`.
+
+### U1, part b: 13 hazard, 4 branch and 1 behavior lines (rechecker, 2026-11-27)
+
+159,409 tokens against 120,000 (1.33; the per-line part 109,409 against 69,660, 1.57: the run compared every Unicode code point's word category between Rust 1.97, Unicode 17.0.0, and Node 22.23.5, Unicode 17.0, 149,107 word code points equal, for `:284`). `recheck-audit` shows all 18 rows first seen through their reveal.
+
+```
+lines 1627; pool 1253 (findings, item lines and replayer:core left out); by kind {'test': 197, 'hazard': 681, 'panic': 36, 'sentinel': 152, 'branch': 38, 'mutant': 39, 'shared': 108, 'line': 1, 'behavior': 1}
+order shown: tool 18; derivations the reveal corrected (derived differs, outcome agree): 1
+all: 18 rows; behavior agree 1, branch agree 3, branch overturn 1, hazard agree 12, hazard overturn 1
+run 50edba7 conformance(ferrum-state): step 3, the rest of U1 stopped at its stop line; M27: 4 rows; branch agree 3, branch overturn 1
+run 7efee43 conformance(ferrum-state): step 3, the verifier of U1 text; Q136, M25, M26: 1 rows; behavior agree 1
+run ccacc71 conformance(ferrum-state): step 3, U1 hazards of the other groups and the lines after Q136; U1 done: 13 rows; hazard agree 12, hazard overturn 1
+the six runs of M28: 13 rows; hazard agree 12, hazard overturn 1
+hazard, panic, shared, sentinel of runs above 200,000 (M28 runs apart): 0 rows; 
+hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart): 0 rows; 
+checks passed
+```
+
+Not `agree`: `raw/conformance-text.jsonl:157` branch `src/text.rs:744:16` overturn low (recorded `UNREACHABLE`; a raw cursor passes an empty line without yielding a value, so `Text::of(["x", "", "yz"]) == Text::of(["x", "y", "z"])`, both of length 5 and 3 lines, reaches `a.line_break != b.line_break` true at the third step; the result is the same as the value comparison would give, and no check runs that input; probe `.scratch/recheck-U1-b/probe`). `:251` hazard `state.findClusterBreak.B4:h2` overturn low (recorded `EXERCISED` by `find_cluster_break_inside_a_character_panics`, which passes and asserts D1's panic, not cm6's repair of a position inside a character: `EXCLUDED` by D1, `assert_char_boundary` at `src/char.rs:198`; the same split as Q145). The one corrected derivation, `:284` `state.CharCategory.B2:h1`, asked for a suite test comparing Unicode data where `state.cm6.166.d1` makes it a comparison at conformance. Notes in `settled`: `:1` the re-checker's repro has a wrong byte `to`; `:155` cm6 clips `from` too (`mirrors/cm6/state/src/text.ts:212`); `:250` the same verdict by the forward walks; `:297` the recorded line cites a written test the re-checker had not found. The hook refused a recursive `grep` from `crates/ferrum-state` and from `conformance/`, and a `cd` into `raw/`; the re-checker read `raw/decisions.jsonl` by its path, which the hook allows.
