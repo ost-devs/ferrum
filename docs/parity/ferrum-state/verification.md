@@ -639,3 +639,32 @@ checks passed
 ```
 
 All agree. Two derivations the reveal corrected, each shown wrong by the re-checker's own re-run: `raw/conformance-rangeset.jsonl:327` branch `src/rangeset.rs:1609:69` (derived `FINDING`; the probe's mark `[0,10]` with sides 1 and -1 and point `[5,10]` with -1 and 1 through `RangeSet::spans` leave the mark out, but `SpanCursor::forward`, `src/rangeset.rs:1498-1505`, cm6 `rangeset.ts:777-779`, removes it before `active_for_point` runs, so the outcome at `:1609` is not reached: `UNREACHABLE` stands); `:210` sentinel `src/rangeset.rs:867` (derived `FINDING`; `spans` with `to = usize::MAX` over a point `[0,3]` and a mark `[5,8]` reports `point(0, 18446744073709551615, p)` and returns 1 at once, where `to = 999_999_999` gives the point at `(0,3)`, three spans and 0; the wrap is the cast at `:849`, step 3's finding at `:203`, and `:867` gives back the caller's own bits: `SAFE` stands). Probe `.scratch/recheck-U3/probe`.
+
+### U2, redone: 14 hazard, 6 test, 3 mutant, 3 sentinel, 1 branch and 1 panic lines (rechecker, 2026-11-27)
+
+The lines of U2's pilot whose agreements showed no order (M32; those rows are in `raw/recheck-not-blind.jsonl`). 162,597 tokens against 163,500 (0.99), one attempt cut once by the usage limit and resumed with `SendMessage`. `recheck-audit` shows all 28 rows first seen through their reveal.
+
+```
+lines 1627; pool 1253 (findings, item lines and replayer:core left out); by kind {'test': 197, 'hazard': 681, 'panic': 36, 'sentinel': 152, 'branch': 38, 'mutant': 39, 'shared': 108, 'line': 1, 'behavior': 1}
+order shown: tool 28; derivations the reveal corrected (derived differs, outcome agree): 1
+all: 28 rows; branch overturn 1, hazard agree 14, mutant agree 2, mutant overturn 1, panic agree 1, sentinel agree 3, test agree 6
+run 1d41c6e conformance(ferrum-state): step 3, U2 hazards of ChangeDesc, ChangeSet, MapMode, ChangeSpec done; Q138: 6 rows; hazard agree 3, sentinel agree 3
+run 3b061c5 conformance(ferrum-state): step 3, U2 tests run: 6 rows; test agree 6
+run 60726ac conformance(ferrum-state): step 3, U2 hazards run stopped at the usage limit, 13 lines kept: 4 rows; hazard agree 4
+run bb051c6 conformance(ferrum-state): step 3, U2 gaps of change.rs: 3 rows; branch overturn 1, mutant agree 1, mutant overturn 1
+run d35c6e3 conformance(ferrum-state): step 3, U2 gaps of selection.rs; U2 done; M28: 1 rows; mutant agree 1
+run eb1e4d9 conformance(ferrum-state): step 3, U2 hazards of EditorSelection and SelectionRange done; U2 hazards complete: 8 rows; hazard agree 7, panic agree 1
+the six runs of M28: 12 rows; branch overturn 1, hazard agree 7, mutant agree 2, mutant overturn 1, panic agree 1
+hazard, panic, shared, sentinel of runs above 200,000 (M28 runs apart): 6 rows; hazard agree 3, sentinel agree 3
+hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart): 4 rows; hazard agree 4
+checks passed
+```
+
+26 agree, 2 overturns, both low, both in `SectionIter::text_bit` (`src/change.rs:1067`), and both on step 3's claim that every builder stores the text of an insertion section:
+
+- `raw/conformance-change.jsonl:261`, mutant `src/change.rs:1067:50` (`&&` to `||`): recorded `EQUIVALENT MUTANT`, re-checked `FINDING`. `invert` on a shorter document stores an empty text for an insertion, and `map` drops it (`add_insert` skips empty values, as cm6's `addInsert` does). With `inv = of([{from:2,to:4,insert:"abc"}],6).invert(Text::of(["ab"]))`, `m = inv.map(of([{from:0,insert:"z"}],7), false)` and `m.compose(of([{from:7,insert:"q"}], m.new_length()))`, the crate panics (index out of bounds; cm6 throws a TypeError on `inserted[1].slice`, `change.ts:557-558`, read and not run in the harness), and the mutant returns `[3,[3,""],2,[0,"q"]]` (`mutant-probe change --probe .scratch/recheck-U2-r/probe`). No check forbids it.
+- `:250`, branch `src/change.rs:1067:12` (`index >= self.inserted.len()` never true): recorded `UNREACHABLE`, re-checked `FINDING`; the same input reaches it, and no check runs it.
+
+One derivation the reveal corrected: `:54`, test `test_cm6_selection_02` (derived `EQUIVALENT`; a cm6 default written out under a `// literal` comment is a difference of argument, so `CHANGED` stands).
+
+Beyond the part, for the consultant: the same probe shows mutant `src/change.rs:1067:57` (`:262`, recorded `EQUIVALENT MUTANT`) differing on that input; the hazard line `state.ChangeSet.B1:h1` (`:98`) and the sentinel `src/change.rs:1070` (`:151`) rest on the same claim; `ChangeSet::of` casts `length: usize` with `as isize` and no D17 check (`src/change.rs:514`): `ChangeSet::of(ChangeSpec::List(vec![]), usize::MAX, None)` returns a set of length 0 and new length 0 (run by the orchestrator in a probe on the crate at 290e411); `test_cm6_change_32` writes `map(&set0, false)`, a cm6 default, with no `// literal` comment, while its recorded `EQUIVALENT` and line 54's `CHANGED` read the same kind of difference differently.
