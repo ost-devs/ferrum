@@ -2,7 +2,7 @@
 // fixtures/facet.jsonl stores the `input` this module ran; `run(input)` rebuilds the cm6 values from it and returns the
 // output written beside it ({"ok": value} or {"error": {name, message}}, tools/cm6/program.ts). A Rust replayer
 // mirrors this file op by op. The generators (order.json: s2-fixtures.ts, s2-generator.ts, gapfill-field-require.ts,
-// s4-tags.ts, s4-fix5.ts, s4-fix6.ts, impl-state.ts) only build inputs; this file is the one place where cm6 is called.
+// s4-tags.ts, s4-fix5.ts, s4-fix6.ts, impl-state.ts, round-c.ts) only build inputs; this file is the one place where cm6 is called.
 //
 // An input is a program or a bare expression of tools/cm6/program.ts. Setup: none read from the input; before the
 // steps run, a fresh Scope (below) is created for the run, and every op names facets, fields, compartments, effects

@@ -1,5 +1,5 @@
 // Shared by the generators of chunk `facet` (order.json: s2-fixtures.ts, s2-generator.ts, gapfill-field-require.ts,
-// s4-tags.ts, s4-fix5.ts, s4-fix6.ts, impl-state.ts): inventory ids by item name, the fixture writer and builders of inputs in the
+// s4-tags.ts, s4-fix5.ts, s4-fix6.ts, impl-state.ts, round-c.ts): inventory ids by item name, the fixture writer and builders of inputs in the
 // language of tools/cm6/program.ts, whose ops interp.ts documents in its header. Each fixture's output is `run` of
 // the input exactly as the file stores it.
 import {readFileSync, writeFileSync} from "node:fs"

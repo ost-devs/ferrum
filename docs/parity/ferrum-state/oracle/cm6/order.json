@@ -3,8 +3,8 @@
   "chunks": {
     "text": ["probe-char.ts", "probe-column.ts", "probe-category.ts", "probe-text.ts", "probe-text2.ts", "gen-char.ts", "gen-column.ts", "gen-category.ts", "gen-text.ts", "probe-tests.ts", "probe-gapfill.ts", "s4-tags.ts", "s4-fix5.ts", "s4-fix6.ts", "b-coverage.ts", "round-c.ts"],
     "change": ["s2-fixtures.ts", "s2-generator.ts", "gapfill-mapset.ts", "s4-fix.ts", "s4-tags.ts", "s4-m7.ts", "s4-fix5.ts", "b-coverage.ts", "round-c.ts"],
-    "facet": ["s2-fixtures.ts", "s2-generator.ts", "gapfill-field-require.ts", "s4-tags.ts", "s4-fix5.ts", "s4-fix6.ts", "impl-state.ts"],
-    "state": ["s2-run.ts", "s4-fix.ts", "s4-tags.ts", "s4-m7.ts", "s4-fix4.ts", "s4-fix5.ts", "s4-fix6.ts", "s4-fix7.ts", "impl-change.ts"],
+    "facet": ["s2-fixtures.ts", "s2-generator.ts", "gapfill-field-require.ts", "s4-tags.ts", "s4-fix5.ts", "s4-fix6.ts", "impl-state.ts", "round-c.ts"],
+    "state": ["s2-run.ts", "s4-fix.ts", "s4-tags.ts", "s4-m7.ts", "s4-fix4.ts", "s4-fix5.ts", "s4-fix6.ts", "s4-fix7.ts", "impl-change.ts", "round-c-f3.ts"],
     "rangeset": ["fixtures.ts", "random.ts", "s4-tags.ts", "s4-fix5.ts", "b-coverage.ts", "round-c.ts"]
   }
 }
