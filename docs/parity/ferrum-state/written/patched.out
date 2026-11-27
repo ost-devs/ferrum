@@ -1,0 +1,15 @@
+eq equal [1,5] to 999999999 => true
+eq equal [1,5] to 1000000000 => true
+eq equal [1,5] to 2000000000 => true
+eq equal [1,5] to 9223372036854776000 => true
+eq equal [1,5] to 18446744073709552000 => true
+eq differing to 999999999 => false
+eq differing to 1000000000 => false
+eq differing to 2000000000 => false
+eq differing to 18446744073709552000 => false
+eq unequal values [1,5] to 2^64 => true
+spans [1,5] 0 999999999 => {"spans":[["span",0,1,[],0],["span",1,5,["one"],0],["span",5,999999999,[],0]],"open":0}
+spans [1,5] 0 1000000000 => {"spans":[["span",0,1,[],0],["span",1,5,["one"],0],["span",5,1000000000,[],0]],"open":0}
+spans [1,5] 0 2000000000 => {"spans":[["span",0,1,[],0],["span",1,5,["one"],0],["span",5,2000000000,[],0]],"open":0}
+spans [1,5] 0 18446744073709552000 => {"spans":[["span",0,1,[],0],["span",1,5,["one"],0],["span",5,18446744073709552000,[],0]],"open":0}
+spans [1,5] 9223372036854776000 18446744073709552000 => {"spans":[["span",9223372036854776000,18446744073709552000,[],0]],"open":0}

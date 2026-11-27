@@ -3,7 +3,8 @@
 //! `state.cm6.216.d1`, `state.cm6.229.d1`); a position that is not on a `char` boundary panics in every function of
 //! the unit that takes one (D1); every panic of Ferrum's own with its message of `design.md` section 5, "Panics of
 //! Ferrum's own", compared whole; the `IntoIterator` of `&Text` and of `TextIterator` (N8); `Text::is_char_boundary`;
-//! the unit's public value types are `Send + Sync` (D6).
+//! the unit's public value types are `Send + Sync` (D6); D17's bounds, with the values of
+//! `docs/parity/ferrum-state/written/values.ts` (each test names the label of its output line in `values.out`).
 //!
 //! Positions are bytes (D1); every expected position is computed from the text beside it. A panic is asserted with a
 //! message other than the one of `todo!()`, so that no test passes while its function is unwritten.
@@ -368,4 +369,47 @@ fn a_line_is_empty_when_its_length_is_zero() {
     assert!(doc.line(1).is_empty());
     assert!(!doc.line(2).is_empty());
     assert_eq!(doc.line(2).len(), "é".len());
+}
+
+// ---- D17's bounds --------------------------------------------------------------------------------------------------
+
+// covers: state.Text.iterRange.B2, D17
+// `conformance-text.jsonl:133`: a bound beyond the end is not clipped, and at or above 2^63 it still compares greater
+// than every position (D17)
+#[test]
+fn text_iter_range_takes_a_bound_beyond_every_position() {
+    let doc = Text::of(&["one", "two"]);
+    // values.out "iterRange 0 2^63", "iterRange 0 2^64", "iterRange 2^64 0"
+    assert_eq!(drained(doc.iter_range(0, 1 << 63)), ["one", "\n", "two"]);
+    assert_eq!(drained(doc.iter_range(0, usize::MAX)), ["one", "\n", "two"]);
+    assert_eq!(drained(doc.iter_range(usize::MAX, 0)), ["two", "\n", "one"]);
+}
+
+/// The message of `design.md` section 5 for a column above `isize::MAX` (`state.cm6.216.d2`).
+const COLUMN_TOO_LARGE: &str = "A column cannot be larger than isize::MAX";
+
+// covers: state.cm6.216.d2, state.countColumn.B6, state.findColumn.B7
+// `conformance-text.jsonl:275`: cm6 returns about 3.69e19 (values.out "countColumn tabs 2^64-1 2"), a column no usize
+// holds within D17's bound, so `count_column` panics; `find_column` only compares its column with `col` and gives cm6's
+// result
+#[test]
+fn a_column_beyond_isize_max() {
+    assert_eq!(
+        panics(|| {
+            count_column("\t\t", usize::MAX, 2);
+        }),
+        COLUMN_TOO_LARGE
+    );
+    assert_eq!(
+        panics(|| {
+            count_column("\t", usize::MAX, 1);
+        }),
+        COLUMN_TOO_LARGE
+    );
+    // values.out "findColumn tabs x 2^64-1 2^64-1", "findColumn tabs x 3 2^64-1", "findColumn tabs x 2^64-1 4",
+    // "findColumn tabs x 2^64-1 4 strict" (the string is ASCII: offsets are the same in both units)
+    assert_eq!(find_column("\t\tx", usize::MAX, usize::MAX), 1);
+    assert_eq!(find_column("\t\tx", 3, usize::MAX), 1);
+    assert_eq!(find_column("\t\tx", usize::MAX, 4), 3);
+    assert_eq!(try_find_column("\t\tx", usize::MAX, 4), None);
 }

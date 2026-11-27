@@ -429,3 +429,10 @@ Conformance step 5 (d) W1a (`docs/parity/ferrum-state/plan.md` "Conformance", st
 - `crates/ferrum-state/tests/replay/rules.rs`
 - `crates/ferrum-state/benches/g8.rs`
 - `docs/parity/ferrum-state/bench/g8.ts`
+
+Conformance step 5 (d) W1b (`docs/parity/ferrum-state/plan.md` "Conformance", step 5 (d); the written tests run W1 left, `cards/test-writer.md` "Conformance step 5 (d), run W1b"). Written tests of units `text`, `change` and `rangeset` for D17's bounds, `state.cm6.160.d1` as amended (integral floats and totals in the JSON readers), `state.cm6.181.d1` (20,000 layers on a 2 MiB stack, in a child process so that a stack overflow fails that test alone), `state.cm6.189.d2` and `state.cm6.190.d2` (on a thread with a 5 s timeout), `state.cm6.216.d2`; the four `WEAKER` tests of `written_change.rs` (`conformance-change.jsonl:1`, `:2`, `:4`, `:6`) narrowed, their doc comments naming the compared fixtures that assert the rest. Expected values from the cm6 scripts committed in `docs/parity/ferrum-state/written/` (`values.ts`, `layers.ts`, `patched.ts`, with their outputs). The benches write `bench/rust.jsonl` and `bench/cm6.jsonl` only for a whole run (every entry at the three sizes), any other run `target/g8/<side>-partial.jsonl`. Files:
+- `crates/ferrum-state/tests/written_text.rs`
+- `crates/ferrum-state/tests/written_change.rs`
+- `crates/ferrum-state/tests/written_rangeset.rs`
+- `crates/ferrum-state/benches/g8.rs`
+- `docs/parity/ferrum-state/bench/g8.ts`

@@ -5,13 +5,15 @@
 // Run from the repository root:
 //   npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/bench/g8.ts --size n
 // Arguments: --size n|10n|100n (repeatable; default all three), --entry <prefix>. Output: one JSON line per entry
-// and size in docs/parity/ferrum-state/bench/cm6.jsonl, truncated at the start of a run.
+// and size, in a file truncated at the start of a run: docs/parity/ferrum-state/bench/cm6.jsonl, the timed record of
+// step 2, only for a run of every entry at the three sizes; any other run (--entry, or fewer than the three sizes)
+// writes target/g8/cm6-partial.jsonl and never the record.
 //
 // Timing: an entry is run in batches of k operations, k doubled until a batch takes 1 ms (or its inputs take 50 ms
 // to build); batches repeat until 200 ms of wall time have passed and at least 5 ran; the median time per operation
 // is kept.
 
-import {writeFileSync, appendFileSync} from "node:fs"
+import {writeFileSync, appendFileSync, mkdirSync} from "node:fs"
 import {dirname, resolve, join} from "node:path"
 import {
   findClusterBreak, codePointAt, codePointSize, countColumn, findColumn, Text, ChangeSet, ChangeDesc, MapMode,
@@ -507,7 +509,12 @@ for (let i = 0; i < args.length; i++) {
   }
 }
 if (!sizes.length) sizes.push("n", "10n", "100n")
-const out = join(dirname(resolve(process.argv[1])), "cm6.jsonl")
+// only a whole run replaces the timed record of step 2; a partial one goes under target/
+const whole = prefix == "" && ["n", "10n", "100n"].every(s => sizes.includes(s))
+const bench = dirname(resolve(process.argv[1]))
+const partial = resolve(bench, "../../../../target/g8")
+if (!whole) mkdirSync(partial, {recursive: true})
+const out = whole ? join(bench, "cm6.jsonl") : join(partial, "cm6-partial.jsonl")
 writeFileSync(out, "")
 for (const size of sizes) {
   const factor = size == "n" ? 1 : size == "10n" ? 10 : 100

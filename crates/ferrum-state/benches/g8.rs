@@ -8,7 +8,9 @@
 //! Timing: an entry is run in batches of k operations, k doubled until a batch takes 1 ms (or its inputs take 50 ms
 //! to build); batches repeat until 200 ms of wall time have passed and at least 5 ran; the median time per operation
 //! is kept. Arguments: `--size n|10n|100n` (repeatable; default all three), `--entry <prefix>`. Output: one JSON line
-//! per entry and size in `docs/parity/ferrum-state/bench/rust.jsonl`, truncated at the start of a run.
+//! per entry and size, in a file truncated at the start of a run: `docs/parity/ferrum-state/bench/rust.jsonl`, the
+//! timed record of step 2, only for a run of every entry at the three sizes; any other run (`--entry`, or fewer than
+//! the three sizes) writes `target/g8/rust-partial.jsonl` and never the record.
 
 use std::hint::black_box as bb;
 use std::io::Write;
@@ -1250,8 +1252,16 @@ fn main() {
     if sizes.is_empty() {
         sizes = vec!["n", "10n", "100n"];
     }
-    let path = concat!(env!("CARGO_MANIFEST_DIR"), "/../../docs/parity/ferrum-state/bench/rust.jsonl");
-    let mut out = std::fs::File::create(path).expect("bench/rust.jsonl");
+    // only a whole run replaces the timed record of step 2; a partial one goes under target/
+    let whole = prefix.is_empty() && ["n", "10n", "100n"].iter().all(|s| sizes.contains(s));
+    let root = concat!(env!("CARGO_MANIFEST_DIR"), "/../..");
+    let path = if whole {
+        format!("{root}/docs/parity/ferrum-state/bench/rust.jsonl")
+    } else {
+        std::fs::create_dir_all(format!("{root}/target/g8")).expect("target/g8");
+        format!("{root}/target/g8/rust-partial.jsonl")
+    };
+    let mut out = std::fs::File::create(&path).expect(&path);
     for size in sizes {
         let factor = match size {
             "n" => 1,
@@ -1268,7 +1278,7 @@ fn main() {
                 e.name, e.item
             );
             eprintln!("{line}");
-            writeln!(out, "{line}").expect("write bench/rust.jsonl");
+            writeln!(out, "{line}").expect(&path);
         }
     }
 }

@@ -1,0 +1,3 @@
+built {"size":20000,"iterated":20000,"sumFrom":199990000,"sumTo":600010000,"first":[0,40000],"last":[19999,20001]}
+updated {"size":10001,"iterated":10001,"sumFrom":100010000,"sumTo":300030001,"first":[0,40000],"last":[20000,20001]}
+mapped {"size":20000,"iterated":20000,"sumFrom":200010000,"sumTo":599830045,"first":[1,39991],"last":[20000,20001]}
