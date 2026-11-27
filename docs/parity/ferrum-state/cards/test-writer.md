@@ -443,3 +443,47 @@ The consultant decided Q120 and corrected a line of the sort (`docs/decisions/fe
 **Commit** alone, with explicit paths, on the current branch, without pushing: `git add crates/ferrum-state/benches docs/parity/ferrum-state/bench` then `git commit -m 'bench(ferrum-state): the benchmarks of G8' -- crates/ferrum-state/benches docs/parity/ferrum-state/bench`.
 
 **Report:** the check's output, whole; the counts (entries, items, the sort by class); any item you could not give an entry, with why; the questions; then the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Conformance step 5 (d), run W1: the written tests and the replayer's changes of units `text`, `change` and `rangeset`
+
+**The step** is `docs/parity/ferrum-state/plan.md` "Conformance", step 5 (d), run W1, the first of two. Step 5 found defects and gaps in the crate's checks (the lines of `docs/parity/ferrum-state/raw/conformance-<chunk>.jsonl`); (c) wrote fixtures from cm6 runs for those a chunk's program can express. You write the rest as tests, for units `text`, `change` (with selection) and `rangeset`, and the replayer's changes. W2 does units `facet` and `state` after you. (e)'s implementer then changes the code until the checks pass, so **a test of yours may fail at the current code**: that is the point when the row says Ferrum must change. Never weaken a test so that it passes. You do not read `crates/ferrum-state/src/` beyond signatures and doc comments (the `test-writer` rule).
+
+**Values.** Where cm6 has a counterpart, each expected value comes from a cm6 run in the harness (`npx tsx --tsconfig .harness/state/tsconfig.json <script>`, the script under `.scratch/conformance/ferrum-state/w1/`), and the test's comment names the run. Where cm6 has none, the value is the row's decided one (`raw/decisions.jsonl`, `design.md` §5 for a message, compared whole).
+
+**The inputs.** Each item gives the line (`raw/conformance-<chunk>.jsonl:<n>`, read its `evidence` and `repro`) or the decision row it comes from.
+1. *Integral floats in the JSON readers* (`conformance-change.jsonl:249`, `src/change.rs:779:18`): `ChangeDesc::from_json` and `ChangeSet::from_json` given JSON text with `5.0`, `3e0`, and 2^53 written as a float. Below 2^53 they read the integer cm6 reads from the same text (values from a cm6 run of `JSON.parse` then `fromJSON`); 2^53 gives the `Err` of the domain's bound (D12, D13, `.claude/rules/decisions.md`). No fixture can carry a float, which is why this is a test.
+2. *D17's bounds* (D17, `.claude/rules/decisions.md`; the messages in `design.md` §5, the rows "a text built in memory whose length would exceed `isize::MAX`" and "a change description built in memory ..."). Tests with `usize::MAX`, 2^63 and the values of `state.cm6.189.d2` (`RangeSet::eq` with `to` at or above 1e9 returns) and `state.cm6.190.d2` (`RangeSet::spans`, the same), at the sites (e) changes: `src/change.rs` totals, `ChangeSet::of` (`:514`), `src/text.rs:608`, `:650`, `:1051`–`:1052`, the `RangeSet` sentinels. The lines that name these sites: `conformance-change.jsonl:116`, `:117`, `:120`, `:124`, `:127`, `:130`, `:131`, `:134`, `:217`, `:218`; `conformance-rangeset.jsonl:59`, `:121`, `:159`, `:182`–`:204`, `:220`–`:228`, `:237`; `conformance-text.jsonl:133`, `:275`. Read each one's evidence; a line whose evidence names another step (a fixture of (c), an (e)-only change with no input a test can give) is left, and listed in the report with that reason.
+3. *`state.cm6.181.d1`*: the 20,000 layers on a thread of 2 MiB (`std::thread::Builder::stack_size`): built, updated, mapped, sized and dropped (the row's text; `conformance-rangeset.jsonl:98`). cm6 recurses there; the row decides that Ferrum does not.
+4. *`state.cm6.216.d2`*: `count_column("\t\t", usize::MAX, 2)` panics with the message of `design.md` §5; and `find_column` with `usize::MAX` (the row's text gives the value).
+5. *The four `WEAKER` tests of `written_change.rs`* (`conformance-change.jsonl:1`, `:2`, `:4`, `:6`): each line says what the test leaves unasserted; give it the missing assertions, with values from runs, or narrow it to what it asserts where a compared fixture asserts the rest (name the fixture).
+6. *The ops (c) added, registered in the replayer with their comparison:*
+   - `text.sharedNodes {doc, in}` of chunk `text` (F4b, commit 6d42d39), by its row of `raw/replay.jsonl` (`how` `test`, compared by `__test::same_text` with the walk of its header line in `oracle/cm6/text/interp.ts`). It makes the 45 `pending` fixtures of F7700–F7747 compare: at the current code each is expected `equal` or `part`. A mismatch is reported with its fixture and output, never absorbed in the replayer. The walk runs on documents of 33,000 lines: the replay test's time stays near its current 9 s (report it).
+   - `set.invertMapCompose` of chunk `change` (F1, fixtures `F8018`, `F8019`), by its row of `raw/replay.jsonl`: a captured `TypeError` read by `design.md` §10 "Engine errors". The plan says it compares once (e) writes the panic of `design.md` §5 for a change set with no text for an insertion (Q152). Report each fixture's result at the current code.
+7. *The replayer's findings* `conformance-text.jsonl:162` (a listed fixture whose program ends in `Outcome::Stop` before its row's condition is checked) and `:163` (`Value::Host` encodings not passed through `encode`'s own walk), and the two predicates of Q136 (`docs/decisions/ferrum-state.md`, "What Q136 asks of the replayer, found while deciding it": `double_skip`, `tests/replay/text/cursor.rs:202`, and the model checks' `steps`, `tests/replay/text/checks.rs:120`): each made what its row's sentence says (`design.md` §10), with a literal test in `tests/replay/rules.rs`.
+8. *Q154's change to the replayer:* when the directory `FERRUM_REPLAY_FIXTURES` names holds a `decisions.jsonl`, the replayer reads it in place of `raw/decisions.jsonl` (the driver reads only the committed file now, `tests/replay/driver.rs:153` and `:605`), with a literal test in `tests/replay/rules.rs`.
+9. *G8's two pairs, both sides* (Q144, `docs/decisions/ferrum-state.md` "Q144. G8's two entries"): `ChangeDesc::to_json` then `serde_json::to_string` against `toJSON` then `JSON.stringify`; and `long.replace` followed by reading the edited line. In `crates/ferrum-state/benches/g8.rs` and `docs/parity/ferrum-state/bench/g8.ts`, the entries' names and inputs equal on the two sides.
+
+**Write:**
+- tests in `crates/ferrum-state/tests/written_text.rs`, `written_change.rs`, `written_rangeset.rs` (each with its `// covers:` line naming the behavior or decision row), the replayer under `crates/ferrum-state/tests/replay/`, the benches of item 9;
+- one entry under `docs/parity/ferrum-state/implementation.md` "Changes to checks after their code" for this run, in the form of the entries there, listing every changed check file.
+
+**Do not write:** `crates/ferrum-state/src/`, `raw/`, `fixtures/`, `oracle/`, `docs/decisions/`, or the state and facet tests (W2's).
+
+A fact that does not fit this card, or a row whose sentence the test cannot follow, goes in the report as a question in the shape of `CLAUDE.md` "Raising a question".
+
+**Check, run by you before you commit:**
+- `cargo fmt --all`; `cargo clippy -p ferrum-state --all-targets --features __test` with zero warnings;
+- `cargo test -q -p ferrum-state --features __test`: list every failing test. The replay test must fail on `state:F8421`, `F8438` and `F8449` and on no other fixture (these three are (e)'s); each of your tests that fails names in the report the row that says Ferrum must change;
+- `python3 tools/conf_check.py ferrum-state tests`, passing whole;
+- `cargo bench -p ferrum-state --bench g8 -- --size n --entry <each new entry>` and the cm6 script at `--size n`, then `python3 tools/conf_check.py ferrum-state g8`.
+
+**Budget.** 160,000 tokens. At 240,000, stop and report where you are; if your output is already committed and checked when you reach it, write your report.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): conformance step 5 (d) W1, units text, change and rangeset' -- crates/ferrum-state/tests crates/ferrum-state/benches docs/parity/ferrum-state/bench docs/parity/ferrum-state/implementation.md` (a new file needs `git add -- <path>` first). Never `git add -A`.
+
+**Report:**
+- the checks' output: the failing tests with the row of each, and the replay's counts;
+- for item 6, each op's fixtures by result, and the replay test's time;
+- per item, the tests written (file and name), and the lines of item 2 left with their reason;
+- the questions;
+- the two lines of `CLAUDE.md` "Reporting from a card".
