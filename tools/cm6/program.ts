@@ -182,9 +182,9 @@ export class Language {
     o("object", ["harness"], () => ({}))
     o("label", ["harness"], a => { if (typeof a.text != "string") throw new Error("label: text must be a string"); return a.text })
     o("map", ["harness"], (a, p) => {
-      const over = p.ev(a.over)
+      const over = p.ev(a.over), name = a.as  // `as` is read even when `over` is empty
       if (!over.length) markRead(a.do)
-      return over.map((x: any) => { p.vars[a.as] = x; return p.ev(a.do) })
+      return over.map((x: any) => { p.vars[name] = x; return p.ev(a.do) })
     })
     o("try", ["harness"], (a, p) => {
       try {

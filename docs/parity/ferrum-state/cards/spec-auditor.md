@@ -255,6 +255,53 @@ Do not run `tools/impl_check.py`: the orchestrator replays the new fixtures afte
 - the questions;
 - the two lines of `CLAUDE.md` "Reporting from a card".
 
+## Conformance step 5 (c), run F4b: the sharing op of chunk `text`, and the cases of two surviving mutants
+
+**The step** is `docs/parity/ferrum-state/plan.md` "Conformance", step 5 (c), run F4b, the last run of (c). This card holds its whole list of inputs. F1 wrote the seeded generator of Q135 in chunk `text`, `oracle/cm6/text/round-c.ts` (F7700–F7745); its fixtures record `text.sharedChildren`, which compares the top-level children only. A mutation run against the replay as it stands (2026-11-27) left two mutants of `Text::replace_inner` alive, and Q153 (`docs/decisions/ferrum-state.md`, "Step 5 (c) after F1", Q153) decided what follows.
+
+**Routing.** Everything in this run is written in chunk `text`, through `oracle/cm6/text/interp.ts`. A case chunk `text` cannot express goes in the report, with the reason; you do not write in another chunk.
+
+**The inputs of F4b.** Lines of `docs/parity/ferrum-state/raw/conformance-text.jsonl`; read each one's `evidence` and `repro`.
+1. *The op of Q153:* an op of chunk `text` that counts the nodes a result shares with the document it came from through the whole tree (by identity, at every depth), beside `text.sharedChildren`. Add it to F1's generator so that every result the chains record also records it, and so that G5's fresh seeds draw it.
+2. *`:25`* (`src/text.rs:624:52`, `replace > with >= in Text::replace_inner`, cm6 `text.ts:288`): the verifier's probe saw it at the ASCII chain of 300 lines, step 24, a `replace` of 17451..17469 by an empty document (`Text.of([""])`), the result of length 38356 and 7663 lines; the unmutated tree shares 49 nodes with its source, the mutant 50, the shape equal. F1's ASCII chains draw the probe's positions, so the op of item 1 on F1's chain of 300 lines records it: check that the fixture of that chain holds that step and its shared count.
+3. *`:24`* (`src/text.rs:614:33`, `replace < with <= in Text::replace_inner`, cm6 `text.ts:283` `if (text.lines < this.lines)`): the probe saw a different `children()` shape at the append after step 20 of its non-ASCII chain of 2 lines (`of2true/r20`, a `replace` of 13659..13659 by an empty document): the step's result, 5278 lines and 30660 UTF-8 bytes, appended to the document it came from, giving 10555 lines. F1's non-ASCII chains draw other positions (cm6 counts UTF-16 code units, the probe UTF-8 bytes), so no fixture reaches it. Write a case where the inserted text has as many lines as the node it replaces into (`text.lines == this.lines` at `text.ts:283`), built from the chain's rule or directly, and record its shape with the existing ops.
+
+**Facts the earlier runs looked up:**
+- `tools/cm6/program.ts`: a step's `"if"` (lines 22–23); `try {steps, mode, result?}` (line 54 and after); `map {over, as, do}`, whose `as` clashes with a step's own `as` when the `map` is a step's expression (F1 met it).
+- A behavior row lists a fixture of its own item's chunk as `F<n>`, and one of another chunk as `<chunk>:F<n>` (`tools/spec_check.py:231`); a fixture's `behaviors` name rows, and each must list it back.
+- F1 did not store `text.desc` per result (it would add tens of MB); `content` checks `text.toString` against a model string the program builds. `fixtures/text.jsonl` is about 7.5 MB.
+
+**Read:**
+- `oracle/cm6/text/round-c.ts` whole, and the header and the `text.*` ops of `oracle/cm6/text/interp.ts` (`text.sharedChildren`, `text.depth`, the shape op);
+- the two lines above, and the behavior rows their evidence cites, in `raw/behaviors.jsonl`;
+- `mirrors/cm6/state/src/text.ts` around `:270`–`:300` (`replace`, `decompose`).
+
+**Write:**
+- *The op* in `oracle/cm6/text/interp.ts`, kind `identity` (it compares with `===`), with a header line in the header's form; name it in the report, because (d)'s `test-writer` registers it in the replayer.
+- *F1's generator* `oracle/cm6/text/round-c.ts`, changed to record the op beside `text.sharedChildren`, and the case of item 3 appended with the next free id from F7746; its header updated. The fixtures it writes are written again.
+- *Values from cm6 runs only.*
+- *Behavior rows:* each new fixture lists the behaviors it shows, and each of those rows lists it back; a case no row states gets a new row with the next free id of its member and `"added": "conformance round"`.
+
+**Do not write:**
+- `raw/decisions.jsonl`, `raw/replay.jsonl`, `raw/improvements.jsonl` or `oracle/patches/` (the consultant's);
+- `raw/conformance-*.jsonl`, `raw/recheck*.jsonl`, `fixtures/no-counterpart.jsonl` or anything under `crates/`.
+
+A way to do better than cm6, or a fact that does not fit this card, goes in the report as a question in the shape of `CLAUDE.md` "Raising a question".
+
+**Check, run by you before you report:** `python3 tools/spec_check.py ferrum-state` ends with "checks passed" (about 3 minutes). It re-runs every generator of `order.json`, requires each to reproduce its fixtures byte for byte, and rewrites `raw/fixture-ops.jsonl`. Do not run `tools/impl_check.py`: the orchestrator replays the fixtures after your run.
+
+**Budget.** 100,000 tokens. At 150,000, stop and report where you are; if your card's output is already committed and checked when you reach it, write your report.
+
+**Commit** with explicit paths, on the current branch, without pushing: `git commit -m 'spec(ferrum-state): conformance step 5 (c) F4b, the sharing op of text and the cases of :24 and :25' -- docs/parity/ferrum-state/oracle/cm6/text docs/parity/ferrum-state/fixtures/text.jsonl docs/parity/ferrum-state/raw/behaviors.jsonl docs/parity/ferrum-state/raw/fixture-ops.jsonl`. Never `git add -A`.
+
+**Report:**
+- the output of the check;
+- the op, its header line, and for `:25` the shared counts the fixture records at the probe's step;
+- for `:24`, the case written and its fixture id, or why none is;
+- the rows added;
+- the questions;
+- the two lines of `CLAUDE.md` "Reporting from a card".
+
 The sections below are from the implementation stage.
 
 
