@@ -6,7 +6,7 @@ The next id is Q161.
 
 ## Q157. The plan's (d) and the amended row `state.cm6.160.d1` give different results for 2^53 written as a float
 - **Found.** `plan.md` "Conformance" step 5 (d) (and item 1 of the W1 and W1b cards copied from it) says `ChangeDesc::from_json` and `ChangeSet::from_json` give the domain's `Err` for 2^53 written as a float. `state.cm6.160.d1`, as amended on 2026-11-27 (`docs/decisions/ferrum-state.md`, "Step 4 classified, Q144, Q145, E60 and the round of step 5"), accepts integral doubles up to `isize::MAX`; cm6 accepts it (`docs/parity/ferrum-state/written/values.out`, label `desc exact [9007199254740992.0,-1]`). W1b's test `json_readers_read_an_integral_float_as_cm6_reads_it` (`crates/ferrum-state/tests/written_change.rs`) follows the row, and fails at the current code (Ferrum gives `Err`). Second: `ChangeSet::empty(usize::MAX)` is not in the "Where" column of `design.md` §5's row `A change cannot be longer than isize::MAX`; W1b asserts its panic from D17's general sentence.
-- **Open because.** The plan and the row are both the consultant's and disagree; D17 does not list the functions the §5 row covers.
+- **Open because.** The plan and the row are both the consultant's and disagree; D17 does not list the functions the row of `docs/parity/ferrum-state/design.md` §5 covers.
 - **Bears on it.** (e) I1 writes the readers from one of the two; the test now asserts the row's.
 - **Blocks.** (e) I1's readers.
 - **Raised by.** The test-writer of step 5 (d) W1b (commit aaa3960), queued by the orchestrator, 2026-11-27.
