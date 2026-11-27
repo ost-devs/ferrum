@@ -915,10 +915,11 @@ RECHECK_KEYS = ["file", "line", "kind", "id", "derived", "evidence", "repro", "r
 # The commit whose verdict lines step 4 drew (seed 20261126): the lines relabelled after it (plan.md step 5 (a)) do
 # not move the draw.
 RECHECK_AT = "b095d54"
-# Step 5 (b)'s class reads (plan.md step 5, M33): every `UNREACHABLE` branch line and `EQUIVALENT MUTANT` line step 4
+# Step 5 (b)'s class reads (plan.md step 5, M33, Q148): every `UNREACHABLE` branch, `EQUIVALENT MUTANT` and panic line step 4
 # did not draw, by the module its id names, and the lines named beside them; drawn whole, rows in raw/recheck-class.jsonl.
-RECHECK_CLASS_KINDS = {("branch", "UNREACHABLE"), ("mutant", "EQUIVALENT MUTANT")}
-RECHECK_CLASSES = {"C1": {"modules": {"text", "char"}, "named": set()},
+RECHECK_CLASS_KINDS = {("branch", "UNREACHABLE"), ("mutant", "EQUIVALENT MUTANT"),
+                       ("panic", "PRECONDITION"), ("panic", "UNREACHABLE")}  # the panic lines: Q148
+RECHECK_CLASSES = {"C1": {"modules": {"text", "char", "column"}, "named": set()},
                    "C2": {"modules": {"change", "state", "facet", "transaction", "selection", "config", "extension"},
                           "named": {("conformance-change.jsonl", 98), ("conformance-change.jsonl", 151)}},
                    "C3": {"modules": {"rangeset"}, "named": set()}}
@@ -1897,7 +1898,7 @@ def panics(c, crate, args):
     for x in re.findall(r'(?:write_str|write!\(f,)\s*\(?\s*"((?:[^"\\]|\\.)*)"', err):
         known.add(re.sub(r"\{[^}]*\}", "<x>", x))
     shape = lambda m: next((k for k in sorted(known) if template_re(k).fullmatch(m)), m)  # a message by its template
-    seen, bad, outside = collections.Counter(), collections.defaultdict(set), collections.Counter()
+    seen, bad, outside, sites = collections.Counter(), collections.defaultdict(set), collections.Counter(), {}
     for r in rows:
         f, _, ln = r["at"].rpartition(":")
         if src_of(f) is None: outside[r["at"].split(":")[0]] += 1; continue  # a test's own panic or a user function's
@@ -1909,17 +1910,27 @@ def panics(c, crate, args):
             s = src_of(path)
             if s: chain.append((s, int(line)))
             elif re.search(r"/tests/|^tests/", path): break
-        outer = None
+        outer = None; through = []
         for s, line in chain:
             fn = holder(s, line)
-            if fn and fn["public"]: outer = fn
+            if fn and fn["public"]:
+                outer = fn
+                if f"src/{fn['file']}:{fn['line']} {fn['name']}" not in through: through.append(f"src/{fn['file']}:{fn['line']} {fn['name']}")
         if outer is None: outside["no public function of the crate"] += 1; continue
         name = f"src/{outer['file']}:{outer['line']} {outer['name']}"
         msg = re.sub(r"\s+", " ", r["message"]).strip()
+        site = sites.setdefault(f"src/{src_of(f)}:{ln}", {"messages": set(), "outermost": set(), "through": set()})
+        site["messages"].add(shape(msg)); site["outermost"].add(name); site["through"].update(through)
         seen[(name, msg)] += 1
         named = [outer] + linked(outer)
         if not any(template_re(t).fullmatch(msg) for g in named for t in message_templates(g["panics"])):
             bad[name].add(shape(msg)[:160])
+    sites_out = os.path.join(out_dir(crate), "panics", "sites.jsonl")  # for the readers of panic lines (plan step 5 (b))
+    os.makedirs(os.path.dirname(sites_out), exist_ok=True)
+    with open(sites_out, "w", encoding="utf8") as fh:
+        for k in sorted(sites, key=lambda k: (k.rsplit(":", 1)[0], int(k.rsplit(":", 1)[1]))):
+            fh.write(json.dumps({"site": k, **{n: sorted(v) for n, v in sites[k].items()}}, ensure_ascii=False) + "\n")
+    c.say(f"by site: {len(sites)} sites of src/, each with its messages and the public functions it was raised through: {os.path.relpath(sites_out, REPO)}")
     c.say(f"panics recorded: {len(rows)}; of the crate, by function and message: {len(seen)} pairs from {sum(seen.values())} panics; "
           f"left out (raised outside src/, or with no public function of the crate above them): {sum(outside.values())}")
     c.need(not bad, f"each public function's `# Panics` quotes the template of every message raised through it: {len(bad)} functions do not",
