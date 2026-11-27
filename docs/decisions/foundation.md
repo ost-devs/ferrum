@@ -493,3 +493,26 @@ mechanical conversion settles anyway) or misses cases implementers hit.
 - *Reading D1 as a range check too.* It would add refusals that cm6 does not make, each one a difference no row records. Where refusing is better than cm6, it is an improvement with its own reference: `state.imp.004` holds the case of `checkSelection`.
 
 **Confidence.** High. **Reopens.** A call where cm6 indexes a string with a position past its end and gives a result that is an engine artifact. That is D11 (c), not D1.
+
+## 2026-11-27 · D17: a position a range set stores, and arithmetic with a sentinel
+
+*Decided by the consultant (from Q158 of `ferrum-state`; the crate's part: `docs/decisions/ferrum-state.md`, "Q157 to Q161"). Binding text: `.claude/rules/decisions.md` D17 (amended).*
+
+**Question.** D17 says every length and position Ferrum holds is at most `isize::MAX`, but its panic named only a text and a change description. A range set stores positions too. In `ferrum-state` a range at 2^63 wrapped when cast to `i64`. A first range at `isize::MAX` overflowed when the builder subtracted cm6's `-1e9`, though that position is inside the bound.
+
+**Decision.**
+- *The panic covers a range set too.* A call that would store, in a range set, a range whose position is above `isize::MAX` panics at that call, with a message of Ferrum's own.
+- *Arithmetic with a sentinel.* Where cm6 combines a held value with a sentinel of its own (the ±1e9 of a range set) by subtracting in order to compare, the Rust code compares, so that every held value gives cm6's result.
+
+**Why.**
+- *The rule's reach is its reason's.* The reason (no held value beyond the bound, so that every later cast is in range) covers a stored range exactly as it covers a text, and the enumeration in its text was narrower than the reason.
+- *The sentence about arithmetic assumed something it did not say.* "Inside the bound arithmetic is not checked again" assumed that every operand lies inside the bound. A sentinel added to or subtracted from a held value can leave it. Comparing instead of subtracting gives the same result and needs no check.
+
+**For the crates above.** `ferrum-view`'s decorations are range sets, so they inherit both rules. Its heightmap and viewport will meet the same pattern of a held value and a sentinel.
+
+**Lost.**
+- *A clip.* It is silent.
+- *A bound at 1e9, cm6's own end sentinel.* It is a refusal cm6 does not make, and `state.imp.006` would raise that bound rather than refuse it.
+- *Wider arithmetic everywhere.* It costs every operation, for values no document reaches.
+
+**Confidence.** High. **Reopens.** A crate whose stored positions combine with a sentinel in arithmetic that is not a comparison (a sum that is output).
