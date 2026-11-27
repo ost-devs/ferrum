@@ -1,0 +1,30 @@
+--- cm6/state/src/transaction.ts
++++ cm6/state/src/transaction.ts
+@@ -61,6 +61,9 @@
+   of(value: Value): StateEffect<Value> { return new StateEffect(this, value) }
+ }
+ 
++// state.cm6.126.d2: the default map, told apart from a map the type gives
++const keepValue = (v: any) => v
++
+ /// State effects can be used to represent additional effects
+ /// associated with a [transaction](#state.Transaction.effects). They
+ /// are often useful to model changes to custom [state
+@@ -78,6 +81,8 @@
+   /// `undefined` when that ends up deleting the effect.
+   map(mapping: ChangeDesc): StateEffect<Value> | undefined {
+     let mapped = this.type.map(this.value, mapping)
++    // state.cm6.126.d2: the default map keeps an `undefined` value (Ferrum's values have no `undefined`, D11 c)
++    if (mapped === undefined && this.type.map === keepValue) return this
+     return mapped === undefined ? undefined : mapped == this.value ? this : new StateEffect(this.type, mapped)
+   }
+ 
+@@ -91,7 +96,7 @@
+   /// [mapping](#state.StateEffect.map) to indicate that an effect is
+   /// removed.
+   static define<Value = null>(spec: StateEffectSpec<Value> = {}): StateEffectType<Value> {
+-    return new StateEffectType(spec.map || (v => v))
++    return new StateEffectType(spec.map || keepValue)
+   }
+ 
+   /// Map an array of effects through a change set.
