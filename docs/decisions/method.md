@@ -956,3 +956,13 @@ That leaves 1,253 lines. Per run, 10% (the M28 reason for drawing per run stands
 **Lost.** *A second sample* (a sample measures and is not repeated until clean, and the one high overturn passed no failing item). *Reading every class whole* (Decision 1). *Keeping the short-run stratum for ferrum-view* (Decision 2). *Keeping 1.29 times the pilot figures* (right only in sum).
 
 **Confidence.** High on Decisions 1, 2 and 4, each from counts in the data. Medium on Decision 3's figures (eight runs, kinds mixed in each) and on Decision 5 (no run of the kind yet). **Reopens.** E63 outside its range; a panic the tool misses that a reading finds; a round run outside 0.85 to 1.15 of its estimate.
+
+## 2026-11-27 · What a tool that replaces a reading must show, and what a patch writes
+
+*Decided by the consultant (from Q148 and Q149 of `ferrum-state`; the crate's part: `docs/decisions/ferrum-state.md`, "Q146 to Q149"). Binding text: `docs/parity/ferrum-state/plan.md` "Conformance" step 5 (b); `docs/parity/ferrum-state/cards/verifier.md` item 6; `tools/oracle_patch.py` (docstring). Ledger: E67.*
+
+**M33 corrected.** M33 Decision 1 replaced the reading of the panic lines by `conf_check panics` because "whether a `# Panics` states the condition that fires is a fact a run shows". A run shows the message raised and the function it passes through, not which condition of the text it met. So the tool replaces half of the verdict, and the half it does not cover was the half step 4 had found wrong. The panic class is read whole for its conditions (plan step 5 (b)). *What generalizes.* Before a tool replaces a reading, write the verdict's assertion out in full and check that the run's output decides each part of it. Trying the tool on known misses is how this was seen (the plan's fourth case). That is why every such tool is tried on the misses of the sample before anyone relies on it.
+
+**A patch writes only what Ferrum holds.** A row's patch is the reference that tells G5 which cases a deviation covers. If it writes Ferrum's mechanism, and not Ferrum's observable result, it changes records the replayer leaves out (an object's identity), and G5 then attributes cases to the deviation that it does not touch. The patch keeps cm6's behavior in what Ferrum does not hold, and `check` failing on such records means the patch writes too much (`tools/oracle_patch.py`).
+
+**Confidence.** High. **Reopens.** A record the replayer leaves out that a later decision gives a Ferrum counterpart.

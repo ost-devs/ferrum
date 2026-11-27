@@ -11,7 +11,9 @@ applies the patch there, points `@codemirror/<package>` at the copy and replays 
 the fixtures whose output is not their recorded one are the patch's.
 
 `check`: under each patch, the committed fixtures that change are exactly the row's list (`fixtures`). A patch that
-fails this is not used.
+fails this is not used. A patch writes what Ferrum's output differs in and nothing Ferrum does not hold: where the
+replayer leaves a record out as having no counterpart (an object's identity), the patch keeps cm6's, so a fixture that
+changes only in such records is a patch that writes too much, never an entry for the list (Q149).
 
 `attribute`: the new cases of <dir> (tools/oracle_fresh.py) replayed under each patch; those that change go on the
 row's list in a copy of raw/decisions.jsonl written to <dir>/decisions.jsonl, which the fresh replay reads in place

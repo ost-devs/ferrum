@@ -929,7 +929,8 @@ def tests(c, crate, args):
     """Each ported test's label derived from its comments (conformance.md §0, M31, 2026-11-27): `CHANGED` when it holds
     a `// literal` comment that marks a decided difference, `EQUIVALENT` otherwise, against its `test` line; a comment
     that marks only an argument cm6 omits and the Rust call writes with cm6's default (D14: its cause names D14 and no
-    other decision, and says the caller writes the default) is no difference and fails, since it labels a test CHANGED."""
+    other decision, and says the caller writes the default) is no difference: it leaves the test EQUIVALENT and stays,
+    as the cause impl_check's `literals` (G3) reads for the literal the Rust call writes (Q146)."""
     src = ic.test_sources(crate)
     fns = {f: {fn["name"]: fn for fn in ic.functions(t)} for f, t in src.items()}
     def kind(cm):
@@ -961,7 +962,7 @@ def tests(c, crate, args):
     c.need(not missing, f"every ported test a `test` line names exists: {len(missing)} do not", missing)
     c.say(f"ported test lines: {n_cmp} labelled EQUIVALENT or CHANGED compared; findings not compared: {dict(findings)}")
     c.need(not bad, f"each label is the one its `// literal` comments give: {len(bad)} differ", bad)
-    c.need(not default, f"no `// literal` comment marks only a D14 default (no difference, conformance.md §0): {len(default)} do", default)
+    c.say(f"`// literal` comments that mark only a D14 default (no difference, the test EQUIVALENT; kept as G3's cause, Q146): {len(default)}")
     c.say(f"`// literal` comments citing D14 alone that do not say the caller writes a default (a decided difference, counted CHANGED): {len(d14)}")
     for x in d14: c.say("    " + x)
 

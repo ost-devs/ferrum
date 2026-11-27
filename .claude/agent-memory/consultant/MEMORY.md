@@ -33,6 +33,9 @@
 - When to make an improvement: in the design only if making it later breaks the API or stored data (D1, D6); otherwise as a delta right after the crate's conformance verdict, one at a time, before the crate above is specified. Reason: the delta on a proven floor shows exactly what changed. Same entry
 - A difference on purpose in a suite of recorded values: never a skip list or hand-written values; patch the reference (cm6 in the harness), let a tool compute which cases change and their new values, fail on a change outside the row's behaviors. Try the patch on the existing replay before relying on it (one file, 126 of 3,823 fixtures). `docs/decisions/method.md`, same date
 - A decision the maintainer delegates with "either answer is approved": still derive it, and say what is unknown; "better" in a draft followed by "but parity" is the pattern they corrected.
+- A tool that replaces a reading: write the verdict's whole assertion and check the run decides each part (panics: a run shows message and function, not the condition; M33 missed it). A tie or attribution that can err both ways: take each source in the direction whose error shows. `docs/decisions/method.md`, 2026-11-27 "What a tool that replaces a reading must show"
+- A patch of cm6 writes Ferrum's observable result, never its mechanism (identity): what the replayer leaves out stays cm6's. Same entry
+- A comment serving two checks (G3 literals and the label): before removing it for one, ask what the other loses. `docs/decisions/ferrum-state.md` Q146
 - Proof of parity (replayer, fixtures, patches, checks, rows): [precedents-proof.md](precedents-proof.md)
 - Conformance verdicts, re-checks, class corrections, G6/G8: [precedents-conformance.md](precedents-conformance.md)
 - Estimating runs: [budgets.md](budgets.md) — context size, decomposition, what the ledger's tokens mean
