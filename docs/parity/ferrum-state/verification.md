@@ -542,3 +542,22 @@ checks passed
 ```
 
 Not `agree`: `raw/conformance-text.jsonl:157` branch `src/text.rs:744:16` overturn low (recorded `UNREACHABLE`; a raw cursor passes an empty line without yielding a value, so `Text::of(["x", "", "yz"]) == Text::of(["x", "y", "z"])`, both of length 5 and 3 lines, reaches `a.line_break != b.line_break` true at the third step; the result is the same as the value comparison would give, and no check runs that input; probe `.scratch/recheck-U1-b/probe`). `:251` hazard `state.findClusterBreak.B4:h2` overturn low (recorded `EXERCISED` by `find_cluster_break_inside_a_character_panics`, which passes and asserts D1's panic, not cm6's repair of a position inside a character: `EXCLUDED` by D1, `assert_char_boundary` at `src/char.rs:198`; the same split as Q145). The one corrected derivation, `:284` `state.CharCategory.B2:h1`, asked for a suite test comparing Unicode data where `state.cm6.166.d1` makes it a comparison at conformance. Notes in `settled`: `:1` the re-checker's repro has a wrong byte `to`; `:155` cm6 clips `from` too (`mirrors/cm6/state/src/text.ts:212`); `:250` the same verdict by the forward walks; `:297` the recorded line cites a written test the re-checker had not found. The hook refused a recursive `grep` from `crates/ferrum-state` and from `conformance/`, and a `cd` into `raw/`; the re-checker read `raw/decisions.jsonl` by its path, which the hook allows.
+
+### U1, part c: 5 test, 1 mutant and 14 list lines (rechecker, 2026-11-27)
+
+108,575 tokens against 123,100 (0.88). `recheck-audit` shows all 20 rows first seen through their reveal; every derivation equal to the recorded verdict.
+
+```
+lines 1627; pool 1253 (findings, item lines and replayer:core left out); by kind {'test': 197, 'hazard': 681, 'panic': 36, 'sentinel': 152, 'branch': 38, 'mutant': 39, 'shared': 108, 'line': 1, 'behavior': 1}
+order shown: tool 20; derivations the reveal corrected (derived differs, outcome agree): 0
+all: 20 rows; mutant agree 1, panic agree 4, sentinel agree 6, sentinel later decision 3, shared agree 1, test agree 5
+run 7efee43 conformance(ferrum-state): step 3, the verifier of U1 text; Q136, M25, M26: 20 rows; mutant agree 1, panic agree 4, sentinel agree 6, sentinel later decision 3, shared agree 1, test agree 5
+the six runs of M28: 0 rows; 
+hazard, panic, shared, sentinel of runs above 200,000 (M28 runs apart): 0 rows; 
+hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart): 14 rows; panic agree 4, sentinel agree 6, sentinel later decision 3, shared agree 1
+checks passed
+```
+
+Not `agree`: three sentinel lines are `later decision`, their `SAFE` written at 7efee43 (2026-11-24) before D17 (2db9bf2, 2026-11-26) and holding only by it: `raw/conformance-text.jsonl:83` (`src/text.rs:335`, `slice`: `from as isize` wraps above `isize::MAX`; a document that long cannot be built by doubling, 7.8 GB resident at about 2e10 bytes), `:90` (`src/text.rs:645`, `replace_general`: the clip does not bound the value), `:96` (`src/text.rs:739`, `Text`'s `PartialEq`: the recorded reason `start <= len` is wrong, `start` reaches `len + 1`: `e = d.slice(0, d.len())` on a 200-line document gives a top node whose 7 children are shared with `d`, and the forward sum at `src/text.rs:719` is 20,200 for a length of 20,199). `:73` (`src/text.rs:535`) agrees; its reason names two of the three callers of `line_inner`, the third, `is_char_boundary` at `src/text.rs:469-472`, checks the bound too.
+
+Seen outside the part, and not among step 3's lines of `raw/conformance-text.jsonl` (the orchestrator's search of its 33 findings): `src/text.rs` has no check of D17's bound where a length is built (`replace_general` `:650`, `replace_inner` `:608`), where D17 asks a call that would make a longer text to panic; `Text::line_at`'s `# Panics` (`src/text.rs:267-268`) gives `Invalid position …` for a position off a character boundary, where the code panics with `Position <pos> is not on a character boundary of the document` (`not_a_boundary`, `:478-480`). The cast of `iter_range`'s bounds it also reports is step 3's finding `:104` and `:105`. Probe: `.scratch/recheck-U1c/probe`.
