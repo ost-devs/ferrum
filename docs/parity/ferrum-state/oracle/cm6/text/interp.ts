@@ -112,6 +112,12 @@
 //   text.sharedChildren {doc: expr, in: expr}   [null when doc.children is null; else for each child of doc whether
 //                                     in.children includes it (===), false for every child when in.children is null]
 //                                     {api, identity}
+//   text.sharedNodes {doc: expr, in: expr}   [the number of subtrees of doc that are nodes of in: the nodes of in are
+//                                     in itself and, when it has children, every node below it (its children, theirs,
+//                                     down to the leaves); doc is walked from its root, depth first, and a node of doc
+//                                     that is === to a node of in counts one and is not walked into; a node that is not
+//                                     is walked into through its children (a leaf that is not counts nothing). 0 when
+//                                     no node is shared, 1 when doc === in] {api, identity}
 //   ownKeys {of: expr}               [Object.keys(value): the own enumerable fields of a cm6 object] {internal}
 // Line {api}
 //   line.fields {line: expr, fields?}    [an object with, in order, each field of `fields` (default ["from", "to",
@@ -393,6 +399,14 @@ o("text.childrenPush", INT, (a, p) => { (doc(a, p).children as Text[]).push(p.ev
 o("text.sharedChildren", ["api", "identity"], (a, p) => {
   const d = doc(a, p), other: Text = p.ev(a.in)
   return d.children ? d.children.map(c => other.children ? other.children.includes(c) : false) : null
+})
+o("text.sharedNodes", ["api", "identity"], (a, p) => {
+  const d = doc(a, p), other: Text = p.ev(a.in), olds = new Set<Text>(), st: Text[] = [other]
+  while (st.length) { const t = st.pop()!; olds.add(t); if (t.children) st.push(...t.children) }
+  let n = 0
+  const walk = (t: Text) => { if (olds.has(t)) n++; else if (t.children) for (const c of t.children) walk(c) }
+  walk(d)
+  return n
 })
 o("ownKeys", INT, (a, p) => Object.keys(p.ev(a.of)))
 
