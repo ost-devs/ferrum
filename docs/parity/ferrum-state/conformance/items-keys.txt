@@ -197,3 +197,46 @@ findings about the proof, given no key (Q147 (2)): 3
     conformance-state.jsonl:409 replayer:thread_local
     conformance-text.jsonl:162 replayer:core:stop-unmet
     conformance-text.jsonl:163 replayer:core:host-encode
+
+## After step 5 (b): the keys of Q150, the same script with its fourth source
+
+# The `items` keys of plan step 5 (a), Q147, written by docs/parity/ferrum-state/conformance/items-keys.py --write
+
+4 lines gain a key; by source: consultant 26
+
+conformance-state.jsonl:349 shared src/state.rs:57 FINDING
+    state.cm6.008 EditorState.field  (consultant: Q150)
+    state.cm6.015 EditorState.facet  (consultant: Q150)
+    state.cm6.018 EditorState^create  (consultant: Q150)
+    state.cm6.021 EditorState.tabSize  (consultant: Q150)
+    state.cm6.023 EditorState.lineBreak  (consultant: Q150)
+    state.cm6.025 EditorState.readOnly  (consultant: Q150)
+    state.cm6.027 EditorState.phrase  (consultant: Q150)
+    state.cm6.029 EditorState.languageDataAt  (consultant: Q150)
+    state.cm6.030 EditorState.charCategorizer  (consultant: Q150)
+    state.cm6.031 EditorState.wordAt  (consultant: Q150)
+    state.cm6.100 Transaction.state  (consultant: Q150)
+conformance-state.jsonl:431 mutant src/transaction.rs:303:13 delete field selection from struct TransactionSpec expression in <impl From<&Transaction> for TransactionSpec>::from FINDING
+    state.cm6.009 EditorState.update  (consultant: Q150)
+    state.cm6.033 EditorState^transactionFilter  (consultant: Q150)
+    state.cm6.095 Transaction.selection  (consultant: Q150)
+    state.cm6.109 TransactionSpec  (consultant: Q150)
+    state.cm6.111 TransactionSpec.selection  (consultant: Q150)
+conformance-state.jsonl:432 mutant src/transaction.rs:304:13 delete field effects from struct TransactionSpec expression in <impl From<&Transaction> for TransactionSpec>::from FINDING
+    state.cm6.009 EditorState.update  (consultant: Q150)
+    state.cm6.033 EditorState^transactionFilter  (consultant: Q150)
+    state.cm6.096 Transaction.effects  (consultant: Q150)
+    state.cm6.109 TransactionSpec  (consultant: Q150)
+    state.cm6.112 TransactionSpec.effects  (consultant: Q150)
+conformance-state.jsonl:433 mutant src/transaction.rs:306:13 delete field scroll_into_view from struct TransactionSpec expression in <impl From<&Transaction> for TransactionSpec>::from FINDING
+    state.cm6.009 EditorState.update  (consultant: Q150)
+    state.cm6.033 EditorState^transactionFilter  (consultant: Q150)
+    state.cm6.097 Transaction.scrollIntoView  (consultant: Q150)
+    state.cm6.109 TransactionSpec  (consultant: Q150)
+    state.cm6.115 TransactionSpec.scrollIntoView  (consultant: Q150)
+
+tied by no source, for the consultant: 0
+findings about the proof, given no key (Q147 (2)): 3
+    conformance-state.jsonl:409 replayer:thread_local
+    conformance-text.jsonl:162 replayer:core:stop-unmet
+    conformance-text.jsonl:163 replayer:core:host-encode

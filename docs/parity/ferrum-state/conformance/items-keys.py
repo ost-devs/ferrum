@@ -12,7 +12,9 @@ Each source is taken in the direction that can only tie too many items, never to
                at or before that line, when no top-level declaration of the file starts between them) its own
                evidence cites;
   3. root:     a line still tied to nothing whose evidence names another verdict line as its root
-               (`the root of conformance-<chunk>.jsonl:<n>`) takes that line's items.
+               (`the root of conformance-<chunk>.jsonl:<n>`) takes that line's items;
+  4. consultant: the keys the consultant gave for the lines no other source ties (Q150, docs/decisions/ferrum-state.md,
+               "2026-11-27 · Step 5 (b) classified, Q150, E63 and E67"), written after step 5 (b).
 A line none of them ties is printed for the consultant, never guessed. An id `replayer:...` is a finding about the
 proof and gets no key. A key is the union with any key the line has. Without --write it prints and writes nothing.
 """
@@ -25,6 +27,12 @@ import conf_check as cc  # noqa: E402
 CRATE = "ferrum-state"
 RAW = os.path.join(ROOT, "docs", "parity", CRATE, "raw")
 FINDING = cc.RECHECK_FINDINGS  # with UNVERIFIED
+Q150 = {
+    ("conformance-state.jsonl", 349): ["008", "015", "018", "021", "023", "025", "027", "029", "030", "031", "100"],
+    ("conformance-state.jsonl", 431): ["009", "033", "095", "109", "111"],
+    ("conformance-state.jsonl", 432): ["009", "033", "096", "109", "112"],
+    ("conformance-state.jsonl", 433): ["009", "033", "097", "109", "115"],
+}
 
 
 def cited_places(text):
@@ -87,6 +95,13 @@ def main(write):
         root = by_place.get((m.group(1), int(m.group(2)))) if m else None
         if root:
             for i in sorted(tied(root)): keys[(x["file"], x["line"])].setdefault(i, f"root: the items of {m.group(1)}:{m.group(2)}")
+    for place, ns in Q150.items():
+        x = by_place[place]
+        assert code(x), f"{place} is not a finding or UNVERIFIED code line"
+        for n in ns:
+            i = f"state.cm6.{n}"
+            assert i in inv, i
+            keys[place].setdefault(i, "consultant: Q150")
     added = {}
     for (f, n), ks in sorted(keys.items()):
         x = by_place[(f, n)]
