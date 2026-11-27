@@ -633,3 +633,32 @@ A fact that does not fit this card, or a row whose sentence the test cannot foll
 - the values the scripts gave, and each value they did not give with its source;
 - the questions;
 - the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Conformance step 5 (d), run W2d: the replayer's conversion of `Mismatched change set length` (Q161)
+
+**The step** is `docs/parity/ferrum-state/plan.md` "Conformance", step 5 (d), run W2d; the decision is `docs/decisions/ferrum-state.md` "Q157 to Q161", Q161. You change the replayer only; no written test of the API. The messages of Ferrum's panics are converted back to cm6's numbers through the texts rule 10 gives each number (`plan.md` "Implementation", the rules of positions, item 10, and its table of four messages). Two places get `Mismatched change set length (got G, expected L)` wrong:
+- `state/ops.rs` `by_arguments` (`crates/ferrum-state/tests/replay/state/ops.rs:159-225`) parses three of the four messages of the table, not this one;
+- `change/shared.rs` `thrown` (`crates/ferrum-state/tests/replay/change/shared.rs:110-138`) converts G and L through one text, the call's start document, which is right only where the nested set was built on it; and `units` (`:99-104`) keeps a number it cannot convert as Ferrum wrote it (that fallback is why `state:F2044` passes today).
+
+**The work.**
+1. Convert `Mismatched change set length (got G, expected L)` by rule 10's table: G through the text the start document of the set given as a spec is measured on (filler for a set of op `changes.of`), L through the document the changes are resolved against; in `by_arguments` and in `thrown`. Check each op of chunk `change` that passes a set as a spec against `docs/parity/ferrum-state/raw/positions.jsonl`, and list them in the report.
+2. A number of one of rule 10's messages that does not convert through the text the rule gives it is a `Fail`, never written as Ferrum gave it (`units`).
+3. Literal tests in `crates/ferrum-state/tests/replay/rules.rs`, in the form of the tests there (its last 60 lines): a G measured on a non-ASCII text other than L's; a G of a `changes.of` set; and a filler entry of `ARGS` (op `changes.of`, `state/ops.rs:1398`; op `json.sel`, `state/serial.rs:153`) present while a message on a non-ASCII document is converted. Update the unit test `thrown_converts_the_positions_of_cm6_s_messages` (`change/shared.rs:282`) if item 1 changes what it asserts, saying so in your entry.
+
+**Read** only the ranges named above, `state/values.rs:32-61` (`ARGS`), `state/chunk.rs:141-152` (`call_of`), the tests of `rules.rs` you model yours on, and rule 10 in `plan.md` "Implementation". Do not read the replayer's modules whole. `crates/ferrum-state/src/` is not yours to read beyond signatures.
+
+**Commit paths**, checked by the orchestrator with `python3 .claude/hooks/guard.py paths test-writer` before this run: `crates/ferrum-state/tests/replay` and, in `docs/parity/ferrum-state/implementation.md`, only your entry, appended at the end of "Changes to checks after their code" in the form of the entries there. Nothing else.
+
+A fact that does not fit this card goes in the report as a question in the shape of `CLAUDE.md` "Raising a question".
+
+**Check, run by you before you commit:**
+- `cargo fmt --all`; `cargo clippy -p ferrum-state --all-targets --features __test` with zero warnings;
+- `cargo test -q -p ferrum-state --features __test --no-fail-fast`: the replay test fails on `change:F8018`, `state:F8421`, `F8438` and `F8449` and on no other fixture, with `state:F2044` and `change:F6070` still `equal` (`target/replay/ferrum-state/report.jsonl`); give the replay's counts per chunk before your change and after, and every fixture whose result changes; the other failing tests are exactly the 25 written tests of W1b (aaa3960), W2b (c74a0bd) and W2c (5ba7875), which your change does not touch: 16 in `written_change.rs`, `written_rangeset.rs`, `written_text.rs` from W1b, 4 in `written_state.rs` from W2b, 4 in `written_rangeset.rs` and 1 in `written_change.rs` from W2c;
+- `python3 tools/conf_check.py ferrum-state tests`, passing whole.
+
+**Budget.** 105,000 tokens (`plan.md` step 5 (d), W2d). At 157,500, stop and report where you are; if your output is already committed and checked when you reach it, write your report.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): conformance step 5 (d) W2d, the conversion of Mismatched change set length (Q161)' -- crates/ferrum-state/tests/replay docs/parity/ferrum-state/implementation.md`. Never `git add -A`.
+
+**Report:** the checks' output, with the counts before and after and every changed fixture; the changes of items 1 and 2, with their files and lines; the ops of item 1's check; the literal tests' names; the questions; the two lines of `CLAUDE.md` "Reporting from a card".
+
