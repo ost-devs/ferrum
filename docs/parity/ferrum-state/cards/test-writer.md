@@ -556,3 +556,44 @@ A fact that does not fit this card goes in the report as a question in the shape
 **Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): conformance step 5 (d) W2a, the replayer finding conformance-state.jsonl:409' -- crates/ferrum-state/tests/replay docs/parity/ferrum-state/implementation.md`. Never `git add -A`.
 
 **Report:** the checks' output; the change of item 1, with its file and lines; the literal test's name; item 3's list; the questions; the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Conformance step 5 (d), run W2b: the written tests of unit `state`
+
+**The step** is `docs/parity/ferrum-state/plan.md` "Conformance", step 5 (d), run W2b. You write the written tests of unit `state` that the conformance findings ask for, in `crates/ferrum-state/tests/written_state.rs`. You change nothing in `crates/ferrum-state/tests/replay/`. (e)'s implementer then changes the code until the checks pass, so **a test of yours may fail at the current code**: that is the point when the row says Ferrum must change. Never weaken a test so that it passes. You do not read `crates/ferrum-state/src/` beyond signatures and doc comments.
+
+**Values come from committed scripts,** as W1b's do: a cm6 script in `docs/parity/ferrum-state/written/` (read `values.ts` and `layers.ts` there for the form: one line `<label> => <json>` per value), with its output beside it; add `state.ts` and `state.out` (`git add` them). Each test's comment names the script and the label of its output line. A value no script can give (cm6 has no counterpart) is the row's decided one: `raw/decisions.jsonl`, or `docs/parity/ferrum-state/design.md` §5 for a message, compared whole.
+- Run a script as `npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/written/state.ts > docs/parity/ferrum-state/written/state.out`; on a large stack as the header of `written/layers.ts` says (`ulimit -s unlimited`, `node --stack-size=…` with tsx's loader; `--stack-size` is refused in `NODE_OPTIONS`).
+
+**The inputs.** Read each line's `evidence` and `repro` in `docs/parity/ferrum-state/raw/conformance-<chunk>.jsonl`, and each row's `decision` in `raw/decisions.jsonl`.
+1. *`state.cm6.100.d2`*: `Transaction::state` panics with `A transaction cannot start from a state whose construction has not finished` (`design.md` §5, row of `state.cm6.100.d2`) in both cases the row names: a field's or facet's function that calls `update` on the state it is given and reads the result's `state()`, and a state kept after its build panicked and the panic was caught. Its fixtures `state:F8400`, `F8401` are compared by the replay; your tests assert the message whole.
+2. *The thread guard* (`design.md` §5, row "a slot of a state under construction read, not yet computed, on a thread that is not building it", and §6): the panic `A state under construction is read from a thread that is not building it`, with a state under construction handed to another thread by a field's function; and a read on the building thread computing the slot, as cm6 does (§6).
+3. *`state.cm6.126.d1`*: `StateEffect::map` keeps the value the type's `map` returns where it is `==` to the old one: a `map` that turns `0.0` into `-0.0` gives an effect whose value has the sign bit set (`f64::is_sign_negative`). Fixtures `state:F8434`, `F8435`.
+4. *`state.cm6.017.d1`* (behavior `state.EditorState^fromJSON.B7`): `to_json` then `from_json` re-splits a document whose lines hold the separator; with a separator of two characters the document is shorter, and a selection past its new end makes `from_json` return `Err` with `Selection points outside of document`. The line counts and lengths from cm6 in `state.ts`; the `Err` and its message from the row and `design.md` §5.
+5. *D1's message through unit `state`* (`conformance-text.jsonl:72`; `design.md` §5, the row of `Position <pos> is not on a character boundary of the document`): each of `EditorState::slice_doc`, `language_data_at`, `char_categorizer`, `word_at` and `Transaction::new_doc` given position 2 on the document `"aé"` panics with that message. cm6 has no counterpart; nothing in `state.ts`.
+6. *A deep `appendConfig` chain* (`conformance-state.jsonl:436`): the line's `repro` on a thread of 96 KiB (`std::thread::Builder::stack_size`), with the facet's values asserted against `state.ts` run on a large stack.
+7. *The three `WEAKER` tests* (`conformance-state.jsonl:5`, `:6`, `:7`): each line says what the test leaves unasserted. Line 5: give the missing cases with their values, or narrow the test to what it asserts and name the compared fixtures that assert the rest (`state:F1410`, `F1411`, `F1412`, as the line gives them). Lines 6 and 7 (`written_state.rs` tests near `:373` and `:393`): set `goal_column` and `bidi_level` on the given ranges and assert them on the result.
+
+**Write:**
+- tests in `crates/ferrum-state/tests/written_state.rs`, each with its `// covers:` line naming the behavior or decision row;
+- `docs/parity/ferrum-state/written/state.ts` and `state.out`;
+- one entry under `docs/parity/ferrum-state/implementation.md` "Changes to checks after their code" for this run, in the form of the entries there.
+
+**Do not write:** `crates/ferrum-state/src/`, `crates/ferrum-state/tests/replay/`, the other test files (the facet tests and the tests of Q158 and Q160 are run W2c's), the scripts W1b committed, `raw/`, `fixtures/`, `oracle/`, `bench/`, `docs/decisions/`.
+
+A fact that does not fit this card, or a row whose sentence the test cannot follow, goes in the report as a question in the shape of `CLAUDE.md` "Raising a question".
+
+**Check, run by you before you commit:**
+- `cargo fmt --all`; `cargo clippy -p ferrum-state --all-targets --features __test` with zero warnings;
+- `cargo test -q -p ferrum-state --features __test --no-fail-fast`: the replay test fails on `change:F8018`, `state:F8421`, `F8438` and `F8449` and on no other fixture; the 16 written tests of W1b (commit aaa3960, in `written_change.rs`, `written_rangeset.rs`, `written_text.rs`) still fail; list every other failing test, each with the row that says Ferrum must change;
+- `python3 tools/conf_check.py ferrum-state tests`, passing whole.
+
+**Budget.** 110,000 tokens (`plan.md` step 5 (d), runs, as W1b's transcript fits the rule of `docs/workflow/README.md` §5 "Budgets"). At 165,000, stop and report where you are; if your output is already committed and checked when you reach it, write your report.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git add -- docs/parity/ferrum-state/written/state.ts docs/parity/ferrum-state/written/state.out`, then `git commit -m 'test(ferrum-state): conformance step 5 (d) W2b, the written tests of unit state' -- crates/ferrum-state/tests/written_state.rs docs/parity/ferrum-state/written docs/parity/ferrum-state/implementation.md`. Never `git add -A`.
+
+**Report:**
+- the checks' output: the failing tests with the row of each, and the replay's counts;
+- per item, the tests written (file and name);
+- the values the script gave, and each value it did not give with its source;
+- the questions;
+- the two lines of `CLAUDE.md` "Reporting from a card".
