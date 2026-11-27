@@ -619,3 +619,23 @@ checks passed
 ```
 
 All agree, every derivation equal to the recorded verdict; nothing was re-run. The sentinel `src/transaction.rs:508` (`SAFE`) rests, on both sides, on a deduction that no system clock comes near `i64::MAX` milliseconds; no source of an operating system is mirrored.
+
+### U3, redone: 17 hazard, 4 branch and 1 sentinel lines (rechecker, 2026-11-27)
+
+The lines of U3's earlier parts whose agreements showed no order (M32; those rows are in `raw/recheck-not-blind.jsonl`). 148,805 tokens against 134,500 (1.11). `recheck-audit` shows all 22 rows first seen through their reveal.
+
+```
+lines 1627; pool 1253 (findings, item lines and replayer:core left out); by kind {'test': 197, 'hazard': 681, 'panic': 36, 'sentinel': 152, 'branch': 38, 'mutant': 39, 'shared': 108, 'line': 1, 'behavior': 1}
+order shown: tool 22; derivations the reveal corrected (derived differs, outcome agree): 2
+all: 22 rows; branch agree 4, hazard agree 17, sentinel agree 1
+run 342e254 conformance(ferrum-state): step 3, U3 gaps part C: 3 rows; branch agree 3
+run c118331 conformance(ferrum-state): step 3, U3 hazards of RangeSet; Q139: 10 rows; hazard agree 10
+run c9f4511 conformance(ferrum-state): step 3, U3 hazards of the other groups and the lists; Q140: 8 rows; hazard agree 7, sentinel agree 1
+run cba4763 conformance(ferrum-state): step 3, U3 gaps part B: 1 rows; branch agree 1
+the six runs of M28: 10 rows; hazard agree 10
+hazard, panic, shared, sentinel of runs above 200,000 (M28 runs apart): 8 rows; hazard agree 7, sentinel agree 1
+hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart): 0 rows; 
+checks passed
+```
+
+All agree. Two derivations the reveal corrected, each shown wrong by the re-checker's own re-run: `raw/conformance-rangeset.jsonl:327` branch `src/rangeset.rs:1609:69` (derived `FINDING`; the probe's mark `[0,10]` with sides 1 and -1 and point `[5,10]` with -1 and 1 through `RangeSet::spans` leave the mark out, but `SpanCursor::forward`, `src/rangeset.rs:1498-1505`, cm6 `rangeset.ts:777-779`, removes it before `active_for_point` runs, so the outcome at `:1609` is not reached: `UNREACHABLE` stands); `:210` sentinel `src/rangeset.rs:867` (derived `FINDING`; `spans` with `to = usize::MAX` over a point `[0,3]` and a mark `[5,8]` reports `point(0, 18446744073709551615, p)` and returns 1 at once, where `to = 999_999_999` gives the point at `(0,3)`, three spans and 0; the wrap is the cast at `:849`, step 3's finding at `:203`, and `:867` gives back the caller's own bits: `SAFE` stands). Probe `.scratch/recheck-U3/probe`.
