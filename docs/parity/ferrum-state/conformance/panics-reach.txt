@@ -1,0 +1,55 @@
+ok    every public function maps to a MIR body (176 public, 447 of 710 bodies mapped to a source fn)
+sites with no body in the build without `__test`, present in the build with it: src/rangeset.rs:297
+ok    every site maps to a MIR body in one of the two builds: 0 do not
+ok    no site inside an impl of a trait defined outside the crate (the standard library may call it where the MIR shows no call): 0
+panic sites of G9's list: 40; with a public function reaching them: 39; pairs (site, public function): 428
+by the site's standing line and mark: FINDING open 134, FINDING stated 24, PRECONDITION open 119, PRECONDITION stated 17, UNREACHABLE site-unreachable 134
+open pairs at PRECONDITION sites: 31 reached through no other public function, 88 through one; each with a path: .scratch/conformance/ferrum-state/panics/reach-open.txt
+pairs a run passed through (`panics`' sites.jsonl) that the graph does not reach: 1
+        src/state.rs:201 through src/facet.rs:438 compute
+ok    every pair panics-unreached.txt lists is an `open` pair: 0 are not
+FAIL  every `open` pair is listed in docs/parity/ferrum-state/conformance/panics-unreached.txt with its reason (0 listed): 253 are not
+        src/change.rs:234 src/rangeset.rs:675 RangeSet::map (through src/change.rs:187 ChangeDesc::map_pos, src/change.rs:206 ChangeDesc::try_map_pos)
+        src/change.rs:234 src/rangeset.rs:780 RangeSet::compare (through src/change.rs:187 ChangeDesc::map_pos, src/change.rs:206 ChangeDesc::try_map_pos)
+        src/change.rs:234 src/rangeset.rs:807 RangeSet::eq (through src/change.rs:187 ChangeDesc::map_pos, src/change.rs:206 ChangeDesc::try_map_pos)
+        src/change.rs:234 src/state.rs:220 EditorState::update (through src/selection.rs:220 EditorSelection::map, src/selection.rs:113 SelectionRange::map, src/change.rs:187 ChangeDesc::map_pos, src/change.rs:206 ChangeDesc::try_map_pos)
+        src/change.rs:234 src/state.rs:227 EditorState::replace_selection (through src/state.rs:247 EditorState::change_by_range, src/selection.rs:113 SelectionRange::map, src/change.rs:187 ChangeDesc::map_pos, src/change.rs:206 ChangeDesc::try_map_pos)
+        src/change.rs:234 src/state.rs:247 EditorState::change_by_range (through src/selection.rs:113 SelectionRange::map, src/change.rs:187 ChangeDesc::map_pos, src/change.rs:206 ChangeDesc::try_map_pos)
+        src/change.rs:234 src/transaction.rs:384 Transaction::new_selection (through src/selection.rs:220 EditorSelection::map, src/selection.rs:113 SelectionRange::map, src/change.rs:187 ChangeDesc::map_pos, src/change.rs:206 ChangeDesc::try_map_pos)
+        src/change.rs:234 src/transaction.rs:402 Transaction::state (through src/transaction.rs:384 Transaction::new_selection, src/selection.rs:220 EditorSelection::map, src/selection.rs:113 SelectionRange::map, src/change.rs:187 ChangeDesc::map_pos, src/change.rs:206 ChangeDesc::try_map_pos)
+        src/change.rs:234 src/transaction.rs:423 Transaction::reconfigured (through src/transaction.rs:402 Transaction::state, src/transaction.rs:384 Transaction::new_selection, src/selection.rs:220 EditorSelection::map, src/selection.rs:113 SelectionRange::map, src/change.rs:187 ChangeDesc::map_pos, src/change.rs:206 ChangeDesc::try_map_pos)
+        src/change.rs:368 src/transaction.rs:423 Transaction::reconfigured (through src/transaction.rs:402 Transaction::state, src/transaction.rs:377 Transaction::new_doc, src/change.rs:366 ChangeSet::apply)
+        src/change.rs:702 src/state.rs:220 EditorState::update (through src/change.rs:513 ChangeSet::of)
+        src/change.rs:702 src/state.rs:227 EditorState::replace_selection (through src/state.rs:247 EditorState::change_by_range, src/state.rs:278 EditorState::changes, src/change.rs:513 ChangeSet::of)
+        src/change.rs:702 src/state.rs:247 EditorState::change_by_range (through src/state.rs:278 EditorState::changes, src/change.rs:513 ChangeSet::of)
+        src/change.rs:702 src/state.rs:278 EditorState::changes (through src/change.rs:513 ChangeSet::of)
+        src/change.rs:716 src/state.rs:220 EditorState::update (through src/change.rs:513 ChangeSet::of)
+        src/change.rs:716 src/state.rs:227 EditorState::replace_selection (through src/state.rs:247 EditorState::change_by_range, src/state.rs:278 EditorState::changes, src/change.rs:513 ChangeSet::of)
+        src/change.rs:716 src/state.rs:247 EditorState::change_by_range (through src/state.rs:278 EditorState::changes, src/change.rs:513 ChangeSet::of)
+        src/change.rs:716 src/state.rs:278 EditorState::changes (through src/change.rs:513 ChangeSet::of)
+        src/change.rs:1012 src/change.rs:513 ChangeSet::of (through src/change.rs:432 ChangeSet::compose)
+        src/change.rs:1012 src/state.rs:220 EditorState::update (through src/change.rs:170 ChangeDesc::map_desc)
+        src/change.rs:1012 src/state.rs:227 EditorState::replace_selection (through src/state.rs:247 EditorState::change_by_range, src/change.rs:432 ChangeSet::compose)
+        src/change.rs:1012 src/state.rs:247 EditorState::change_by_range (through src/change.rs:432 ChangeSet::compose)
+        src/change.rs:1012 src/state.rs:278 EditorState::changes (through src/change.rs:513 ChangeSet::of, src/change.rs:432 ChangeSet::compose)
+        src/char.rs:116 src/change.rs:94 ChangeDesc::iter_gaps
+        src/char.rs:116 src/change.rs:114 ChangeDesc::iter_changed_ranges (through src/text.rs:308 Text::replace)
+        src/char.rs:116 src/change.rs:150 ChangeDesc::compose_desc (through src/text.rs:330 Text::slice)
+        src/char.rs:116 src/change.rs:170 ChangeDesc::map_desc (through src/text.rs:318 Text::append, src/text.rs:308 Text::replace)
+        src/char.rs:116 src/change.rs:366 ChangeSet::apply (through src/text.rs:308 Text::replace)
+        src/char.rs:116 src/change.rs:389 ChangeSet::map_desc (through src/text.rs:318 Text::append, src/text.rs:308 Text::replace)
+        src/char.rs:116 src/change.rs:404 ChangeSet::invert (through src/text.rs:330 Text::slice)
+        src/char.rs:116 src/change.rs:432 ChangeSet::compose (through src/text.rs:330 Text::slice)
+        src/char.rs:116 src/change.rs:452 ChangeSet::map (through src/text.rs:318 Text::append, src/text.rs:308 Text::replace)
+        src/char.rs:116 src/change.rs:467 ChangeSet::iter_changes (through src/text.rs:308 Text::replace)
+        src/char.rs:116 src/change.rs:513 ChangeSet::of (through src/text.rs:318 Text::append, src/text.rs:308 Text::replace)
+        src/char.rs:116 src/char.rs:193 find_cluster_break
+        src/char.rs:116 src/char.rs:209 code_point_at
+        src/char.rs:116 src/column.rs:21 count_column
+        src/char.rs:116 src/config.rs:19 combine_config
+        src/char.rs:116 src/facet.rs:392 Facet::define
+        src/char.rs:116 src/facet.rs:473 Facet::from (through src/state.rs:198 EditorState::field, src/state.rs:208 EditorState::try_field)
+        ... and 213 more
+
+1 check(s) failed:
+  every `open` pair is listed in docs/parity/ferrum-state/conformance/panics-unreached.txt with its reason (0 listed): 253 are not

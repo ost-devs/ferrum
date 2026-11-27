@@ -105,12 +105,12 @@
                                                                 function above it quotes the message's template under
                                                                 `# Panics` (or links one that does), and every quoted
                                                                 message is one the crate raises (design.md §5, Error)
-    python3 tools/conf_check.py <crate> panics --reach           static, no run: each panic site of G9's list with every
-                                                                public function that reaches it by the call rule walked
-                                                                through every function, `stated` when its `# Panics`
-                                                                quotes the site's message (or links one that does), else
-                                                                `open`; fails on an `open` pair not listed in
-                                                                docs/parity/<crate>/conformance/panics-unreached.txt (E72)
+    python3 tools/conf_check.py <crate> panics --reach           no test run: each panic site of G9's list with every
+                                                                public function that reaches it on the call graph of the
+                                                                library's MIR (tools/mir_graph.py, Q151), marked
+                                                                site-unreachable, stated, discharged or open; fails on an
+                                                                `open` pair not listed in
+                                                                docs/parity/<crate>/conformance/panics-unreached.txt (E73)
     python3 tools/conf_check.py <crate> tests                    each ported test's label derived from its `// literal`
                                                                 comments (CHANGED when one marks a decided difference, else
                                                                 EQUIVALENT) against its `test` line; fails on a comment that
@@ -1878,73 +1878,118 @@ def site_message(text, line, variants):
 
 
 def panic_reach(c, crate, args):
-    """`panics --reach` (plan step 5 (a), E72): for each panic site of G9's list, every public function of the crate
-    that reaches it by the mutation selector's call rule walked through every function (`reached` with every function a
-    helper), marked `stated` when the function's `# Panics` quotes the site's message template, or links a function
-    whose text does, else `open`. An `open` pair must be listed in conformance/panics-unreached.txt, one per line
-    `src/<file>:<line> src/<file>:<line> <Type::name> - <reason>` (site, function), with the reason its function's
-    inputs cannot meet the condition. Writes .scratch/conformance/<crate>/panics/reach.jsonl."""
-    fns = panic_sections(crate)
+    """`panics --reach` (plan step 5 (a) "after (b)", Q151, E73): each panic site of G9's list with every public function
+    of the crate that reaches it on the call graph the compiler resolves (tools/mir_graph.py, the library's MIR without
+    `__test`). Each pair is `site-unreachable` when the site's standing panic line (its verdict, or the `derived` of an
+    overturn of raw/recheck*.jsonl) is `UNREACHABLE`; `stated` when the function's `# Panics` quotes the site's message
+    template or links a function whose text does; `discharged` when every path from the function to the site passes
+    through a public function whose pair conformance/panics-unreached.txt lists; else `open`. A listed pair is
+    `src/<file>:<line> src/<file>:<line> <Type::name> - <reason>` (site, function). Fails on an `open` pair not listed,
+    a listed pair that is not `open`, a public function or a site with no MIR body (a site found only in the build with
+    `__test` is printed), and a site inside an impl of a trait the crate does not define. Writes
+    .scratch/conformance/<crate>/panics/reach.jsonl and reach-open.txt (each `open` pair with one shortest call path
+    and the public functions on it)."""
+    import mir_graph as mg
     files = src_files(crate)
-    by_file = collections.defaultdict(list)
-    for fn in fns: by_file[fn["file"]].append(fn)
-    for f, fs in by_file.items():
-        blocks = impl_types(files[f])
-        for fn in fs:
-            ty = next((t for a, b, t in blocks if a <= fn["line"] <= b), None)
-            fn["qual"] = f"{ty}::{fn['name']}" if ty else fn["name"]
-            fn["key"] = f"src/{f}:{fn['line']} {fn['qual']}"
+    fns = panic_sections(crate)
+    work = os.path.join(out_dir(crate), "panics", "mir")
+    g = mg.build(crate, fns, files, impl_types, mg.emit(REPO, crate, work))
+    by_file, by_src, nodes = g["by_file"], g["by_src"], g["nodes"]
     err = ic.read(os.path.join(ic.crate_dir(crate, "src"), "error.rs"))
     variants = {v: re.sub(r"\{[^}]*\}", "<x>", t) for v, t in
                 re.findall(r'Error::(\w+)\b[^=\n]*=>\s*(?:\{\s*)?(?:f\.write_str|write!\(f,)\s*\(?\s*"((?:[^"\\]|\\.)*)"', err, re.S)}
     rx = re.compile(LISTS["panics (G9)"])
     sites = [(f, l) for f in sorted(files) if not f.startswith("__test") for l, s in code_lines(files[f]) if rx.search(s)]
-    def holder(f, line):
-        inside = [fn for fn in by_file.get(f, []) if fn["line"] <= line <= fn["end"]]
+    public = [fn for fn in fns if fn["public"]]
+    c.need(all(fn["key"] in by_src for fn in public), f"every public function maps to a MIR body ({len(public)} public, {len(by_src)} of {len(nodes)} bodies mapped to a source fn)",
+           [fn["key"] for fn in public if fn["key"] not in by_src])
+    site_node = {(f, l): g["site_node"](f, l) for f, l in sites}
+    absent = [(f, l) for (f, l), n in site_node.items() if n is None]
+    if absent:
+        gt = mg.build(crate, panic_sections(crate), files, impl_types, mg.emit(REPO, crate, work + "-test", "__test"))
+        only_test = [f"src/{f}:{l}" for f, l in absent if gt["site_node"](f, l) is not None]
+        c.say(f"sites with no body in the build without `__test`, present in the build with it: {', '.join(only_test) or 'none'}")
+        c.need(len(only_test) == len(absent), f"every site maps to a MIR body in one of the two builds: {len(absent) - len(only_test)} do not",
+               [f"src/{f}:{l}" for f, l in absent if f"src/{f}:{l}" not in only_test])
+    traits = {t for text in files.values() for t in re.findall(r"^\s*(?:pub(?:\([^)]*\))?\s+)?(?:unsafe\s+)?trait\s+(\w+)", text, re.M)}
+    def holder(f, l):
+        inside = [fn for fn in by_file.get(f, []) if fn["line"] <= l <= fn["end"]]
         return max(inside, key=lambda fn: fn["line"]) if inside else None
+    foreign = [f"src/{f}:{l} in impl {h['impl'][3]} for {h['impl'][2]}" for f, l in sites for h in [holder(f, l)]
+               if h and h["impl"] and h["impl"][3] and h["impl"][3] not in traits]
+    c.need(not foreign, f"no site inside an impl of a trait defined outside the crate (the standard library may call it where the MIR shows no call): {len(foreign)}", foreign)
+    standing = {}
+    for x in item_tie(crate)["lines"]:
+        if x["kind"] == "panic": standing[x["id"]] = x["verdict"]
+    for f in ("recheck.jsonl", "recheck-class.jsonl"):
+        path = ic.spec(crate, "raw", f)
+        for r in (ic.rows(path) if os.path.exists(path) else []):
+            if r.get("kind") == "panic" and r.get("outcome") == "overturn": standing[r["id"]] = r["derived"]
     def linked(fn):
         out = []
         for target in re.findall(r"\[`[^`]*`\]\(([\w:]+)\)", fn["panics"] or ""):
             n = target.split("::")[-1]
-            same = [g for g in by_file[fn["file"]] if g["name"] == n and g["public"]]
-            out += same or [g for g in fns if g["name"] == n and g["public"]]
+            same = [h for h in by_file[fn["file"]] if h["name"] == n and h["public"]]
+            out += same or [h for h in fns if h["name"] == n and h["public"]]
         return out
     norm = lambda t: re.sub(r"<[^>]+>", "<x>", t)
-    public = [fn for fn in fns if fn["public"]]
-    reach = {fn["key"]: reached(fns, [fn], helper=lambda g: True) for fn in public}
-    rows, nomsg = [], []
-    for f, l in sites:
-        h = holder(f, l)
-        msg = site_message(files[f], l, variants)
-        if msg is None: nomsg.append(f"src/{f}:{l}")
-        for fn in public:
-            if h is None or (h["file"], h["line"]) not in reach[fn["key"]]: continue
-            quoted = {norm(t) for g in [fn] + linked(fn) for t in message_templates(g["panics"])}
-            rows.append({"site": f"src/{f}:{l}", "holder": h["key"], "message": msg, "function": fn["key"],
-                         "mark": "stated" if msg is not None and norm(msg) in quoted else "open"})
-    out = os.path.join(out_dir(crate), "panics", "reach.jsonl")
-    os.makedirs(os.path.dirname(out), exist_ok=True)
-    with open(out, "w", encoding="utf8") as fh:
-        for r in rows: fh.write(json.dumps(r, ensure_ascii=False) + "\n")
-    opened = [r for r in rows if r["mark"] == "open"]
-    kind = lambda r: "unreachable!" if re.search(r"unreachable!", dict(code_lines(files[r["site"][4:].rsplit(":", 1)[0]])).get(int(r["site"].rsplit(":", 1)[1]), "")) else "panic"
-    c.say(f"panic sites of G9's list: {len(sites)}; with no public function reaching them: "
-          f"{len({(f, l) for f, l in sites} - {tuple([r['site'][4:].rsplit(':', 1)[0], int(r['site'].rsplit(':', 1)[1])]) for r in rows})}; "
-          f"with no message the tool can read: {len(nomsg)}" + (f" ({', '.join(nomsg)})" if nomsg else ""))
-    by = collections.Counter((kind(r), r["mark"]) for r in rows)
-    c.say(f"pairs (site, public function): {len(rows)}; " + ", ".join(f"{k} {m} {n}" for (k, m), n in sorted(by.items())) +
-          f": {os.path.relpath(out, REPO)}")
     listed_path = ic.spec(crate, os.path.join("conformance", "panics-unreached.txt"))
     listed = {}
     if os.path.exists(listed_path):
         for t in ic.read(listed_path).split("\n"):
             m = re.match(r"(src/\S+:\d+) (src/\S+:\d+ \S+) - (.+)", t)
             if m: listed[(m.group(1), m.group(2))] = m.group(3)
+    pub_node = {by_src[fn["key"]]["id"]: fn["key"] for fn in public if fn["key"] in by_src}
+    R = {k: g["reach"](n) for n, k in pub_node.items()}
+    def on_path(ids): return [pub_node[i] for i in ids if i in pub_node]
+    rows = []
+    for f, l in sites:
+        sn = site_node[(f, l)]
+        if sn is None: continue
+        site = f"src/{f}:{l}"
+        msg = site_message(files[f], l, variants)
+        verdict = standing.get(site)
+        kind = "UNREACHABLE" if verdict == "UNREACHABLE" else "FINDING" if verdict == "FINDING" else "PRECONDITION"
+        gates = {by_src[k]["id"] for (s2, k) in listed if s2 == site and k in by_src}
+        for fn in public:
+            if fn["key"] not in R or sn not in R[fn["key"]]: continue
+            me = by_src[fn["key"]]["id"]
+            others = set(pub_node) - {me}
+            r = {"site": site, "verdict": verdict, "kind": kind, "message": msg, "function": fn["key"],
+                 "direct": sn in g["reach"](me, frozenset(others))}
+            quoted = {norm(t) for h in [fn] + linked(fn) for t in message_templates(h["panics"])}
+            if kind == "UNREACHABLE": r["mark"] = "site-unreachable"
+            elif msg is not None and norm(msg) in quoted: r["mark"] = "stated"
+            elif (site, fn["key"]) not in listed and gates - {me} and sn not in g["reach"](me, frozenset(gates - {me})): r["mark"] = "discharged"
+            else:
+                r["mark"] = "open"; r["listed"] = (site, fn["key"]) in listed
+                p = g["path"](me, sn); r["path"] = p; r["through"] = [k for k in on_path(p or [])[1:]]
+            rows.append(r)
+    out = os.path.join(out_dir(crate), "panics", "reach.jsonl")
+    with open(out, "w", encoding="utf8") as fh:
+        for r in rows: fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+    opened = [r for r in rows if r["mark"] == "open"]
+    with open(os.path.join(out_dir(crate), "panics", "reach-open.txt"), "w", encoding="utf8") as fh:
+        for r in opened:
+            fh.write(f"{r['site']} {r['function']} [{r['kind']}{', listed' if r['listed'] else ''}] `{r['message']}`\n"
+                     f"    public on the path: {', '.join(r['through']) or 'none (reached directly)'}\n    path: {' -> '.join(r['path'] or [])}\n")
+    n_sites = len({r["site"] for r in rows})
+    c.say(f"panic sites of G9's list: {len(sites)}; with a public function reaching them: {n_sites}; pairs (site, public function): {len(rows)}")
+    by = collections.Counter((r["kind"], r["mark"]) for r in rows)
+    c.say("by the site's standing line and mark: " + ", ".join(f"{k} {m} {n}" for (k, m), n in sorted(by.items())))
+    c.say(f"open pairs at PRECONDITION sites: {sum(1 for r in opened if r['kind'] == 'PRECONDITION' and r['direct'])} reached through no other public function, "
+          f"{sum(1 for r in opened if r['kind'] == 'PRECONDITION' and not r['direct'])} through one; each with a path: {os.path.relpath(out, REPO)[:-len('.jsonl')]}-open.txt")
+    through_path = os.path.join(out_dir(crate), "panics", "sites.jsonl")
+    if os.path.exists(through_path):
+        pairs = {(r["site"], r["function"].split(" ")[0]) for r in rows}
+        miss = [f"{s['site']} through {t}" for s in ic.rows(through_path) for t in s["through"] if (s["site"], t.split(" ")[0]) not in pairs]
+        c.say(f"pairs a run passed through (`panics`' sites.jsonl) that the graph does not reach: {len(miss)}" + "".join(f"\n        {m}" for m in miss))
+    else: c.say("no sites.jsonl: run `panics` to compare the graph with the pairs a run passed through")
     stale = sorted(f"{a} {b}" for a, b in listed if not any(r["site"] == a and r["function"] == b and r["mark"] == "open" for r in rows))
     c.need(not stale, f"every pair panics-unreached.txt lists is an `open` pair: {len(stale)} are not", stale)
-    left = [r for r in opened if (r["site"], r["function"]) not in listed]
+    left = [r for r in opened if not r["listed"]]
     c.need(not left, f"every `open` pair is listed in {os.path.relpath(listed_path, REPO)} with its reason ({len(listed)} listed): {len(left)} are not",
-           [f"{r['site']} {r['function']}  `{r['message']}`" for r in left])
+           [f"{r['site']} {r['function']}" + (f" (through {', '.join(r['through'])})" if r["through"] else "") for r in left])
     return rows
 
 
