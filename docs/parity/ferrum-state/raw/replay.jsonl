@@ -11,6 +11,7 @@
 {"chunk": "text", "op": "text.childrenPush", "how": "skip", "parts": [], "note": "mutates the children array cm6 holds (state.cm6.229.d1)"}
 {"chunk": "text", "op": "text.className", "how": "run", "parts": [], "note": "\"TextLeaf\" when `children()` is `None`, else \"TextNode\""}
 {"chunk": "text", "op": "text.sharedChildren", "how": "test", "parts": [], "note": "identity of `Text` nodes (design.md §10 identity table)"}
+{"chunk": "text", "op": "text.sharedNodes", "how": "test", "parts": [], "note": "identity of `Text` nodes (design.md §10 identity table): the number of subtrees of `doc` that are nodes of `in`, walked from `doc`'s root as `oracle/cm6/text/interp.ts` states (a node that is a node of `in` counts one and is not walked into), each node compared by `__test::same_text`"}
 {"chunk": "change", "op": "allSame", "how": "identity", "parts": [], "note": "`same` rule of design.md §10"}
 {"chunk": "change", "op": "desc.composeDesc", "how": "part", "parts": ["identity", "isSet", "json"], "note": "which operand object cm6 returned, and so whether the result is a `ChangeSet` (`isSet`, and `json`, which cm6 writes only for a set and the op marks as may be absent); Ferrum returns the declared `ChangeDesc` (design.md §3, §10; Q87)"}
 {"chunk": "change", "op": "desc.fromJSON", "how": "part", "parts": ["keepsInputArray"], "note": "the reader copies its input (state.cm6.229.d1)"}

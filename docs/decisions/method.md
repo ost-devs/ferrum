@@ -1109,3 +1109,23 @@ I prototyped it on the 13 listed fixtures of the three such rows. It gives 11 `e
 **Reopens.**
 - F4a or F4b ending outside 0.85 to 1.15 of its estimate.
 - `against` giving a difference that the row's patch, and not the crate, causes (E76).
+
+## 2026-11-27 · A generator G5 cannot reseed
+
+*Decided by the consultant (from Q156 of `ferrum-state`; the crate's part: `docs/decisions/ferrum-state.md`, "Q155 and Q156"). Binding text: `docs/workflow/specification.md` §5 item 5; `docs/parity/ferrum-state/plan.md` "Conformance" step 1 G5 and step 5 (f). Ledger: E77.*
+
+**Question.** `oracle/cm6/text/round-c.ts` drew its chains from a PRNG of its own, ported from a probe, at seed 7, and ignored `ORACLE_SEED_SALT` from F1 (5290354) until F4b salted it (6d42d39; ledger escape row of 2026-11-27). G5 runs every generator with fresh salts and counts new cases per chunk. A generator that ignores the salt therefore goes unnoticed whenever its chunk's other generators bring the count to 5,000. The chunk passes G5 while one generator's cases are never drawn fresh.
+
+**Decision.**
+- *The rule.* Generators draw through `rng` of `tools/cm6/oracle-lib.ts`, which the salt reseeds. A generator that must port another stream of draws exactly reads `ORACLE_SEED_SALT` itself. Unset, its seed is the one it states. Set, the seed is a one-to-one function of the salt that is never the default, and the seed used is written in its fixtures' notes.
+- *The check.* Before G5, the orchestrator adds a check to `tools/spec_check.py`: a generator under `oracle/cm6/` that draws otherwise fails it. That covers `Math.random`, and a PRNG of its own in a file that does not read `ORACLE_SEED_SALT`. The check is tried before it is relied on: it must fail on `round-c.ts` at da29a40 and pass on every generator at 6d42d39.
+
+**Why a check and not a sentence.** The error is silent by construction, since G5's count hides it. Only one generator of the crate had its own PRNG, and the tree shows that in seconds with a search. A tool applies it to every generator of every later crate, at no reading cost.
+
+**Lost.**
+- *A check in `oracle_fresh.py` that each generator's output changes under a salt.* The generators of a chunk write one file, so the tool cannot attribute a fixture to its generator without a mapping that does not exist.
+- *Only the sentence in the brief.* F1's worker had the rule "seeded" and still wrote a generator G5 could not reseed.
+
+**Confidence.** High that the class is closed for the cases the search names. Medium for a PRNG written in a shape the search does not know, which G5's per-chunk counts still would not show.
+
+**Reopens.** A generator that G5 does not reseed, found after the check passes.

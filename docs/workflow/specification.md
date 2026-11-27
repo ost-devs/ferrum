@@ -131,7 +131,7 @@ For every item in scope (`CORE`, `CONTRACT`, the core-owned part of `SURFACE`, a
 
    A behavior that needs a DOM or a grammar gets `golden_note` with the reason, and its expected values are taken from cm6 test assertions.
 4. **Consumer values.** Grep every mirrored cm6 package that uses the item for the constants and ranges it passes, for example decoration sides ±1e8…±6e8, precedence levels and large positions. Include them in behaviors and fixtures. Values from consumers fall far outside a package's own tests (`docs/workflow/learnings.md` W2).
-5. **Generators** for every pure item: seeded, with a header stating the seed, the case count, and how they cover each entry of this checklist (or why an entry does not apply):
+5. **Generators** for every pure item: seeded through `rng` of `tools/cm6/oracle-lib.ts`, which conformance G5 reseeds through `ORACLE_SEED_SALT` (a generator that must port another stream of draws exactly reads that variable itself, so that G5 still draws new cases from it), with a header stating the seed, the case count, and how they cover each entry of this checklist (or why an entry does not apply):
    - empty input, single element, many elements;
    - equal and duplicate elements, including the same object reused;
    - adjacent, overlapping and nested elements; unsorted input;

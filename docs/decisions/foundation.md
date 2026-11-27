@@ -473,3 +473,23 @@ mechanical conversion settles anyway) or misses cases implementers hit.
 **Lost.** Leaving the text as it was (each verifier would raise the same question per crate). Folding these into D12 (D12 maps to a `None` that exists; here none does).
 
 **Confidence.** High. **Reopens.** A case where the caller's type does hold a value cm6's stand-in means, and callers rely on cm6's result.
+
+## 2026-11-27 · D1: a position beyond the document
+
+*Decided by the consultant (from Q155 of `ferrum-state`; the crate's part: `docs/decisions/ferrum-state.md`, "Q155 and Q156"). Binding text: `.claude/rules/decisions.md` D1 (amended).*
+
+**Question.** D1 said that "a position lies on a `char` boundary; one that does not is a violated precondition". Rust's `str::is_char_boundary` is false for an index past the end. So a crate could read D1 as refusing every position beyond the document, with D1's message. `ferrum-state`'s `create` did exactly that for a range that cm6 accepts (`state:F8449`: anchor 4 on a document of length 3, kept by cm6's `checkSelection`, which compares only `to`).
+
+**Decision.** D1's boundary rule applies to a position within the document. A position beyond its end is not D1's question. It is clipped, accepted or refused as cm6's code for that call does, with cm6's message where cm6 throws (D13).
+
+**Why.**
+- *What D1's rule is for.* It exists because a UTF-8 byte can fall inside a character, which a UTF-16 position of cm6 never does in the same way. A position past the end falls inside nothing.
+- *What cm6 already decides.* cm6 decides per call what a position past the end means. `Text.replace` and `slice` clip it, `lineAt` throws `Invalid position`, `mapPos` throws its range error, and `checkSelection` keeps a range whose `from` is beyond the end. Applying D1 there replaces each of those behaviors with one refusal and a message that names the wrong condition.
+- *`ferrum-state` already follows this reading.* Its `Text` functions clip and then check the boundary. The one exception was the case that raised it.
+
+**Where it reaches.** Every crate that takes positions from callers. `ferrum-view`'s viewport bounds, `posAtCoords` results and decoration ranges, and the LSP and input readers, which convert outside positions and keep D13's `Result` for those.
+
+**Lost.**
+- *Reading D1 as a range check too.* It would add refusals that cm6 does not make, each one a difference no row records. Where refusing is better than cm6, it is an improvement with its own reference: `state.imp.004` holds the case of `checkSelection`.
+
+**Confidence.** High. **Reopens.** A call where cm6 indexes a string with a position past its end and gives a result that is an engine artifact. That is D11 (c), not D1.

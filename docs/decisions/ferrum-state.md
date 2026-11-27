@@ -1470,3 +1470,56 @@ The comparison becomes part of G4 (the method's part: `docs/decisions/method.md`
 - Written tests in (d) for `:24` and `:25`: about 80,000 cheaper, with values that cannot be regenerated and no fresh draws.
 
 *Confidence.* Medium on the estimates: the figures are fitted on the two runs they reproduce, and F4a tests them (E75). High on the cut.
+
+## 2026-11-27 · Q155 and Q156: F4a's nine mismatches, and the op and seed of F4b
+
+*Decided by the consultant (Q155 and Q156 of `ferrum-state`; the part for every crate: `docs/decisions/foundation.md`, "D1: a position beyond the document", and `docs/decisions/method.md`, "A generator G5 cannot reseed", same date). Binding text: `raw/decisions.jsonl` rows `state.cm6.126.d1` and `.126.d2`; `fixtures/no-counterpart.jsonl`; `raw/replay.jsonl` row `text.sharedNodes`; `raw/improvements.jsonl` `state.imp.004` (note) and `state.imp.020`; `plan.md` "Conformance" step 1 G5, step 5 (d), (e) and (f); `.claude/rules/decisions.md` D1; `docs/workflow/specification.md` §5 item 5. Ledger: E77.*
+
+**Q155. Six fixtures are cases of rows already decided.** I wrote the lists and ran the checks.
+- `state.cm6.126.d1` lists `state:F8434` and `F8435`: a `map` that returns `-0` for `0`, and `0` for `-0`.
+- `state.cm6.126.d2` lists `state:F8429`, `F8431`, `F8432` and `F8433`: an effect whose value is `undefined`, through `StateEffect.map`, `mapEffects`, an update of two specs and `changeByRange`.
+- `oracle_patch.py check` on both rows: each patch changes exactly its list. The control F8430 (`null`) is changed by neither.
+- The replay then gives the six as `none` with the row's id. They were new left-out entries, so I wrote them with `FERRUM_REPLAY_WRITE_NO_COUNTERPART=1`. The diff of `fixtures/no-counterpart.jsonl` is those six lines and nothing else.
+- G4's comparison with the patched output (`oracle_patch.py against`, (f)) covers them. By each row's rule I expect all six `equal`. I did not run the comparison, so (f) traces any difference before the tool is relied on.
+
+**Q155. Three fixtures are defects for (e).** None of the three falls in a class of D11, so the floor is cm6's result and the fixture's recorded value is the expected one.
+- *`state:F8421`, a state kept from a build that panicked.* `design.md` §6 already decides it: "After a build that panicked, reads on its own thread go on computing on demand, as in cm6". The fixture is the first case that shows Ferrum failing that sentence. `state.cm6.100.d2` covers a *transaction* from such a state, not a *read* of it, so its patch rightly leaves F8421 unchanged.
+  - Ferrum gives an `unreachable!` for the slot `c` that was not yet computed. It gives `Cyclic dependency` for the second read of `c`, because the first read's panic left the slot computing.
+  - cm6 gives 15, 15 and `[15]`, and `Cyclic dependency` only for `q`, whose own function threw.
+  - The fix is (e) I2's, with `end_construction` (`conformance-state.jsonl:430`) and `:332`.
+- *`state:F8438`, the nested `tr.state()`.* cm6 gives the outer build's state, because each constructor writes `tr._state` (`state.ts:58`). Ferrum gives the nested one, because its cell is written once.
+  - *Is this class (b)?* No. The nested state handed to the callback is not changed. Only which state the transaction reports changes, and it changes before the build finishes, on the thread building it.
+  - *Is it reproducible soundly?* Yes. `Transaction::state` returns a reference into the cell (`src/transaction.rs:402`), so the nested state must stay where it is. The cells are already a chain that only grows (`StateCell::next`), so the outer state can take another cell and become the one `find` returns, and the nested reference stays valid.
+  - The case is now a fixture, so (d) no longer writes a test of it. (e) I2 fixes it with the state cell of `:401`.
+- *`state:F8449`, a range whose `from` lies beyond the document.* cm6's `checkSelection` compares only `to` (`mirrors/cm6/state/src/selection.ts:241`). For a range with `from > to`, which cm6 makes by mapping (`state.cm6.087.d1`), `to` is the smaller end, so `create` keeps anchor 4 on a document of length 3.
+  - Ferrum refuses it with D1's message, from `check_boundaries` (`src/state.rs:589`), which checks every anchor and head.
+  - *What D1's rule is for.* It exists because a byte can fall inside a character. A position past the end falls inside nothing. The crate's own `Text` functions already treat it that way: they clip as cm6 clips and then check the boundary (`Text::replace`, `slice`, `slice_string`). `check_boundaries` is the one place that applies D1 to a position beyond the end, and it gives D1's message for a condition that is not D1's.
+  - *What changes.* D1 is amended for every crate to say this ("D1: a position beyond the document" in `docs/decisions/foundation.md`). (e) I2 makes `check_boundaries` check only positions within the document, at `create`, at a transaction's selection and in `from_json`.
+  - *Why not keep Ferrum's refusal as a deviation.* Refusing is arguably better, but no class of D11 allows it, and an improvement needs a reference that runs and its own moment (D16). I recorded it as a case of the candidate `state.imp.004`, which already gathers typed input cm6 accepts unchecked. Its reference is a patch comparing both ends, which gives cm6's own message, `Selection points outside of document`, at the call that took the range.
+
+**Q155. An opportunity found on the way.** F8421 shows cm6 reporting a cycle for a slot whose function failed, and Ferrum reproduces that message. It is a misleading diagnosis for a developer, so it is the candidate `state.imp.020`, weighed at the improvement delta. Its value is low: only a caller that catches a failed build and goes on reading meets it.
+
+**The replay test until (e).** It fails on `state:F8421`, `F8438` and `F8449`, and on nothing else. These three are the failing checks that (e) I2 makes pass (`.claude/rules/rust-crates.md` Tests 5), so I add no expected-failure list. That would be the skip list that the precedent forbids, and the test's failure output already names the three. Each (d) run confirms after its change that the failing set is exactly these three, and the plan's (d) says so. The mutation runs that count are (f)'s, after (e), so no baseline waits on a green replay before then. A probe of one mutant before (e) reads its own fixtures, not the whole replay.
+
+**Q156. The op's row.** `raw/replay.jsonl` now has `text.sharedNodes`, `how` `test`, as its pair `text.sharedChildren` has. The count is a walk over the public `children` (D2), with each node compared by `__test::same_text`, the identity that `design.md` §10 gives `Text`. The walk follows the interpreter's own comment (`oracle/cm6/text/interp.ts:115-120`).
+- (d) W1 registers it. The 45 `pending` fixtures should then compare `equal` or `part` at the current code. The ops count shared nodes, and the unmutated code is not the defect: `:24` and `:25` are surviving mutants, which the op now kills at (f).
+
+**Q156. The seed.** I accept F4b's formula as it stands. G5 needs three things from a seed rule:
+- The default is unchanged, so the committed fixtures regenerate byte for byte. They do: `spec_check` regenerates them.
+- No salt repeats another salt's draws. Multiplying by an odd constant modulo 2^64, then XOR with 7, is one-to-one over the salts G5 passes.
+- No salt of 1 or more gives the default. That would take a salt whose product is 0, which an odd multiplier never gives for a nonzero salt below 2^64.
+
+Which mixing function is used is not observable to anything that consumes the fixtures. What failed was silent: the chains ignored the salt from F1 until F4b, and G5 would have counted the chunk's other generators and never noticed. So the rule is now written where generators are written (`docs/workflow/specification.md` §5 item 5, and the plan's G5), and a check that the orchestrator adds to `tools/spec_check.py` before G5 makes the class show (plan step 5 (f), E77). The method's part is in `docs/decisions/method.md`.
+- *Size.* A salt adds about 0.45 MB of chains and their runtime. That is a cost in disk and seconds, and none in tokens. G5 stops drawing for a chunk once it has its 5,000 cases. I put no cap on the chains: the cases of `:24` and `:25` need the large documents, and those are exactly what the fresh seeds should draw.
+
+**Lost.**
+- *F8421 or F8438 as deviations.* No class allows either, and §6 already says the opposite for F8421.
+- *Keeping D1's refusal of F8449 now.* It is a difference with no reference that runs, made in the middle of conformance.
+- *An expected-failure list for the replay.* It is a skip list that would outlive its reason.
+- *A fixed mixing formula across generators.* The one property G5 needs is the three above, not one formula.
+
+*Confidence.* High on the lists, which are runs, and on the three routings, which follow from §6, D11 and cm6's code. High on the seed. Medium that the six compare `equal` under `against` until (f) runs it.
+
+**Reopens.**
+- A consumer above `ferrum-state` that relies on `create` refusing a range beyond the document. That would move `state.imp.004`'s case earlier.
+- `against` giving a difference on the six that the rows do not state.

@@ -1904,5 +1904,11 @@
 {"chunk":"state","id":"F8401","compared":"none","reasons":[{"reason":"state.cm6.100.d2","op":"","part":"the fixture","value":null}]}
 {"chunk":"state","id":"F8426","compared":"none","reasons":[{"reason":"type","op":"state.update","argument":"selection.anchor","value":9223372036854776000},{"reason":"error","op":null,"part":"the uncaught error","value":null}]}
 {"chunk":"state","id":"F8427","compared":"none","reasons":[{"reason":"type","op":"state.update","argument":"selection.anchor","value":10000000000000000000},{"reason":"error","op":null,"part":"the uncaught error","value":null}]}
+{"chunk":"state","id":"F8429","compared":"none","reasons":[{"reason":"state.cm6.126.d2","op":"","part":"the fixture","value":null}]}
 {"chunk":"state","id":"F8430","compared":"part","reasons":[{"reason":"identity","op":"same","argument":"a, b","value":null}]}
+{"chunk":"state","id":"F8431","compared":"none","reasons":[{"reason":"state.cm6.126.d2","op":"","part":"the fixture","value":null}]}
+{"chunk":"state","id":"F8432","compared":"none","reasons":[{"reason":"state.cm6.126.d2","op":"","part":"the fixture","value":null}]}
+{"chunk":"state","id":"F8433","compared":"none","reasons":[{"reason":"state.cm6.126.d2","op":"","part":"the fixture","value":null}]}
+{"chunk":"state","id":"F8434","compared":"none","reasons":[{"reason":"state.cm6.126.d1","op":"","part":"the fixture","value":null}]}
+{"chunk":"state","id":"F8435","compared":"none","reasons":[{"reason":"state.cm6.126.d1","op":"","part":"the fixture","value":null}]}
 {"chunk":"state","id":"F8436","compared":"part","reasons":[{"reason":"identity","op":"same","argument":"a, b","value":null}]}
