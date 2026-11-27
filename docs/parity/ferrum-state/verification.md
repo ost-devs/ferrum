@@ -506,3 +506,20 @@ checks passed
 ```
 
 Not `agree`: `raw/conformance-rangeset.jsonl:319` `src/rangeset.rs:1082:46 replace + with - in RangeSetBuilder<T>::add_chunk` overturn low (recorded `EQUIVALENT MUTANT`; a filter that drops the range after a chunk taken whole lets a later range with `from` after `to`, stored as given by `state.cm6.201.d1`, start before the chunk's end, and the mutant moves it to the first layer, so `iter` yields it last: 249 ranges `[100+i, 101+i]`, then `L [349,50]`, `X1 [60,30]`, `Y [40,45]`, filter dropping `X1` over 0 to 99; probe `.scratch/verify-recheck/u3-probe`, `add1082`). The re-checker's sentinel row of `:210` (`src/rangeset.rs:867`) was written after the recorded line appeared in one of its greps, the verdict reached before (its evidence says so). The probe also kills `:1150:41` and `:1152:21`, which step 3 recorded as findings.
+
+### U1, part a2: 22 hazard lines (rechecker, 2026-11-27)
+
+The first run under M32's tools (128,966 tokens against 135,000). `recheck-audit` shows all 22 rows first seen through their reveal, after a fix of the audit: it had taken each recorded line's first 48-character piece of evidence, and on four lines that piece was a phrase step 3 wrote on many (`Input excluded by type (D12, …`), which the reveal of `:184` showed; it now takes a piece no other recorded line holds (118 of 1,627 lines have none and are matched by their id and verdict only).
+
+```
+lines 1627; pool 1253 (findings, item lines and replayer:core left out); by kind {'test': 197, 'hazard': 681, 'panic': 36, 'sentinel': 152, 'branch': 38, 'mutant': 39, 'shared': 108, 'line': 1, 'behavior': 1}
+order shown: tool 22; derivations the reveal corrected (derived differs, outcome agree): 4
+all: 22 rows; hazard agree 21, hazard overturn 1
+run fc3cef5 conformance(ferrum-state): step 3, U1 hazards of Text and Line; Q137: 22 rows; hazard agree 21, hazard overturn 1
+the six runs of M28: 0 rows; 
+hazard, panic, shared, sentinel of runs above 200,000 (M28 runs apart): 0 rows; 
+hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart): 22 rows; hazard agree 21, hazard overturn 1
+checks passed
+```
+
+Not `agree`: `raw/conformance-text.jsonl:212` `state.Text.iterRange.B2:h1` overturn low (recorded `EXERCISED`; bounds above the length take every `usize` by D17, cm6 only compares them, `mirrors/cm6/state/src/text.ts:480-503`, and Ferrum casts them `as isize` at `src/text.rs:1051-1052`, so `iter_range(0, usize::MAX)`, `(0, isize::MAX + 1)`, `(10, usize::MAX)` and `(usize::MAX, 0)` yield nothing where cm6 yields the range cut to the document; the compared fixtures go to 100; probe `.scratch/recheck-U1-a2/probe`; the recorded evidence names the cast as the file's sentinel finding, `conformance/lists.md:227-228`, and says no compared fixture runs a reverse range from past the end, where F1518, `iterRange(100, 15)`, is one). The four derivations the reveal corrected (`:173`, `:177`, `:228` under D11 (b) and `state.cm6.229.d1`; `:197` under D1) were `EXCLUDED` where step 3 wrote `EXERCISED` by a written test asserting the decided result (`written_text.rs::text_of_copies_its_input`, `text_children_are_the_same_nodes_on_every_call`, `text_slice_inside_a_character_panics`, each re-run and passing): Q145. `:173` cites `src/text.rs:448` and `:450` for `:447` and `:449`.

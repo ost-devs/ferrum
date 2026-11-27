@@ -2,7 +2,7 @@
 
 Open questions only (`docs/workflow/README.md` §3): a decided entry is removed in the commit that records the decision. Ids are stable and never reused.
 
-The next id is Q145.
+The next id is Q146.
 
 ## Q144. G8's timed run: two entries whose time grows with n in Ferrum and stays flat in cm6
 - **Found.** The timed run of 2026-11-27 (`docs/parity/ferrum-state/bench/rust.jsonl`, `bench/cm6.jsonl`, 240 entries at n, 10n and 100n on each side; `python3 tools/conf_check.py ferrum-state g8 --sizes n,10n,100n --growth` writes `conformance/g8-growth.txt`, the exponent k of t ~ n^k from n to 100n on each side). Two entries exceed cm6's exponent by more than 0.25; the next is +0.23 (`range_cursor.goto`, 1.27 against 1.04).
@@ -12,3 +12,11 @@ The next id is Q145.
 - **Bears on it.** `toJSON` is the persistence path for a change (`ChangeSet.toJSON` at `change.ts:299` builds a new array of parts, so it is linear in cm6 too: `change_set.to_json` is not among the two). A caller of `ChangeDesc::to_json` on a change of 10^6 sections waits 70 ms in Ferrum. The other 238 entries: `conformance/g8-growth.txt`, 9 more above +0.1 (at most +0.13), several entries at k near 1 on both sides (the bench input grows with n, as for `range_set.iter`). Entries with a median below 1 ns at either end are marked `below 1 ns` in the file (timer floor).
 - **Blocks.** G8's verdict for `state.cm6.159` and `state.cm6.234`, and the settlement of `state.imp.010`, at the acceptance (step 6).
 - **Raised by.** The orchestrator, 2026-11-27.
+
+## Q145. A hazard a decision excludes but a written test asserts gets either verdict of Q137
+- **Found.** Step 4, part U1-a2 (`docs/parity/ferrum-state/verification.md` "U1, part a2"): on `raw/conformance-text.jsonl:173` (`state.Text.B3:h2`), `:177` (`state.Text.lines.B1:h2`), `:228` (`state.Text^of.B3:h1`), all under D11 (b) and `state.cm6.229.d1` (the copy in `Text::of`, `src/text.rs:440`, `:447`), and `:197` (`state.Text.slice.B2:h1`, D1, `assert_boundary` at `src/text.rs:332-333`), step 3 wrote `EXERCISED`, naming a written test that mutates the caller's `Vec` or passes a position inside a character and asserts Ferrum's decided result (`written_text.rs::text_of_copies_its_input`, `text_children_are_the_same_nodes_on_every_call`, `text_slice_inside_a_character_panics`); the rechecker derived `EXCLUDED`, naming the decision. It re-ran the tests: they pass.
+- **Open because.** `cards/verifier.md` "What you check" item 3 and the decision of Q137 (`docs/decisions/ferrum-state.md` "Q137 to Q140") call a hazard whose input a decision gives no counterpart `EXCLUDED`; here the caller can still write the input (its own `Vec` after the call, a byte position inside a character), and a check asserts what the decision says Ferrum does. Neither text says which verdict holds when both are true.
+- **Bears on it.** `recheck --results` counts the four as derivations the reveal corrected (outcome `agree`), so that count rises on the class alone, with no wrong pass behind it; the re-check's rates are taken from those rows (M32). What a reader of a verdict checks differs: the decision's row for `EXCLUDED`, the test for `EXERCISED`. Whether other units' lines split the same way is not known; the remaining parts will show it.
+- **Blocks.** Nothing in step 4's runs; how the corrected derivations are read in its measurement (E58, E62), and the classes step 5 settles.
+- **Raised by.** The rechecker of U1-a2, brought by the orchestrator, 2026-11-27.
+

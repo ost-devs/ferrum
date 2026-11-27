@@ -1166,11 +1166,16 @@ def recheck_audit(c, crate, args):
             elif x.get("type") == "tool_result":
                 cont = x.get("content")
                 events.append((n, "result", cont if isinstance(cont, str) else json.dumps(cont, ensure_ascii=False)))
-    def mark(text):
-        """A 48-character piece of a text with no quote, backslash or newline, so that it reads the same escaped."""
-        for k in range(0, max(1, len(text) - 48), 16):
+    raw = ic.spec(crate, "raw")
+    others = {f: [r.get("evidence", "") for r in ic.rows(os.path.join(raw, f))] for f in os.listdir(raw) if re.fullmatch(r"conformance-[\w-]+\.jsonl", f)}
+    def mark(file, line):
+        """A 48-character piece of a recorded line's evidence with no quote, backslash or newline, so that it reads the
+        same escaped, and found in no other line's evidence: a phrase step 3 wrote on many lines does not name one."""
+        text = others[file][line - 1]
+        rest = "\x00".join(e for f, es in others.items() for i, e in enumerate(es) if (f, i) != (file, line - 1))
+        for k in range(0, max(1, len(text) - 48), 8):
             w = text[k:k + 48]
-            if len(w) == 48 and not re.search(r"[\"\\\n\t]", w) and not w.isspace(): return w
+            if len(w) == 48 and not re.search(r"[\"\\\n\t]", w) and not w.isspace() and w not in rest: return w
         return None
     rows = ic.rows(ic.spec(crate, "raw", "recheck.jsonl"))
     if "--lines" in args:
@@ -1179,7 +1184,7 @@ def recheck_audit(c, crate, args):
     shown, early, none = [], [], []
     for r in rows:
         line = ic.rows(ic.spec(crate, "raw", r["file"]))[r["line"] - 1]
-        em = mark(line.get("evidence", ""))
+        em = mark(r["file"], r["line"])
         idv = re.compile(re.escape(json.dumps(line["id"], ensure_ascii=False)) + r'.{0,200}?"verdict": ?' + re.escape(json.dumps(line["verdict"])), re.S)
         holds = lambda x: (em and em in x) or idv.search(x)
         first = next((i for i, (n, k, x) in enumerate(events) if k == "result" and holds(x)), None)
