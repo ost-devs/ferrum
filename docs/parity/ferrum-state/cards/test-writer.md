@@ -597,3 +597,39 @@ A fact that does not fit this card, or a row whose sentence the test cannot foll
 - the values the script gave, and each value it did not give with its source;
 - the questions;
 - the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Conformance step 5 (d), run W2c: the written tests of unit `facet`, and of Q158 and Q160
+
+**The step** is `docs/parity/ferrum-state/plan.md` "Conformance", step 5 (d), run W2c. You write tests only; you change nothing in `crates/ferrum-state/tests/replay/`. (e)'s implementer then changes the code until the checks pass, so **a test of yours may fail at the current code**: that is the point when the row says Ferrum must change. Never weaken a test so that it passes. You do not read `crates/ferrum-state/src/` beyond signatures and doc comments.
+
+**Values come from committed scripts** in `docs/parity/ferrum-state/written/` (read `values.ts` and `state.ts` there for the form: one line `<label> => <json>` per value), each test's comment naming the script and the label of its output line. A value no script can give (cm6 has no counterpart) is the row's decided one: `raw/decisions.jsonl`, or `docs/parity/ferrum-state/design.md` §5 for a message, compared whole.
+- The values of Q158 and Q160 go into `written/values.ts` under labels of their own; run it again (`npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/written/values.ts > docs/parity/ferrum-state/written/values.out`) and check that every earlier line of `values.out` is unchanged (`git diff` shows only added lines).
+- The values of unit `facet` that a run gives go into a new `written/facet.ts` with its `facet.out`.
+
+**What the replay does not compare** (Q162, `docs/decisions/ferrum-state.md` "Q162"): a fixture that a deviation row without a condition lists is `none` in the replay (`fixtures/no-counterpart.jsonl`) and is compared only by `python3 tools/oracle_patch.py ferrum-state against`. A written test of such a row is therefore never narrowed on the ground that the replay asserts the rest.
+
+**The inputs.** Read each line's `evidence` and `repro` in `docs/parity/ferrum-state/raw/conformance-<chunk>.jsonl`, and the decisions in `docs/decisions/ferrum-state.md` "Q157 to Q161".
+1. *The `WEAKER` tests of unit `facet`*: `conformance-facet.jsonl:16` and `:22` (the ported `test_cm6_facet_16` and `_22` in `crates/ferrum-state/tests/cm6_facet.rs`: values whose `PartialEq` is by pointer, D14, so that the test fails if the combine or the getter runs again, as cm6's `===` does); `:24` and `:27` (written tests in `crates/ferrum-state/tests/written_state.rs`, near `:166` and `:466`: give them the missing assertions, with values from `facet.ts`, or narrow them to what they assert and name the compared fixtures that assert the rest). New written tests of unit `facet` go in `crates/ferrum-state/tests/written_facet.rs` (a new file).
+2. *Q158*: `RangeSetBuilder::add`, `RangeSet::of` and `RangeSet::update` (its `add`) with a range whose `from` or `to` is 2^63 or `usize::MAX` panic with `A range set cannot hold a position above isize::MAX`. As the control, three sets at the top of the domain built, updated, mapped and compared with cm6's values: one holding a range at 2^62, one ending at 9223372036854774784 (the largest double below 2^63), and one whose first range starts at 9223372036854774784 (at 5bc7737 it panics `attempt to subtract with overflow` in a debug build). Where cm6's double differs from the exact integer, the test asserts the exact integer (D17). The lines: `conformance-rangeset.jsonl:185`, `:186`, `:220` to `:224`, `:226` to `:228`. Tests in `crates/ferrum-state/tests/written_rangeset.rs`.
+3. *Q160*: JSON text parsed by the crate's `serde_json` (with `serde_json::from_str`, not `json!`): `9007199254740991.0` and `961402497.0000000000000` as section lengths of `ChangeDesc::from_json` and `ChangeSet::from_json`, against `JSON.parse` then `fromJSON` in `values.ts`. They fail at the current code until (e) I1 turns `float_roundtrip` on. Make the doc comment of the `parse` helper in `crates/ferrum-state/tests/written_change.rs` (near `:321`) true for the parser after (e) I1. Tests in `written_change.rs`.
+
+**Commit paths**, checked by the orchestrator with `python3 .claude/hooks/guard.py paths test-writer` before this run: `crates/ferrum-state/tests/written_facet.rs`, `written_state.rs`, `written_rangeset.rs`, `written_change.rs`, `cm6_facet.rs`, `docs/parity/ferrum-state/written` (`values.ts`, `values.out`, `facet.ts`, `facet.out`), and in `docs/parity/ferrum-state/implementation.md` only your entry, appended at the end of "Changes to checks after their code" in the form of the entries there. Nothing else: not `crates/ferrum-state/src/`, `tests/replay/`, the other scripts of `written/`, `raw/`, `fixtures/`, `oracle/`, `bench/`, `docs/decisions/`.
+
+A fact that does not fit this card, or a row whose sentence the test cannot follow, goes in the report as a question in the shape of `CLAUDE.md` "Raising a question".
+
+**Check, run by you before you commit:**
+- `cargo fmt --all`; `cargo clippy -p ferrum-state --all-targets --features __test` with zero warnings;
+- `cargo test -q -p ferrum-state --features __test --no-fail-fast`: the replay test fails on `change:F8018`, `state:F8421`, `F8438` and `F8449` and on no other fixture; W1b's 16 written tests (aaa3960) and W2b's four (c74a0bd: `a_transaction_from_a_state_under_construction_panics_when_its_state_is_built`, `a_transaction_from_a_state_whose_build_panicked_panics_when_its_state_is_built`, `a_state_under_construction_read_on_another_thread_panics_and_on_its_own_computes_the_slot`, `to_json_then_from_json_splits_again_a_line_that_holds_a_separator`) still fail; list every other failing test, each with the row that says Ferrum must change;
+- `python3 tools/conf_check.py ferrum-state tests`, passing whole;
+- `git diff -- docs/parity/ferrum-state/written/values.out` adds lines only.
+
+**Budget.** 110,000 tokens (`plan.md` step 5 (d), runs). At 165,000, stop and report where you are; if your output is already committed and checked when you reach it, write your report.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git add` the new files first (`written_facet.rs`, `written/facet.ts`, `written/facet.out`), then `git commit -m 'test(ferrum-state): conformance step 5 (d) W2c, the written tests of unit facet, Q158 and Q160' -- <the commit paths above>`. Never `git add -A`.
+
+**Report:**
+- the checks' output: the failing tests with the row of each, and the replay's counts;
+- per item, the tests written or changed (file and name);
+- the values the scripts gave, and each value they did not give with its source;
+- the questions;
+- the two lines of `CLAUDE.md` "Reporting from a card".
