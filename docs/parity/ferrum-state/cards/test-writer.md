@@ -530,3 +530,29 @@ A fact that does not fit this card, or a row whose sentence the test cannot foll
 - the scripts committed, and each value a script did not give with its source;
 - the questions;
 - the two lines of `CLAUDE.md` "Reporting from a card".
+
+## Conformance step 5 (d), run W2a: the replayer's finding `conformance-state.jsonl:409`
+
+**The step** is `docs/parity/ferrum-state/plan.md` "Conformance", step 5 (d), run W2a. One finding of step 3 is a hole in the replayer of chunk `state`, not in the crate: `docs/parity/ferrum-state/raw/conformance-state.jsonl:409` (verdict `FINDING`, low). Read its `evidence` and `repro` first. In short: the messages of Ferrum's panics are converted back to cm6's numbers through the arguments of the call in progress (rule 10, `docs/parity/ferrum-state/plan.md` "Implementation", the rules of positions, item 10). `Chunk::call_of` isolates a nested call's arguments (`crates/ferrum-state/tests/replay/state/chunk.rs:141-152`), but op `text.lineAt` converts its position with `to_bytes` outside any `call_of` (`state/ops.rs:1374-1384`). Evaluated in a callback during `state.update`, it adds its (position, text) to the update's arguments (`ARGS`, `state/values.rs:32-61`; read by `by_arguments` of `state.update`, `state/ops.rs:158-223`, `current_args` at `:191`), where rule 10 can read it as an argument of the update.
+
+**The work.**
+1. Make the conversion of `text.lineAt` stay out of the arguments of the call in progress, as `call_of` does for a nested call of Ferrum. The conversions the line names as adding to the call by design (the specs and effects a callback returns; `effect.of` with its filler conversion, `state/ops.rs:1619`, which is how `state:F0751`'s "Position 9" finds its argument) stay as they are.
+2. A literal test in `crates/ferrum-state/tests/replay/rules.rs`, in the form of the tests there: the line's `repro` (a `transactionFilter` that evaluates `text.lineAt` on a non-ASCII text at a byte position, then a `state.update` whose panic names a position that is not an argument). Before your change, the test shows rule 10 converting through that text; after it, the position is not converted through it.
+3. A fact for the report, not a change: every other op of chunk `state` that converts a position with `to_bytes` (or writes `ARGS`) outside `call_of`, by a grep of `crates/ferrum-state/tests/replay/state/`. Each one gets its file and line, and whether it is among those the line names as by design.
+
+**Read** only the ranges named above, the tests of `rules.rs` you model yours on (its last 60 lines, `:755-815`), and rule 10 in `plan.md` "Implementation". Do not read the replayer's modules whole. `crates/ferrum-state/src/` is not yours to read beyond signatures.
+
+**Write:** `crates/ferrum-state/tests/replay/state/` (the change of item 1), `crates/ferrum-state/tests/replay/rules.rs`, and one entry under `docs/parity/ferrum-state/implementation.md` "Changes to checks after their code" in the form of the entries there. Nothing else.
+
+A fact that does not fit this card goes in the report as a question in the shape of `CLAUDE.md` "Raising a question".
+
+**Check, run by you before you commit:**
+- `cargo fmt --all`; `cargo clippy -p ferrum-state --all-targets --features __test` with zero warnings;
+- `cargo test -q -p ferrum-state --features __test`: the replay test fails on `change:F8018`, `state:F8421`, `F8438` and `F8449` and on no other fixture (they are (e)'s), and every other test passes but those the report of W1b lists (the orchestrator gives them below, if any);
+- `python3 tools/conf_check.py ferrum-state tests`, passing whole.
+
+**Budget.** 85,000 tokens (`plan.md` step 5 (d), W2a). At 127,500, stop and report where you are; if your output is already committed and checked when you reach it, write your report.
+
+**Commit** alone, with explicit paths, on the current branch, without pushing: `git commit -m 'test(ferrum-state): conformance step 5 (d) W2a, the replayer finding conformance-state.jsonl:409' -- crates/ferrum-state/tests/replay docs/parity/ferrum-state/implementation.md`. Never `git add -A`.
+
+**Report:** the checks' output; the change of item 1, with its file and lines; the literal test's name; item 3's list; the questions; the two lines of `CLAUDE.md` "Reporting from a card".
