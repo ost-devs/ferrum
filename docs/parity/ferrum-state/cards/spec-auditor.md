@@ -130,6 +130,59 @@ A finding no program of chunk `rangeset` can express goes in the report, with th
 - the questions;
 - the two lines of `CLAUDE.md` "Reporting from a card".
 
+## Conformance step 5 (c), run F3: the fixtures of the findings of chunk `facet`
+
+**The step** is `docs/parity/ferrum-state/plan.md` "Conformance", step 5 (c). Read its paragraph whole, *Runs.* included: it is the binding list, and its (F3) is this run. F1 and F2 ran chunks `text`, `change` and `rangeset` (commits 5290354, 81bd723); their generators `oracle/cm6/change/round-c.ts` and `oracle/cm6/rangeset/round-c.ts` are the pattern to copy. A finding goes to the chunk whose interpreter (`docs/parity/ferrum-state/oracle/cm6/<chunk>/interp.ts`) runs its program's calls.
+
+**The inputs of F3.** Each line below is a line of `docs/parity/ferrum-state/raw/conformance-facet.jsonl`. Read its `evidence` and `repro`. Where `raw/recheck.jsonl` or `raw/recheck-class.jsonl` has a row for the line (match its `file` and `line`), read that row's `repro` as well.
+1. *`:51`, with the Q141 fixtures* (`docs/decisions/ferrum-state.md`, "2026-11-26 · Q141 and Q142", Q141, "What the round adds"): the four cases of the consultant's probe, recorded from cm6. A provider `compute([f], …)` whose getter counts its calls, the field in a compartment that a reconfiguration empties or fills: a field dropped while it held `null`, and while it held `undefined` (the old input is kept, one call); dropped while it held `0` or `7` (the getter runs); added while its first value is `null` (the old input is kept).
+2. *Hazards:* `:56` (`computeN`'s compare, the new element first), `:113` (a field's init entry found by identity).
+3. *Panics:* `:189` (`Duplicate use of compartment in extensions`, from `EditorState.create` and from `tr.state`), `:191` and `:192` (a `create` callback that keeps the state under construction, Q142), each a fixture recording cm6's result or throw through the public function the line names.
+4. *The overturn of the class reads:* `:190` (`src/facet.rs:1282`, two fields whose `create` read each other): cm6's `Cyclic dependency between fields and/or facets` through `EditorState.create`.
+5. *The branch and the mutants of a field dependency at reconfiguration:* `:260` (`Arc::ptr_eq` false for a field present in both states), `:262` (the field's `eq` negated), `:267` (`||` to `&&` in `provider_slot`). Each line's evidence says which input the check misses; write it as a case of the chunk's generator.
+
+**Not in F3:** every `sentinel` and `shared` line ((d) and (e)); the lines of chunk `state` (F4).
+
+**Read:**
+- the plan's paragraph;
+- the header and ops of `oracle/cm6/facet/interp.ts`;
+- `oracle/cm6/facet/impl-state.ts` and F2's `oracle/cm6/rangeset/round-c.ts`, the pattern to copy (the drop of a range of ids, the header);
+- `oracle/cm6/order.json`;
+- the lines named above, and the behavior rows their evidence cites, in `raw/behaviors.jsonl`;
+- the rows `state.cm6.040.d1` and `state.cm6.100.d2` of `raw/decisions.jsonl`, and their patches under `oracle/patches/`;
+- cm6's code at the places the lines cite, under `mirrors/cm6/state/src/`.
+`docs/workflow/specification.md` §4 and §5 item 5 hold the fields of a row and the checklist of a generator's header, if the pattern does not settle one.
+
+**Write:**
+- *One generator:* `oracle/cm6/facet/round-c.ts` with ids F8400 to F8599. Append it at the end of chunk `facet`'s list in `order.json`, and drop its range first, as F2's generator does. Give it a header in the form of F2's.
+- *Values from cm6 runs only.* A program that throws records cm6's error, as the chunk's error fixtures do.
+- *Behavior rows:* each new fixture lists the behaviors it shows, and each of those rows lists it back. A case no row states gets a new row with the next free id of its member and `"added": "conformance round"`. A row whose text a fixture refutes is corrected the same way. A fixture names only rows of its own chunk.
+- *An op that no interpreter has:* add it only when no existing op can express the case. Give it a header line in the header's form, and name it in the report, because (d)'s `test-writer` registers it in the replayer.
+
+**Do not write:**
+- `raw/decisions.jsonl`, `raw/replay.jsonl`, `raw/improvements.jsonl` or `oracle/patches/` (the consultant's);
+- `raw/conformance-*.jsonl`, `raw/recheck*.jsonl` or anything under `crates/`;
+- the inputs of F4.
+
+A finding no program of chunk `facet` can express goes in the report, with the reason, for (d). A way to do better than cm6, or a fact that does not fit this card, goes in the report as a question in the shape of `CLAUDE.md` "Raising a question".
+
+**Checks, run by you before you report:**
+- `python3 tools/spec_check.py ferrum-state` ends with "checks passed" (about 3 minutes). It re-runs every generator of `order.json`, requires each to reproduce its fixtures byte for byte, and rewrites `raw/fixture-ops.jsonl`.
+- `python3 tools/oracle_patch.py ferrum-state check state.cm6.040.d1 state.cm6.100.d2`: it lists the committed fixtures each patch changes. Q141 expects the patch of `state.cm6.040.d1` to change exactly the first three cases of item 1. The rows' `fixtures` lists are the consultant's to update, so the check will fail on the new fixtures: report, for each row, the fixtures it changes.
+Do not run `tools/impl_check.py`: the orchestrator replays the new fixtures after your run.
+
+**Budget.** 110,000 tokens. At 165,000, stop and report where you are; if your card's output is already committed and checked when you reach it, write your report.
+
+**Commit** with explicit paths, on the current branch, without pushing: `git commit -m 'spec(ferrum-state): conformance step 5 (c) F3, the fixtures of the findings of facet' -- docs/parity/ferrum-state/oracle/cm6 docs/parity/ferrum-state/fixtures docs/parity/ferrum-state/raw/behaviors.jsonl docs/parity/ferrum-state/raw/fixture-ops.jsonl`. Add new files with `git add <path>` first, and never `git add -A`.
+
+**Report:**
+- the output of the checks;
+- for each input line above: its fixture ids, or "to (d)" with the reason;
+- the rows added or corrected, with each text before and after;
+- any new op;
+- the questions;
+- the two lines of `CLAUDE.md` "Reporting from a card".
+
 The sections below are from the implementation stage.
 
 
