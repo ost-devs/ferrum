@@ -35,6 +35,7 @@
 - A patch of cm6 writes Ferrum's observable result, never its mechanism (identity): what the replayer leaves out stays cm6's. Same entry
 - A comment serving two checks (G3 literals and the label): before removing it for one, ask what the other loses. `docs/decisions/ferrum-state.md` Q146
 - A living file that drifts though its rule exists: find why the rule lost (the cheapest edit was an append; nothing showed the drift), give each fact one home the file points to, make the drift data show fail a check at the write, read for the rest at end of stage. Dormant re-entry knowledge is the crate's directory and the append-only records, never a file every session loads; memory keeps what applies to the next crate. `docs/decisions/method.md` "M34 to M38"
+- An overturn that refutes a premise: carry it by a search of every line's evidence for the overturned place, judged with the counterexample; blind re-reads re-derive shared misreadings, and my own classification missed one (change:262). Where a reading's errors all fall in one part of its assertion, ask if that part is data (panics `--reach`). `docs/decisions/method.md`, 2026-11-27 "A refuted premise is carried by search"
 - Proof of parity (replayer, fixtures, patches, checks, rows): [precedents-proof.md](precedents-proof.md)
 - Conformance verdicts, re-checks, class corrections, G6/G8: [precedents-conformance.md](precedents-conformance.md)
 - Estimating runs: [budgets.md](budgets.md) — context size, decomposition, what the ledger's tokens mean

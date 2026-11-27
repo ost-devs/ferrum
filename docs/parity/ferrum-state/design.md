@@ -113,7 +113,7 @@ One enum, `Error`, `#[non_exhaustive]`, a variant per explicit throw of `raw/thr
 
 | Panic | Message | Where |
 |---|---|---|
-| a position of a document that is not on a `char` boundary (D1) | `Position <pos> is not on a character boundary of the document` | every function that takes a position of a `Text` it holds, one private function writing it |
+| a position of a document that is not on a `char` boundary (D1) | `Position <pos> is not on a character boundary of the document` | every function that takes a position of a `Text` it holds, one private function writing it; a transaction's positions are checked where they are used, not by `EditorState::update`: its changes' where its new document is computed (`Transaction::new_doc`, and every public function that computes it), its selection's in `Transaction::state` (`state.imp.004` weighs checking both at `update`) |
 | a position of a string that is not on a `char` boundary (D1) | `Position <pos> is inside a character of the string` | `find_cluster_break`, `code_point_at`, `count_column`, `find_column`, `try_find_column`, the value of a cursor |
 | `find_cluster_break` beyond the end (`state.cm6.212.d1`) | `Position <pos> is beyond the end of a string of length <len>` | `find_cluster_break` |
 | tab size 0 (`state.cm6.216.d1`) | `Invalid tab size 0` | `count_column`, `find_column`, `try_find_column`, before the string is read: whatever it holds |
@@ -126,6 +126,8 @@ One enum, `Error`, `#[non_exhaustive]`, a variant per explicit throw of `raw/thr
 | a text built in memory whose length would exceed `isize::MAX` (D17; 2026-11-27) | `A text cannot be longer than isize::MAX bytes` | every function that builds a `Text` from values the program holds (`Text::append`, `Text::replace`, the sites of `src/text.rs:608` and `:650` at 4fa03f8), before the length is stored; only shared nodes can reach it |
 | a change description built in memory whose length or new length would exceed `isize::MAX`, or `ChangeSet::of` given such a length (D17; 2026-11-27) | `A change cannot be longer than isize::MAX` | `ChangeSet::of` and every function that builds a change description from others, before the length is stored |
 | `count_column` reaching a column above `isize::MAX` (`state.cm6.216.d2`) | `A column cannot be larger than isize::MAX` | `count_column`, at the step that would pass the bound |
+
+**Which functions document a panic.** Every public function through which a panic site can fire states, under `# Panics`, the message and the condition under which it fires through that function, or names the public function whose text states it (`where [`new_doc`](Transaction::new_doc) panics`). That holds for cm6's messages and for these alike, and for a site reached through another public function (`Transaction::reconfigured` through `Transaction::state`; `EditorState::field` and `EditorState::facet` read by a field's own function during construction). A function through which a site is reached by the code but whose own inputs cannot meet its condition says nothing of it. The static list of the pairs is `conf_check panics --reach` (plan "Conformance" step 5 (a)); D13's purpose is that a caller can test first what the text states (2026-11-27).
 
 The replayer never compares these messages: the calls are left out (`char`, a row's id), or the recorded error is a `TypeError`, and then the op leaves the message out (section 10, "Engine errors").
 
