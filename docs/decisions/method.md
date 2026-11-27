@@ -1129,3 +1129,94 @@ I prototyped it on the 13 listed fixtures of the three such rows. It gives 11 `e
 **Confidence.** High that the class is closed for the cases the search names. Medium for a PRNG written in a shape the search does not know, which G5's per-chunk counts still would not show.
 
 **Reopens.** A generator that G5 does not reseed, found after the check passes.
+
+## 2026-11-27 · M41: what becomes of a stopped run's work, and how the rest of (d) runs
+
+*Decided by the consultant (M41, from `ferrum-state`'s conformance step 5 (d) W1, W60). Binding text: `docs/parity/ferrum-state/plan.md` "Conformance" step 5 (d) *Runs*, (e) I1 and (f); `docs/workflow/README.md` §5 "Budgets" and "Stop-loss". Ledger: E78, E79.*
+
+**Question.** W1 of (d) had nine items at most 160,000 and was stopped at 240,877 with nothing committed. Its changes to the replayer and the benches are in the working tree. Three things were open: what becomes of that work, how the rest of (d) is cut, and whether `change:F8018`, which mismatches on that tree, belongs in the replay test's expected failing set.
+
+**What I checked myself.** I read the whole diff (12 files, 382 lines added) against items 6 to 9 of the card. I ran the checks on a copy of the tree in a separate worktree:
+- clippy at zero warnings;
+- `conf_check tests` passing;
+- the replay of chunk `change` with a trace of `F8018`.
+
+I also timed chunk `text` with the new op's walk stubbed out, and with its 48 fixtures `F7700` to `F7747` apart from the rest.
+
+**Decision 1: W1's work is kept and committed on its own (W1a).** Items 6 to 9 do what the card asks.
+- *Item 6.* `text.sharedNodes` walks as the header of `oracle/cm6/text/interp.ts` states and compares each node by `__test::same_text`. The 45 pending fixtures now compare with no mismatch. `set.invertMapCompose` catches the panic `design.md` §5 decides, compares it as an engine `TypeError`, and compares every other panic, so nothing is absorbed.
+- *Item 7.* `encode` walks a value of Ferrum's encoding. The literal test of `conformance-text.jsonl:162` asserts what `design.md` §10 says: a program that stopped before the condition is not judged. The two predicates of Q136 follow the sentences of `state.cm6.225.d2` and `.d3`, and reach the partial cursor inside a line cursor.
+- *Item 8.* The driver reads the `decisions.jsonl` beside the fixtures when there is one.
+- *Item 9.* Both pairs of Q144 are written on both sides with equal names.
+
+Two defects, both mechanical, are fixed before the commit:
+- `cargo fmt` reformats `rules.rs`.
+- In `tests/replay/change/set_ops.rs` the two doc lines of `map_mode_values` now sit above the new `NO_TEXT`, so one item carries the other's documentation.
+
+The `implementation.md` entry W1 did not write records these files and changes:
+- `driver.rs`: `decisions_file`, Q154.
+- `lang/json.rs`: the walk of a host's encoding, `conformance-text.jsonl:163`.
+- `text.rs`, `text/cursor.rs`, `text/checks.rs`, `text/host.rs`: `cursor_row` with `state.cm6.225.d3`'s predicate, the model checks' `steps` applying both rows, Q136.
+- `text/doc.rs`: op `text.sharedNodes`, F4b.
+- `change/set_ops.rs`, `change/values.rs`: op `set.invertMapCompose`, F1 and Q152.
+- `rules.rs`: the literal tests.
+- `benches/g8.rs`, `bench/g8.ts`: the two entries of Q144.
+
+*Why commit it and not run it again.* Discarding it would pay again the roughly 190,000 that W1 spent to make it. A fresh run that only verifies it would have to read the replayer cold, which is the very cost that stopped W1. The checks that show its errors are deterministic and pass (clippy, the replay's classes, `conf_check tests`). The one thing no tool shows, whether each change does what its item says, I read. The workflow already said that a stopped run's work goes to fresh runs. It did not say who checks that work before others build on it, or when it is committed. The stop-loss rule now says both.
+
+**Decision 2: `change:F8018` is in the expected failing set until (e) I1.** The trace shows why it fails:
+- Ferrum panics `index out of bounds: the len is 0 but the index is 1` in `to_json` and in `compose`.
+- `design.md` §5 decides that it panics `The change set holds no text for one of its insertions` there (Q152).
+- The replayer compares a panic it does not know, so the fixture mismatches.
+
+This is a defect of the crate that (e) I1 fixes, not a defect of the replayer. By the rule of Q155 and Q156, a known defect's fixture stays failing and every card in between names the exact set. The plan's sentence naming only Q155's three was mine. It contradicted the plan's own text on the op, which said the op compares only once (e) writes the message. The set is now `change:F8018` and Q155's three until I1, the three until I2, and none after.
+
+**Decision 3: the rest of (d) is cut by kind of work, one run after another.**
+- *W1b.* A `test-writer`, items 1 to 5 of W1's card, about 110,000.
+- *W2a.* The replayer's finding `conformance-state.jsonl:409`, about 85,000. Its card names the places the line cites as the reading, not the modules.
+- *W2b.* The written tests of units `facet` and `state`, about 120,000.
+
+A run that changes the replayer never gets written tests in the same card, nor the reverse. *Why.*
+- W60's timeline puts about 120,000 into reading five replayer modules before and while making items 6 to 8. The replayer is 773 KB, and written tests of the API never need it. Items 1 to 5 got almost nothing of W1's line.
+- The 160,000 was a ceiling the plan gave with no derivation, and the card took it as its budget. The rule of `docs/workflow/README.md` §5 already asked for an estimate and a split by kind above 140,000. My plan text made it easy to skip.
+
+W1b's estimate:
+- the base and the rules of `crates/**`, about 27,000;
+- 1.45 times about 52,000 of reading: the 48 lines of item 2, of which 37 hold a finding (32 KB); the values scripts and their outputs; the parts of the three written test files and of `design.md` §5; the decision rows; the signatures.
+
+*The parts that are data, given to W1b as data.*
+- Item 2's list loses its 11 `SAFE` lines.
+- W1's values scripts already hold cm6's values for items 1 to 4, from runs. W1b reads, re-runs and extends them, and does not re-derive them.
+
+**Decision 4: the values of written tests come from committed scripts.** W1's card had the worker cite a script under `.scratch/`, which git ignores. A later verifier could then not re-run the value a test asserts. The scripts and their outputs go to `docs/parity/ferrum-state/written/`, and each test's comment names the script and the label of the output line.
+
+W1 wrote the reference of `state.cm6.189.d2` and `.190.d2` as a scratch copy of cm6. It becomes the rows' patch in `oracle/patches/`, with two conditions:
+- `oracle_patch.py check` gives no changed fixture on either row, since their rows list none;
+- a `run` subcommand runs a script under a row's patch, and it must reproduce W1's output.
+
+The patch then serves G4 and G5 as every other patch does.
+
+**Decision 5: the bench escape is closed by the tool.** W1's card had the worker time its new entries. That rewrote `bench/rust.jsonl` and `bench/cm6.jsonl` whole (escape row, 2026-11-27). Both bench sides will write a run given `--entry`, or fewer than the three sizes, to `target/g8/<side>-partial.jsonl`, never to the committed records. W1b's check is the trial: it runs the two entries, then `git diff --exit-code` on the two files. A card sentence alone would leave the next card free to repeat the error.
+
+**Found, not asked: the replay test's time.** The replay test now takes 39 s where it took 9 s.
+- *The cause is not the new op.* With its walk stubbed out, chunk `text` still takes 36 s.
+- *The cause is F4b's fixtures.* The 48 fixtures `F7700` to `F7747` used to be `pending`, and now they run. They take 29 s in the `test` profile, and the whole replay takes about 6 s in release.
+
+This costs wall time on every check and, at (f), on every mutant. (f) now times the baseline first. Above 20 s it tries a profile with `opt-level = 1` on 50 mutants of the earlier pass, and keeps that profile only if every one of them ends as it did before (E79).
+
+**Lost.**
+- *Discard W1's tree and run W1 again whole.* That pays again for work that holds, with the same mixed card.
+- *A fresh test-writer to finish W1 as it stands.* It would read the replayer again to verify items 6 to 9, and still mix two kinds of work.
+- *The orchestrator committing the tree unread.* No tool shows whether a change does what its item says.
+- *Keeping W2 as one run of 140,000.* It holds a replayer finding and written tests, which is W1's shape.
+- *Leaving `F8018` out of the named set.* Either the fixture would be called a regression, or someone would edit the replayer to make it pass.
+
+**Confidence.**
+- High on Decisions 1, 2 and 5, which rest on the runs above.
+- Medium on the estimates, which E78 measures.
+- Medium on how fully I read items 6 to 9. I checked each against its item's sentence, not every line of every function. (g) judges the replayer's finding lines again on the round's checks (`conformance-text.jsonl:162`, `:163`), but no one reads `text.sharedNodes`, `set.invertMapCompose` or the benches again. Those are shown only by their fixtures comparing and by G8's run.
+
+**Reopens.**
+- W1b, W2a or W2b ending outside 0.85 to 1.15 of its estimate.
+- A defect in items 6 to 9 found later, which would mean my reading at a stop-loss is not enough to commit on.
+- `change:F8018` mismatching after (e) I1.
