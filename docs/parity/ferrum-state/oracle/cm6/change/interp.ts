@@ -98,6 +98,12 @@
 //   set.map {a: set spec, b: desc spec, before?}  {api, identity}   [r = a.map(b) or a.map(b, before):
 //       {...desc(r), identity: identity(r, a, b)}]
 //   set.mapDesc {a: set spec, b: desc spec, before?}  {api, identity}   [the same with a.mapDesc]
+//   set.invertMapCompose {set: set spec, doc: text spec, by: desc spec, before?, insert: change spec}  {api}
+//       [inv = s.invert(Text.of(doc)); m = inv.map(by) or inv.map(by, before); c = ChangeSet.of(insert, m.newLength);
+//       {inverted: out(inv), mapped: out(m), composed: capture of out(m.compose(c))}, out(x) = {sections:
+//       x.desc.toJSON() (sections), json: capture of x.toJSON() (change JSON), length (pos), newLength (pos)}]: a set
+//       inverted on a document other than its start document, then mapped and composed (round-c.ts); no set spec
+//       builds an inverted or mapped set
 //   set.iterChanges {set, individual?}  {api, callbacks}   [s.iterChanges(f) or s.iterChanges(f, individual): one
 //       [fromA (pos), toA (pos), fromB (pos), toB (pos), inserted.toJSON() (lines)] per call]
 //   set.desc {set}  {api, internal, identity}   [d = s.desc: {...desc(d), sameTwice: d === s.desc,
@@ -311,6 +317,14 @@ op("sel.replaceRange", ["api", "identity"], (inp, c) => {
 })
 op("sel.toJSON", ["api"], (inp, c) => { let {sel} = c.sel(inp.sel); return {json: sel.toJSON(), stringified: JSON.stringify(sel)} })
 op("sel.fromJSON", ["api", "identity"], (inp, c) => { markRead(inp.json); return c.selOut(EditorSelection.fromJSON(inp.json)) })
+
+op("set.invertMapCompose", ["api"], (inp, c) => {
+  let s = c.set(inp.set), inv = s.invert(c.text(inp.doc)), by = c.desc(inp.by)
+  let m = inp.before === undefined ? inv.map(by) : inv.map(by, inp.before)
+  let q = ChangeSet.of(c.spec(inp.insert), m.newLength)
+  let out = (x: ChangeSet) => ({sections: x.desc.toJSON(), json: capture(() => x.toJSON()), length: x.length, newLength: x.newLength})
+  return {inverted: out(inv), mapped: out(m), composed: capture(() => out(m.compose(q)))}
+})
 
 /** Run one fixture input (as read from the fixture file, or as a generator built it) and return its output. */
 export const run = lang.run
