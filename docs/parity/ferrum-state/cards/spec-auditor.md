@@ -1,4 +1,85 @@
-# ferrum-state: card of the spec-auditor, implementation stage
+# ferrum-state: card of the spec-auditor
+
+## Conformance step 5 (c), run F1: the fixtures of the findings of chunks `text` and `change`
+
+**The step** is `docs/parity/ferrum-state/plan.md` "Conformance", step 5 (c). Read its paragraph whole: it is the binding list. This run, F1, takes chunks `text` and `change`, and it is the pilot of its kind. A finding goes to the chunk whose interpreter (`docs/parity/ferrum-state/oracle/cm6/<chunk>/interp.ts`) runs its program's calls. That is not always the chunk named in the verdict file's name. The findings of the plan's paragraph whose calls are `RangeSet`, `EditorState`, `Transaction` or `Facet` calls go to run F2, unless chunk `change`'s interpreter runs them. The method: `docs/workflow/specification.md` §4 for the fields of `raw/behaviors.jsonl` and the key `added`; `docs/workflow/specification.md` §5 items 3 and 5 for fixtures, generators and the checklist.
+
+**The inputs of F1.** Each line below is a line of `docs/parity/ferrum-state/raw/conformance-<chunk>.jsonl`. Read its `evidence` and `repro`. Where `raw/recheck.jsonl` or `raw/recheck-class.jsonl` has a row for the line (match its `file` and `line`), read that row's `repro` as well.
+1. *The seeded generator of chunk `text` of Q135* (`docs/decisions/ferrum-state.md`, "2026-11-24 · Q135, Q136 and the U1 findings"). It covers the surviving mutants of `Chunker::add`, `node_from`, `Text::decompose` and `Text::replace_inner`: `conformance-text.jsonl:5` to `:11`, `:13` to `:21`, and `:23` to `:26`. It also covers the hazards `:190`, `:192`, `:194` and `:198`. The documents come from the verifier's probe, and these are its sizes:
+   - **Direct cases.** Line counts 33, 64, 100, 200, 600, 1000, 1100, 2000 and 5000. Line `i` is `"x"` repeated `i % 5` times.
+     - On each document of length `l`: `slice(l*fa/10, l*fb/10)` for the pairs (fa, fb) = (0,1), (1,2), (1,3), (1,4), (3,7), (2,5), (0,2), (5,9), (1,9) and (4,5).
+     - `replace` of the same range by 1, 2, 40 or 300 lines, line `i` being `"y"` repeated `i % 3` times.
+     - `append` of the document to itself.
+   - **Seeded chains.** Line counts 1, 2, 31, 32, 33, 40, 63, 64, 65, 100, 300, 1000, 1024, 1025, 1100, 5000 and 33000.
+     - Each count is built twice, once ASCII and once with non-ASCII lines: line `i` is `"x"` (or `"é"` when `i % 5 == 0` in the non-ASCII variant) repeated `(i*7 + salt) % 9` times, with `salt` = the line count.
+     - Each document then takes 40 seeded steps. Each step is a `replace` by a document of 0, 1, 2, 10, 31, 33, 64, 100, 600 or 3000 lines (0 means `Text.of([""])`) over a range of one of four kinds:
+       - an empty range;
+       - up to 40 positions;
+       - up to a third of the length;
+       - between two random positions.
+     - After each step comes a `slice` between two random positions. At every tenth step comes an `append` of the step's result with its start.
+
+   Positions inside a character are moved down to its boundary, as the probe's `bnd` does. Record for each result: `text.desc` with its shape, `text.depth`, and `text.sharedChildren` against the document it came from. The ops already exist in chunk `text`'s interpreter. A chain is one program; a fixture is one document's chain, not one step. The seed and the rule go in the generator and in each fixture's input, as `s4-fix6.ts` does.
+2. *Other findings of chunk `text`:*
+   - `:149`, `:291` and `:294`: the categorizer and `\s` on U+0085;
+   - `:159`: `iterRange` reading a break past its limit;
+   - `:157`: two documents equal in text and different in line breaks, `Text.of(["x","","yz"])` against `Text.of(["x","y","z"])`.
+3. *Findings of chunk `change`:*
+   - `:249`: JSON numbers that serde holds as floats. JavaScript has no float form of an integer, so check whether a program can hand Ferrum's replay a float. If none can, it goes to (d), and you say why.
+   - `:252`, `:253` and `:254`: `ChangeSet.filter` through a change filter. Check whether chunk `change` can run a change filter. If not, these go to F2.
+   - `:256` and `:257`: `mapSet`.
+   - `:264` to `:268`: selection equality and `fromJSON`.
+   - `:178`: `SelectionRange` with `from > to` accepted by `checkSelection`.
+   - `:250`, `:261` and `:262`: invert on a shorter document, then map, then compose. One input kills the mutants of `:261` and `:262`.
+   - `:115`: `ChangeSet.map` of two sets of length 0 that cm6 rejects with `Mismatched change set lengths`.
+4. *Not in F1:*
+   - every `sentinel` line (D17's bounds): they go to (d);
+   - `conformance-text.jsonl:72`: D1, cm6 has no counterpart;
+   - `:162` and `:163`: the replayer's findings.
+
+**Read:**
+- the plan's paragraph;
+- `docs/workflow/specification.md` §4 and §5 (items 3 and 5);
+- the header and ops of `oracle/cm6/text/interp.ts` and `oracle/cm6/change/interp.ts`;
+- `oracle/cm6/text/s4-fix6.ts` and `writer.ts` (`rangeWriter`), the pattern to copy;
+- `oracle/cm6/order.json`;
+- the lines named above;
+- the behavior rows their evidence cites, in `raw/behaviors.jsonl`;
+- cm6's code at the places the lines cite, under `mirrors/cm6/state/src/`.
+
+**Write:**
+- *One generator per chunk:* `oracle/cm6/text/round-c.ts` with ids F7700 to F7999, and `oracle/cm6/change/round-c.ts` with ids F8000 to F8199. Append each at the end of its chunk's list in `order.json`, and drop its range first, as `s4-fix6.ts` does. Give each a header in the form of `s4-fix6.ts`: what it records, the run order, the command, the checklist entries of `specification.md` §5 item 5 that apply, and why the others do not.
+- *Values from cm6 runs only.* A program that throws records cm6's error, as the chunk's error fixtures do.
+- *Behavior rows:*
+  - Each new fixture lists the behaviors it shows, and each of those rows lists it back.
+  - A case no row states gets a new row with the next free id of its member and `"added": "conformance round"`.
+  - A row whose text a fixture refutes is corrected the same way, also marked `"added": "conformance round"`.
+- *An op that no interpreter has:* add it only when no existing op can express the case. Give it a header line in the header's form, and name it in the report, because (d)'s `test-writer` registers it in the replayer.
+
+**Do not write:**
+- `raw/decisions.jsonl`, `raw/replay.jsonl` or `raw/improvements.jsonl` (the consultant's);
+- `raw/conformance-*.jsonl`, `raw/recheck*.jsonl` or anything under `crates/`;
+- the inputs of F2.
+
+A finding no program of F1's chunks can express goes in the report, with the reason, for (d). A way to do better than cm6, or a fact that does not fit this card, goes in the report as a question in the shape of `CLAUDE.md` "Raising a question".
+
+**Check, run by you before you report:** `python3 tools/spec_check.py ferrum-state` ends with "checks passed". It re-runs every generator of `order.json` and requires each one to reproduce its fixtures byte for byte. Do not run `tools/impl_check.py`: the orchestrator replays the new fixtures after your run.
+
+**Budget.** 100,000 tokens. At 150,000, the plan's cap, stop and report where you are.
+
+**Commit** with explicit paths, on the current branch, without pushing: `git commit -m 'spec(ferrum-state): conformance step 5 (c) F1, the fixtures of the findings of text and change' -- docs/parity/ferrum-state/oracle docs/parity/ferrum-state/fixtures docs/parity/ferrum-state/raw/behaviors.jsonl`. Add new files with `git add <path>` first, and never `git add -A`.
+
+**Report:**
+- the output of the check;
+- for each input line above: its fixture ids, or "to (d)" or "to F2" with the reason;
+- the rows added or corrected, with each text before and after;
+- any new op;
+- the tokens spent on each part (the Q135 generator, the `text` findings, the `change` findings), from which F2 is estimated;
+- the questions;
+- the two lines of `CLAUDE.md` "Reporting from a card".
+
+The sections below are from the implementation stage.
+
 
 Step 3 of a unit ("What the unit found", `docs/parity/ferrum-state/plan.md` "Each unit"). The step runs only on the cases the consultant names; this card names them per unit. The method behind it is `docs/workflow/specification.md` §4 (the fields of `raw/behaviors.jsonl`, and the key `added`) and §5 items 3 and 5 (fixtures and generators); read a section there when the card is not enough.
 
