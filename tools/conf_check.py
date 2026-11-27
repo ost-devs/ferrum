@@ -77,12 +77,23 @@
                                                                 CONFORMANT; prints the disagreements with the recorded item
                                                                 lines and the findings tied to no item
     python3 tools/conf_check.py <crate> recheck --seed <n> [--results <file> [--unit <u>] [--lines <part.jsonl>]]
-                                                                step 4's sample: each line of raw/conformance-*.jsonl
-                                                                given to the run that wrote it (the first commit where
-                                                                its kind and id appear, so a relabel keeps its writer),
-                                                                then from each run ceil(share x its lines) drawn with the
-                                                                seed (share 0.1), raised to at least --min (20) in all;
-                                                                writes .scratch/conformance/<crate>/recheck-sample.jsonl
+                                                                step 4's sample (M30): the lines that close a question,
+                                                                each given to the run (commit) that first wrote its kind
+                                                                and id, drawn per run with the seed (plan.md step 4), with
+                                                                what step 3's verifier had beside each; writes
+                                                                .scratch/conformance/<crate>/recheck-sample.jsonl; with
+                                                                --results, the re-check rows checked against the draw and
+                                                                counted (M32: each `agree` with its order shown)
+    python3 tools/conf_check.py <crate> recheck-derive  < rows  M32: append derivations ({"file", "line", "derived",
+                                                                "evidence", "repro"?}) before their lines are seen
+    python3 tools/conf_check.py <crate> recheck-reveal <file>:<line> ...
+                                                                M32: print recorded lines whose derivation is written;
+                                                                freezes the derivation, fills `recorded`
+    python3 tools/conf_check.py <crate> recheck-settle  < rows  M32: complete revealed rows ({"file", "line", "outcome",
+                                                                "severity"?, "settled"?, "repro"?})
+    python3 tools/conf_check.py <crate> recheck-audit <agent id | transcript> [--lines <part.jsonl>]
+                                                                M32: each row's recorded line reached the run only through
+                                                                the reveal that named it
     (--root <dir>: another tree than the repository, for trying the tool on a copy)
 
 Output files go to .scratch/conformance/<crate>/ (never committed: regenerated from the recorded commit).
@@ -834,7 +845,11 @@ RECHECK_ABOVE = {"ccacc71", "1d41c6e", "c9f4511", "449481e", "04f24b8", "0081109
 RECHECK_FINDINGS = {"FINDING", "NONCONFORMANT", "UNVERIFIED", "WEAKER", "DIFFERENT", "MISSING"}
 RECHECK_LISTED = {"hazard", "panic", "shared", "sentinel"}
 RECHECK_OUTCOMES = {"agree", "agree, evidence wrong", "overturn", "later decision"}
-RECHECK_KEYS = ["file", "line", "kind", "id", "derived", "evidence", "repro", "recorded", "outcome", "severity"]
+RECHECK_KEYS = ["file", "line", "kind", "id", "derived", "evidence", "repro", "recorded", "outcome", "severity", "settled", "revealed"]
+# M32: a row's `revealed` is the digest of its `derived` and `evidence` when `recheck-reveal` first showed it the
+# recorded line, so the derivation is shown to precede the reading; two other values only the consultant writes:
+# `transcript <agent id>: ...` (the order read from a run's transcript before the tool existed) and `not shown`
+# (a disagreement reached with the recorded line in view, which stands on its own re-run, never an `agree`).
 RECHECK_UNITS = {"text": "U1", "change": "U2", "rangeset": "U3", "facet": "U4a", "state": "U4b"}
 
 
@@ -983,7 +998,20 @@ def recheck(c, crate, args):
     bad = [f"{r.get('file')}:{r.get('line')}" for r in rows if sorted(r) != sorted(RECHECK_KEYS) or r.get("outcome") not in RECHECK_OUTCOMES
            or (r.get("outcome") == "overturn") != (r.get("severity") in ("high", "low")) or (r.get("outcome") != "overturn" and r.get("severity"))
            or ((r.get("file"), r.get("line")) in want and (r.get("kind"), r.get("id")) != (want[(r["file"], r["line"])]["kind"], want[(r["file"], r["line"])]["id"]))]
-    c.need(not bad, f"each row has the ten keys, an outcome of M30, a severity exactly on an overturn, and its line's kind and id: {len(bad)} do not", bad)
+    c.need(not bad, f"each row has the twelve keys, an outcome of M30, a severity exactly on an overturn, and its line's kind and id: {len(bad)} do not", bad)
+    verdict = {(x["file"], x["line"]): x["row"]["verdict"] for x in lines}
+    c.need(all(r.get("recorded") == verdict.get((r.get("file"), r.get("line"))) for r in rows),
+           "each row's `recorded` is its line's verdict", [f"{r.get('file')}:{r.get('line')} {r.get('recorded')!r} is {verdict.get((r.get('file'), r.get('line')))!r}" for r in rows if r.get("recorded") != verdict.get((r.get("file"), r.get("line")))])
+    order = lambda r: "tool" if r.get("revealed") == recheck_digest(r) else "transcript" if str(r.get("revealed", "")).startswith("transcript ") else "not shown" if r.get("revealed") == "not shown" else "broken"
+    c.need(all(order(r) != "broken" for r in rows), "each row's derivation is the one `recheck-reveal` froze (its `derived` and `evidence` unchanged since)",
+           [f"{r.get('file')}:{r.get('line')}" for r in rows if order(r) == "broken"])
+    c.need(all(not (order(r) == "not shown" and r.get("outcome") in ("agree", "agree, evidence wrong")) for r in rows),
+           "no `agree` without a shown order", [f"{r['file']}:{r['line']}" for r in rows if order(r) == "not shown" and r.get("outcome") in ("agree", "agree, evidence wrong")])
+    c.need(all(r.get("settled") or (r.get("outcome") == "agree" and r.get("derived") == r.get("recorded")) for r in rows),
+           "a `settled` text on every row but a plain agreement (what was re-run after the reveal, and what it showed)",
+           [f"{r['file']}:{r['line']}" for r in rows if not (r.get("settled") or (r.get("outcome") == "agree" and r.get("derived") == r.get("recorded")))])
+    c.say("order shown: " + ", ".join(f"{k} {n}" for k, n in sorted(collections.Counter(order(r) for r in rows).items()))
+          + f"; derivations the reveal corrected (derived differs, outcome agree): {sum(1 for r in rows if r.get('outcome') == 'agree' and r.get('derived') != r.get('recorded'))}")
     run_of = {(x["file"], x["line"]): x["run"] for x in drawn}
     def count(name, sel):
         cnt = collections.Counter((r["kind"], r["outcome"]) for r in rows if sel(r))
@@ -997,19 +1025,112 @@ def recheck(c, crate, args):
     count("hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart)", lambda r: listed(r) and run_of.get((r["file"], r["line"])) not in RECHECK_ABOVE)
 
 
+def recheck_digest(r):
+    return hashlib.sha256(json.dumps([r.get("derived", ""), r.get("evidence", "")], ensure_ascii=False).encode()).hexdigest()[:16]
+
+
+def recheck_io(crate):
+    """The drawn lines by (file, line), the rows of raw/recheck.jsonl, and a writer that rewrites the file whole."""
+    sample = {(x["file"], x["line"]): x for x in ic.rows(os.path.join(out_dir(crate), "recheck-sample.jsonl"))}
+    path = ic.spec(crate, "raw", "recheck.jsonl")
+    rows = ic.rows(path) if os.path.exists(path) else []
+    def write(rows):
+        tmp = path + ".tmp"
+        with open(tmp, "w", encoding="utf8") as fh:
+            for r in rows: fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+        os.replace(tmp, path)
+    return sample, rows, write
+
+
+def recheck_stdin(c):
+    text = sys.stdin.read()
+    try: data = json.loads(text)
+    except json.JSONDecodeError as e: c.need(False, f"stdin holds one JSON row or a list of rows: {e}"); return []
+    return data if isinstance(data, list) else [data]
+
+
+def recheck_derive(c, crate, args):
+    """M32, step (1) of a re-check: append a derivation, before its recorded line is seen. Stdin: a JSON row or list,
+    {"file", "line", "derived", "evidence", "repro"?}; kind and id come from the draw."""
+    sample, rows, write = recheck_io(crate)
+    have = {(r["file"], r["line"]) for r in rows}
+    vocab = collections.defaultdict(set)
+    for f in os.listdir(ic.spec(crate, "raw")):
+        if re.fullmatch(r"conformance-[\w-]+\.jsonl", f):
+            for r in ic.rows(ic.spec(crate, "raw", f)): vocab[r["kind"]].add(r["verdict"])
+    added = []
+    for d in recheck_stdin(c):
+        k = (d.get("file"), d.get("line"))
+        if k not in sample: c.need(False, f"{k[0]}:{k[1]} is a drawn line"); continue
+        if k in have: c.need(False, f"{k[0]}:{k[1]} has no row yet (a derivation is written once)"); continue
+        x = sample[k]
+        if d.get("derived") not in vocab[x["kind"]]: c.need(False, f"{k[0]}:{k[1]}: `derived` is a verdict of kind {x['kind']} ({', '.join(sorted(vocab[x['kind']]))})"); continue
+        if not str(d.get("evidence", "")).strip(): c.need(False, f"{k[0]}:{k[1]}: `evidence` is written"); continue
+        rows.append({"file": k[0], "line": k[1], "kind": x["kind"], "id": x["id"], "derived": d["derived"], "evidence": d["evidence"],
+                     "repro": d.get("repro", ""), "recorded": "", "outcome": "", "severity": "", "settled": "", "revealed": ""})
+        have.add(k); added.append(f"{k[0]}:{k[1]}")
+    if added: write(rows)
+    c.say(f"derived: {len(added)} appended to raw/recheck.jsonl ({', '.join(added)})")
+
+
+def recheck_reveal(c, crate, args):
+    """M32, step (2): show the recorded lines named <file>:<line>, each only once its derivation is written; freezes the
+    derivation (`revealed`, a digest) and fills `recorded` from the line."""
+    sample, rows, write = recheck_io(crate)
+    at = {(r["file"], r["line"]): r for r in rows}
+    shown = []
+    for a in args:
+        m = re.fullmatch(r"(conformance-[\w-]+\.jsonl):(\d+)", a)
+        if not m: c.need(False, f"{a} is <file>:<line>"); continue
+        k = (m.group(1), int(m.group(2)))
+        r = at.get(k)
+        if k not in sample: c.need(False, f"{a} is a drawn line"); continue
+        if not r or not r.get("derived"): c.need(False, f"{a}: its derivation is written first (`recheck-derive`)"); continue
+        line = ic.rows(ic.spec(crate, "raw", k[0]))[k[1] - 1]
+        if not r.get("revealed"): r["revealed"] = recheck_digest(r); r["recorded"] = line["verdict"]
+        shown.append((a, r, line))
+    if shown: write(rows)
+    for a, r, line in shown:
+        c.say(f"{a} {line['kind']} {line['id']}\n    recorded: {line['verdict']}  (your derivation: {r['derived']})\n    evidence: {line.get('evidence', '')}\n    repro: {line.get('repro', '')}")
+
+
+def recheck_settle(c, crate, args):
+    """M32, step (3): complete revealed rows. Stdin: a JSON row or list, {"file", "line", "outcome", "severity"?,
+    "settled"?, "repro"?}; `derived` and `evidence` are not changed."""
+    sample, rows, write = recheck_io(crate)
+    at = {(r["file"], r["line"]): r for r in rows}
+    done = []
+    for d in recheck_stdin(c):
+        k = (d.get("file"), d.get("line")); r = at.get(k); name = f"{k[0]}:{k[1]}"
+        if not r or r.get("revealed") != recheck_digest(r): c.need(False, f"{name} was revealed by `recheck-reveal`, its derivation unchanged"); continue
+        if d.get("outcome") not in RECHECK_OUTCOMES: c.need(False, f"{name}: outcome is one of {sorted(RECHECK_OUTCOMES)}"); continue
+        sev = d.get("severity", "")
+        if (d["outcome"] == "overturn") != (sev in ("high", "low")) or (d["outcome"] != "overturn" and sev): c.need(False, f"{name}: a severity, high or low, exactly on an overturn"); continue
+        if not d.get("settled") and not (d["outcome"] == "agree" and r["derived"] == r["recorded"]):
+            c.need(False, f"{name}: `settled` says what was re-run after the reveal and what it showed (needed unless the derivation agrees as it is)"); continue
+        r.update(outcome=d["outcome"], severity=sev, settled=d.get("settled", ""))
+        if "repro" in d: r["repro"] = d["repro"]
+        done.append(name)
+    if done: write(rows)
+    c.say(f"settled: {len(done)} ({', '.join(done)})")
+
+
 def recheck_audit(c, crate, args):
-    """M32: for each row a re-check run wrote, whether its recorded line reached the run's context (a tool result
-    holding that line's text) before the run first wrote the row's own evidence (a tool call holding it). Reads the
-    run's transcript: an agent id (~/.claude/projects/*/*/subagents/agent-<id>.jsonl) or a path; --lines <part>."""
+    """M32: for each row a re-check run wrote, whether its recorded line reached the run's context only through the
+    `recheck-reveal` call that named it. Reads the run's transcript: an agent id (~/.claude/projects/*/*/subagents/
+    agent-<id>.jsonl) or a path; --lines <part> keeps the rows of that part."""
     import glob
     if not args: c.need(False, "give the agent id or transcript of a re-check run"); return
     t = args[0] if os.path.exists(args[0]) else next(iter(glob.glob(os.path.expanduser(f"~/.claude/projects/*/*/subagents/agent-{args[0]}.jsonl"))), None)
     if not t: c.need(False, f"a transcript for {args[0]}"); return
-    events = []  # (index, "use" | "result", text)
+    events, seen_ids = [], set()  # (position, "use" | "result", text); a transcript can log one call twice
     for n, l in enumerate(ic.read(t).split("\n")):
         if not l.strip(): continue
         m = json.loads(l).get("message", {})
         for x in m.get("content") if isinstance(m.get("content"), list) else []:
+            key = (x.get("type"), x.get("id") or x.get("tool_use_id"))
+            if key in seen_ids: continue
+            seen_ids.add(key)
             if x.get("type") == "tool_use": events.append((n, "use", json.dumps(x.get("input"), ensure_ascii=False)))
             elif x.get("type") == "tool_result":
                 cont = x.get("content")
@@ -1020,32 +1141,26 @@ def recheck_audit(c, crate, args):
             w = text[k:k + 48]
             if len(w) == 48 and not re.search(r"[\"\\\n\t]", w) and not w.isspace(): return w
         return None
-    rows = [json.loads(l) for l in ic.read(ic.spec(crate, "raw", "recheck.jsonl")).split("\n") if l.strip()]
+    rows = ic.rows(ic.spec(crate, "raw", "recheck.jsonl"))
     if "--lines" in args:
         part = {(r["file"], r["line"]) for r in ic.rows(args[args.index("--lines") + 1])}
         rows = [r for r in rows if (r["file"], r["line"]) in part]
-    # every verdict line of the files, to tell a read of one recorded line from a read of many
-    allmarks = {}
-    for f in sorted(os.listdir(ic.spec(crate, "raw"))):
-        if re.fullmatch(r"conformance-[\w-]+\.jsonl", f):
-            for k, l in enumerate(ic.rows(ic.spec(crate, "raw", f)), 1):
-                m_ = mark(l.get("evidence", ""))
-                if m_: allmarks[(f, k)] = m_
-    targeted, broad, after, unknown = [], [], 0, []
+    shown, early, none = [], [], []
     for r in rows:
-        rm, em = allmarks.get((r["file"], r["line"])), mark(r.get("evidence", ""))
-        if not rm or not em: unknown.append(f"{r['file']}:{r['line']}"); continue
-        i = next((n for n, k, x in events if k == "result" and rm in x), None)
-        j = next((n for n, k, x in events if k == "use" and em in x), None)
-        if j is None: unknown.append(f"{r['file']}:{r['line']} (its evidence is in no tool call)"); continue
-        if i is None or i > j: after += 1; continue
-        held = sum(1 for m_ in allmarks.values() if m_ in next(x for n, k, x in events if n == i and k == "result" and rm in x))
-        (targeted if held == 1 else broad).append(f"{r['file']}:{r['line']} {r['kind']} {r['id'][:60]}: result at transcript line {i} holding {held} recorded lines, row's evidence first in a call at {j}")
-    c.say(f"{os.path.basename(t)}: {len(rows)} rows; the row's evidence written before its recorded line was seen: {after}; "
-          f"recorded line seen first, by a read of that line alone: {len(targeted)}; by a read of several: {len(broad)}; not decidable: {len(unknown)}")
-    c.say("    (a derivation kept in the run's own reasoning leaves no trace: thinking is not in the transcript, so a targeted read before the row is the card's order unless the row says otherwise)")
-    for x in broad: c.say("    several: " + x)
-    for x in unknown: c.say("    not decidable: " + x)
+        line = ic.rows(ic.spec(crate, "raw", r["file"]))[r["line"] - 1]
+        em = mark(line.get("evidence", ""))
+        idv = re.compile(re.escape(json.dumps(line["id"], ensure_ascii=False)) + r'.{0,200}?"verdict": ?' + re.escape(json.dumps(line["verdict"])), re.S)
+        holds = lambda x: (em and em in x) or idv.search(x)
+        first = next((i for i, (n, k, x) in enumerate(events) if k == "result" and holds(x)), None)
+        reveal = next((i for i, (n, k, x) in enumerate(events) if k == "use" and "recheck-reveal" in x and re.search(rf"{re.escape(r['file'])}:{r['line']}\b", x)), None)
+        name = f"{r['file']}:{r['line']} {r['kind']} {r['id'][:60]}"
+        if reveal is None: none.append(f"{name}: no `recheck-reveal` call names it" + (f"; the line first seen at transcript line {events[first][0]}" if first is not None else ""))
+        elif first is not None and first < reveal: early.append(f"{name}: seen at transcript line {events[first][0]}, revealed at {events[reveal][0]}")
+        else: shown.append(name)
+    c.say(f"{os.path.basename(t)}: {len(rows)} rows; recorded line first seen through its reveal: {len(shown)}; seen before its reveal: {len(early)}; never revealed: {len(none)}")
+    for x in early: c.say("    early: " + x)
+    for x in none: c.say("    no reveal: " + x)
+    c.need(not early and not none, "every row's recorded line reached the run only through its reveal (M32)")
 
 
 def cm6_of_line(texts, path, line):
@@ -1499,7 +1614,7 @@ def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ic.ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe, "recheck": recheck, "items": items, "recheck-audit": recheck_audit}
+    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe, "recheck": recheck, "items": items, "recheck-audit": recheck_audit, "recheck-derive": recheck_derive, "recheck-reveal": recheck_reveal, "recheck-settle": recheck_settle}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = ic.Check()

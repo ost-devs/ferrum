@@ -1,6 +1,6 @@
 ---
 name: verifier
-description: Fresh-context verification for Ferrum - checks against cm6 and the crate what another agent produced (a recorded sample of specification rows, whether a crate's tests assert what cm6 does, a sample of verdicts) and records mismatches or verdicts with reproductions. Never fixes anything and is never used on work it produced.
+description: Fresh-context verification for Ferrum - checks against cm6 and the crate what another agent produced (a recorded sample of specification rows, whether a crate's tests assert what cm6 does, a unit's conformance verdicts) and records mismatches or verdicts with reproductions. Never fixes anything and is never used on work it produced. The re-check of a sample of verdicts is the `rechecker`'s.
 tools: Read, Grep, Glob, Bash, Write, Edit, Agent(cm6-researcher)
 model: opus
 effort: high

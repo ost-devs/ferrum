@@ -97,6 +97,8 @@
 - A re-check of verdicts: sample only what closes a question (findings are read at acceptance anyway); a verdict data define (an item's, from its lines) goes to a tool for all; the re-checker derives before it reads the line; size per kind by the chance of finding a 5% class, and give an expectation's comparison group enough lines. `docs/decisions/method.md` M30
 - A join checked one way hides the other: G6 passed with 18 of 18 deviation rows unannotated. Ask of every join whether both directions are checked. `docs/decisions/ferrum-state.md` Q143
 
+- A blind order a worker must keep (derive, then read): hold it by tools (a reveal that needs the derivation and freezes it) and a hook keyed on `agent_type`, never by care; read a transcript audit's criterion before its count (it missed derivations kept in scratch notes: 23 of 77 shown, not 1). Anchoring hides a disagreement, never makes one: keep non-blind disagreements, redo non-blind agreements. `docs/decisions/method.md` M32
+
 ## Calibration
 - 2026-11-13: I read parity as imitation (D2 draft: "the Unicode rule would be better, but no goal asks for it"). The maintainer: parity is cm6's quality, capability and stability or better; cm6 is the floor. They want every improvement visible and its timing mine, not theirs; they do not want drastic changes in a hurry. They weigh stability of the whole above an early gain.
 - They confirm drafts readily when the draft states costs; what they push back on is a value judgment of mine presented as a technical one.

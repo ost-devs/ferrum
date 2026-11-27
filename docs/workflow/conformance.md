@@ -23,7 +23,7 @@ A crate is `CONFORMANT` when every gate of §2 passes. There is no percentage th
 
 **Test verdicts** (a cm6 case against its Ferrum test):
 - `EQUIVALENT`: passes;
-- `CHANGED`: an expected value differs for a decided cause; passes;
+- `CHANGED`: differs from the cm6 case in a literal (an input of the scenario, an argument or an expected value), each difference with a decided cause next to it, as G3 checks; passes;
 - `WEAKER`, `DIFFERENT`, `MISSING`: fail.
 
 **Every verdict lists the cm6 items that are not ported** (`DROP`, or excluded by a decision), with the decision that covers each, **and every row of the improvement register** with its status, and for an adopted one the number of fixtures and tests it changes: "conforming to `@codemirror/<package>@<version>`; N items not ported, listed; M improvements adopted, K scheduled or under evaluation, listed".
