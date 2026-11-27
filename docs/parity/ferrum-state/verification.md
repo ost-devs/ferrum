@@ -561,3 +561,23 @@ checks passed
 Not `agree`: three sentinel lines are `later decision`, their `SAFE` written at 7efee43 (2026-11-24) before D17 (2db9bf2, 2026-11-26) and holding only by it: `raw/conformance-text.jsonl:83` (`src/text.rs:335`, `slice`: `from as isize` wraps above `isize::MAX`; a document that long cannot be built by doubling, 7.8 GB resident at about 2e10 bytes), `:90` (`src/text.rs:645`, `replace_general`: the clip does not bound the value), `:96` (`src/text.rs:739`, `Text`'s `PartialEq`: the recorded reason `start <= len` is wrong, `start` reaches `len + 1`: `e = d.slice(0, d.len())` on a 200-line document gives a top node whose 7 children are shared with `d`, and the forward sum at `src/text.rs:719` is 20,200 for a length of 20,199). `:73` (`src/text.rs:535`) agrees; its reason names two of the three callers of `line_inner`, the third, `is_char_boundary` at `src/text.rs:469-472`, checks the bound too.
 
 Seen outside the part, and not among step 3's lines of `raw/conformance-text.jsonl` (the orchestrator's search of its 33 findings): `src/text.rs` has no check of D17's bound where a length is built (`replace_general` `:650`, `replace_inner` `:608`), where D17 asks a call that would make a longer text to panic; `Text::line_at`'s `# Panics` (`src/text.rs:267-268`) gives `Invalid position …` for a position off a character boundary, where the code panics with `Position <pos> is not on a character boundary of the document` (`not_a_boundary`, `:478-480`). The cast of `iter_range`'s bounds it also reports is step 3's finding `:104` and `:105`. Probe: `.scratch/recheck-U1c/probe`.
+
+### U4a: 16 hazard, 3 test, 1 mutant, 1 branch and 6 list lines (rechecker, 2026-11-27)
+
+139,722 tokens against 154,200 (0.91). `recheck-audit` shows all 27 rows first seen through their reveal; every derivation equal to the recorded verdict where they agree.
+
+```
+lines 1627; pool 1253 (findings, item lines and replayer:core left out); by kind {'test': 197, 'hazard': 681, 'panic': 36, 'sentinel': 152, 'branch': 38, 'mutant': 39, 'shared': 108, 'line': 1, 'behavior': 1}
+order shown: tool 27; derivations the reveal corrected (derived differs, outcome agree): 0
+all: 27 rows; branch agree 1, hazard agree 16, mutant agree 1, panic agree 2, sentinel agree 1, shared agree 2, shared overturn 1, test agree 2, test overturn 1
+run 04f24b8 conformance(ferrum-state): step 3, U4a hazards of the other groups and the lists; Q142, M29: 15 rows; hazard agree 9, panic agree 2, sentinel agree 1, shared agree 2, shared overturn 1
+run 449481e conformance(ferrum-state): step 3, U4a hazards of Facet; Q141: 7 rows; hazard agree 7
+run 658d643 conformance(ferrum-state): step 3, U4a and U4b gaps; step 3 done: 2 rows; branch agree 1, mutant agree 1
+run fec1e11 conformance(ferrum-state): step 3, U4a tests run: 3 rows; test agree 2, test overturn 1
+the six runs of M28: 0 rows; 
+hazard, panic, shared, sentinel of runs above 200,000 (M28 runs apart): 22 rows; hazard agree 16, panic agree 2, sentinel agree 1, shared agree 2, shared overturn 1
+hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart): 0 rows; 
+checks passed
+```
+
+Not `agree`: `raw/conformance-facet.jsonl:213` shared `src/facet.rs:455` (`compute_n`) overturn high (recorded `SAFE`, "a trait bound, not state; the status is per state"; the getter it keeps is given the state under construction, which it can clone to another thread: a thread spawned by the getter reads a facet not yet computed, computes the slot itself and returns `[1]` with no panic, where `design.md` §6 (Q142) asks for the panic "A state under construction is read from a thread that is not building it", a message found nowhere in `src/`; and the building thread reading a slot the other thread is computing makes `EditorState::create` panic with "Cyclic dependency between fields and/or facets" at `src/facet.rs:1282` with no cycle; probe `.scratch/recheck-U4a/probe213`. The missing guard is step 3's finding at `raw/conformance-state.jsonl:349` to `:372` (`src/state.rs:57`, `:59`, `:62`, `:643` to `:645`) and the mutant line `raw/conformance-facet.jsonl:266`; this line passed it, and every slot callback reaches it). `:10` test `test_cm6_facet_10_can_specify_a_dependency_on_the_document` overturn low (recorded `EQUIVALENT`; `cm6_facet.rs:176-178` carries three `// literal` comments, `"doc"` as `Slot::Doc` by N17 and `count` as an `AtomicI64` by D14 and D6, which M31 calls `CHANGED`; the test passes and asserts cm6's three values, `test-facet.ts:66-74`).
