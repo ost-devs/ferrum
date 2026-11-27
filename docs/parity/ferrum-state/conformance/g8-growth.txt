@@ -1,0 +1,242 @@
+# G8 growth, n to 100n: exponent k of t ~ n^k on each side; sorted by k(rust) - k(cm6)
+# diff	entry	item	k_rust	k_cm6	rust_ns_at_100n	cm6_ns_at_100n	floor
++1.49	change_desc.to_json	state.cm6.159	1.42	-0.07	6.95359e+07	8.8	
++1.07	long.replace	state.cm6.234	1.18	0.11	4.38818e+06	135	
++0.23	range_cursor.goto	state.cm6.196	1.27	1.04	16747.2	24001.1	
++0.13	range_set_builder.finish	state.cm6.204	0.54	0.41	7701.5	3604	
++0.13	change_set	state.cm6.136	1.17	1.04	2.08249e+06	3.04065e+06	
++0.13	range_set.size	state.cm6.182	1.26	1.13	29398.3	16407.2	
++0.12	text.replace	state.cm6.234	-0.08	-0.21	2321.1	1016.8	
++0.12	range_comparator.bound_change	state.cm6.208	0.63	0.52	630643	727004	
++0.11	change_set.apply	state.cm6.137	-0.08	-0.19	2575.4	1127.4	
++0.10	range_set.iter_sets	state.cm6.187	1.09	0.99	34666.7	55607.9	
++0.10	range_comparator.compare_range	state.cm6.206	0.63	0.54	643634	718346	
++0.10	span_iterator.point	state.cm6.211	0.78	0.68	17400.5	29157.2	
++0.10	change_desc	state.cm6.148	1.17	1.07	2.0042e+06	2.34908e+06	
++0.10	range_set.update	state.cm6.183	0.76	0.66	263045	290575	
++0.09	range_set.iter	state.cm6.186	1.13	1.04	17073.5	24995.5	
++0.08	text_iterator.next	state.cm6.225	0.01	-0.07	692.4	1001.3	
++0.07	range_set.eq	state.cm6.189	1.04	0.97	455918	419152	
++0.07	range_set.map	state.cm6.184	0.66	0.59	179598	182738	
++0.07	range_set.between	state.cm6.185	1.12	1.05	21715.5	31697.1	
++0.06	span_iterator	state.cm6.209	0.68	0.61	36232.6	56064.9	
++0.06	transaction.state	state.cm6.100	-0.10	-0.16	2359	1562.8	
++0.06	range_value.map_mode	state.cm6.174	0.65	0.60	183581	180529	
++0.05	range_set.spans	state.cm6.190	0.76	0.71	17091.6	31442.3	
++0.05	editor_selection.map	state.cm6.064	1.08	1.02	3.90809e+06	5.37965e+06	
++0.05	editor_state.change_filter	state.cm6.032	-0.03	-0.08	4060.3	3997.2	
++0.05	range_set_update.filter	state.cm6.262	0.74	0.69	227142	285786	
++0.04	editor_state.transaction_extender	state.cm6.034	-0.04	-0.08	3932.5	4168.5	
++0.04	transaction.new_doc	state.cm6.098	-0.12	-0.16	1959.3	1340.6	
++0.04	range_set.compare	state.cm6.188	0.66	0.62	699495	846656	
++0.04	editor_selection.add_range	state.cm6.068	1.11	1.07	3.59281e+06	3.47486e+06	
++0.04	column.count_column	state.cm6.216	0.00	-0.04	522	1814	
++0.04	span_iterator.span	state.cm6.210	0.68	0.64	17938.6	31928.1	
++0.04	editor_state.read_only_facet	state.cm6.024	0.02	-0.02	108.3	48.8	
++0.04	range_set_update.filter_to	state.cm6.264	0.74	0.70	222253	292966	
++0.04	editor_state.transaction_filter	state.cm6.033	-0.04	-0.08	3944.7	4108.1	
++0.03	range_set_builder.add	state.cm6.203	-0.07	-0.10	14.2	29.1	
++0.03	change_set.of	state.cm6.145	0.00	-0.03	316.6	1274.9	
++0.03	change_spec	state.cm6.135	-0.00	-0.03	286.1	1235.5	
++0.03	state_field.init	state.cm6.048	-0.01	-0.04	217.6	43.1	
++0.03	state_effect.define	state.cm6.128	0.03	0.00	29.8	83.5	
++0.03	editor_selection.create	state.cm6.073	1.10	1.07	2.65292e+06	2.85853e+06	
++0.03	column.find_column	state.cm6.217	-0.00	-0.03	419.4	1375	
++0.02	range_set_builder.constructor	state.cm6.202	0.01	-0.02	7.3	82	
++0.02	range_value	state.cm6.170	0.00	-0.02	228.3	214.6	
++0.02	combine_config	state.cm6.134	0.98	0.95	9997.1	262934	
++0.02	range_set_update.filter_from	state.cm6.263	1.04	1.02	226308	269624	
++0.02	range_comparator	state.cm6.205	1.03	1.02	603308	643239	
++0.02	facet.from	state.cm6.042	0.00	-0.01	134	52.2	
++0.02	facet.of	state.cm6.039	-0.00	-0.02	99.2	22.1	
++0.02	change_set.compose	state.cm6.140	1.05	1.04	2.73257e+08	6.41038e+08	
++0.01	text.iter	state.cm6.239	0.00	-0.01	46.9	37.5	
++0.01	state_effect.append_config	state.cm6.131	-0.01	-0.02	31.2	81.3	
++0.01	text.iter_lines	state.cm6.241	0.04	0.03	270.8	480.3	
++0.01	range_set_update.sort	state.cm6.261	0.73	0.71	231971	302130	
++0.01	transaction.add_to_history	state.cm6.107	0.00	-0.01	36.9	89.8	
++0.01	prec.high	state.cm6.053	0.00	-0.01	22	21	
++0.01	prec.lowest	state.cm6.056	0.00	-0.01	22.5	21.1	
++0.01	editor_state.to_text	state.cm6.013	0.00	-0.00	130.2	146.5	
++0.01	compartment.of	state.cm6.058	-0.00	-0.01	27.4	15.1	
++0.01	editor_state.line_separator	state.cm6.022	0.00	-0.01	112.9	50	
++0.01	editor_state.tab_size_facet	state.cm6.020	0.01	-0.00	101.5	49.9	
++0.01	editor_state.changes	state.cm6.012	-0.01	-0.02	297.7	1224.9	
++0.01	change_set.desc	state.cm6.143	0.00	-0.01	12.8	13.9	
++0.01	transaction_spec.sequential	state.cm6.117	0.01	-0.00	1522.1	4084.2	
++0.01	range_cursor.from	state.cm6.198	0.03	0.02	0.8	7.1	below 1 ns
++0.01	state_effect.map_effects	state.cm6.129	0.01	0.01	73.6	121.9	
++0.01	change_desc.map_desc	state.cm6.156	1.05	1.05	1.84202e+07	9.93505e+07	
++0.01	prec.low	state.cm6.055	-0.00	-0.01	21.5	21.1	
++0.00	editor_state_config.doc	state.cm6.002	0.01	0.00	378.8	1142.7	
++0.00	char.code_point_size	state.cm6.215	0.00	-0.00	0.6	50.4	below 1 ns
++0.00	state_field_spec.from_json	state.cm6.258	0.97	0.97	1.02265e+06	1.61307e+06	
++0.00	prec.default	state.cm6.054	-0.00	-0.01	21.8	21.2	
++0.00	state_effect_type.of	state.cm6.133	0.03	0.02	43.2	15.1	
++0.00	state_field_spec.to_json	state.cm6.257	0.03	0.03	1210.5	418.4	
++0.00	editor_selection.as_single	state.cm6.067	-0.01	-0.01	41.7	21.9	
++0.00	map_mode.track_after	state.cm6.165	0.00	0.00	7.4	20.5	
++0.00	transaction.doc_changed	state.cm6.102	0.00	0.00	1.7	13.8	
+-0.00	facet.define	state.cm6.038	0.00	0.00	81.8	139.5	
+-0.00	state_effect.reconfigure	state.cm6.130	-0.01	-0.00	30.3	87.9	
+-0.00	editor_state.update	state.cm6.009	0.01	0.01	552.3	2033.1	
+-0.00	state_field_spec.update	state.cm6.254	0.02	0.02	2035.6	2776.5	
+-0.00	change_set.map	state.cm6.141	1.07	1.08	6.0203e+07	1.91884e+08	
+-0.00	facet_config.combine	state.cm6.248	0.01	0.01	27.8	39.1	
+-0.00	compartment	state.cm6.057	0.00	0.00	24.4	61.2	
+-0.00	transaction_spec.scroll_into_view	state.cm6.115	0.01	0.01	331.9	1823.9	
+-0.00	selection_range.to_json	state.cm6.090	0.00	0.01	100.4	15.8	
+-0.00	map_mode.simple	state.cm6.162	0.00	0.00	9.2	20.6	
+-0.00	transaction.remote	state.cm6.108	0.00	0.01	36.9	91.3	
+-0.00	compartment.reconfigure	state.cm6.059	0.00	0.01	36.2	19.5	
+-0.00	state_command	state.cm6.035	-0.00	-0.00	9.3	426.8	
+-0.00	compartment.get	state.cm6.060	0.00	0.00	23.6	19.2	
+-0.00	editor_state_config	state.cm6.001	0.00	0.01	403.6	1302.7	
+-0.01	facet.compute_n	state.cm6.041	0.00	0.01	86.2	33.3	
+-0.01	transaction_spec.user_event	state.cm6.114	-0.00	0.00	389	2113.2	
+-0.01	prec.highest	state.cm6.052	-0.02	-0.01	21.9	20.5	
+-0.01	charcategory.word	state.cm6.167	0.00	0.01	5	58.9	
+-0.01	selection_range.head	state.cm6.082	0.02	0.03	1.2	7.3	
+-0.01	editor_state.allow_multiple_selections	state.cm6.019	0.01	0.01	6.4	43.6	
+-0.01	editor_state.tab_size	state.cm6.021	0.00	0.01	7.4	13.5	
+-0.01	range_set.empty	state.cm6.193	0.00	0.01	0.3	36.4	below 1 ns
+-0.01	map_mode.track_del	state.cm6.163	-0.01	0.00	7.3	20.4	
+-0.01	state_field_spec.compare	state.cm6.255	0.01	0.02	1985.4	2812.5	
+-0.01	selection_range.extend	state.cm6.088	-0.01	-0.00	10.2	19	
+-0.01	editor_state.line_break	state.cm6.023	0.00	0.01	8.1	15	
+-0.01	editor_state.change_by_range	state.cm6.011	-0.00	0.01	362.3	1463	
+-0.01	state_effect.map	state.cm6.126	0.00	0.01	48.9	21.8	
+-0.01	text.length	state.cm6.230	0.03	0.04	0.7	7.5	below 1 ns
+-0.01	map_mode.track_before	state.cm6.164	0.00	0.01	7.5	20.7	
+-0.01	charcategory.other	state.cm6.169	0.00	0.01	5.9	58.7	
+-0.01	editor_state	state.cm6.005	0.01	0.02	659.4	2004.2	
+-0.01	line	state.cm6.218	0.10	0.11	58.8	228.3	
+-0.01	range_value.range	state.cm6.176	0.00	0.01	1.1	16.9	
+-0.01	text.empty	state.cm6.247	-0.00	0.01	10.8	36.6	
+-0.01	facet_config.compare_input	state.cm6.250	0.00	0.01	2183.7	3012.5	
+-0.01	long.line_at	state.cm6.232	-0.00	0.01	15.4	13.1	
+-0.01	state_effect_type	state.cm6.132	0.03	0.04	0.9	8.7	below 1 ns
+-0.01	transaction.user_event	state.cm6.106	0.00	0.01	59.7	91.8	
+-0.01	state_field.define	state.cm6.047	-0.01	0.00	65.4	923.2	
+-0.01	selection_range.undirectional	state.cm6.085	0.00	0.01	1.1	7.7	
+-0.01	range_cursor.rank	state.cm6.200	0.01	0.03	1.6	7.1	
+-0.01	facet_reader	state.cm6.044	-0.00	0.01	26.4	40.5	
+-0.01	change_set.empty	state.cm6.146	-0.00	0.01	70.9	90.2	
+-0.01	editor_state.from_json	state.cm6.017	-0.01	0.01	35.8	30147.2	
+-0.01	facet_config.compare	state.cm6.249	0.00	0.02	2151.6	2980.2	
+-0.01	transaction_spec.selection	state.cm6.111	0.00	0.02	376.7	2001.6	
+-0.01	facet_config.static	state.cm6.251	0.00	0.02	99.6	23.6	
+-0.01	editor_selection.cursor	state.cm6.074	0.00	0.02	8.1	46.9	
+-0.01	text.symbol_iterator	state.cm6.245	0.02	0.03	207.6	135.5	
+-0.01	state_field_spec.create	state.cm6.253	-0.00	0.01	31.7	40.7	
+-0.01	editor_state.read_only	state.cm6.025	-0.01	0.01	7.3	27	
+-0.01	editor_selection.undirectional_range	state.cm6.076	0.00	0.01	1.4	45.9	
+-0.01	transaction.scroll_into_view	state.cm6.097	0.00	0.01	1.4	13.7	
+-0.01	editor_selection.range	state.cm6.075	0.00	0.01	9	48.4	
+-0.01	prec	state.cm6.051	-0.01	0.01	41.7	125.1	
+-0.02	transaction_spec.filter	state.cm6.116	-0.01	0.01	526.3	1995.7	
+-0.02	editor_state.phrase	state.cm6.027	0.00	0.02	26.6	15.7	
+-0.02	transaction_spec	state.cm6.109	0.00	0.02	337.2	1816.7	
+-0.02	editor_selection	state.cm6.061	0.00	0.02	36	47.3	
+-0.02	annotation.define	state.cm6.121	0.00	0.02	26.2	84.7	
+-0.02	editor_state_config.selection	state.cm6.003	-0.02	0.00	389	1216.5	
+-0.02	range_value.eq	state.cm6.171	0.00	0.02	0.9	31.3	below 1 ns
+-0.02	text.iter_range	state.cm6.240	-0.00	0.02	139.3	43.7	
+-0.02	transaction_spec.effects	state.cm6.112	-0.01	0.01	421.8	1857.7	
+-0.02	annotation.value	state.cm6.120	0.01	0.03	2.9	7	
+-0.02	transaction.changes	state.cm6.094	0.00	0.02	3.4	17.8	
+-0.02	transaction.is_user_event	state.cm6.104	0.00	0.02	9.1	38.6	
+-0.02	charcategory	state.cm6.166	0.00	0.02	5.6	61	
+-0.02	selection_range	state.cm6.077	0.00	0.02	9.1	46.9	
+-0.02	selection_range.bidi_level	state.cm6.086	-0.01	0.01	1.4	7.7	
+-0.02	text.line	state.cm6.233	0.10	0.12	58.5	233.5	
+-0.02	facet_config.enables	state.cm6.252	-0.01	0.01	83.5	138	
+-0.02	range.to	state.cm6.179	0.00	0.02	0.6	7.1	below 1 ns
+-0.02	range_set.join	state.cm6.192	0.00	0.03	64.6	61.2	
+-0.02	facet.compute	state.cm6.040	0.00	0.03	86.1	34.8	
+-0.02	transaction.time	state.cm6.105	0.00	0.02	5.5	105.6	
+-0.02	editor_selection.single	state.cm6.072	-0.00	0.02	42.3	53	
+-0.02	editor_state.field	state.cm6.008	0.00	0.03	31.4	44.1	
+-0.02	editor_state.facet	state.cm6.015	-0.01	0.01	25.8	40.3	
+-0.02	selection_range.goal_column	state.cm6.080	0.00	0.02	1.4	7.6	
+-0.02	text_iterator.line_break	state.cm6.228	0.00	0.02	1.7	7.6	
+-0.02	state_effect_spec.map	state.cm6.259	0.00	0.03	52.6	27.3	
+-0.02	range_cursor.value	state.cm6.197	0.00	0.02	3.4	8.3	
+-0.03	transaction.selection	state.cm6.095	0.00	0.03	1.4	15.2	
+-0.03	selection_range.from	state.cm6.078	0.00	0.03	1.1	7.1	
+-0.03	transaction	state.cm6.092	0.00	0.03	323.9	1933.4	
+-0.03	line.from	state.cm6.219	0.00	0.03	0.6	7	below 1 ns
+-0.03	range.from	state.cm6.178	0.00	0.03	0.6	7	below 1 ns
+-0.03	range_value.end_side	state.cm6.173	0.00	0.03	0.6	7	below 1 ns
+-0.03	range_value.start_side	state.cm6.172	0.00	0.03	0.6	7	below 1 ns
+-0.03	text.children	state.cm6.244	0.00	0.03	1	7.7	
+-0.03	change_desc.empty	state.cm6.151	0.00	0.03	0.7	8.4	below 1 ns
+-0.03	range.value	state.cm6.180	0.00	0.03	0.6	8.1	below 1 ns
+-0.03	change_desc.compose_desc	state.cm6.155	1.03	1.06	2.16055e+07	1.0129e+08	
+-0.03	editor_selection.main_index	state.cm6.063	0.00	0.03	0.6	7.1	below 1 ns
+-0.03	line.number	state.cm6.221	0.00	0.03	0.6	7.1	below 1 ns
+-0.03	selection_range.to	state.cm6.079	0.00	0.03	1.1	7.1	
+-0.03	range_cursor	state.cm6.194	-0.01	0.02	73	88.4	
+-0.03	editor_state.char_categorizer	state.cm6.030	-0.03	0.00	70.4	95.4	
+-0.03	facet	state.cm6.036	0.00	0.03	25.5	14.1	
+-0.03	editor_state.word_at	state.cm6.031	-0.05	-0.02	187.7	866.8	
+-0.03	selection_range.anchor	state.cm6.081	0.00	0.03	1.2	7.5	
+-0.03	editor_state.doc	state.cm6.006	0.00	0.03	0.8	7.4	below 1 ns
+-0.03	state_effect.is	state.cm6.127	0.00	0.03	0.7	8.7	below 1 ns
+-0.03	annotation_type	state.cm6.122	0.00	0.03	4	10.6	
+-0.03	text_iterator	state.cm6.224	0.02	0.06	166.3	139.4	
+-0.03	text.append	state.cm6.235	0.15	0.19	4959.6	5908.9	
+-0.03	editor_state.slice_doc	state.cm6.014	-0.07	-0.04	294.3	311.2	
+-0.03	editor_selection.ranges	state.cm6.062	0.00	0.03	0.6	7.5	below 1 ns
+-0.03	line.to	state.cm6.220	0.00	0.03	0.6	7.4	below 1 ns
+-0.04	annotation	state.cm6.118	0.01	0.05	38.7	7.7	
+-0.04	facet.reader	state.cm6.037	0.00	0.04	10.9	7.8	
+-0.04	map_mode	state.cm6.161	-0.00	0.03	9.2	20.6	
+-0.04	text.slice	state.cm6.236	-0.07	-0.03	434.3	399.3	
+-0.04	annotation_type.of	state.cm6.123	-0.00	0.04	37.1	16.4	
+-0.04	state_field	state.cm6.046	-0.00	0.04	26.7	14.4	
+-0.04	selection_range.assoc	state.cm6.084	0.00	0.04	1.3	7.6	
+-0.04	text.lines	state.cm6.231	0.00	0.04	0.6	7.5	below 1 ns
+-0.04	selection_range.from_json	state.cm6.091	-0.00	0.04	23.8	57.5	
+-0.04	state_effect.value	state.cm6.125	0.00	0.04	2.9	8.5	
+-0.04	editor_selection.main	state.cm6.066	0.00	0.04	1.6	15.9	
+-0.04	text.slice_string	state.cm6.237	-0.08	-0.03	272.6	301.5	
+-0.04	annotation.type	state.cm6.119	0.00	0.04	0.7	8.7	below 1 ns
+-0.04	selection_range.empty	state.cm6.083	-0.02	0.03	1.1	8	
+-0.05	line.length	state.cm6.223	0.00	0.05	0.6	8.9	below 1 ns
+-0.05	state_field.extension	state.cm6.049	-0.01	0.04	40.3	7.8	
+-0.05	range_value.point	state.cm6.175	0.00	0.05	0.6	8.3	below 1 ns
+-0.05	selection_range.eq	state.cm6.089	-0.01	0.04	2.7	12.4	
+-0.05	transaction_spec.changes	state.cm6.110	-0.00	0.04	546.3	2352.8	
+-0.05	editor_selection.eq	state.cm6.065	0.00	0.05	2	9.4	
+-0.05	text_iterator.done	state.cm6.227	0.00	0.05	1	8.7	
+-0.05	change_desc.map_pos	state.cm6.157	-0.01	0.05	9.5	22.1	
+-0.05	text_iterator.value	state.cm6.226	0.01	0.06	4.2	8.8	
+-0.06	range_set.of	state.cm6.191	1.03	1.08	1.5463e+07	4.06653e+07	
+-0.06	range	state.cm6.177	0.00	0.06	230.7	240.8	
+-0.06	text.eq	state.cm6.238	0.00	0.06	3.1	9.4	
+-0.06	range_cursor.to	state.cm6.199	-0.03	0.03	0.7	7.1	below 1 ns
+-0.06	editor_state_config.extensions	state.cm6.004	0.99	1.05	941255	1.63119e+06	
+-0.06	charcategory.space	state.cm6.168	-0.01	0.05	3.7	36.3	
+-0.06	range_set_builder	state.cm6.201	-0.00	0.06	227	237.9	
+-0.06	text.line_at	state.cm6.232	-0.03	0.03	41.9	219.8	
+-0.07	range_cursor.next	state.cm6.195	0.01	0.08	13	23.3	
+-0.07	state_effect	state.cm6.124	-0.00	0.07	39.4	8.2	
+-0.07	text.of	state.cm6.246	1.05	1.12	6.52307e+07	2.30474e+07	
+-0.07	text	state.cm6.229	-0.05	0.03	38.5	223.8	
+-0.08	editor_selection.replace_range	state.cm6.069	1.15	1.22	824743	734264	
+-0.08	range_comparator.compare_point	state.cm6.207	1.01	1.08	7.88019e+07	1.29713e+08	
+-0.08	editor_state.selection	state.cm6.007	0.00	0.08	1.8	12.2	
+-0.09	state_field_spec.provide	state.cm6.256	-0.10	-0.01	220.7	1381.8	
+-0.10	selection_range.map	state.cm6.087	-0.00	0.09	22.8	61.4	
+-0.10	editor_state.to_json	state.cm6.016	1.20	1.31	2.70856e+07	7.57825e+07	
+-0.11	extension	state.cm6.050	-0.13	-0.02	22.4	16.5	
+-0.11	range_set	state.cm6.181	0.00	0.11	16.9	43.3	
+-0.14	change_set.from_json	state.cm6.147	1.03	1.18	2.01458e+08	3.09964e+08	
+-0.15	transaction.start_state	state.cm6.093	0.00	0.15	1.7	13.4	
+-0.18	char.code_point_at	state.cm6.213	0.00	0.18	2.6	116	
+-0.18	editor_selection.from_json	state.cm6.071	1.18	1.36	8.84978e+06	7.18547e+06	
+-0.22	char.find_cluster_break	state.cm6.212	0.01	0.23	9.9	115	
+-0.26	transaction.new_selection	state.cm6.099	-0.01	0.25	121.9	727.6	
+-0.27	long.slice_string	state.cm6.237	-0.00	0.26	67.5	83	
+-0.31	line.text	state.cm6.222	-0.28	0.02	0.6	7.6	below 1 ns

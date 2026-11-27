@@ -98,7 +98,7 @@
 
 Output files go to .scratch/conformance/<crate>/ (never committed: regenerated from the recorded commit).
 """
-import shutil, collections, hashlib, json, os, re, subprocess, sys
+import shutil, collections, hashlib, json, math, os, re, subprocess, sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import impl_check as ic  # noqa: E402
@@ -812,6 +812,37 @@ def g8(c, crate, args):
     c.need(not only, f"every entry and size timed on both sides: {len(only)} on one side only", [f"{e} {z}" for e, z in only])
     longs = [r for r in sides["rust"] if str(r.get("entry", "")).startswith("long.")]
     c.say(f"long-line entries (state.imp.010) on the Rust side: {len(longs)}")
+    if "--growth" in args: g8_growth(c, crate, sides, sizes)
+
+
+def g8_growth(c, crate, sides, sizes):
+    """The growth of each entry read from its times, never from the code (plan.md step 2): the exponent k of
+    t ~ n^k between the first and the last size asked, on each side, from the medians and the recorded n. Writes
+    conformance/g8-growth.txt, every entry sorted by k(rust) - k(cm6), largest first; it sets no threshold, the
+    class is the consultant's to read. A median below 1 ns at either end is marked: it is near the timer's floor."""
+    lo, hi = sizes[0], sizes[-1]
+    t = {side: {(r["entry"], r["size"]): r for r in rs} for side, rs in sides.items()}
+    rows = []
+    for e in sorted({e for e, _ in t["rust"]} & {e for e, _ in t["cm6"]}):
+        if not all((e, z) in t[s] for s in t for z in (lo, hi)): continue
+        k, floor = {}, False
+        for s in t:
+            a, b = t[s][(e, lo)], t[s][(e, hi)]
+            ta, tb = max(a["median_ns"], 1e-3), max(b["median_ns"], 1e-3)
+            floor |= a["median_ns"] < 1 or b["median_ns"] < 1
+            k[s] = math.log(tb / ta) / math.log(b["n"] / a["n"]) if b["n"] != a["n"] else float("nan")
+        r = t["rust"][(e, lo)]
+        rows.append((k["rust"] - k["cm6"], e, r["item_id"], k["rust"], k["cm6"], t["rust"][(e, hi)]["median_ns"], t["cm6"][(e, hi)]["median_ns"], floor))
+    rows.sort(key=lambda x: -x[0])
+    path = ic.spec(crate, "conformance", "g8-growth.txt")
+    with open(path, "w", encoding="utf8") as f:
+        f.write(f"# G8 growth, {lo} to {hi}: exponent k of t ~ n^k on each side; sorted by k(rust) - k(cm6)\n")
+        f.write("# diff\tentry\titem\tk_rust\tk_cm6\trust_ns_at_" + hi + "\tcm6_ns_at_" + hi + "\tfloor\n")
+        for d, e, i, kr, kc, tr, tc, fl in rows:
+            f.write(f"{d:+.2f}\t{e}\t{i}\t{kr:.2f}\t{kc:.2f}\t{tr:g}\t{tc:g}\t{'below 1 ns' if fl else ''}\n")
+    for lim in (0.1, 0.25, 0.5):
+        c.say(f"entries whose k(rust) exceeds k(cm6) by more than {lim}: {sum(1 for x in rows if x[0] > lim)} of {len(rows)}")
+    c.say(f"written {os.path.relpath(path, REPO)}")
 
 
 def sample(c, crate, args):
