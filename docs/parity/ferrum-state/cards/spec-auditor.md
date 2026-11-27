@@ -183,6 +183,78 @@ Do not run `tools/impl_check.py`: the orchestrator replays the new fixtures afte
 - the questions;
 - the two lines of `CLAUDE.md` "Reporting from a card".
 
+## Conformance step 5 (c), run F4a: the fixtures of the findings of chunk `state`
+
+**The step** is `docs/parity/ferrum-state/plan.md` "Conformance", step 5 (c), run F4a. This card holds its whole list of inputs, so you need not read the plan's paragraph. F1 to F3 ran chunks `text`, `change`, `rangeset` and `facet` (commits 5290354, 81bd723, eb7e9bb). F3 wrote `oracle/cm6/state/round-c-f3.ts` (ids F8400–F8402 of `fixtures/state.jsonl`), the pattern for chunk `state`.
+
+**Routing.** Every case of this run is written in chunk `state`, through `oracle/cm6/state/interp.ts`. A case chunk `state`'s program cannot express goes in the report, with the reason and the chunk that can express it; you do not write in another chunk.
+
+**The inputs of F4a.** Each line is a line of `docs/parity/ferrum-state/raw/<file>`. Read its `evidence` and `repro`, and, where `raw/recheck.jsonl` or `raw/recheck-class.jsonl` has a row for it (match `file` and `line`), that row's `repro`.
+1. `conformance-state.jsonl`, hazards:
+   - `:58`: a selection given to `EditorState.create` checked only against the length;
+   - `:63`: its first case only (a clone kept from a build that panicked reading a slot); its other two cases are Ferrum's decided values, written by (d);
+   - `:97`: the order in which the fields' `toJSON` run;
+   - `:113`: `charCategorizer`'s Space test (`!/\S/`);
+   - `:235`: an earlier spec's selection outside its own document, the `RangeError` from `mapPos` while merging;
+   - `:312` and `:314` with the fixtures of `state.cm6.126.d2` (`raw/decisions.jsonl`): an effect whose value is `undefined` mapped by a type without `map`, `null` as the control; and the effect returned unchanged when the mapped value is `==` the old one.
+2. `conformance-state.jsonl`, panic `:332` (`src/state.rs:668`): a slot computed after the state's construction ended, through a transaction whose build panicked.
+3. `conformance-state.jsonl`, branches and mutants:
+   - `:426`: `Annotation::value` for an annotation of another type;
+   - `:427` and `:428`, with the shared line `:401`: the nested `tr.state()` (a re-entrant read of a transaction's state during its own build); a fixture if the interpreter can express it, else to (d) with the reason;
+   - `:429`: `changeByRange`'s `effects` passed on;
+   - `:431`, `:432`, `:433`: a transaction given as a spec keeps its `selection`, `effects` and `scrollIntoView`.
+4. The overturns of the class reads through `EditorState` and `Transaction` (`raw/recheck-class.jsonl`), each a fixture recording cm6's throw through the public function the overturn names:
+   - `conformance-change.jsonl:110` (`src/change.rs:234`): `update` with a selection mapped through a later spec's changes;
+   - `:111` (`src/change.rs:368`): `reconfigured` of a transaction from a `ChangeSet` of another length;
+   - `:113` and `:114` (`src/change.rs:702`, `:716`): `changeByRange` returning a change beyond the document, and a nested set of another length.
+5. From F1, `conformance-change.jsonl`:
+   - `:252`, `:253`, `:254`: the mutants of `ChangeSet::filter`, through a change filter of `EditorState`;
+   - `:178`: a `SelectionRange` with `from > to`, accepted by `checkSelection`, through `EditorState.create` with a selection.
+
+**Not in F4a:** every `sentinel` line, and `conformance-state.jsonl` `:67`, `:172`, `:176`, `:187`, `:220`, `:249`, `:409`, `:430`, `:434`, `:436` (the plan routes them to (d), or to (f) as a listed survivor); the lines of chunk `text` (F4b).
+
+**Facts the earlier runs looked up:**
+- `tools/cm6/program.ts`: a step's `"if"` (line 22–23); `try {steps, mode, result?}` (line 54 and after), whose steps' variables stay set; read its `throw` and `log` ops there.
+- A behavior row lists a fixture of its own item's chunk as `F<n>`, and one of another chunk as `<chunk>:F<n>` (`tools/spec_check.py:231`); a fixture's `behaviors` name rows, and each must list it back.
+- A variable set inside a callback's `fn` stays a program variable after the call, which is how F3 kept a state a `create` received (`round-c-f3.ts`).
+
+**Read:**
+- the header and ops of `oracle/cm6/state/interp.ts`, and `oracle/cm6/state/s2-lib.ts` as far as the pattern needs it;
+- `oracle/cm6/state/round-c-f3.ts`, the pattern to copy (the drop of a range of ids, the header);
+- `oracle/cm6/order.json`;
+- the lines named above, and the behavior rows their evidence cites, in `raw/behaviors.jsonl`;
+- the row `state.cm6.126.d2` of `raw/decisions.jsonl` and its patch `oracle/patches/state.cm6.126.d2.patch`;
+- cm6's code at the places the lines cite, under `mirrors/cm6/state/src/`.
+
+**Write:**
+- *One generator:* `oracle/cm6/state/round-c.ts` with ids F8420 to F8599 of chunk `state`. Append it at the end of chunk `state`'s list in `order.json`, and drop its range first, as `round-c-f3.ts` does. Give it a header in that file's form.
+- *Values from cm6 runs only.* A program that throws records cm6's error, as the chunk's error fixtures do.
+- *Behavior rows:* each new fixture lists the behaviors it shows, and each of those rows lists it back. A case no row states gets a new row with the next free id of its member and `"added": "conformance round"`. A row whose text a fixture refutes is corrected the same way.
+- *An op that no interpreter has:* add it only when no existing op can express the case. Give it a header line in the header's form, and name it in the report, because (d)'s `test-writer` registers it in the replayer.
+
+**Do not write:**
+- `raw/decisions.jsonl`, `raw/replay.jsonl`, `raw/improvements.jsonl` or `oracle/patches/` (the consultant's);
+- `raw/conformance-*.jsonl`, `raw/recheck*.jsonl`, `fixtures/no-counterpart.jsonl` or anything under `crates/`.
+
+A way to do better than cm6, or a fact that does not fit this card, goes in the report as a question in the shape of `CLAUDE.md` "Raising a question".
+
+**Checks, run by you before you report:**
+- `python3 tools/spec_check.py ferrum-state` ends with "checks passed" (about 3 minutes). It re-runs every generator of `order.json`, requires each to reproduce its fixtures byte for byte, and rewrites `raw/fixture-ops.jsonl`.
+- If you wrote fixtures of `state.cm6.126.d2`: `python3 tools/oracle_patch.py ferrum-state check state.cm6.126.d2`. It lists the committed fixtures the patch changes; the row's `fixtures` list is the consultant's, so the check fails on the new ones: report the fixtures it lists.
+Do not run `tools/impl_check.py`: the orchestrator replays the new fixtures after your run.
+
+**Budget.** 134,000 tokens. At 201,000, stop and report where you are; if your card's output is already committed and checked when you reach it, write your report.
+
+**Commit** with explicit paths, on the current branch, without pushing: `git commit -m 'spec(ferrum-state): conformance step 5 (c) F4a, the fixtures of the findings of state' -- docs/parity/ferrum-state/oracle/cm6 docs/parity/ferrum-state/fixtures/state.jsonl docs/parity/ferrum-state/raw/behaviors.jsonl docs/parity/ferrum-state/raw/fixture-ops.jsonl`. Add new files with `git add <path>` first, and never `git add -A`.
+
+**Report:**
+- the output of the checks;
+- for each input above: its fixture ids, or "to (d)" or the chunk that can express it, with the reason;
+- the rows added or corrected, with each text before and after;
+- any new op;
+- the questions;
+- the two lines of `CLAUDE.md` "Reporting from a card".
+
 The sections below are from the implementation stage.
 
 
