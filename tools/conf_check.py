@@ -694,6 +694,33 @@ def reached(fns, seeds, helper=lambda fn: not fn["public"]):
     return chosen
 
 
+MIR_TEXT, MIR_GRAPH = {}, {}
+
+
+def graph_reached(crate, fns, seeds, helper):
+    """The union's second half (Q151, plan step 5 (a)): the functions of `fns` reached from the seeds on the call graph of
+    the library's MIR (tools/mir_graph.py), walking into a body only when it is a seed, a closure, or a function `helper`
+    accepts. Keyed by (file, line), as `reached`."""
+    import mir_graph as mg
+    if crate not in MIR_TEXT: MIR_TEXT[crate] = mg.emit(REPO, crate, os.path.join(out_dir(crate), "panics", "mir"))
+    key = (crate, id(fns))  # one build per list of functions: `items` asks once per annotated function
+    if MIR_GRAPH.get("key") != key: MIR_GRAPH.update(key=key, graph=mg.build(crate, fns, src_files(crate), impl_types, MIR_TEXT[crate]))
+    g = MIR_GRAPH["graph"]
+    nodes, edges = g["nodes"], g["edges"]
+    seed_ids = {g["by_src"][fn["key"]]["id"] for fn in seeds if fn.get("key") in g["by_src"]}
+    out, seen, todo = {}, set(seed_ids), list(seed_ids)
+    while todo:
+        x = todo.pop()
+        for y in edges[x]:
+            if y in seen: continue
+            src = nodes[y]["src"]
+            if src is not None and not helper(src) and y not in seed_ids: continue
+            seen.add(y); todo.append(y)
+            if src is not None: out[(src["file"], src["line"])] = src
+    for fn in seeds: out[(fn["file"], fn["line"])] = fn
+    return out
+
+
 def mutants(c, crate, args):
     if not args: sys.exit("mutants: give the cm6 names, comma-separated")
     names = [n.strip() for n in args[0].split(",") if n.strip()]
@@ -706,8 +733,12 @@ def mutants(c, crate, args):
     seeds = [fn for fn in fns if any(names_it(fn, n) for n in names)]
     found = {n for n in names if any(names_it(fn, n) for fn in seeds)}
     c.need(found == set(names), f"each named cm6 item has a function whose `cm6:` line names it: {len(found)} of {len(names)}", sorted(set(names) - found))
-    chosen = reached(fns, seeds)
-    c.say(f"functions: {len(seeds)} with a named `cm6:` line, {len(chosen) - len(seeds)} private functions they call (transitively, by name: in another file only by a free or path call to a name no other private function has)")
+    by_name = reached(fns, seeds)
+    by_graph = graph_reached(crate, fns, seeds, lambda fn: not fn["public"])
+    chosen = {**by_graph, **by_name}
+    c.say(f"functions: {len(seeds)} with a named `cm6:` line, {len(chosen) - len(seeds)} private functions they call (transitively, the union of the call rule by name, "
+          f"in another file only by a free or path call to a name no other private function has, and the MIR call graph, Q151): "
+          f"{len(set(by_graph) - set(by_name))} only by the graph, {len(set(by_name) - set(by_graph))} only by name")
     r = ic.run(["cargo", "mutants", "-p", crate, "--features", "__test", "--list", "--json"])
     try: ms = json.loads(r.stdout)
     except ValueError: c.need(False, "cargo mutants --list --json", r.stderr.strip().split("\n")[-6:]); return
@@ -725,7 +756,9 @@ def mutants(c, crate, args):
         fh.write("]\n")
     listing = os.path.join(out_dir(crate), "mutant-functions.txt")
     with open(listing, "w", encoding="utf8") as fh:
-        for (f, l), fn in sorted(chosen.items()): fh.write(f"src/{f}:{l} {fn['name']}{' (seed)' if fn in seeds else ''}\n")
+        for (f, l), fn in sorted(chosen.items()):
+            how = " (seed)" if fn in seeds else " (graph only)" if (f, l) not in by_name else ""
+            fh.write(f"src/{f}:{l} {fn['name']}{how}\n")
     c.need(bool(pick), f"mutants of those functions: {len(pick)} of {len(ms)} in the crate; written {os.path.relpath(path, REPO)} and {os.path.relpath(listing, REPO)}")
 
 
@@ -1425,9 +1458,14 @@ def item_tie(crate):
     fns = crate_fns(crate)
     cm6_name = lambda fn: (re.search(r"///\s*cm6(?: contract)?:\s*(\S+)", fn["docs"]) or [None, None])[1]
     callers = collections.defaultdict(set)  # (file, line) of a helper -> cm6 names of the annotated functions reaching it
+    graph_only = collections.defaultdict(set)  # the same, reached by the MIR graph alone (Q151)
+    helper = lambda fn: cm6_name(fn) is None
     for a in fns:
         if cm6_name(a) in by_name:
-            for k in reached(fns, [a], lambda fn: cm6_name(fn) is None): callers[k].add(cm6_name(a))
+            named = reached(fns, [a], helper)
+            for k in named: callers[k].add(cm6_name(a))
+            for k in graph_reached(crate, fns, [a], helper):
+                if k not in named: callers[k].add(cm6_name(a)); graph_only[k].add(cm6_name(a))
     def holder(path, line):
         """The innermost fn with a body that holds src/<path>:<line>."""
         inside = [fn for fn in fns if fn["file"] == path and fn["line"] <= line <= fn["end"]]
@@ -1468,7 +1506,13 @@ def item_tie(crate):
     for f in sorted(os.listdir(ic.spec(crate, "raw"))):
         if re.fullmatch(r"conformance-[\w-]+\.jsonl", f):
             for n, r in enumerate(raw(f), 1): lines.append({**r, "file": f, "line": n})
-    return {"inv": inv, "beh": beh, "rows": rows, "lines": lines, "tie": tie, "fixture_item": fixture_item}
+    def by_graph(x):
+        """The items the MIR graph alone ties to a code line (Q151's union)."""
+        m = re.match(r"src/(\S+?):(\d+)", x["id"])
+        if not m or cm6_of_line(texts, m.group(1), int(m.group(2))) in by_name: return set()
+        h = holder(m.group(1), int(m.group(2)))
+        return {by_name[n] for n in graph_only.get((h["file"], h["line"]), set())} if h else set()
+    return {"inv": inv, "beh": beh, "rows": rows, "lines": lines, "tie": tie, "fixture_item": fixture_item, "by_graph": by_graph}
 
 
 def items(c, crate, args):
@@ -1501,6 +1545,11 @@ def items(c, crate, args):
         t = tie(x) & set(inv)
         if not t: untied.append(f"{x['file']}:{x['line']} {x['kind']} {x['id']} {x['verdict']}"); continue
         for i in t: (why if x["verdict"] in finding else unver)[i].append(f"{x['kind']} {x['id']} {x['verdict']}")
+    by_graph = [(x, sorted(t_["by_graph"](x) & set(inv))) for x in lines if x["kind"] != "item" and not x["id"].startswith("replayer:")
+                and (x["verdict"] in finding or x["verdict"] == "UNVERIFIED")]
+    by_graph = [(x, g) for x, g in by_graph if g]
+    c.say(f"finding or UNVERIFIED lines the MIR call graph ties to an item the call rule does not (Q151's union): {len(by_graph)}"
+          + "".join(f"\n        {x['file']}:{x['line']} {x['kind']} {x['id']}: {', '.join(g)}" for x, g in by_graph))
     recorded = {x["id"]: x["verdict"] for x in lines if x["kind"] == "item"}
     derived, reasons = {}, {}
     for i in sorted(sampled):
