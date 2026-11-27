@@ -23,7 +23,7 @@ A crate is `CONFORMANT` when every gate of §2 passes. There is no percentage th
 
 **Test verdicts** (a cm6 case against its Ferrum test):
 - `EQUIVALENT`: passes;
-- `CHANGED`: differs from the cm6 case in a literal (an input of the scenario, an argument or an expected value), each difference with a decided cause next to it, as G3 checks; passes;
+- `CHANGED`: differs from the cm6 case in a literal (an input of the scenario, an argument or an expected value), each difference with a decided cause next to it, as G3 checks; passes. An argument cm6 omits that the Rust call writes with cm6's default (D14) is no difference: the scenario is cm6's;
 - `WEAKER`, `DIFFERENT`, `MISSING`: fail.
 
 **Every verdict lists the cm6 items that are not ported** (`DROP`, or excluded by a decision), with the decision that covers each, **and every row of the improvement register** with its status, and for an adopted one the number of fixtures and tests it changes: "conforming to `@codemirror/<package>@<version>`; N items not ported, listed; M improvements adopted, K scheduled or under evaluation, listed".
@@ -92,7 +92,7 @@ Mechanical gates run first, for the whole crate, by the orchestrator, each as a 
 - ids are deterministic if D6 requires it.
 
 **G8. Cost.**
-- Every item whose cost class is local or logarithmic is measured on inputs of size n, 10n and 100n (release build) and compared with cm6 on the same inputs. Growth worse than cm6's class is `NONCONFORMANT`.
+- Every item whose cost class is local or logarithmic is measured on inputs of size n, 10n and 100n (release build) and compared with cm6 on the same inputs. Growth worse than cm6's class is `NONCONFORMANT`. Where cm6's call is flat because it hands its work to the caller's next step (it returns an internal array the caller then serializes, or the engine defers a copy until the result is read), the class is read on the call followed by that step, timed on both sides, and the call alone is reported beside it: what a caller waits for is the pair (Q144).
 - Grep for whole-document materialization in operations cm6 performs locally.
 
 **G9. Rules.**

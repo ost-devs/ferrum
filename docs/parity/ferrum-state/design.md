@@ -123,6 +123,9 @@ One enum, `Error`, `#[non_exhaustive]`, a variant per explicit throw of `raw/thr
 | `create` with a main index not below the number of ranges (`state.cm6.073.d1`; Q90) | `Main index <main_index> is beyond the <n> ranges of the selection` | `EditorSelection::create`, after the check for no range, whose message is cm6's |
 | a transaction from a state whose construction has not finished (`state.cm6.100.d2`; Q142) | `A transaction cannot start from a state whose construction has not finished` | `Transaction::state`, before the start state's values are read |
 | a slot of a state under construction read, not yet computed, on a thread that is not building it (section 6; Q142) | `A state under construction is read from a thread that is not building it` | where a slot is computed or found being computed, before the check for a cycle |
+| a text built in memory whose length would exceed `isize::MAX` (D17; 2026-11-27) | `A text cannot be longer than isize::MAX bytes` | every function that builds a `Text` from values the program holds (`Text::append`, `Text::replace`, the sites of `src/text.rs:608` and `:650` at 4fa03f8), before the length is stored; only shared nodes can reach it |
+| a change description built in memory whose length or new length would exceed `isize::MAX`, or `ChangeSet::of` given such a length (D17; 2026-11-27) | `A change cannot be longer than isize::MAX` | `ChangeSet::of` and every function that builds a change description from others, before the length is stored |
+| `count_column` reaching a column above `isize::MAX` (`state.cm6.216.d2`) | `A column cannot be larger than isize::MAX` | `count_column`, at the step that would pass the bound |
 
 The replayer never compares these messages: the calls are left out (`char`, a row's id), or the recorded error is a `TypeError`, and then the op leaves the message out (section 10, "Engine errors").
 
