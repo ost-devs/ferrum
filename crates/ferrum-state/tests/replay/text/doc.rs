@@ -314,6 +314,41 @@ fn shared_children(a: &Value, p: &mut Program) -> R<Value> {
     Ok(Value::array(out))
 }
 
+/// `text.sharedNodes` of `oracle/cm6/text/interp.ts`: the number of subtrees of `doc` that are nodes of `in` (`in`
+/// itself and every node below it), `doc` walked from its root depth first, a shared node counted once and not walked
+/// into. Each node is compared by `__test::same_text` (`raw/replay.jsonl`, the row of the op; `design.md` section 10,
+/// the identity table). The nodes of `in` are grouped by length and line count, which two references to one node
+/// share, so that `same_text` is asked only of candidates: a document of 33,000 lines has about a thousand leaves.
+fn shared_nodes(a: &Value, p: &mut Program) -> R<Value> {
+    const OP: &str = "text.sharedNodes";
+    let d = doc(a, p, OP)?;
+    let o = p.ev(&a.field("in"))?;
+    let o = doc_arg(p, OP, "in", &o)?;
+    let n = ferrum(None, || {
+        let mut olds: std::collections::HashMap<(usize, usize), Vec<Text>> = std::collections::HashMap::new();
+        let mut st = vec![o.t.clone()];
+        while let Some(t) = st.pop() {
+            if let Some(cs) = t.children() {
+                st.extend(cs.iter().cloned());
+            }
+            olds.entry((t.len(), t.lines())).or_default().push(t);
+        }
+        let mut n = 0usize;
+        let mut walk = vec![d.t.clone()];
+        while let Some(t) = walk.pop() {
+            let shared = olds.get(&(t.len(), t.lines())).is_some_and(|c| c.iter().any(|x| __test::same_text(&t, x)));
+            if shared {
+                n += 1;
+            } else if let Some(cs) = t.children() {
+                // depth first in the order of the children; the count does not depend on the order
+                walk.extend(cs.iter().rev().cloned());
+            }
+        }
+        n
+    })?;
+    Ok(Value::Num(n as f64))
+}
+
 const LINE_FIELDS: [&str; 5] = ["from", "to", "number", "text", "length"];
 
 fn line_arg(p: &mut Program, op: &str, v: &Value) -> R<LineV> {
@@ -584,6 +619,7 @@ pub fn register(l: &mut Language) {
         })())
     });
     l.op("text.sharedChildren", &["api", "identity"], |a, p| finish(shared_children(a, p)));
+    l.op("text.sharedNodes", &["api", "identity"], |a, p| finish(shared_nodes(a, p)));
     l.op("ownKeys", INT, |a, p| {
         // `Object.keys` of an object of JavaScript: `raw/replay.jsonl` gives it `none`
         finish(p.ev(&a.field("of")).map_err(Stop::from).map(|_| p.op_none("ownKeys")))

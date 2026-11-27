@@ -170,7 +170,9 @@ pub fn encode(v: &Value) -> Result<Value, Flow> {
             Value::Num(n) => encode_number(*n),
             Value::Str(s) => encode_str(s),
             Value::Function(_) => Value::record([("js_function", Value::Bool(true))]),
-            Value::Host(h) => h.encode()?,
+            // what a value of Ferrum encodes to goes through the same walk: a `-0`, `NaN` or `undefined` inside it is
+            // written as `encode` writes it (`conformance-text.jsonl:163`); an encoded form is its own encoding
+            Value::Host(h) => go(&h.encode()?, open)?,
             Value::Array(a) => {
                 let p = Rc::as_ptr(a) as *const ();
                 if open.contains(&p) {

@@ -33,6 +33,10 @@ impl Host for TestHost {
         Some(std::ptr::eq(self, other))
     }
     fn encode(&self) -> Result<Value, Flow> {
+        if self.kind == "negzero" {
+            // a value of Ferrum whose encoding holds a number `encode` writes in its own form
+            return Ok(Value::array(vec![Value::Num(-0.0)]));
+        }
         Ok(Value::str(&format!("<{}>", self.kind)))
     }
     fn as_any(&self) -> &dyn Any {
@@ -73,10 +77,10 @@ fn language() -> Language {
         Ok(v)
     });
     l.op("t.make", api, |a, _| {
-        let kind = if matches!(a.field("kind"), Value::Str(ref s) if **s == *super::lang::value::js("outside")) {
-            "outside"
-        } else {
-            "table"
+        let kind = match a.field("kind") {
+            Value::Str(ref s) if **s == *super::lang::value::js("outside") => "outside",
+            Value::Str(ref s) if **s == *super::lang::value::js("negzero") => "negzero",
+            _ => "table",
         };
         Ok(Value::Host(Rc::new(TestHost { kind })))
     });
@@ -648,4 +652,164 @@ fn rule_an_engine_error_compares_its_name_and_leaves_its_message_out() {
         assert_eq!(r.result, "part", "{mode}: {}", r.note);
         assert_eq!(entries(&r), vec![e("engine", "t.engine")], "{mode}");
     }
+}
+
+// ---- conformance step 5 (d) W1: the replayer's findings and Q136, Q154 --------------------------------------------
+
+/// `conformance-text.jsonl:162` and `design.md` section 10, "What a row of `raw/decisions.jsonl` lists": a row's
+/// condition is judged only in a program that ran to its output. A listed fixture whose program stops by `flow` before
+/// any call met the condition is not judged (it ends as a stop does, `none`); the same fixture run to its output with
+/// no call meeting it is a mismatch.
+#[test]
+fn rule_a_listed_fixture_that_stops_before_its_condition_is_met_is_not_judged() {
+    let stops = r#"{"steps":[{"op":"t.type","x":1,"as":"a"},{"op":"t.row","x":5,"as":"b","if":{"$":"a"}}],"out":{"a":{"$":"a"}}}"#;
+    let r = run_rows(&[CONDITION_ROW], stops, r#"{"ok":{"a":1}}"#);
+    assert_eq!(r.result, "none");
+    assert!(r.decisions.is_empty());
+    assert_eq!(entries(&r), vec![e("type", "t.type"), e("flow", "t.row")]);
+    let ends = r#"{"steps":[{"op":"t.call","x":1,"as":"a"}],"out":{"a":{"$":"a"}}}"#;
+    assert_eq!(run_rows(&[CONDITION_ROW], ends, r#"{"ok":{"a":1}}"#).result, "mismatch");
+}
+
+/// `conformance-text.jsonl:163`: what a value of Ferrum encodes to goes through `encode`'s own walk, so a `-0` inside
+/// it is written `{"js_number": "-0"}` and is not equal to a recorded `0`.
+#[test]
+fn rule_the_encoding_of_a_value_of_ferrum_is_encoded_as_every_value() {
+    let input = r#"{"steps":[{"op":"t.make","kind":"negzero","as":"h"}],"out":{"h":{"$":"h"}}}"#;
+    assert_eq!(run(input, r#"{"ok":{"h":[{"js_number":"-0"}]}}"#).result, "equal");
+    assert_eq!(run(input, r#"{"ok":{"h":[0]}}"#).result, "mismatch");
+}
+
+mod cursor_rows {
+    use std::rc::Rc;
+
+    use crate::replay::text::cursor::{
+        Partial, ROW_DOUBLE_SKIP, ROW_REVERSE_SKIP, Raw, Shadow, cursor_row, double_skip, reverse_skip, tokens,
+    };
+
+    /// "aé😀b": 5 UTF-16 code units.
+    fn toks() -> Rc<[Option<Rc<[u16]>>]> {
+        tokens(&["aé😀b".encode_utf16().collect::<Vec<u16>>().into()])
+    }
+
+    fn partial(from: i64, to: i64) -> Partial {
+        Partial::new(toks(), 5, from, to)
+    }
+
+    /// `state.cm6.225.d2`'s sentence (Q136): a negative skip given to a partial cursor before its first `next`, the
+    /// partial cursor inside a line cursor included (`iterLines(from)` passes its skip on unchanged,
+    /// `mirrors/cm6/state/src/text.ts:527`), in a document that holds a character outside ASCII.
+    #[test]
+    fn rule_the_condition_of_state_cm6_225_d2_is_its_sentence() {
+        let fresh = Shadow::Partial(partial(1, 4));
+        assert!(double_skip(&fresh, -1, false));
+        assert!(!double_skip(&fresh, -1, true), "an ASCII document");
+        assert!(!double_skip(&fresh, 0, false) && !double_skip(&fresh, 2, false), "a skip that is not negative");
+        let reverse = Shadow::Partial(partial(4, 1));
+        assert!(double_skip(&reverse, -2, false), "either direction");
+        let lines = Shadow::lines(Shadow::Partial(partial(1, 4)));
+        assert!(double_skip(&lines, -1, false), "the partial cursor of a line cursor");
+        assert!(
+            !double_skip(&Shadow::lines(Shadow::Raw(Raw::new(toks(), 1))), -1, false),
+            "a line cursor over a raw one"
+        );
+        assert!(!double_skip(&Shadow::Raw(Raw::new(toks(), 1)), -1, false), "a raw cursor");
+        let mut started = Shadow::Partial(partial(1, 4));
+        started.next(0);
+        assert!(!double_skip(&started, -1, false), "after the first next");
+        let mut lines = Shadow::lines(Shadow::Partial(partial(1, 4)));
+        lines.next(0);
+        assert!(!double_skip(&lines, -1, false), "a line cursor after its first next");
+        assert_eq!(cursor_row(&fresh, -1, false), Some(ROW_DOUBLE_SKIP));
+    }
+
+    /// `state.cm6.225.d3`'s sentence (Q136): a nonzero skip given to a reverse partial cursor after its first `next`,
+    /// in a document that holds a character outside ASCII.
+    #[test]
+    fn rule_the_condition_of_state_cm6_225_d3_is_its_sentence() {
+        let mut reverse = Shadow::Partial(partial(5, 0));
+        assert!(!reverse_skip(&reverse, 1, false), "before the first next");
+        reverse.next(0);
+        assert!(reverse_skip(&reverse, 1, false) && reverse_skip(&reverse, -1, false));
+        assert!(!reverse_skip(&reverse, 0, false), "a zero skip");
+        assert!(!reverse_skip(&reverse, 1, true), "an ASCII document");
+        assert_eq!(cursor_row(&reverse, -1, false), Some(ROW_REVERSE_SKIP));
+        assert_eq!(cursor_row(&reverse, 0, false), None);
+        let mut forward = Shadow::Partial(partial(0, 5));
+        forward.next(0);
+        assert!(!reverse_skip(&forward, 1, false), "a forward cursor");
+        assert_eq!(cursor_row(&forward, -1, false), None);
+        let mut raw = Shadow::Raw(Raw::new(toks(), -1));
+        raw.next(0);
+        assert!(!reverse_skip(&raw, 1, false), "a raw cursor");
+    }
+}
+
+/// One fixture `text:F1` run through chunk `text`'s language, with these rows of `raw/decisions.jsonl`.
+fn run_text(rows: &[&str], input: &str, output: &str) -> Run {
+    let mut lang = Language::new("text", &[]);
+    crate::replay::text::register(&mut lang);
+    let rows: Vec<Value> = rows.iter().map(|r| parse(r).expect("a row is JSON")).collect();
+    let decisions = Decisions::from_rows(&rows);
+    let ops = HashMap::new();
+    let ctx = Ctx { decisions: &decisions, chunk_ops: &ops, control: None, trace: None, trace_dir: "unused".into() };
+    let fixture = parse(&format!(r#"{{"id":"F1","input":{input},"output":{output}}}"#)).expect("the fixture is JSON");
+    run_one(&lang, &fixture, &ctx)
+}
+
+const ROW_D2: &str =
+    r#"{"id":"state.cm6.225.d2","decision":"Condition for the replayer: a negative skip.","fixtures":["text:F1"]}"#;
+const ROW_D3: &str =
+    r#"{"id":"state.cm6.225.d3","decision":"Condition for the replayer: a reverse skip.","fixtures":["text:F1"]}"#;
+
+/// Q136: the model checks' steps apply the rows' conditions. In a fixture `state.cm6.225.d3` lists, a case of
+/// `check.partialCursor` with a nonzero skip after the first `next` of a reverse cursor on a document outside ASCII is
+/// left out under the row: `agree` and `mismatches` are no counterpart, `cases` and `perDoc` stay compared. The same
+/// for `state.cm6.225.d2` with a negative skip before the first `next`.
+#[test]
+fn rule_a_model_check_leaves_a_case_out_under_the_row_its_step_meets() {
+    let input = |from: u32, to: u32, skips: &str| {
+        format!(
+            r#"{{"op":"check.partialCursor","docs":[{{"name":"a","lines":["aé😀b"]}}],"cases":[[{{"from":{from},"to":{to},"skips":{skips}}}]]}}"#
+        )
+    };
+    let output = r#"{"ok":{"cases":1,"agree":1,"perDoc":{"a":1},"mismatches":[]}}"#;
+    let r = run_text(&[ROW_D3], &input(5, 0, "[0,1]"), output);
+    assert_eq!(r.result, "part");
+    assert_eq!(r.decisions, vec!["state.cm6.225.d3".to_string()]);
+    assert_eq!(entries(&r), vec![e("state.cm6.225.d3", "check.partialCursor")]);
+    let wrong = r#"{"ok":{"cases":2,"agree":1,"perDoc":{"a":1},"mismatches":[]}}"#;
+    assert_eq!(run_text(&[ROW_D3], &input(5, 0, "[0,1]"), wrong).result, "mismatch", "cases stays compared");
+    let r = run_text(&[ROW_D2], &input(0, 5, "[-1]"), output);
+    assert_eq!(r.result, "part");
+    assert_eq!(entries(&r), vec![e("state.cm6.225.d2", "check.partialCursor")]);
+    // a row applies only in the fixtures it lists: not listed, the case is run (an ASCII-free step that meets no row
+    // is compared whole)
+    let r = run_text(&[], &input(5, 0, "[0,0]"), r#"{"ok":{"cases":1,"agree":1,"perDoc":{"a":1},"mismatches":[]}}"#);
+    assert!(r.left_out.is_empty(), "{:?}", entries(&r));
+}
+
+/// `state.cm6.225.d2` through `iter.next` on the line cursor of `text.iterLines(from)` (Q136): the step is left out
+/// under the row, and the cursor is no counterpart after it.
+#[test]
+fn rule_a_negative_skip_to_a_line_cursor_over_a_partial_cursor_meets_state_cm6_225_d2() {
+    let input = r#"{"steps":[{"op":"text.of","lines":["é","b"],"as":"d"},{"op":"text.iterLines","doc":{"$":"d"},"from":2,"as":"it"},{"op":"iter.next","it":{"$":"it"},"skip":-1,"as":"v"}],"out":{"v":{"$":"v"}}}"#;
+    let r = run_text(&[ROW_D2], input, r#"{"ok":{"v":"anything"}}"#);
+    assert_eq!(entries(&r), vec![e("state.cm6.225.d2", "iter.next")]);
+    assert_eq!(r.decisions, vec!["state.cm6.225.d2".to_string()]);
+}
+
+/// Q154: when the directory `FERRUM_REPLAY_FIXTURES` names holds a `decisions.jsonl`, the run reads it in place of
+/// `raw/decisions.jsonl`; without one, the committed file.
+#[test]
+fn rule_a_decisions_file_beside_the_fixtures_replaces_the_committed_one() {
+    let root = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target/replay/rules-q154");
+    let (raw, with, without) = (root.join("raw"), root.join("with"), root.join("without"));
+    for d in [&raw, &with, &without] {
+        std::fs::create_dir_all(d).expect("a directory of the test");
+    }
+    std::fs::write(with.join("decisions.jsonl"), "").expect("the copy");
+    let _ = std::fs::remove_file(without.join("decisions.jsonl"));
+    assert_eq!(super::driver::decisions_file(&raw, &with), with.join("decisions.jsonl"));
+    assert_eq!(super::driver::decisions_file(&raw, &without), raw.join("decisions.jsonl"));
 }

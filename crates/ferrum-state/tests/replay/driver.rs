@@ -150,8 +150,16 @@ impl Decisions {
     }
 }
 
-fn decisions(raw: &Path) -> Decisions {
-    Decisions::from_rows(&read_lines(&raw.join("decisions.jsonl")))
+/// The rows of `raw/decisions.jsonl` the run reads: those of the directory `FERRUM_REPLAY_FIXTURES` names when it holds
+/// a `decisions.jsonl`, in place of the committed file (Q154: G5's attribution and G4's patched rows write that copy
+/// beside the fixtures they replay).
+pub fn decisions_file(raw: &Path, fixtures: &Path) -> PathBuf {
+    let copy = fixtures.join("decisions.jsonl");
+    if copy.is_file() { copy } else { raw.join("decisions.jsonl") }
+}
+
+fn decisions(file: &Path) -> Decisions {
+    Decisions::from_rows(&read_lines(file))
 }
 
 // ---- comparison ---------------------------------------------------------------------------------------------------
@@ -602,7 +610,7 @@ pub fn run() {
         Some((c, i)) => (c.to_string(), Some(i.to_string())),
         None => (t, None),
     });
-    let decisions = decisions(&raw);
+    let decisions = decisions(&decisions_file(&raw, &fixtures));
     let mut chunk_ops: HashMap<String, HashSet<String>> = HashMap::new();
     for row in read_lines(&raw.join("fixture-ops.jsonl")) {
         chunk_ops.entry(s(&row.field("chunk"))).or_default().insert(s(&row.field("op")));

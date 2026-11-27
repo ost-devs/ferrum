@@ -226,6 +226,8 @@ const entries: Entry[] = [
   ["change_desc.map_desc", "state.cm6.156", S, n => { const d = sections(n).desc, e = one(d.length, 0).desc; return r(() => d.mapDesc(e, false)) }],
   ["change_desc.map_pos", "state.cm6.157", S, n => { const d = sections(n).desc; return r(() => d.mapPos(15, -1)) }],
   ["change_desc.to_json", "state.cm6.159", S, n => { const d = sections(n).desc; return r(() => d.toJSON()) }],
+  // Q144: the pair a caller waits for, the description's JSON written as text
+  ["change_desc.to_json.stringify", "state.cm6.159", S, n => { const d = sections(n).desc; return r(() => JSON.stringify(d.toJSON())) }],
   ["map_mode", "state.cm6.161", S, n => mapMode(n, MapMode.Simple)],
   ["map_mode.simple", "state.cm6.162", S, n => mapMode(n, MapMode.Simple)],
   ["map_mode.track_del", "state.cm6.163", S, n => mapMode(n, MapMode.TrackDel)],
@@ -483,6 +485,9 @@ const entries: Entry[] = [
   ["range_set_update.filter_to", "state.cm6.264", S, n => filter(n, 0, 50)],
   // state.imp.010: a document whose one line is n bytes
   ["long.replace", "state.cm6.234", LONG, n => { const t = Text.of([chars(n)]), ins = Text.of(["xy"]); return r(() => t.replace(n >> 1, (n >> 1) + 5, ins)) }],
+  // Q144: the pair a caller waits for, the replacement followed by a read of the edited line's characters (V8 defers
+  // the copy of a concatenated string until its characters are read)
+  ["long.replace.read", "state.cm6.234", LONG, n => { const t = Text.of([chars(n)]), ins = Text.of(["xy"]); return r(() => t.replace(n >> 1, (n >> 1) + 5, ins).line(1).text.charCodeAt(n >> 1)) }],
   ["long.slice_string", "state.cm6.237", LONG, n => { const t = Text.of([chars(n)]); return r(() => t.sliceString(n >> 1, (n >> 1) + 100, "\n")) }],
   ["long.line_at", "state.cm6.232", LONG, n => { const t = Text.of([chars(n)]); return r(() => t.lineAt(n >> 1).from) }],
 ]

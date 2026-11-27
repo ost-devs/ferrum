@@ -79,6 +79,13 @@ impl Ch {
         Ch { kind: Kind::Set(s), a, b: OnceCell::new() }
     }
 
+    /// A set whose produced document the op gives, where the set's own text cannot give it (`set.invertMapCompose`).
+    pub fn set_in(s: ChangeSet, a: Rc<Form>, b: Rc<Form>) -> Ch {
+        let cell = OnceCell::new();
+        let _ = cell.set(b);
+        Ch { kind: Kind::Set(s), a, b: cell }
+    }
+
     pub fn desc(d: ChangeDesc, a: Rc<Form>, b: Rc<Form>) -> Ch {
         let cell = OnceCell::new();
         let _ = cell.set(b);

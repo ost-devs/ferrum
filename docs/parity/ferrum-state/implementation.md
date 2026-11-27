@@ -415,3 +415,17 @@ A round after Q120 (commit a8a1ae8; decided by the consultant: `docs/decisions/f
 Conformance step 0, the exhaustive control run (commit c08e6da; `docs/parity/ferrum-state/plan.md` "Conformance", step 0, decided by the consultant: `docs/decisions/ferrum-state.md`, "Q121 to Q129"): `FERRUM_REPLAY_CONTROL=all` alters every compared path of each fixture compared whole or in part, one at a time, compares Ferrum's one output with each altered record, and writes one line per fixture with the number of paths altered and those that still pass (`Control::All` in `driver.rs`); the seeded run is unchanged (`Control::Seeded`); a literal test of the exhaustive run in `rules.rs`. No fixture's result changes.
 - `crates/ferrum-state/tests/replay/driver.rs`
 - `crates/ferrum-state/tests/replay/rules.rs`
+
+Conformance step 5 (d) W1a (`docs/parity/ferrum-state/plan.md` "Conformance", step 5 (d); the work of run W1, stopped at its stop line, read against its card and committed on its own, decided by the consultant: `docs/decisions/method.md`, "2026-11-27 · M41", Decision 1): the driver reads the `decisions.jsonl` beside the fixtures when the directory `FERRUM_REPLAY_FIXTURES` names holds one (`decisions_file`, Q154); `encode` walks a host value's encoding with its own walk (`conformance-text.jsonl:163`); `cursor_row` applies `state.cm6.225.d3`'s predicate and the model checks' `steps` apply both rows (Q136); op `text.sharedNodes` of chunk `text` (F4b, Q153, Q156); op `set.invertMapCompose` of chunk `change`, whose panic of `design.md` section 5 for a set with no text for an insertion compares as the engine's `TypeError` (F1, Q152); literal tests of these rules and of `conformance-text.jsonl:162`; the two entries of G8 of Q144 on both sides. Files:
+- `crates/ferrum-state/tests/replay/driver.rs`
+- `crates/ferrum-state/tests/replay/lang/json.rs`
+- `crates/ferrum-state/tests/replay/text.rs`
+- `crates/ferrum-state/tests/replay/text/cursor.rs`
+- `crates/ferrum-state/tests/replay/text/checks.rs`
+- `crates/ferrum-state/tests/replay/text/host.rs`
+- `crates/ferrum-state/tests/replay/text/doc.rs`
+- `crates/ferrum-state/tests/replay/change/set_ops.rs`
+- `crates/ferrum-state/tests/replay/change/values.rs`
+- `crates/ferrum-state/tests/replay/rules.rs`
+- `crates/ferrum-state/benches/g8.rs`
+- `docs/parity/ferrum-state/bench/g8.ts`

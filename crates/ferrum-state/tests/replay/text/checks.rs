@@ -12,7 +12,7 @@ use std::collections::HashSet;
 
 use ferrum_state::{IterDirection, Text};
 
-use super::cursor::{Partial, Raw, Shadow};
+use super::cursor::{Partial, Raw, Shadow, cursor_row};
 use super::doc::lines_arg;
 use super::host::{Doc, Form, Iter, R, back, ferrum, finish, int, jstr, jstrs, known, uint};
 use crate::replay::convert::utf16_to_utf8;
@@ -21,7 +21,7 @@ use crate::replay::lang::value::{Object, Value, What, json_stringify, property_k
 
 const API: &[&str] = &["api"];
 
-/// Why a case has no call: `type` or `char`.
+/// Why a case has no call: `type`, `char`, or the id of a row whose condition a step meets.
 type Excluded = &'static str;
 
 /// A position of a case as bytes of the document.
@@ -41,7 +41,7 @@ fn length16(d: &Doc) -> R<f64> {
 /// `[got, want]` of one case, or why the case has no call.
 type Case = Result<(Value, Value), Excluded>;
 
-fn slice_string_case(d: &Doc, c: &Value) -> R<Case> {
+fn slice_string_case(_p: &mut Program, d: &Doc, c: &Value) -> R<Case> {
     let form = d.form()?;
     let (a, b) = (c.field("0"), c.field("1"));
     let (fa, fb) = match (pos(&form, &a), pos(&form, &b)) {
@@ -82,7 +82,7 @@ fn is_break(d: &Doc, p: f64, len: f64) -> R<bool> {
     Ok(matches!(back(&form.text, line.to())?, Value::Num(t) if t == p))
 }
 
-fn slice_case(d: &Doc, c: &Value) -> R<Case> {
+fn slice_case(_p: &mut Program, d: &Doc, c: &Value) -> R<Case> {
     let form = d.form()?;
     let (a0, b0) = (c.field("0"), c.field("1"));
     let (fa, fb) = match (pos(&form, &a0), pos(&form, &b0)) {
@@ -116,8 +116,10 @@ fn slice_case(d: &Doc, c: &Value) -> R<Case> {
     Ok(Ok((got, want)))
 }
 
-/// `[value, done, lineBreak]` after each skip, on Ferrum's iterator and on the flat cursor.
-fn steps(it: &Iter, flat: &mut Shadow, skips: &Value) -> R<Case> {
+/// `[value, done, lineBreak]` after each skip, on Ferrum's iterator and on the flat cursor. A step that meets the
+/// condition of a row of `raw/decisions.jsonl` (`state.cm6.225.d2`, `.d3`) in a fixture the row lists leaves the case
+/// out under that row, with no call made for the step (Q136).
+fn steps(p: &mut Program, it: &Iter, flat: &mut Shadow, skips: &Value, ascii: bool) -> R<Case> {
     let Value::Array(ks) = skips else { return Ok(Err("type")) };
     let ks = ks.borrow().clone();
     let mut ks16 = Vec::with_capacity(ks.len());
@@ -129,6 +131,11 @@ fn steps(it: &Iter, flat: &mut Shadow, skips: &Value) -> R<Case> {
     }
     let (mut got, mut want) = (Vec::new(), Vec::new());
     for k in ks16 {
+        if let Some(row) = cursor_row(flat, k, ascii)
+            && p.condition(row)
+        {
+            return Ok(Err(row));
+        }
         if !it.advance(k)? {
             return Ok(Err("char"));
         }
@@ -144,7 +151,7 @@ fn steps(it: &Iter, flat: &mut Shadow, skips: &Value) -> R<Case> {
     Ok(Ok((Value::array(got), Value::array(want))))
 }
 
-fn raw_cursor_case(d: &Doc, c: &Value) -> R<Case> {
+fn raw_cursor_case(p: &mut Program, d: &Doc, c: &Value) -> R<Case> {
     let form = d.form()?;
     let dir = match c.field("dir") {
         Value::Num(1.0) => 1,
@@ -159,10 +166,10 @@ fn raw_cursor_case(d: &Doc, c: &Value) -> R<Case> {
     let it = ferrum(None, || d.t.iter(if dir > 0 { IterDirection::Forward } else { IterDirection::Backward }))?;
     let it = Iter::new(it, form.clone(), Shadow::Raw(Raw::new(form.toks.clone(), dir)));
     let mut flat = Shadow::Raw(Raw::new(form.toks.clone(), dir));
-    steps(&it, &mut flat, &c.field("skips"))
+    steps(p, &it, &mut flat, &c.field("skips"), form.ascii)
 }
 
-fn partial_cursor_case(d: &Doc, c: &Value) -> R<Case> {
+fn partial_cursor_case(p: &mut Program, d: &Doc, c: &Value) -> R<Case> {
     let form = d.form()?;
     let (from_v, to_v) = (c.field("from"), c.field("to"));
     let (fb, tb) = match (pos(&form, &from_v), pos(&form, &to_v)) {
@@ -180,10 +187,10 @@ fn partial_cursor_case(d: &Doc, c: &Value) -> R<Case> {
     let shadow = Shadow::Partial(Partial::new(form.toks.clone(), form.len16, from, to));
     let it = Iter::new(it, form.clone(), shadow);
     let mut flat = Shadow::Partial(Partial::new(form.toks.clone(), len, from, to));
-    steps(&it, &mut flat, &c.field("skips"))
+    steps(p, &it, &mut flat, &c.field("skips"), form.ascii)
 }
 
-fn check(a: &Value, p: &mut Program, op: &'static str, case: fn(&Doc, &Value) -> R<Case>) -> R<Value> {
+fn check(a: &Value, p: &mut Program, op: &'static str, case: fn(&mut Program, &Doc, &Value) -> R<Case>) -> R<Value> {
     let docs = arg(p, &a.field("docs"))?;
     let cases = arg(p, &a.field("cases"))?;
     known(&docs)?;
@@ -211,7 +218,7 @@ fn check(a: &Value, p: &mut Program, op: &'static str, case: fn(&Doc, &Value) ->
             n += 1.0;
             let k = per_doc.get(&name).and_then(|v| if let Value::Num(k) = v { Some(*k) } else { None }).unwrap_or(0.0);
             per_doc.set(name.clone(), Value::Num(k + 1.0));
-            match case(&d, c)? {
+            match case(p, &d, c)? {
                 Ok((got, want)) => {
                     // `s.toJSON()` in the `got` of check.slice is the array cm6's call returned
                     if op == "check.slice"

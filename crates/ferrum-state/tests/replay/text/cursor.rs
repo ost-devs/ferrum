@@ -198,9 +198,41 @@ impl Partial {
 /// `mirrors/cm6/state/src/text.ts:490-493`, `:507-511`, and the landing in bytes is another place than in code units).
 pub const ROW_DOUBLE_SKIP: &str = "state.cm6.225.d2";
 
+/// `state.cm6.225.d3`: its condition for the replayer, a nonzero skip given to a reverse partial cursor after its
+/// first `next`, in a document that holds a character outside ASCII (cm6 clips it by the forward bounds and raises it
+/// by `pos - to`, `mirrors/cm6/state/src/text.ts:496`, `:508-509`: a distance measured on one side of the cursor is
+/// walked on the other).
+pub const ROW_REVERSE_SKIP: &str = "state.cm6.225.d3";
+
+/// The partial cursor a skip given to `shadow` reaches: the cursor itself, or the one a line cursor wraps, which
+/// passes its skip on unchanged (`LineCursor.next`, `mirrors/cm6/state/src/text.ts:527`; Q136).
+fn partial(shadow: &Shadow) -> Option<&Partial> {
+    match shadow {
+        Shadow::Partial(c) => Some(c),
+        Shadow::Lines(inner, ..) => partial(inner),
+        Shadow::Raw(_) => None,
+    }
+}
+
 /// Whether a step of a cursor meets the condition of `state.cm6.225.d2`.
 pub fn double_skip(shadow: &Shadow, skip: i64, ascii: bool) -> bool {
-    matches!(shadow, Shadow::Partial(c) if !c.started()) && skip < 0 && !ascii
+    partial(shadow).is_some_and(|c| !c.started()) && skip < 0 && !ascii
+}
+
+/// Whether a step of a cursor meets the condition of `state.cm6.225.d3`.
+pub fn reverse_skip(shadow: &Shadow, skip: i64, ascii: bool) -> bool {
+    partial(shadow).is_some_and(|c| c.started() && c.cursor.dir < 0) && skip != 0 && !ascii
+}
+
+/// The row of `raw/decisions.jsonl` whose condition a step of a cursor meets, if any.
+pub fn cursor_row(shadow: &Shadow, skip: i64, ascii: bool) -> Option<&'static str> {
+    if double_skip(shadow, skip, ascii) {
+        Some(ROW_DOUBLE_SKIP)
+    } else if reverse_skip(shadow, skip, ascii) {
+        Some(ROW_REVERSE_SKIP)
+    } else {
+        None
+    }
 }
 
 /// One of cm6's three cursors.

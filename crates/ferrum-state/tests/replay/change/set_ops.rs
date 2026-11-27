@@ -1,6 +1,6 @@
 //! The ops of `ChangeSet` and `MapMode` (`interp.ts`, "ChangeSet"): `set.of`, `set.ofIdentity`, `set.apply`,
 //! `set.invert`, `set.compose`, `set.map`, `set.mapDesc`, `set.iterChanges`, `set.desc`, `set.toJSON`, `set.fromJSON`,
-//! `set.empty`, `mapmode.values`.
+//! `set.empty`, `set.invertMapCompose`, `mapmode.values`.
 
 use std::collections::VecDeque;
 use std::rc::Rc;
@@ -8,12 +8,13 @@ use std::rc::Rc;
 use ferrum_state::{__test, ChangeSet, ChangeSpec, Text};
 
 use super::form::Form;
-use super::shared::{R, Stop, desc_of, ferrum, invert, iter_changes, part, pos_arg, set_of};
+use super::shared::{R, Stop, desc_of, ferrum, invert, iter_changes, part, pos_arg, set_of, thrown};
 use super::values::{
     Ch, Kind, back, bad_set_json, base, ctx, desc_out, desc_out_declared, desc_spec, json_arg, json_error, lengths,
-    lines_arg, mapped_b, opt_bool, record, set_json_out, set_json_to_bytes, set_of_spec, set_spec, text_of, text_out,
-    to_serde,
+    lines_arg, mapped_b, opt_bool, record, sections_out, set_json_out, set_json_to_bytes, set_of_spec, set_spec,
+    text_of, text_out, to_serde,
 };
+use crate::replay::driver::call;
 use crate::replay::lang::eval::{Flow, Language, Program};
 use crate::replay::lang::value::{Value, truthy};
 
@@ -43,7 +44,8 @@ fn capture(p: &mut Program, f: impl FnOnce(&mut Program) -> R<Value>) -> R<Value
         Ok(v) => Value::record([("ok", v)]),
         Err(Stop::Flow(Flow::Throw(e))) => Value::record([(
             "error",
-            Value::record([("name", Value::str(&e.name)), ("message", Value::Str(e.message))]),
+            // the message of an engine error is no counterpart (`design.md` section 10, "Engine errors")
+            Value::record([("name", Value::str(&e.name)), ("message", p.message_value(&e))]),
         )]),
         Err(Stop::Nc(v)) => v,
         Err(other) => return Err(other),
@@ -257,6 +259,87 @@ fn empty(a: &Value, p: &mut Program) -> R<Value> {
     Ok(record(set_out(p, &s)?))
 }
 
+/// The message of `design.md` section 5 for a set that holds no text for one of its insertions (Q152): the panic of
+/// Ferrum where cm6 reads `inserted[i]` without a guard and fails with an engine `TypeError`
+/// (`mirrors/cm6/state/src/change.ts:305`, `:416`, `:563`).
+const NO_TEXT: &str = "The change set holds no text for one of its insertions";
+
+/// A call of Ferrum at one of cm6's unguarded reads of Q152: the panic of `NO_TEXT` is the engine's `TypeError`, its
+/// name compared and its message not (`design.md` section 10, "Engine errors"); any other panic is thrown as `thrown`
+/// names it, and compared.
+fn unguarded<T>(p: &mut Program, op: &str, a: &Form, f: impl FnOnce() -> T) -> R<T> {
+    match call(f)? {
+        Ok(v) => Ok(v),
+        Err(m) if m == NO_TEXT => Err(p.engine_error(op, &m).into()),
+        Err(m) => Err(Stop::Flow(thrown(&m, a))),
+    }
+}
+
+/// The document a set of `set.invertMapCompose` produces from `a`: from its own text (`Ch::b`), or filler when its
+/// `to_json` panics. Such a set holds no text for an insertion, and the document it produces is not one the input
+/// holds (`form.rs`; `plan.md` "Positions", rules 3 to 5).
+fn produced(x: &ChangeSet, a: &Rc<Form>) -> R<Ch> {
+    Ok(match call(|| x.to_json())? {
+        Ok(_) => Ch::set(x.clone(), a.clone()),
+        Err(_) => Ch::set_in(x.clone(), a.clone(), Rc::new(Form::filler())),
+    })
+}
+
+/// `out(x)` of `set.invertMapCompose`: `{sections, json: capture of x.toJSON(), length, newLength}`.
+fn invert_out(p: &mut Program, op: &str, ch: &Ch) -> R<Value> {
+    let Kind::Set(x) = &ch.kind else { unreachable!("the op's values are sets") };
+    let d = ferrum(&ch.a, || x.desc())?;
+    let sections = sections_out(ch, &d)?;
+    p.returned_by_ferrum(&sections);
+    let json = capture(p, |p| {
+        unguarded(p, op, &ch.a, || x.to_json())?;
+        let j = set_json_out(x, &ch.a)?;
+        p.returned_by_ferrum(&j);
+        Ok(j)
+    })?;
+    let (length, new_length) = lengths(ch)?;
+    Ok(record(vec![
+        ("sections".into(), sections),
+        ("json".into(), json),
+        ("length".into(), length),
+        ("newLength".into(), new_length),
+    ]))
+}
+
+/// `set.invertMapCompose` (`oracle/cm6/change/interp.ts`): a set inverted on `doc`, the inverse mapped over `by`, the
+/// result composed with a set of `insert`. Its positions follow the rows of the ops it chains (`raw/positions.jsonl`,
+/// `set.invert`, `set.map`, `set.compose`): the set is measured on `doc`, the inverse starts in the document the set
+/// produces from `doc`, `by` starts there too, the mapped set starts in the document `by` produces, and `insert` is
+/// measured on the document the mapped set produces.
+fn invert_map_compose(a: &Value, p: &mut Program) -> R<Value> {
+    const OP: &str = "set.invertMapCompose";
+    let c = ctx(p)?;
+    let doc_v = a.field("doc");
+    let lines = lines_arg(p, OP, "doc", &doc_v)?;
+    let form = Rc::new(Form::lines(&lines));
+    let s = set_spec(p, &c, OP, &a.field("set"), &form)?;
+    let d = ferrum(&Form::filler(), || Text::of(&lines))?;
+    let inv = invert(the_set(&s), &d, &s.a)?;
+    let inv_a = s.b()?;
+    let by = desc_spec(p, &c, OP, &a.field("by"), &inv_a)?;
+    let before = opt_bool(p, OP, "before", &a.field("before"))?;
+    // cm6 passes `before` only when the input has it; its default `false` is written here (D14)
+    let m = ferrum(&inv_a, || inv.map(by.d(), before.unwrap_or(false)))?;
+    let inv = Ch::set(inv, inv_a);
+    let m = produced(&m, &by.b()?)?;
+    let Kind::Set(ms) = &m.kind else { unreachable!("map gives a set") };
+    let new_length = ferrum(&m.a, || ms.new_length())?;
+    let m_b = m.b()?;
+    let q = set_of_spec(p, &c, OP, &a.field("insert"), &back(&m_b, new_length)?, &Value::Undefined, &m_b)?;
+    let inverted = invert_out(p, OP, &inv)?;
+    let mapped = invert_out(p, OP, &m)?;
+    let composed = capture(p, |p| {
+        let r = unguarded(p, OP, &m.a, || ms.compose(the_set(&q)))?;
+        invert_out(p, OP, &produced(&r, &m.a)?)
+    })?;
+    Ok(record(vec![("inverted".into(), inverted), ("mapped".into(), mapped), ("composed".into(), composed)]))
+}
+
 /// The numbers and the reverse mapping of the TypeScript enum `MapMode`: `raw/replay.jsonl` gives the op `none`
 /// (`MapMode` is a Rust enum; `state.cm6.161.d1`, Q86).
 fn map_mode_values(_a: &Value, p: &mut Program) -> R<Value> {
@@ -281,5 +364,6 @@ pub fn register(l: &mut Language) {
     l.op("set.toJSON", api, move |a, p| f(to_json(a, p)));
     l.op("set.fromJSON", api, move |a, p| f(from_json(a, p)));
     l.op("set.empty", api, move |a, p| f(empty(a, p)));
+    l.op("set.invertMapCompose", api, move |a, p| f(invert_map_compose(a, p)));
     l.op("mapmode.values", api, move |a, p| f(map_mode_values(a, p)));
 }

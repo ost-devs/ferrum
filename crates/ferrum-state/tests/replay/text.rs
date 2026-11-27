@@ -13,7 +13,7 @@
 
 mod changes;
 mod checks;
-mod cursor;
+pub mod cursor;
 mod doc;
 mod harness;
 pub mod host;

@@ -408,6 +408,11 @@ fn entries() -> Vec<Entry> {
             let d = sections(n).desc();
             r(move || bb(&d).to_json())
         }),
+        // Q144: the pair a caller waits for, the description's JSON written as text
+        e!("change_desc.to_json.stringify", "state.cm6.159", S, |n| {
+            let d = sections(n).desc();
+            r(move || serde_json::to_string(&bb(&d).to_json()).expect("JSON of numbers"))
+        }),
         e!("map_mode", "state.cm6.161", S, |n| map_mode(n, MapMode::Simple)),
         e!("map_mode.simple", "state.cm6.162", S, |n| map_mode(n, MapMode::Simple)),
         e!("map_mode.track_del", "state.cm6.163", S, |n| map_mode(n, MapMode::TrackDel)),
@@ -1120,6 +1125,11 @@ fn entries() -> Vec<Entry> {
         e!("long.replace", "state.cm6.234", LONG, |n| {
             let (t, ins) = (Text::of(&[chars(n)]), Text::of(&["xy"]));
             r(move || bb(&t).replace(n / 2, n / 2 + 5, &ins))
+        }),
+        // Q144: the pair a caller waits for, the replacement followed by a read of the edited line's characters
+        e!("long.replace.read", "state.cm6.234", LONG, |n| {
+            let (t, ins) = (Text::of(&[chars(n)]), Text::of(&["xy"]));
+            r(move || bb(&t).replace(n / 2, n / 2 + 5, &ins).line(1).text().as_bytes()[n / 2])
         }),
         e!("long.slice_string", "state.cm6.237", LONG, |n| {
             let t = Text::of(&[chars(n)]);
