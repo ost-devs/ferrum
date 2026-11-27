@@ -252,10 +252,20 @@ fn test_cm6_facet_15_survives_reconfiguration() {
     assert_eq!(st2.facet(&STR).len(), 0);
 }
 
-/// The output of the facet of `test_cm6_facet_16_…`: cm6's `{count: number}`.
-#[derive(PartialEq)]
+/// The output of the facet of `test_cm6_facet_16_…`: cm6's `{count: number}`, an object that cm6's default `compare`
+/// of a combined output compares with `===` (`mirrors/cm6/state/src/facet.ts:73`). Its `PartialEq` is identity (D14),
+/// so that a `combine` run again gives an unequal output and a new address, and the case passes only when `combine`
+/// is not run again, as cm6's does (`facet.ts:245-247`; `docs/parity/ferrum-state/written/facet.out`
+/// "test-facet#16 combine calls at the reconfiguration": 0 calls).
 struct Count {
+    #[allow(dead_code, reason = "cm6's field, never read by the case")]
     count: usize,
+}
+
+impl PartialEq for Count {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self, other)
+    }
 }
 
 // literal "doc": N17: cm6's dependency `"doc"` is the variant `Slot::Doc` of the type `Slot` (design.md section 3)
@@ -342,10 +352,21 @@ fn test_cm6_facet_21_updates_facets_computed_from_static_values_on_reconfigure()
     assert!(std::ptr::eq(st.facet(&NUM), tr.state().facet(&NUM)));
 }
 
-/// The input of the facet of `test_cm6_facet_22_…`: cm6's `{a: number}`.
-#[derive(Clone, PartialEq)]
+/// The input of the facet of `test_cm6_facet_22_…`: cm6's `{a: number}`, a fresh object that cm6's default
+/// `compareInput` compares with `===` (`mirrors/cm6/state/src/facet.ts:72`). Its `PartialEq` is identity (D14), so
+/// that a getter run again gives an unequal input, and the case passes only when the getter is not called at the
+/// reconfiguration, as cm6's does (`facet.ts:177-180`; `docs/parity/ferrum-state/written/facet.out`
+/// "test-facet#22 getter calls": 1 call, at the creation).
+#[derive(Clone)]
 struct A {
+    #[allow(dead_code, reason = "cm6's field, never read by the case")]
     a: i64,
+}
+
+impl PartialEq for A {
+    fn eq(&self, other: &Self) -> bool {
+        std::ptr::eq(self, other)
+    }
 }
 
 #[test]

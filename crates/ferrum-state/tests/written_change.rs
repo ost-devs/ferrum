@@ -318,9 +318,10 @@ fn editor_selection_from_json_of_another_shape_is_err() {
 // number is read as `JSON.parse` reads it, the nearest double, and is in the domain when that double is a
 // non-negative integer of at most `isize::MAX` (`state.cm6.160.d1`, amended 2026-11-27; D17).
 
-/// JSON text read by `serde_json`. A float literal above 2^53 is built with `json!` from an `f64` instead: `serde_json`'s
-/// default float parser is not correctly rounded (`9007199254740991.0` reads as 9007199254740990), so its text would
-/// reach the reader as another number than `JSON.parse` gives.
+/// JSON text read by the crate's `serde_json`, as a caller reads it (N9). The crate turns on `serde_json`'s
+/// `float_roundtrip` (`design.md` section 1, Q160), so a float literal reads as the nearest double, the number
+/// `JSON.parse` gives for the same text; `json_text_parsed_by_serde_json_reads_a_float_literal_as_json_parse_does`
+/// asserts it. Some tests build a float above 2^53 with `json!` from an `f64` instead, which is the same double.
 fn parse(text: &str) -> serde_json::Value {
     serde_json::from_str(text).expect("JSON text")
 }
@@ -353,6 +354,30 @@ fn json_readers_read_an_integral_float_as_cm6_reads_it() {
     for j in [json!([two63]), parse(r#"[[9223372036854775807,"a"]]"#)] {
         assert_eq!(ChangeSet::from_json(&j).expect_err("2^63"), Error::InvalidChangeSetJson, "{j}");
     }
+}
+
+// covers: state.cm6.160.d1, state.ChangeDesc^fromJSON.B3, state.ChangeSet^fromJSON.B3
+// Q160 (`docs/decisions/ferrum-state.md` "Q157 to Q161"): the JSON text itself, parsed by the crate's `serde_json`
+// with `serde_json::from_str` (`parse`), against `JSON.parse` then `fromJSON`. Without `float_roundtrip` `serde_json` reads
+// `9007199254740991.0` as 9007199254740990 and `961402497.0000000000000` as 961402496.9999999, which the reader refuses
+// as fractional (`design.md` section 1); the test fails until (e) I1 turns the feature on.
+#[test]
+fn json_text_parsed_by_serde_json_reads_a_float_literal_as_json_parse_does() {
+    // values.out "Q160 desc [9007199254740991.0,-1]", "Q160 desc [961402497.0000000000000,-1]",
+    // "Q160 desc [0,961402497.0000000000000]"
+    let desc = |t: &str| ChangeDesc::from_json(&parse(t)).map(|d| (d.to_json(), d.length(), d.new_length()));
+    assert_eq!(
+        desc("[9007199254740991.0,-1]"),
+        Ok((json!([9007199254740991u64, -1]), 9007199254740991, 9007199254740991))
+    );
+    assert_eq!(desc("[961402497.0000000000000,-1]"), Ok((json!([961402497, -1]), 961402497, 961402497)));
+    assert_eq!(desc("[0,961402497.0000000000000]"), Ok((json!([0, 961402497]), 0, 961402497)));
+    // values.out "Q160 set [9007199254740991.0]", "Q160 set [961402497.0000000000000]",
+    // "Q160 set [[961402497.0000000000000,\"a\"]]"
+    let set = |t: &str| ChangeSet::from_json(&parse(t)).map(|s| (s.to_json(), s.length(), s.new_length()));
+    assert_eq!(set("[9007199254740991.0]"), Ok((json!([9007199254740991u64]), 9007199254740991, 9007199254740991)));
+    assert_eq!(set("[961402497.0000000000000]"), Ok((json!([961402497]), 961402497, 961402497)));
+    assert_eq!(set(r#"[[961402497.0000000000000,"a"]]"#), Ok((json!([[961402497, "a"]]), 961402497, 1)));
 }
 
 // covers: state.cm6.160.d1, state.SelectionRange^fromJSON.B3

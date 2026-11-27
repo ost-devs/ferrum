@@ -170,6 +170,9 @@ fn a_change_filter_on_a_document_longer_than_1e9_keeps_the_changes_after_its_las
 // The input of facet:F0019 in Ferrum's form: a field's `update` that panics the first time it is called. Its panic
 // propagates out of `tr.state()` (D13); `state.cm6.036.d1`: the transaction keeps no state, so a second `tr.state()`
 // builds it again from the start state, calling `update` again (cm6 returns the half-built state, `state.ts:58`).
+// The case of a field's `update` only (`conformance-facet.jsonl:24`); a panic of a field's `create`, a computed getter
+// and a `combine`, out of `EditorState::create` and out of `tr.state()`, is asserted in `written_facet.rs` (the tests
+// of `state.Facet.B10`).
 #[test]
 fn a_second_state_of_a_transaction_whose_first_build_panicked_is_built_again() {
     let calls = Arc::new(AtomicUsize::new(0));
@@ -511,7 +514,10 @@ fn language_data_at_panics_on_a_value_that_is_not_of_the_type_asked_for() {
 // Q118 (`design.md` section 3): a provider computed from a facet without `combine` keeps its input only while that
 // facet's slot keeps its value. Reconfiguring a compartment recombines the facet to an equal list, but its `compare`
 // says unequal, so the slot takes the new list and the getter runs again, as cm6's `===` of the two arrays decides
-// (`mirrors/cm6/state/src/facet.ts:178-179`, `:244-252`).
+// (`mirrors/cm6/state/src/facet.ts:178-179`, `:244-252`). The case of a facet dependency whose `compare` says unequal
+// only (`conformance-facet.jsonl:27`); the getter not called while every dependency is unchanged, a field dependency,
+// the document and the selection, `compare_input` keeping the old input, and the order of the getter calls are
+// asserted in `written_facet.rs` (the tests of `state.Facet.compute.B8`).
 #[test]
 fn a_provider_runs_again_when_a_facet_without_combine_recombines_an_equal_list_its_compare_calls_unequal() {
     let a: Facet<i64, Vec<i64>> =

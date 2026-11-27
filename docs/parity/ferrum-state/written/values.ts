@@ -1,7 +1,7 @@
-// Conformance step 5 (d) W1 and W1b: the cm6 values of the written tests of units text, change and rangeset.
+// Conformance step 5 (d) W1, W1b and W2c (Q158, Q160): the cm6 values of the written tests of units text, change and rangeset.
 // Run: npx tsx --tsconfig .harness/state/tsconfig.json docs/parity/ferrum-state/written/values.ts \
 //   > docs/parity/ferrum-state/written/values.out
-import {ChangeDesc, ChangeSet, EditorState, SelectionRange, Text, RangeSet, RangeValue, countColumn, findColumn} from "@codemirror/state"
+import {ChangeDesc, ChangeSet, EditorState, SelectionRange, Text, RangeSet, RangeSetBuilder, RangeValue, countColumn, findColumn} from "@codemirror/state"
 
 const out = (name: string, v: any) => console.log(name, "=>", JSON.stringify(v))
 const tryIt = (f: () => any) => { try { return {ok: f()} } catch (e: any) { return {error: e.constructor.name, message: e.message} } }
@@ -115,3 +115,35 @@ for (const t of ["[9007199254740992.0,-1]", "[9223372036854775808.0,-1]", "[9223
 out("set exact [9007199254740992.0]", tryIt(() => exact(ChangeSet.fromJSON(JSON.parse("[9007199254740992.0]")).length)))
 out("mapDesc 2^62 exact", tryIt(() => { const r = ChangeDesc.fromJSON([0, 2 ** 62]).mapDesc(ChangeDesc.fromJSON([0, 2 ** 62])); return {length: exact(r.length), newLength: exact(r.newLength)} }))
 out("desc total exact", exact(ChangeDesc.fromJSON([9223372036854774784, -1, 9223372036854774784, -1]).length))
+
+// W2c, Q160: JSON text parsed by JSON.parse, then read as section lengths
+for (const t of ["[9007199254740991.0,-1]", "[961402497.0000000000000,-1]", "[0,961402497.0000000000000]"]) {
+  out(`Q160 desc ${t}`, tryIt(() => { const d = ChangeDesc.fromJSON(JSON.parse(t)); return {json: d.toJSON(), length: exact(d.length), newLength: exact(d.newLength)} }))
+}
+for (const t of ["[9007199254740991.0]", "[961402497.0000000000000]", '[[961402497.0000000000000,"a"]]']) {
+  out(`Q160 set ${t}`, tryIt(() => { const s = ChangeSet.fromJSON(JSON.parse(t)); return {json: s.toJSON(), length: exact(s.length), newLength: exact(s.newLength)} }))
+}
+// W2c, Q158: three sets at the top of the domain, built, updated and mapped; every position is a multiple of
+// 1024 at or above 2^62, so that cm6's doubles are the exact integers. The ranges added by `update` are below 1e9: an
+// added range above 1e9 after the set's last range does not return in cm6 (its cursor ends at C.Far = 1e9, below the
+// range, and `update` adds the ended cursor's null value forever, rangeset.ts:280-294, a deduction; a probe at 2^62 ran 20 s and was stopped). `RangeSet.compare` is not
+// run: with a document longer than 1e9 it does not return in cm6 (a probe at 2^62 ran 20 s and was stopped; that its
+// SpanCursor ends at C.Far, below the end of the gap, is a deduction)
+{
+  const T = 9223372036854774784, P = 2 ** 62
+  const c = new M("c")
+  const xs = (set: any) => { const r: any[] = []; for (const it = set.iter(); it.value; it.next()) r.push([exact(it.from), exact(it.to), (it.value as M).name]); return r }
+  const control = (label: string, ranges: any[], add: any[], changes: any, len: number) => {
+    const set = RangeSet.of(ranges)
+    const build = new RangeSetBuilder<M>()
+    for (const r of ranges) build.add(r.from, r.to, r.value)
+    const built = build.finish()
+    const updated = set.update({add, sort: true})
+    const mapped = set.map(ChangeSet.of(changes, len))
+    out(`Q158 ${label}`, {of: xs(set), size: set.size, builder: xs(built), updated: xs(updated), updatedSize: updated.size,
+      mapped: xs(mapped)})
+  }
+  control("a range at 2^62", [a.range(1, 2), b.range(P, P + 1024)], [c.range(5, 6)], {from: 0, insert: "x".repeat(1024)}, P + 4096)
+  control("a range ending at 2^63-1024", [a.range(1, 2), b.range(P, T)], [c.range(5, 6)], {from: 0, to: 1024}, T)
+  control("a first range at 2^63-1024", [b.range(T, T)], [a.range(5, 6)], {from: 0, to: 1024}, T)
+}
