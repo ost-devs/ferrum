@@ -1583,3 +1583,29 @@ So a G measured on another non-ASCII text would be compared in the wrong unit (i
 The fixed part repeated by the split is about 35,000, the price of keeping each run below the line. *Confidence.* Medium. Two runs fitted one figure, and E80 measures it.
 
 **Confidence.** High on Q157 (the row and cm6's value agree) and on Q160 (both measured, 0 differences with the feature). High on Q158's rule, medium on the arithmetic, which W2c's control at the top of the range shows. Medium-high on Q159, a measurement and not a proof. High on Q161's reading, whose fixtures W2d re-runs. **Reopens.** A cheap program past `2^62` bytes (Q159); a caller for whom 8% of float parsing matters more than correct rounding (Q160); W2b, W2c or W2d outside 0.85 to 1.15 of its estimate (E80).
+
+## 2026-11-27 · Q162: the fixtures of a decided deviation, and which check asserts them
+
+*Decided by the consultant (Q162, raised by the orchestrator from the test-writer W2b's report, 2026-11-27). Binding text: `docs/parity/ferrum-state/plan.md` step 5 (d) W2c, (e) I2 and (g). Nothing changes in `docs/workflow/conformance.md` G4, which already says it.*
+
+**Question.** `state:F8400` and `F8401` (`state.cm6.100.d2`), and `F8434` and `F8435` (`state.cm6.126.d1`), are `none` in the replay. W2b's card said the replay compares them. W2b reported that "a mistake in them is not caught anywhere else". The orchestrator asked whether `tools/oracle_patch.py ferrum-state against` is the check of record of these fixtures, or only of the rows' patches. It also deduced that the `part` of 126.d1 under `against` leaves out the effect's value.
+
+**What I checked myself.**
+- *What G4 says.* `docs/workflow/conformance.md` G4, from M40 Decision 3 (`docs/decisions/method.md`), says that a row with a patch has its listed fixtures replayed against the patched cm6's output. Each must compare `equal` or `part`, and a mismatch fails G4. That is what makes the decided value an assertion.
+- *`against` on both rows, at ee9ea4b.* 100.d2 gives 2 mismatches. Ferrum reaches `entered unreachable code` where the patched cm6 gives the row's panic: these are (e) I2's two, as planned. 126.d1 gives 2 `part`.
+- *What the `part` leaves out.* The fixtures record the signed zero as `{"js_number":"-0"}`. Under the patch, cm6 gives `value` `-0` with `sameEffect` false for F8434, and `0` for F8435. I copied `against`'s fixture directory and swapped the two zeros, then replayed the crate on the copy (`FERRUM_REPLAY_FIXTURES`). Both fixtures became `mismatch`, and the only thing left out was `{"reason":"identity","op":"same"}`. So `part` leaves out the effect's identity, which Ferrum does not have, and the value is compared, signed zero included. The orchestrator's deduction is refuted by this run.
+
+**Decision.**
+- *The check of record.* For the listed fixtures of a deviation row with a patch, the check of record is `against`. It is the check of the decided value, not only of the patch. The plain replay's `none` means "not compared with cm6's own output", never "not compared".
+- *The written tests stay.* They run in every `cargo test`, where `against` runs only when it is asked for. They also assert what no fixture records, such as the thread guard of `design.md` sections 5 and 6. W2b's sentence that nothing else catches a mistake in them is wrong for the four fixtures' recorded parts.
+- *Who uses `against`, and where.*
+  - (e) I2 gets `oracle_patch.py ferrum-state against state.cm6.100.d2 state.cm6.126.d1` among its checks. It must end `ok` on both rows. Otherwise the implementer would see 100.d2 only through the written tests, and the fixtures would first fail at (f).
+  - (g) judges the lines these rows close on (f)'s `against` result together with the written tests.
+  - W2c's card says what the replay does not compare, so that the card error of W2b is not repeated.
+
+**Lost.**
+- *Listing the four fixtures as compared in the plain replay.* The replay compares against cm6's own output, which the rows decide Ferrum does not give.
+- *Moving `against` into `cargo test`.* Each run would regenerate the patched outputs with Node, which costs time on every implementer and mutation iteration. The written tests already give `cargo test` the decided behavior.
+- *Treating the written tests as the only check.* The run above refutes that.
+
+**Confidence.** High. **Reopens.** An `against` result of `part` whose left-out record is not identity, or a row with a patch whose fixtures record a value the replayer does not compare.

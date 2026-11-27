@@ -42,6 +42,8 @@
 - A stopped run's uncommitted work: run its deterministic checks, read its diff against the card's items myself, commit what holds on its own before any fresh run; cut the rest by kind of work (replayer changes never with written tests), estimates derived, not a plan ceiling. A test's cm6 values come from a committed script. `docs/decisions/method.md` 2026-11-27 "M41"
 - A step outside Ferrum that the API's own type puts on the caller's path (the parse into `serde_json::Value`) is Ferrum's behavior: measure it against cm6 on generated inputs and fix it at the dependency (a feature, cost measured), never a doc note. `docs/decisions/ferrum-state.md` "Q157 to Q161" (Q160)
 - A guard no test can reach within memory: keep it, list the site with the measured reason, no forged `__test` seam (it tests a state no caller builds). Before asserting "only X reaches it", run the cheapest program. Same entry (Q159)
+- A worker's write boundary: when a decision gives a role new outputs, change its definition in the same commit; the boundary of record is what a run leaves (`guard.py paths`, card before, commit+tree before merge), never a Bash-parsing hook. `docs/decisions/method.md` M42
+- A decided deviation with a patch: `against` (G4) is its fixtures' check of record; before calling a `part` blind to a value, swap the value in a copy and replay. `docs/decisions/ferrum-state.md` Q162
 - Proof of parity (replayer, fixtures, patches, checks, rows): [precedents-proof.md](precedents-proof.md)
 - Conformance verdicts, re-checks, class corrections, G6/G8: [precedents-conformance.md](precedents-conformance.md)
 - Estimating runs: [budgets.md](budgets.md) — context size, decomposition, what the ledger's tokens mean

@@ -1220,3 +1220,62 @@ This costs wall time on every check and, at (f), on every mutant. (f) now times 
 - W1b, W2a or W2b ending outside 0.85 to 1.15 of its estimate.
 - A defect in items 6 to 9 found later, which would mean my reading at a stop-loss is not enough to commit on.
 - `change:F8018` mismatching after (e) I1.
+
+## 2026-11-27 · M42: a worker's write paths, the guard that sees two tools of three, and W2b's script
+
+*Decided by the consultant (M42, raised by the orchestrator from W61, 2026-11-27; the maintainer asked that it be decided before anything moved). Binding text: `.claude/agents/test-writer.md` (its hook's rules and one line of its body); `.claude/hooks/guard.py` (`paths`); `docs/workflow/README.md` §5 "Commits" and §8; `docs/parity/ferrum-state/plan.md` step 5 (d) W2b and W2c. Ledger: E81.*
+
+**Question.** M41 put the cm6 scripts of written tests under `docs/parity/<crate>/written/`, and the cards of (d) W1b and W2b named that directory and `implementation.md`. The `test-writer`'s definition allows neither. W1b wrote both through Bash, which the guard does not see, and committed them. W2b used Write, was blocked, and left its script, its output and its entry outside the repository. Three things were open: who puts W2b's files in place, whether the definition, the guard or the cards change, and what W2c's card names.
+
+**What I checked myself.**
+- *The guard.* `guard.py` is a `PreToolUse` hook on `Write|Edit|NotebookEdit`. A Bash command is not checked.
+- *What Claude Code offers for Bash.* The sandbox's write rules are the session's, and a subagent shares them (`mirrors/claude-code-docs/en/sandboxing.md`, "Subagents"), so they cannot give one agent its own paths. A frontmatter hook may take any event (`sub-agents.md`, "Hooks in subagent frontmatter"). A Bash hook could only guess at what a command writes, though: `cp`, a redirect, `python3 -c`, a build.
+- *W2b's output.* I ran `.scratch/conformance/ferrum-state/w2b/state.ts` under the harness with the command its header names, with `/usr/lib/node_modules/tsx/dist/loader.mjs` where it says `<tsx>`. The output is `cmp`-equal to `state.out`. Every label that `written_state.rs` cites is a line of `state.out`.
+- *The new check, tried before relying on it.* With the old rules, `guard.py paths test-writer --commit aaa3960` reports W1b's 7 paths under `written/` and `implementation.md`, which is W61's escape, and W2b's card paths give the same 2. With the new rules, aaa3960, c74a0bd and d3bb89b pass. `src/`, `fixtures/`, `raw/behaviors.jsonl` and `design.md` stay outside. The implementer's `deny-write` on `tests/` is reported. Every commit path of the four cards of `ferrum-state` passes after one fix: a directory path (`crates/ferrum-state/tests`) did not match its glob `crates/*/tests/**`, since `match` compared the base literally. The hook's blocks are unchanged on Write and Edit.
+
+**Decision 1: the definition follows the decision that made the paths.** The `test-writer` may write `docs/parity/*/written/**` and `docs/parity/*/implementation.md`. Its body says that its scripts go in `written/` with their outputs, and that in `implementation.md` it writes only its entry under "Changes to checks after their code". *Why.*
+- The test-writer is the only producer of those scripts. M41 made them committed inputs so that a later verifier can run again the value a test asserts. The definition predated M41, and I did not change it when I decided M41. That omission is the defect W61 shows.
+- The entry is the test-writer's own account of what it changed in a check after the code existed. `impl_check.py` reads that section to see that every changed file under `tests/` is listed. W1b and W2a both wrote their entries there. Moving the entry to the orchestrator would add a hand-off and gain nothing: the orchestrator would copy text it did not write.
+- A glob cannot hold a writer to one section of `implementation.md`. The merge check below shows the diff, and I read the section whole at the end of the stage.
+
+**Decision 2: the boundary of record is what a run leaves, checked by a tool.** `python3 .claude/hooks/guard.py paths <agent> …` checks paths against the write rules of the agent's own definition, so the rules have one source. The orchestrator runs it twice for every worker:
+- on the card's commit paths, before the run. A path outside goes to me as a method question;
+- on the run's commit with `--commit <rev> --tree`, before the merge. `--tree` adds what `git status` lists, which may include another session's work, for the orchestrator to tell apart.
+
+`docs/workflow/README.md` §5 "Commits" already asked for a check of `git status` against the card's paths. That check caught nothing in W1b, because the card was the thing that was wrong. *Why not a Bash hook.* It would guess at a command's targets and could miss any of them. A check of the commit and the tree sees every write, whatever tool made it, and it runs at the point that matters: before anything is merged.
+
+**Decision 3: the orchestrator finishes W2b, now.** It does so in one commit:
+- it copies `.scratch/conformance/ferrum-state/w2b/state.ts` and `state.out` unchanged to `docs/parity/ferrum-state/written/`;
+- it runs the script again from there and checks the output with `cmp`;
+- it appends the entry below, verbatim, at the end of `docs/parity/ferrum-state/implementation.md` "Changes to checks after their code";
+- it runs `guard.py paths test-writer` on the three paths.
+
+This is the move the worker asked for. It is mechanical: the card decided the content and the place, the worker made the content, and I checked it above. No one has to judge anything that has not already been judged. The entry, as W2b wrote it:
+
+> Conformance step 5 (d) W2b (`docs/parity/ferrum-state/plan.md` "Conformance", step 5 (d); `cards/test-writer.md` "Conformance step 5 (d), run W2b"). Written tests of unit `state`: `state.cm6.100.d2` in both of its cases (a field's `create` and a facet's computed input calling `update` on the state under construction; a state kept after its build panicked, the inputs of `state:F8400`, `F8401`); the thread guard of `design.md` sections 5 and 6; `state.cm6.126.d1` (the inputs of `state:F8434`, `F8435`); `state.cm6.017.d1` (`state.EditorState^fromJSON.B7`); D1's message on `"aé"` at 2 through `slice_doc`, `language_data_at`, `char_categorizer`, `word_at` and `Transaction::new_doc`; 3000 `appendConfig` transactions on a 96 KiB thread, in a child process (`conformance-state.jsonl:436`). The three `WEAKER` tests (`conformance-state.jsonl:5`, `:6`, `:7`) now have the missing cases: the B9 cases of F1410, F1411, F1412, and goal column, bidi level and assoc on the given ranges. Expected values from the cm6 script `docs/parity/ferrum-state/written/state.ts`, with its output. Files:
+> - `crates/ferrum-state/tests/written_state.rs`
+
+*W1b.* Its paths are inside the new rules, so nothing is undone.
+
+**Decision 4: W2c's card.** It names the following:
+- its paths: `written_facet.rs`, `written_rangeset.rs`, `written_change.rs`, the ported files it rewrites, `docs/parity/ferrum-state/written` and `implementation.md`, its entry only;
+- the cm6 values of Q158 and Q160, added to `written/values.ts` under labels of their own, with the earlier lines of `values.out` unchanged when it is run again;
+- the values of unit `facet` that a run gives, in a new `written/facet.ts`;
+- the two `guard.py paths` checks;
+- Q162's sentence on what the replay does not compare.
+
+The binding text is in `plan.md` W2c.
+
+**Lost.**
+- *The orchestrator writes every script and entry.* It would copy text it did not author. It would also need a hand-off in every run.
+- *Scripts under `docs/parity/*/bench/**`, which is already allowed.* That directory holds G8's records, and mixing in the scripts would blur what each reader opens.
+- *A Bash `PreToolUse` hook that parses commands.* It guesses. Its misses would be silent, and its false blocks would stall runs as W2b's did.
+- *The sandbox.* It is session-wide, so it cannot hold one agent to its own paths.
+- *Leaving W2b's files for a new test-writer run.* That pays a cold start to copy two files.
+
+**Confidence.** High on Decisions 1, 3 and 4, which rest on the run and the checks above. Medium-high on Decision 2. The tool sees every path a run leaves. Whether the orchestrator runs it at both points is shown only by E81.
+
+**Reopens.**
+- A worker blocked on a path its card names after this.
+- A path outside a definition that reaches a merge.
+- A writer of `implementation.md` changing a section other than its entry.

@@ -16,11 +16,22 @@ Rules:
 
 Globs are relative to the project root; `**` matches across directories.
 Exit 0 allows the call; exit 2 blocks it and shows stderr to the agent.
+
+The same rules, outside a hook (M42, docs/decisions/method.md): a write guard sees Write and Edit, not a file a shell
+command writes, so the boundary of record is what a worker's run leaves in the tree and commits.
+
+  python3 .claude/hooks/guard.py paths <agent> <path> [<path> ...]
+  python3 .claude/hooks/guard.py paths <agent> --commit <rev> [--tree]
+
+Each path (a file or a directory) is checked against the write rules of `.claude/agents/<agent>.md`. The orchestrator
+runs it on a card's commit paths before the run, and on the run's commit (`--commit`; `--tree` adds the paths
+`git status --porcelain` lists, which may hold another session's work) before merging it. Exit 1 when a path is outside.
 """
 import fnmatch
 import json
 import os
 import re
+import subprocess
 import sys
 
 # What a re-checker must not see before its derivation is written: the verdicts it checks, the rows already written,
@@ -89,14 +100,62 @@ def match(path: str, glob: str) -> bool:
     if fnmatch.fnmatchcase(path, glob):
         return True
     # "dir/**" also matches "dir" itself; "**/x" also matches "x" at the root
-    if glob.endswith("/**") and path == glob[:-3]:
+    if glob.endswith("/**") and fnmatch.fnmatchcase(path, glob[:-3]):
         return True
     if glob.startswith("**/") and fnmatch.fnmatchcase(path, glob[3:]):
         return True
     return False
 
 
+def write_blocked(path: str, rules: list) -> str:
+    """The rule that forbids writing path, or ''."""
+    only = [r.split("=", 1)[1] for r in rules if r.startswith("only-write=")]
+    for r in rules:
+        if r.startswith("deny-write=") and match(path, r.split("=", 1)[1]):
+            return r
+    if only and not any(match(path, g) for g in only):
+        return "only-write=" + ",".join(only)
+    return ""
+
+
+def agent_rules(agent: str, root: str) -> list:
+    """The guard rules of an agent definition's frontmatter hook."""
+    with open(os.path.join(root, ".claude", "agents", agent + ".md"), encoding="utf-8") as f:
+        text = f.read()
+    front = text.split("---", 2)[1] if text.startswith("---") else ""
+    m = re.search(r"guard\.py\s+(.*)", front)
+    return m.group(1).split() if m else []
+
+
+def check_paths(argv: list) -> int:
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    if not argv:
+        print(__doc__, file=sys.stderr)
+        return 2
+    agent, rest = argv[0], argv[1:]
+    paths = []
+    if "--commit" in rest:
+        rev = rest[rest.index("--commit") + 1]
+        out = subprocess.run(["git", "show", "--name-only", "--format=", rev], cwd=root, capture_output=True, text=True, check=True)
+        paths += [p for p in out.stdout.split("\n") if p]
+        rest = [a for i, a in enumerate(rest) if a != "--commit" and (i == 0 or rest[i - 1] != "--commit")]
+    if "--tree" in rest:
+        out = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all"], cwd=root, capture_output=True, text=True, check=True)
+        paths += [l[3:].split(" -> ")[-1] for l in out.stdout.split("\n") if l]
+        rest = [a for a in rest if a != "--tree"]
+    paths += rest
+    rules = agent_rules(agent, root)
+    bad = [(p, write_blocked(rel(p, root).rstrip("/"), rules)) for p in paths]
+    bad = [(p, r) for p, r in bad if r]
+    for p, r in bad:
+        print(f"outside {agent}'s write rules: {p} ({r})")
+    print(f"{len(paths)} path(s) checked against {agent}: {len(bad)} outside")
+    return 1 if bad else 0
+
+
 def main() -> int:
+    if sys.argv[1:2] == ["paths"]:
+        return check_paths(sys.argv[2:])
     rules = sys.argv[1:]
     data = json.load(sys.stdin)
     tool = data.get("tool_name", "")
@@ -107,14 +166,13 @@ def main() -> int:
     if tool in ("Write", "Edit", "NotebookEdit"):
         target = params.get("file_path") or params.get("notebook_path") or ""
         path = rel(target, root)
-        only = [r.split("=", 1)[1] for r in rules if r.startswith("only-write=")]
-        for r in rules:
-            if r.startswith("deny-write=") and match(path, r.split("=", 1)[1]):
-                print(f"Blocked: {agent} may not write {path} (rule {r}). "
-                      "Report the change needed instead.", file=sys.stderr)
-                return 2
-        if only and not any(match(path, g) for g in only):
-            print(f"Blocked: {agent} may write only {', '.join(only)}; not {path}. "
+        r = write_blocked(path, rules)
+        if r.startswith("deny-write="):
+            print(f"Blocked: {agent} may not write {path} (rule {r}). "
+                  "Report the change needed instead.", file=sys.stderr)
+            return 2
+        if r:
+            print(f"Blocked: {agent} may write only {r.split('=', 1)[1].replace(',', ', ')}; not {path}. "
                   "Report the change needed instead.", file=sys.stderr)
             return 2
 

@@ -1,11 +1,3 @@
 # Open questions about the method
 
 Questions for the consultant about how the work runs (`docs/workflow/README.md` §7), in the shape of `CLAUDE.md` "Raising a question", ids `M<n>` (the next is M43). The orchestrator adds one when an observation calls the method into question or a stop-loss fires; the consultant removes it when it records the decision (`docs/decisions/method.md`).
-
-## M42. A worker's write paths are guarded for Write and Edit, not for Bash, and the cards name paths the guard forbids
-- **Found.** `docs/workflow/learnings.md` W61: the `test-writer`'s definition (`.claude/agents/test-writer.md`, hook `guard.py only-write=…`) allows `crates/*/tests/**`, `crates/*/benches/**`, `docs/parity/*/bench/**`, `.scratch/**`; the cards of `ferrum-state` step 5 (d) W1b and W2b, written by the orchestrator from `docs/parity/ferrum-state/plan.md` step 5 (d) (values "from committed scripts" in `docs/parity/ferrum-state/written/`, M41) and from the entries of `implementation.md` "Changes to checks after their code", name `docs/parity/ferrum-state/written/` and `docs/parity/ferrum-state/implementation.md`. W1b wrote both through Bash (aaa3960); W2b was blocked on Write and left `.scratch/conformance/ferrum-state/w2b/state.ts`, `state.out` and its entry's text uncommitted (c74a0bd holds `written_state.rs` only).
-- **Open because.** M41 placed the scripts under `docs/parity/<crate>/written/`; the agent definition predates it; neither says who moves a worker's script there. The orchestrator did not move W2b's files: the worker asked it to after being blocked, which the session treats as an escalation for the maintainer.
-- **Bears on it.** `guard.py` checks the paths of Write and Edit; a Bash command writing a file is not checked (W1b's `cp` and `cat >>`), so the list bounds only the workers that use those tools. W2c's card names the same directory (`plan.md` step 5 (d), W2c: "its values from a committed cm6 script"). A check of `git show --stat` against the card's paths after each run (the orchestrator's merge check) caught nothing in W1b, since the card named those paths.
-- **Blocks.** W2b's script and entry in the repository; W2c's card.
-- **Raised by.** The orchestrator, 2026-11-27.
-
