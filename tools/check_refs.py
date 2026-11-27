@@ -1,4 +1,5 @@
-"""Reference checker for Markdown written for agents (.claude/rules/writing.md "References").
+"""Reference checker for Markdown written for agents (.claude/rules/writing.md "References"), and the drift
+of the living files every session loads (COUNTER, PROGRESS).
 
     python3 tools/check_refs.py <file-or-dir>... [--quiet]
 
@@ -10,6 +11,14 @@ Findings:
   SECTION  "`<file>.md` §N" (or "<file>.md §N") with no heading "## N." in that file; a bare §N
            refers to the last file named on the same line, or else to the file being checked
   STALE    a path a "refs:planned" line names that now exists (the line is removed)
+  COUNTER  a questions file whose "the next id is X<n>" (or "the next is X<n>") is not above every X<m> that
+           file and its decision record use (docs/workflow/questions.md: docs/decisions/method.md;
+           docs/parity/<crate>/questions.md: docs/decisions/<crate>.md): the next question would take a used id
+  PROGRESS a docs/progress/<crate>.md whose fields are not, in order, those of docs/workflow/README.md §5 "State"
+           (open: Stage, Now, Next, in order, Waiting on, Read before acting, Set up a session; a crate whose
+           Stage starts with "done": Stage, Reopen), or that is longer than PROGRESS_MAX bytes: what is not the
+           current state (a finished run's outcome, a closed item, a fact about a tool) has crept in and goes
+           to its home (the ledger row's note, the evidence file, tools/README.md, the orchestrator's notes)
 A line containing "refs:ignore" is skipped. A line that starts with "<!-- refs:planned " and lists repository paths declares
 paths the work will create: a missing path equal to one of them or under it is not MISSING in that file, and is
 counted as planned. Paths with placeholders (<, *, {, …) are skipped, and so are
@@ -115,6 +124,36 @@ def check(md, out):
                 out.append(('SECTION', md, i, f'§{key} not in {target.relative_to(ROOT)}'))
 
 
+PROGRESS_FIELDS = ('Stage', 'Now', 'Next, in order', 'Waiting on', 'Read before acting', 'Set up a session')
+CLOSED_FIELDS = ('Stage', 'Reopen')
+PROGRESS_MAX = 8000   # the open file of ferrum-state, rewritten to its fields on 2026-11-27, was 3,249 bytes
+NEXT = re.compile(r'[Tt]he next(?: id)? is ([A-Z])(\d+)')
+
+
+def check_state(md, out):
+    """COUNTER and PROGRESS: drift of the living files every session loads (docs/decisions/method.md, M34 to M38)."""
+    text = md.read_text(errors='replace')
+    if md.name == 'questions.md':
+        m = NEXT.search(text)
+        if m:
+            letter, n = m.group(1), int(m.group(2))
+            partner = (ROOT / 'docs/decisions/method.md' if md == ROOT / 'docs/workflow/questions.md'
+                       else ROOT / 'docs/decisions' / (md.parent.name + '.md'))
+            pool = text[:m.start()] + text[m.end():] + (partner.read_text(errors='replace') if partner.is_file() else '')
+            used = [int(x) for x in re.findall(rf'\b{letter}(\d+)\b', pool)]
+            if used and n <= max(used):
+                out.append(('COUNTER', md, text[:m.start()].count('\n') + 1,
+                            f'next {letter}{n}, but {letter}{max(used)} is used here or in {partner.relative_to(ROOT)}'))
+    if md.parent == ROOT / 'docs/progress' and md.suffix == '.md':
+        fields = tuple(re.findall(r'^- \*\*([^*]+?):\*\*', text, re.M))
+        want = CLOSED_FIELDS if re.search(r'^- \*\*Stage:\*\* done', text, re.M) else PROGRESS_FIELDS
+        if fields != want:
+            out.append(('PROGRESS', md, 1, f'fields {list(fields)}, not {list(want)}'))
+        size = len(text.encode())
+        if size > PROGRESS_MAX:
+            out.append(('PROGRESS', md, 1, f'{size} bytes, above {PROGRESS_MAX}: move what is not the current state to its home'))
+
+
 def main():
     args = [a for a in sys.argv[1:] if not a.startswith('--')]
     files = []
@@ -126,6 +165,7 @@ def main():
     out = []
     for f in files:
         check(f.resolve(), out)
+        check_state(f.resolve(), out)
     if '--quiet' not in sys.argv:
         for kind, f, i, s in out:
             print(f'{kind:8} {f.relative_to(ROOT)}:{i}  {s}')

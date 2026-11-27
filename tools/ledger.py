@@ -2,7 +2,9 @@
 """The measurement ledger of Ferrum's work (docs/workflow/README.md §6).
 
     python3 tools/ledger.py add <kind> key=value ...     append one row to docs/progress/ledger.jsonl
-    python3 tools/ledger.py report [<crate>]             cost per stage and step, escapes, open expectations
+    python3 tools/ledger.py report [<crate>] [--all]     cost per stage and step, escapes, the open expectations in full
+                                                         and the settled ones as a count (--all prints them too: they are
+                                                         history, read at a review, not at every session start)
     python3 tools/ledger.py usage <transcript.jsonl> [--breakdown]   a run's size from its transcript: requests,
                                                          `tokens` (the last request's four usage counts) and `consumed`
                                                          (their sum over the requests), each request counted once by its
@@ -68,13 +70,15 @@ def add(kind, pairs):
     if missing: sys.exit(f"{kind} needs {', '.join(missing)}")
     if kind == "result" and row["outcome"] not in ("confirmed", "refuted", "revised", "partial"):
         sys.exit(f"outcome must be confirmed, refuted, revised or partial, not {row['outcome']}")
+    if kind == "expect" and any(r["kind"] == "expect" and r["id"] == row["id"] for r in load()):
+        sys.exit(f"expectation {row['id']} exists; the next id is one above the highest in the ledger")
     if kind == "step" and not str(row["model"]).startswith("claude-"):
         sys.exit(f"model must be a model id (claude-...), not an alias: {row['model']}")
     with open(PATH, "a", encoding="utf-8") as f:
         f.write(json.dumps(row, ensure_ascii=False) + "\n")
 
 
-def report(crate=None):
+def report(crate=None, settled=False):
     data = [r for r in load() if not crate or r.get("crate") in (crate, None)]
     steps = [r for r in data if r["kind"] == "step"]
     per = collections.OrderedDict()
@@ -109,11 +113,18 @@ def report(crate=None):
     exp = [r for r in load() if r["kind"] == "expect"]
     if exp:
         print("\n## Method changes and what should confirm them")
+        closed = collections.Counter()
         for r in exp:
             res = done.get(r["id"])
-            if res and res["outcome"] != "partial": state = f"{res['outcome']} ({res['date']})"
+            if res and res["outcome"] != "partial":
+                closed[res["outcome"]] += 1
+                if not settled: continue
+                state = f"{res['outcome']} ({res['date']})"
             else: state = f"OPEN, check at {r['check_at']}" + (f" (partial result {res['date']})" if res else "")
             print(f"- {r['id']}: {r['change']} | expects: {r['expects']} | {state}")
+        if closed and not settled:
+            print(f"settled, not printed (report --all): {sum(closed.values())} ("
+                  + ", ".join(f"{k} {n}" for k, n in closed.most_common()) + f"); the highest id is E{max(int(r['id'][1:]) for r in exp)}")
 
 
 def breakdown(path):
@@ -208,7 +219,9 @@ def watch(target, args):
 if __name__ == "__main__":
     a = sys.argv[1:]
     if a[:1] == ["add"] and len(a) >= 2: add(a[1], a[2:])
-    elif a[:1] == ["report"]: report(a[1] if len(a) > 1 else None)
+    elif a[:1] == ["report"]:
+        rest = [x for x in a[1:] if x != "--all"]
+        report(rest[0] if rest else None, "--all" in a)
     elif a[:1] == ["usage"] and len(a) in (2, 3): usage(a[1])
     elif a[:1] == ["watch"] and len(a) >= 4: watch(a[1], a[2:])
     else: print(__doc__)

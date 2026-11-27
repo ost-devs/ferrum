@@ -38,6 +38,7 @@ A crate is `CONFORMANT` when every gate of §2 passes. There is no percentage th
 **Record:**
 - `cargo --version` and the Node version;
 - the cm6 release (`@codemirror/<package>@<version>`) and its mirror commit, which must equal those the specification was approved at (`/mirrors check`); the verdict states parity with that release only (`docs/workflow/README.md` §1 "The cm6 reference").
+- every command that re-runs a gate at the verdict's commit, each reading only committed inputs or what an earlier command of the list writes (a config edited by hand under `.scratch/` is committed beside its output): a toolchain change (`docs/workflow/README.md` §5 "Versions") and a reopened crate run them as written.
 
 **Outputs:**
 - `docs/parity/<crate>/conformance.md`, rendered from `raw/conformance.jsonl` (`id, kind (item|behavior|test|fixture|gate), verdict, evidence, repro`);

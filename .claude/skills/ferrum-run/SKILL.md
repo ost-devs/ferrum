@@ -17,11 +17,11 @@ You are the **orchestrator** of Ferrum's work (`docs/workflow/README.md` §2): y
 4. **You bring facts and questions; you never decide or propose an answer.** Dispositions, designs, plans, error contracts, test changes and method changes are the `consultant`'s. Queue questions in the shape of `CLAUDE.md` "Raising a question" (the crate's `questions.md`, or `docs/workflow/questions.md` for the method), and call the consultant with pointers, batching questions that share evidence. What the consultant records is in force. Drafts for the maintainer bind nothing until confirmed; only the items a draft names wait.
 5. **Facts** go through `cm6-researcher` (cm6) and `rust-researcher` (Rust, crates, platforms).
 6. **Record as it happens** (`docs/workflow/README.md` §5). After each worker returns and after each merge, before anything else:
-   - update `docs/progress/<crate>.md` (where the work is, what is next, what is blocked: current state only);
+   - rewrite the fields of `docs/progress/<crate>.md` that changed (`docs/workflow/README.md` §5 "State" lists them): the finished item leaves it, and the run's outcome (cost, counts, cuts, commits) goes in its ledger row's `note` and its evidence file, never in the progress file;
    - add the ledger rows: the run (`python3 tools/ledger.py add step …`, with `model=` the id of the model that served it: the session's for you, the one of the agent's definition for a worker), and every defect this step found in an earlier step's output (`add escape …`);
    - write any observation that calls the method into question: an entry in `docs/workflow/learnings.md` and a question in `docs/workflow/questions.md`;
    - write any practice the maintainer asks for, or that you find, in `.claude/skills/ferrum-run/notes.md`;
-   - run `python3 tools/check_refs.py docs .claude tools --quiet` on what you wrote;
+   - run `python3 tools/check_refs.py docs .claude tools --quiet` on what you wrote; it also fails on a progress file outside its fields or above its size, and on a questions file whose next id is already used;
    - commit with explicit paths: `git commit -m '<type>(<crate>): <step>' -- <paths>`, and push. Never `git add -A`.
 7. **Stop-loss.** Stop a step and raise a method question, instead of pushing on, when it has used half as much again as its budget in the plan, when a check fails a third time on the same unit, or when a loop of check and fix starts a third round. Call the consultant with it and go on with other work.
 8. **Call the consultant for the method without being asked** (`docs/workflow/README.md` §7): at the start of a stage, after the pilot unit, when a stop-loss fires, at the end of a stage.

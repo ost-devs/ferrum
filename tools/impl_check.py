@@ -45,7 +45,7 @@ What the tool expects to find (the plan fixes what each thing is; this fixes whe
     FERRUM_REPLAY_CONTROL=all          the exhaustive control run: every compared path of each fixture, in turn
     FERRUM_REPLAY_TRACE=<chunk> or <chunk>:<id>   the trace of every fixture of the chunk, or of one
     FERRUM_REPLAY_WRITE_NO_COUNTERPART=1          write fixtures/no-counterpart.jsonl instead of comparing with it
-  and writes, under target/replay/<crate>/:
+  and writes, under target/replay/<crate>/ (rewritten in place by every run, so one replay of a crate at a time):
     report.jsonl    at every run, one line per fixture:
                       {"fixture": id, "chunk": chunk, "result": "equal" | "part" | "none" | "pending" | "mismatch",
                        "decisions": [row ids of raw/decisions.jsonl whose condition a call met],
