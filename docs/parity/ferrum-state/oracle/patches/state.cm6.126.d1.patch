@@ -1,0 +1,13 @@
+--- cm6/state/src/transaction.ts
++++ cm6/state/src/transaction.ts
+@@ -78,7 +78,9 @@
+   /// `undefined` when that ends up deleting the effect.
+   map(mapping: ChangeDesc): StateEffect<Value> | undefined {
+     let mapped = this.type.map(this.value, mapping)
+-    return mapped === undefined ? undefined : mapped == this.value ? this : new StateEffect(this.type, mapped)
++    // state.cm6.126.d1: the effect holds the value the type's map returned, even where it is `==` to the old one
++    // (a zero of the other sign); identity is kept as cm6 keeps it, which the replayer leaves out
++    return mapped === undefined ? undefined : mapped == this.value && Object.is(mapped, this.value) ? this : new StateEffect(this.type, mapped)
+   }
+ 
+   /// Tells you whether this effect object is of a given
