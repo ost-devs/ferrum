@@ -76,14 +76,18 @@
                                                                 cm6 deviation line; then UNVERIFIED, DECIDED DEVIATION,
                                                                 CONFORMANT; prints the disagreements with the recorded item
                                                                 lines and the findings tied to no item
-    python3 tools/conf_check.py <crate> recheck --seed <n> [--results <file> [--unit <u>] [--lines <part.jsonl>]]
+    python3 tools/conf_check.py <crate> recheck --seed <n> [--class <C>] [--results <file> [--unit <u>] [--lines <part.jsonl>]]
                                                                 step 4's sample (M30): the lines that close a question,
                                                                 each given to the run (commit) that first wrote its kind
                                                                 and id, drawn per run with the seed (plan.md step 4), with
                                                                 what step 3's verifier had beside each; writes
                                                                 .scratch/conformance/<crate>/recheck-sample.jsonl; with
                                                                 --results, the re-check rows checked against the draw and
-                                                                counted (M32: each `agree` with its order shown)
+                                                                counted (M32: each `agree` with its order shown); the draw
+                                                                is of the lines at RECHECK_AT; with --class, step 5 (b)'s
+                                                                class read <C> (RECHECK_CLASSES), drawn whole: sample
+                                                                recheck-class-<C>.jsonl, rows raw/recheck-class.jsonl; the
+                                                                four recheck-* commands below take --class <C> the same way
     python3 tools/conf_check.py <crate> recheck-derive  < rows  M32: append derivations ({"file", "line", "derived",
                                                                 "evidence", "repro"?}) before their lines are seen
     python3 tools/conf_check.py <crate> recheck-reveal <file>:<line> ...
@@ -881,11 +885,22 @@ RECHECK_KEYS = ["file", "line", "kind", "id", "derived", "evidence", "repro", "r
 # recorded line, so the derivation is shown to precede the reading; two other values only the consultant writes:
 # `transcript <agent id>: ...` (the order read from a run's transcript before the tool existed) and `not shown`
 # (a disagreement reached with the recorded line in view, which stands on its own re-run, never an `agree`).
+# The commit whose verdict lines step 4 drew (seed 20261126): the lines relabelled after it (plan.md step 5 (a)) do
+# not move the draw.
+RECHECK_AT = "b095d54"
+# Step 5 (b)'s class reads (plan.md step 5, M33): every `UNREACHABLE` branch line and `EQUIVALENT MUTANT` line step 4
+# did not draw, by the module its id names, and the lines named beside them; drawn whole, rows in raw/recheck-class.jsonl.
+RECHECK_CLASS_KINDS = {("branch", "UNREACHABLE"), ("mutant", "EQUIVALENT MUTANT")}
+RECHECK_CLASSES = {"C1": {"modules": {"text", "char"}, "named": set()},
+                   "C2": {"modules": {"change", "state", "facet", "transaction", "selection", "config", "extension"},
+                          "named": {("conformance-change.jsonl", 98), ("conformance-change.jsonl", 151)}},
+                   "C3": {"modules": {"rangeset"}, "named": set()}}
 RECHECK_UNITS = {"text": "U1", "change": "U2", "rangeset": "U3", "facet": "U4a", "state": "U4b"}
 
 
-def recheck_lines(c, crate):
-    """Every verdict line of raw/conformance-*.jsonl with the run (commit) that first wrote its (kind, id, occurrence)."""
+def recheck_lines(c, crate, at=None):
+    """Every verdict line of raw/conformance-*.jsonl with the run (commit) that first wrote its (kind, id, occurrence):
+    as committed at `at` when given (step 4's draw is of the lines at RECHECK_AT), else as the files are now."""
     rel = os.path.relpath(ic.spec(crate, "raw"), REPO)
     files = sorted(f for f in os.listdir(ic.spec(crate, "raw")) if re.fullmatch(r"conformance-[\w-]+\.jsonl", f))
     git = lambda *a: subprocess.run(["git", "-C", REPO, *a], capture_output=True, text=True, check=True).stdout
@@ -897,12 +912,12 @@ def recheck_lines(c, crate):
     lines, title = [], {}
     for f in files:
         path = f"{rel}/{f}"; writer = {}
-        for h in git("log", "--reverse", "--format=%h", "--", path).split():
+        for h in git("log", "--reverse", "--format=%h", *([at] if at else []), "--", path).split():
             title.setdefault(h, git("log", "-1", "--format=%s", h).strip())
             try: rows = parse(git("show", f"{h}:{path}"))
             except subprocess.CalledProcessError: continue
             for k in keys(rows): writer.setdefault(k, h)
-        rows = parse(ic.read(os.path.join(REPO, path)))
+        rows = parse(git("show", f"{at}:{path}") if at else ic.read(os.path.join(REPO, path)))
         for n, (r, k) in enumerate(zip(rows, keys(rows)), 1):
             if k not in writer: c.need(False, f"{f}:{n}: a commit wrote {k[0]} {k[1]}")
             lines.append({"file": f, "line": n, "kind": r["kind"], "id": r["id"], "row": r, "run": writer.get(k, "uncommitted")})
@@ -971,15 +986,11 @@ def recheck_citations(c, crate, lines):
     c.need(not bad, f"every cited fixture and test exists ({nf} fixture and {nt} test citations): {len(bad)} do not", bad)
 
 
-def recheck(c, crate, args):
-    """Step 4's sample (plan step 4, M30): the lines that close a question, drawn per run with the recorded seed, and
-    beside each what step 3's verifier was given for it; with --results, a re-check file checked against the draw."""
+def recheck_draw(c, crate, seed):
+    """Step 4's draw: the pool of RECHECK_AT's lines and the lines drawn from it with the seed (plan step 4, M30)."""
     import math, random
-    seed = int(args[args.index("--seed") + 1]) if "--seed" in args else sys.exit("recheck --seed <n> [--results <file> [--unit <u>]]")
-    files, lines, title = recheck_lines(c, crate)
-    recheck_citations(c, crate, lines)
+    files, lines, title = recheck_lines(c, crate, RECHECK_AT)
     pool = [x for x in lines if x["kind"] != "item" and x["id"] != "replayer:core" and x["row"]["verdict"] not in RECHECK_FINDINGS]
-    c.say(f"lines {len(lines)}; pool {len(pool)} (findings, item lines and replayer:core left out); by kind {dict(collections.Counter(x['kind'] for x in pool))}")
     by = collections.defaultdict(list)
     for x in pool: by[x["run"]].append(x)
     rnd = random.Random(seed); drawn = []
@@ -996,31 +1007,32 @@ def recheck(c, crate, args):
         if have < 10:
             more = rnd.sample(rest, min(len(rest), 10 - have)); drawn += more; ids |= {(x["file"], x["line"]) for x in more}
     drawn.sort(key=lambda x: (x["file"], x["line"]))
-    unit_of = lambda f: RECHECK_UNITS.get(f[len("conformance-"):-len(".jsonl")], "?")
-    if "--results" not in args:
-        recheck_sources(c, crate, drawn)
-        out = os.path.join(out_dir(crate), "recheck-sample.jsonl")
-        with open(out, "w", encoding="utf8") as fh:
-            for x in drawn:
-                fh.write(json.dumps({"file": x["file"], "line": x["line"], "unit": unit_of(x["file"]), "kind": x["kind"], "id": x["id"],
-                                     "run": x["run"], "run_title": title.get(x["run"], ""), "sources": x["sources"]}, ensure_ascii=False) + "\n")
-        for run in sorted(by, key=lambda h: title.get(h, h)):
-            tag = " (M28)" if run in RECHECK_M28 else " (above 200,000)" if run in RECHECK_ABOVE else ""
-            c.say(f"{run} {len(by[run]):4} in pool, {sum(1 for x in drawn if x['run'] == run):3} drawn{tag}: {title.get(run, run)}")
-        c.say(f"recheck: {len(drawn)} of {len(pool)} (seed {seed}); by kind {dict(collections.Counter(x['kind'] for x in drawn))}; "
-              f"by unit {dict(collections.Counter(unit_of(x['file']) for x in drawn))}; written {os.path.relpath(out, REPO)}")
-        return
-    path = args[args.index("--results") + 1]
-    unit = args[args.index("--unit") + 1] if "--unit" in args else None
-    if unit: unit = RECHECK_UNITS.get(unit, unit)
-    want = {(x["file"], x["line"]): x for x in drawn if unit is None or unit_of(x["file"]) == unit}
-    if "--lines" in args:  # a run that takes part of a unit: the drawn lines of a sample file cut from recheck-sample.jsonl
-        part = {(r["file"], r["line"]) for r in ic.rows(args[args.index("--lines") + 1])}
-        c.need(part <= set(want), f"the part's lines are drawn lines of the unit: {len(part - set(want))} are not", sorted(part - set(want)))
-        want = {k: v for k, v in want.items() if k in part}
-    rows = [json.loads(l) for l in ic.read(path).split("\n") if l.strip()] if os.path.exists(path) else []
-    if unit: rows = [r for r in rows if unit_of(r.get("file", "")) == unit]
-    if "--lines" in args: rows = [r for r in rows if (r.get("file"), r.get("line")) in want or (r.get("file"), r.get("line")) not in {(x["file"], x["line"]) for x in drawn}]
+    return lines, pool, by, drawn, title
+
+
+def recheck_module(x):
+    m = re.match(r"src/(\w+)\.rs", x["id"])
+    return m.group(1) if m else None
+
+
+def recheck_class_lines(c, crate, name, drawn):
+    """The lines of class read <name> (RECHECK_CLASSES), from the verdict files as they are now."""
+    spec = RECHECK_CLASSES.get(name)
+    if spec is None: c.need(False, f"a class of {sorted(RECHECK_CLASSES)}: {name}"); return [], []
+    _, now, title = recheck_lines(c, crate)
+    taken = {(x["file"], x["line"]) for x in drawn}
+    out = [x for x in now if ((x["file"], x["line"]) in spec["named"])
+           or ((x["kind"], x["row"]["verdict"]) in RECHECK_CLASS_KINDS and (x["file"], x["line"]) not in taken and recheck_module(x) in spec["modules"])]
+    c.need({(x["file"], x["line"]) for x in out} >= spec["named"], f"class {name}: every named line exists", sorted(spec["named"] - {(x["file"], x["line"]) for x in out}))
+    every = {m for s in RECHECK_CLASSES.values() for m in s["modules"]}
+    loose = [f"{x['file']}:{x['line']} {x['id'][:50]}" for x in now if (x["kind"], x["row"]["verdict"]) in RECHECK_CLASS_KINDS
+             and (x["file"], x["line"]) not in taken and recheck_module(x) not in every]
+    c.need(not loose, f"every undrawn line of the class kinds falls in a class: {len(loose)} do not", loose)
+    return out, now
+
+
+def recheck_results(c, rows, want, lines, run_of, title, strata):
+    """A re-check file's rows checked against the lines they answer (want: (file, line) -> line), and counted."""
     got = collections.Counter((r.get("file"), r.get("line")) for r in rows)
     c.need(all(k in got for k in want), f"every drawn line has a row: {sum(1 for k in want if k not in got)} have none",
            [f"{f}:{n}" for (f, n) in want if (f, n) not in got])
@@ -1043,11 +1055,11 @@ def recheck(c, crate, args):
            [f"{r['file']}:{r['line']}" for r in rows if not (r.get("settled") or (r.get("outcome") == "agree" and r.get("derived") == r.get("recorded")))])
     c.say("order shown: " + ", ".join(f"{k} {n}" for k, n in sorted(collections.Counter(order(r) for r in rows).items()))
           + f"; derivations the reveal corrected (derived differs, outcome agree): {sum(1 for r in rows if r.get('outcome') == 'agree' and r.get('derived') != r.get('recorded'))}")
-    run_of = {(x["file"], x["line"]): x["run"] for x in drawn}
     def count(name, sel):
         cnt = collections.Counter((r["kind"], r["outcome"]) for r in rows if sel(r))
         c.say(f"{name}: {sum(cnt.values())} rows; " + ", ".join(f"{k} {o} {n}" for (k, o), n in sorted(cnt.items())))
     count("all", lambda r: True)
+    if not strata: return
     for run in sorted({run_of.get((r.get("file"), r.get("line"))) for r in rows} - {None}):
         count(f"run {run} {title.get(run, '')}", lambda r, run=run: run_of.get((r.get("file"), r.get("line"))) == run)
     count("the six runs of M28", lambda r: run_of.get((r.get("file"), r.get("line"))) in RECHECK_M28)
@@ -1056,14 +1068,84 @@ def recheck(c, crate, args):
     count("hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart)", lambda r: listed(r) and run_of.get((r["file"], r["line"])) not in RECHECK_ABOVE)
 
 
+def recheck_write_sample(c, crate, out, xs, unit_of, title):
+    recheck_sources(c, crate, xs)
+    with open(out, "w", encoding="utf8") as fh:
+        for x in xs:
+            fh.write(json.dumps({"file": x["file"], "line": x["line"], "unit": unit_of(x["file"]), "kind": x["kind"], "id": x["id"],
+                                 "run": x["run"], "run_title": title.get(x["run"], ""), "sources": x["sources"]}, ensure_ascii=False) + "\n")
+
+
+def recheck(c, crate, args):
+    """Step 4's sample (plan step 4, M30): the lines that close a question, drawn per run with the recorded seed, and
+    beside each what step 3's verifier was given for it; with --results, a re-check file checked against the draw.
+    With --class <name>, step 5 (b)'s class read of that name instead (RECHECK_CLASSES), drawn whole."""
+    seed = int(args[args.index("--seed") + 1]) if "--seed" in args else sys.exit("recheck --seed <n> [--class <C>] [--results <file> [--unit <u>]]")
+    lines, pool, by, drawn, title = recheck_draw(c, crate, seed)
+    unit_of = lambda f: RECHECK_UNITS.get(f[len("conformance-"):-len(".jsonl")], "?")
+    if "--class" in args:
+        name = args[args.index("--class") + 1]
+        if name not in RECHECK_CLASSES: c.need(False, f"a class of {sorted(RECHECK_CLASSES)}: {name}"); return
+        xs, now = recheck_class_lines(c, crate, name, drawn)
+        recheck_citations(c, crate, xs)
+        if "--results" not in args:
+            out = recheck_sample_path(crate, name)
+            recheck_write_sample(c, crate, out, xs, unit_of, title)
+            c.say(f"class {name}: {len(xs)} lines; by kind {dict(collections.Counter(x['kind'] for x in xs))}; by module "
+                  f"{dict(collections.Counter(recheck_module(x) or '-' for x in xs))}; written {os.path.relpath(out, REPO)}")
+            return
+        path = args[args.index("--results") + 1]
+        want = {(x["file"], x["line"]): x for x in xs}
+        quiet = ic.Check(); quiet.say = quiet.need = lambda *a, **k: None
+        others = {(y["file"], y["line"]) for k in RECHECK_CLASSES if k != name for y in recheck_class_lines(quiet, crate, k, drawn)[0]}
+        rows = [r for r in (ic.rows(path) if os.path.exists(path) else []) if (r.get("file"), r.get("line")) not in others]
+        recheck_results(c, rows, want, now, {}, title, strata=False)
+        return
+    recheck_citations(c, crate, lines)
+    c.say(f"lines {len(lines)} (at {RECHECK_AT}); pool {len(pool)} (findings, item lines and replayer:core left out); by kind {dict(collections.Counter(x['kind'] for x in pool))}")
+    if "--results" not in args:
+        out = recheck_sample_path(crate, None)
+        recheck_write_sample(c, crate, out, drawn, unit_of, title)
+        for run in sorted(by, key=lambda h: title.get(h, h)):
+            tag = " (M28)" if run in RECHECK_M28 else " (above 200,000)" if run in RECHECK_ABOVE else ""
+            c.say(f"{run} {len(by[run]):4} in pool, {sum(1 for x in drawn if x['run'] == run):3} drawn{tag}: {title.get(run, run)}")
+        c.say(f"recheck: {len(drawn)} of {len(pool)} (seed {seed}); by kind {dict(collections.Counter(x['kind'] for x in drawn))}; "
+              f"by unit {dict(collections.Counter(unit_of(x['file']) for x in drawn))}; written {os.path.relpath(out, REPO)}")
+        return
+    path = args[args.index("--results") + 1]
+    unit = args[args.index("--unit") + 1] if "--unit" in args else None
+    if unit: unit = RECHECK_UNITS.get(unit, unit)
+    want = {(x["file"], x["line"]): x for x in drawn if unit is None or unit_of(x["file"]) == unit}
+    if "--lines" in args:  # a run that takes part of a unit: the drawn lines of a sample file cut from recheck-sample.jsonl
+        part = {(r["file"], r["line"]) for r in ic.rows(args[args.index("--lines") + 1])}
+        c.need(part <= set(want), f"the part's lines are drawn lines of the unit: {len(part - set(want))} are not", sorted(part - set(want)))
+        want = {k: v for k, v in want.items() if k in part}
+    rows = [json.loads(l) for l in ic.read(path).split("\n") if l.strip()] if os.path.exists(path) else []
+    if unit: rows = [r for r in rows if unit_of(r.get("file", "")) == unit]
+    if "--lines" in args: rows = [r for r in rows if (r.get("file"), r.get("line")) in want or (r.get("file"), r.get("line")) not in {(x["file"], x["line"]) for x in drawn}]
+    recheck_results(c, rows, want, lines, {(x["file"], x["line"]): x["run"] for x in drawn}, title, strata=True)
+
+
+def recheck_sample_path(crate, name):
+    return os.path.join(out_dir(crate), f"recheck-class-{name}.jsonl" if name else "recheck-sample.jsonl")
+
+
 def recheck_digest(r):
     return hashlib.sha256(json.dumps([r.get("derived", ""), r.get("evidence", "")], ensure_ascii=False).encode()).hexdigest()[:16]
 
 
-def recheck_io(crate):
-    """The drawn lines by (file, line), the rows of raw/recheck.jsonl, and a writer that rewrites the file whole."""
-    sample = {(x["file"], x["line"]): x for x in ic.rows(os.path.join(out_dir(crate), "recheck-sample.jsonl"))}
-    path = ic.spec(crate, "raw", "recheck.jsonl")
+def recheck_class_arg(args):
+    """The class named by --class <name> (removed from args), or None for step 4's sample."""
+    if "--class" not in args: return None
+    i = args.index("--class"); name = args[i + 1]; del args[i:i + 2]
+    return name
+
+
+def recheck_io(crate, name=None):
+    """The drawn lines by (file, line) (step 4's sample, or the sample of class read <name> that `recheck --class`
+    wrote), the rows of raw/recheck.jsonl (raw/recheck-class.jsonl for a class), and a writer of the file whole."""
+    sample = {(x["file"], x["line"]): x for x in ic.rows(recheck_sample_path(crate, name))}
+    path = ic.spec(crate, "raw", "recheck-class.jsonl" if name else "recheck.jsonl")
     rows = ic.rows(path) if os.path.exists(path) else []
     def write(rows):
         tmp = path + ".tmp"
@@ -1083,7 +1165,7 @@ def recheck_stdin(c):
 def recheck_derive(c, crate, args):
     """M32, step (1) of a re-check: append a derivation, before its recorded line is seen. Stdin: a JSON row or list,
     {"file", "line", "derived", "evidence", "repro"?}; kind and id come from the draw."""
-    sample, rows, write = recheck_io(crate)
+    sample, rows, write = recheck_io(crate, recheck_class_arg(args))
     have = {(r["file"], r["line"]) for r in rows}
     vocab = collections.defaultdict(set)
     for f in os.listdir(ic.spec(crate, "raw")):
@@ -1101,13 +1183,13 @@ def recheck_derive(c, crate, args):
                      "repro": d.get("repro", ""), "recorded": "", "outcome": "", "severity": "", "settled": "", "revealed": ""})
         have.add(k); added.append(f"{k[0]}:{k[1]}")
     if added: write(rows)
-    c.say(f"derived: {len(added)} appended to raw/recheck.jsonl ({', '.join(added)})")
+    c.say(f"derived: {len(added)} appended ({', '.join(added)})")
 
 
 def recheck_reveal(c, crate, args):
     """M32, step (2): show the recorded lines named <file>:<line>, each only once its derivation is written; freezes the
     derivation (`revealed`, a digest) and fills `recorded` from the line."""
-    sample, rows, write = recheck_io(crate)
+    sample, rows, write = recheck_io(crate, recheck_class_arg(args))
     at = {(r["file"], r["line"]): r for r in rows}
     shown = []
     for a in args:
@@ -1128,7 +1210,7 @@ def recheck_reveal(c, crate, args):
 def recheck_settle(c, crate, args):
     """M32, step (3): complete revealed rows. Stdin: a JSON row or list, {"file", "line", "outcome", "severity"?,
     "settled"?, "repro"?}; `derived` and `evidence` are not changed."""
-    sample, rows, write = recheck_io(crate)
+    sample, rows, write = recheck_io(crate, recheck_class_arg(args))
     at = {(r["file"], r["line"]): r for r in rows}
     done = []
     for d in recheck_stdin(c):
@@ -1151,6 +1233,7 @@ def recheck_audit(c, crate, args):
     `recheck-reveal` call that named it. Reads the run's transcript: an agent id (~/.claude/projects/*/*/subagents/
     agent-<id>.jsonl) or a path; --lines <part> keeps the rows of that part."""
     import glob
+    name = recheck_class_arg(args)
     if not args: c.need(False, "give the agent id or transcript of a re-check run"); return
     t = args[0] if os.path.exists(args[0]) else next(iter(glob.glob(os.path.expanduser(f"~/.claude/projects/*/*/subagents/agent-{args[0]}.jsonl"))), None)
     if not t: c.need(False, f"a transcript for {args[0]}"); return
@@ -1197,7 +1280,8 @@ def recheck_audit(c, crate, args):
                         except (UnicodeDecodeError, OSError): pass
             corpus.append("\x00".join(parts))
         return corpus[0]
-    rows = ic.rows(ic.spec(crate, "raw", "recheck.jsonl"))
+    rows = ic.rows(ic.spec(crate, "raw", "recheck-class.jsonl" if name else "recheck.jsonl"))
+    if name: rows = [r for r in rows if (r["file"], r["line"]) in {(x["file"], x["line"]) for x in ic.rows(recheck_sample_path(crate, name))}]
     if "--lines" in args:
         part = {(r["file"], r["line"]) for r in ic.rows(args[args.index("--lines") + 1])}
         rows = [r for r in rows if (r["file"], r["line"]) in part]

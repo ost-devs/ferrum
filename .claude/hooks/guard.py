@@ -26,10 +26,10 @@ import sys
 # What a re-checker must not see before its derivation is written: the verdicts it checks, the rows already written,
 # and the documents that summarize their outcomes.
 RECHECK_HIDDEN = ["docs/parity/*/raw/conformance-*.jsonl", "docs/parity/*/raw/recheck.jsonl",
-                  "docs/parity/*/raw/recheck-not-blind.jsonl", "docs/parity/*/verification.md",
+                  "docs/parity/*/raw/recheck-not-blind.jsonl", "docs/parity/*/raw/recheck-class.jsonl", "docs/parity/*/verification.md",
                   "docs/progress/**", "docs/workflow/learnings.md", "docs/decisions/method.md"]
 RECHECK_BASH_DENY = re.compile(
-    r"conformance-[\w*?\[\]-]*\.jsonl|recheck(-not-blind)?\.jsonl|verification\.md|docs/progress|learnings\.md|decisions/method\.md"
+    r"conformance-[\w*?\[\]-]*\.jsonl|recheck(-not-blind|-class)?\.jsonl|verification\.md|docs/progress|learnings\.md|decisions/method\.md"
     r"|\bcd\s+\S*/raw/?(\s|$|;|&)"
     r"|\bgit\s+(show|log\b[^\n|;&]*\s(-p|--patch|-L)|diff\b[^\n|;&]*docs)"
     r"|\b(e?grep)\b[^\n|;&]*\s-[a-zA-Z]*[rR][a-zA-Z]*\b[^\n|;&]*\s(\.|docs(/parity(/[\w-]+(/raw)?)?)?)/?(\s|$)"
