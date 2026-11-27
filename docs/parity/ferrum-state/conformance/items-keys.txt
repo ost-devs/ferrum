@@ -1,0 +1,199 @@
+# The `items` keys of plan step 5 (a), Q147, written by docs/parity/ferrum-state/conformance/items-keys.py --write
+
+82 lines gain a key; by source: evidence 11, join 86, root 6
+
+conformance-change.jsonl:116 sentinel src/change.rs:72 FINDING
+    state.cm6.149 ChangeDesc.length  (join: cited by the item line conformance-change.jsonl:164)
+conformance-change.jsonl:117 sentinel src/change.rs:79 FINDING
+    state.cm6.150 ChangeDesc.newLength  (join: cited by the item line conformance-change.jsonl:165)
+conformance-change.jsonl:119 sentinel src/change.rs:207 FINDING
+    state.cm6.064 EditorSelection.map  (join: cited by the item line conformance-change.jsonl:224)
+    state.cm6.087 SelectionRange.map  (join: cited by the item line conformance-change.jsonl:242)
+    state.cm6.111 TransactionSpec.selection  (join: cited by the item line conformance-state.jsonl:300)
+    state.cm6.157 ChangeDesc.mapPos  (join: cited by the item line conformance-change.jsonl:172)
+conformance-change.jsonl:120 sentinel src/change.rs:214 FINDING
+    state.cm6.064 EditorSelection.map  (join: cited by the item line conformance-change.jsonl:224)
+    state.cm6.087 SelectionRange.map  (join: cited by the item line conformance-change.jsonl:242)
+    state.cm6.157 ChangeDesc.mapPos  (join: cited by the item line conformance-change.jsonl:172)
+conformance-change.jsonl:124 sentinel src/change.rs:244 FINDING
+    state.cm6.158 ChangeDesc.touchesRange  (join: cited by the item line conformance-change.jsonl:173)
+conformance-change.jsonl:126 sentinel src/change.rs:515 FINDING
+    state.cm6.145 ChangeSet^of  (join: cited by the item line conformance-change.jsonl:160)
+conformance-change.jsonl:127 sentinel src/change.rs:529 FINDING
+    state.cm6.146 ChangeSet^empty  (join: cited by the item line conformance-change.jsonl:161)
+conformance-change.jsonl:130 sentinel src/change.rs:617 FINDING
+    state.cm6.032 EditorState^changeFilter  (join: cited by the item line conformance-state.jsonl:283)
+conformance-change.jsonl:131 sentinel src/change.rs:643 FINDING
+    state.cm6.032 EditorState^changeFilter  (join: cited by the item line conformance-state.jsonl:283)
+conformance-change.jsonl:134 sentinel src/change.rs:715 FINDING
+    state.cm6.110 TransactionSpec.changes  (join: cited by the item line conformance-state.jsonl:299)
+    state.cm6.145 ChangeSet^of  (join: cited by the item line conformance-change.jsonl:160)
+conformance-change.jsonl:136 sentinel src/change.rs:718 FINDING
+    state.cm6.145 ChangeSet^of  (join: cited by the item line conformance-change.jsonl:160)
+conformance-change.jsonl:217 sentinel src/selection.rs:174 FINDING
+    state.cm6.071 EditorSelection^fromJSON  (join: cited by the item line conformance-change.jsonl:230)
+    state.cm6.091 SelectionRange^fromJSON  (join: cited by the item line conformance-change.jsonl:245)
+conformance-change.jsonl:218 sentinel src/selection.rs:175 FINDING
+    state.cm6.071 EditorSelection^fromJSON  (join: cited by the item line conformance-change.jsonl:230)
+    state.cm6.091 SelectionRange^fromJSON  (join: cited by the item line conformance-change.jsonl:245)
+conformance-change.jsonl:249 branch src/change.rs:779:18 FINDING
+    state.cm6.091 SelectionRange^fromJSON  (join: cited by the item line conformance-change.jsonl:245)
+conformance-change.jsonl:264 branch src/selection.rs:146:9 FINDING
+    state.cm6.089 SelectionRange.eq  (join: cited by the item line conformance-change.jsonl:244)
+conformance-change.jsonl:265 branch src/selection.rs:170:35 FINDING
+    state.cm6.091 SelectionRange^fromJSON  (join: cited by the item line conformance-change.jsonl:245)
+conformance-change.jsonl:266 branch src/selection.rs:182:44 FINDING
+    state.cm6.089 SelectionRange.eq  (join: cited by the item line conformance-change.jsonl:244)
+conformance-change.jsonl:267 branch src/selection.rs:234:9 FINDING
+    state.cm6.061 EditorSelection  (join: cited by the item line conformance-change.jsonl:221)
+conformance-change.jsonl:268 branch src/selection.rs:235:16 FINDING
+    state.cm6.061 EditorSelection  (join: cited by the item line conformance-change.jsonl:221)
+conformance-facet.jsonl:189 panic src/facet.rs:1224 FINDING
+    state.cm6.050 Extension  (join: cited by the item line conformance-facet.jsonl:243)
+    state.cm6.057 Compartment  (join: cited by the item line conformance-facet.jsonl:250)
+conformance-facet.jsonl:191 panic src/facet.rs:1301 FINDING
+    state.cm6.046 StateField  (join: cited by the item line conformance-facet.jsonl:239)
+conformance-facet.jsonl:192 panic src/facet.rs:1342 FINDING
+    state.cm6.046 StateField  (join: cited by the item line conformance-facet.jsonl:239)
+conformance-facet.jsonl:203 shared src/facet.rs:230 FINDING
+    state.cm6.041 Facet.computeN  (root: the items of conformance-facet.jsonl:213)
+conformance-facet.jsonl:204 shared src/facet.rs:231 FINDING
+    state.cm6.041 Facet.computeN  (root: the items of conformance-facet.jsonl:213)
+conformance-facet.jsonl:205 shared src/facet.rs:243 FINDING
+    state.cm6.041 Facet.computeN  (root: the items of conformance-facet.jsonl:213)
+conformance-facet.jsonl:206 shared src/facet.rs:244 FINDING
+    state.cm6.041 Facet.computeN  (root: the items of conformance-facet.jsonl:213)
+conformance-facet.jsonl:209 shared src/facet.rs:378 FINDING
+    state.cm6.041 Facet.computeN  (root: the items of conformance-facet.jsonl:213)
+conformance-facet.jsonl:210 shared src/facet.rs:379 FINDING
+    state.cm6.041 Facet.computeN  (root: the items of conformance-facet.jsonl:213)
+conformance-facet.jsonl:212 shared src/facet.rs:438 FINDING
+    state.cm6.040 Facet.compute  (join: cited by the item line conformance-facet.jsonl:101)
+conformance-facet.jsonl:213 shared src/facet.rs:455 FINDING
+    state.cm6.041 Facet.computeN  (join: cited by the item line conformance-facet.jsonl:102)
+conformance-facet.jsonl:214 shared src/facet.rs:473 FINDING
+    state.cm6.042 Facet.from  (join: cited by the item line conformance-facet.jsonl:103)
+conformance-facet.jsonl:215 shared src/facet.rs:475 FINDING
+    state.cm6.042 Facet.from  (join: cited by the item line conformance-facet.jsonl:103)
+conformance-facet.jsonl:222 shared src/facet.rs:686 FINDING
+    state.cm6.046 StateField  (join: cited by the item line conformance-facet.jsonl:239)
+conformance-facet.jsonl:224 shared src/facet.rs:717 FINDING
+    state.cm6.046 StateField  (join: cited by the item line conformance-facet.jsonl:239)
+    state.cm6.048 StateField.init  (join: cited by the item line conformance-facet.jsonl:241)
+conformance-facet.jsonl:260 branch src/facet.rs:1440:47 FINDING
+    state.cm6.040 Facet.compute  (join: cited by the item line conformance-facet.jsonl:101)
+conformance-facet.jsonl:262 mutant src/facet.rs:699:62 replace == with != in StateField<T>::define FINDING
+    state.cm6.046 StateField  (join: cited by the item line conformance-facet.jsonl:239)
+    state.cm6.047 StateField^define  (join: cited by the item line conformance-facet.jsonl:240)
+conformance-facet.jsonl:267 mutant src/facet.rs:1440:65 replace || with && in provider_slot FINDING
+    state.cm6.040 Facet.compute  (join: cited by the item line conformance-facet.jsonl:101)
+conformance-rangeset.jsonl:153 panic src/rangeset.rs:675 FINDING
+    state.cm6.184 RangeSet.map  (join: cited by the item line conformance-rangeset.jsonl:100)
+conformance-rangeset.jsonl:159 sentinel src/rangeset.rs:200 FINDING
+    state.cm6.196 RangeCursor.goto  (join: cited by the item line conformance-rangeset.jsonl:281)
+conformance-rangeset.jsonl:182 sentinel src/rangeset.rs:610 FINDING
+    state.cm6.183 RangeSet.update  (join: cited by the item line conformance-rangeset.jsonl:99)
+    state.cm6.262 RangeSet.update config RangeSetUpdate.filter  (join: cited by the item line conformance-rangeset.jsonl:294)
+conformance-rangeset.jsonl:183 sentinel src/rangeset.rs:613 FINDING
+    state.cm6.183 RangeSet.update  (join: cited by the item line conformance-rangeset.jsonl:99)
+conformance-rangeset.jsonl:185 sentinel src/rangeset.rs:632 FINDING
+    state.cm6.183 RangeSet.update  (join: cited by the item line conformance-rangeset.jsonl:99)
+conformance-rangeset.jsonl:186 sentinel src/rangeset.rs:641 FINDING
+    state.cm6.183 RangeSet.update  (join: cited by the item line conformance-rangeset.jsonl:99)
+conformance-rangeset.jsonl:193 sentinel src/rangeset.rs:738 FINDING
+    state.cm6.185 RangeSet.between  (join: cited by the item line conformance-rangeset.jsonl:101)
+conformance-rangeset.jsonl:196 sentinel src/rangeset.rs:745 FINDING
+    state.cm6.185 RangeSet.between  (join: cited by the item line conformance-rangeset.jsonl:101)
+conformance-rangeset.jsonl:197 sentinel src/rangeset.rs:760 FINDING
+    state.cm6.186 RangeSet.iter  (join: cited by the item line conformance-rangeset.jsonl:102)
+conformance-rangeset.jsonl:198 sentinel src/rangeset.rs:771 FINDING
+    state.cm6.187 RangeSet^iter  (join: cited by the item line conformance-rangeset.jsonl:103)
+conformance-rangeset.jsonl:199 sentinel src/rangeset.rs:787 FINDING
+    state.cm6.188 RangeSet^compare  (join: cited by the item line conformance-rangeset.jsonl:104)
+conformance-rangeset.jsonl:200 sentinel src/rangeset.rs:820 FINDING
+    state.cm6.189 RangeSet^eq  (join: cited by the item line conformance-rangeset.jsonl:105)
+conformance-rangeset.jsonl:201 sentinel src/rangeset.rs:822 FINDING
+    state.cm6.189 RangeSet^eq  (join: cited by the item line conformance-rangeset.jsonl:105)
+conformance-rangeset.jsonl:202 sentinel src/rangeset.rs:830 FINDING
+    state.cm6.189 RangeSet^eq  (join: cited by the item line conformance-rangeset.jsonl:105)
+conformance-rangeset.jsonl:203 sentinel src/rangeset.rs:849 FINDING
+    state.cm6.190 RangeSet^spans  (join: cited by the item line conformance-rangeset.jsonl:106)
+conformance-rangeset.jsonl:204 sentinel src/rangeset.rs:850 FINDING
+    state.cm6.190 RangeSet^spans  (join: cited by the item line conformance-rangeset.jsonl:106)
+conformance-rangeset.jsonl:220 sentinel src/rangeset.rs:1038 FINDING
+    state.cm6.201 RangeSetBuilder  (join: cited by the item line conformance-rangeset.jsonl:286)
+    state.cm6.203 RangeSetBuilder.add  (join: cited by the item line conformance-rangeset.jsonl:287)
+conformance-rangeset.jsonl:221 sentinel src/rangeset.rs:1041 FINDING
+    state.cm6.203 RangeSetBuilder.add  (join: cited by the item line conformance-rangeset.jsonl:287)
+conformance-rangeset.jsonl:222 sentinel src/rangeset.rs:1052 FINDING
+    state.cm6.203 RangeSetBuilder.add  (join: cited by the item line conformance-rangeset.jsonl:287)
+conformance-rangeset.jsonl:223 sentinel src/rangeset.rs:1054 FINDING
+    state.cm6.203 RangeSetBuilder.add  (join: cited by the item line conformance-rangeset.jsonl:287)
+conformance-rangeset.jsonl:224 sentinel src/rangeset.rs:1055 FINDING
+    state.cm6.203 RangeSetBuilder.add  (join: cited by the item line conformance-rangeset.jsonl:287)
+conformance-rangeset.jsonl:226 sentinel src/rangeset.rs:1057 FINDING
+    state.cm6.203 RangeSetBuilder.add  (join: cited by the item line conformance-rangeset.jsonl:287)
+conformance-rangeset.jsonl:227 sentinel src/rangeset.rs:1058 FINDING
+    state.cm6.203 RangeSetBuilder.add  (join: cited by the item line conformance-rangeset.jsonl:287)
+conformance-rangeset.jsonl:228 sentinel src/rangeset.rs:1060 FINDING
+    state.cm6.203 RangeSetBuilder.add  (join: cited by the item line conformance-rangeset.jsonl:287)
+conformance-rangeset.jsonl:298 mutant src/rangeset.rs:482:79 replace - with / in Chunk<T>::map FINDING
+    state.cm6.184 RangeSet.map  (join: cited by the item line conformance-rangeset.jsonl:100)
+conformance-rangeset.jsonl:299 mutant src/rangeset.rs:482:115 replace > with >= in Chunk<T>::map FINDING
+    state.cm6.184 RangeSet.map  (join: cited by the item line conformance-rangeset.jsonl:100)
+conformance-rangeset.jsonl:311 branch src/rangeset.rs:1151:20 FINDING
+    state.cm6.188 RangeSet^compare  (join: cited by the item line conformance-rangeset.jsonl:104)
+conformance-rangeset.jsonl:312 branch src/rangeset.rs:1152:24 FINDING
+    state.cm6.188 RangeSet^compare  (join: cited by the item line conformance-rangeset.jsonl:104)
+conformance-rangeset.jsonl:314 mutant src/rangeset.rs:788:57 replace > with == in RangeSet<T>::compare FINDING
+    state.cm6.188 RangeSet^compare  (join: cited by the item line conformance-rangeset.jsonl:104)
+conformance-rangeset.jsonl:315 mutant src/rangeset.rs:788:57 replace > with >= in RangeSet<T>::compare FINDING
+    state.cm6.188 RangeSet^compare  (join: cited by the item line conformance-rangeset.jsonl:104)
+conformance-rangeset.jsonl:321 mutant src/rangeset.rs:1150:41 replace + with - in find_shared_chunks FINDING
+    state.cm6.188 RangeSet^compare  (join: cited by the item line conformance-rangeset.jsonl:104)
+conformance-rangeset.jsonl:322 mutant src/rangeset.rs:1152:21 replace && with || in find_shared_chunks FINDING
+    state.cm6.188 RangeSet^compare  (join: cited by the item line conformance-rangeset.jsonl:104)
+conformance-state.jsonl:332 panic src/state.rs:668 FINDING
+    state.cm6.100 Transaction.state  (evidence: behavior state.Transaction.state.B8)
+conformance-state.jsonl:350 shared src/state.rs:59 FINDING
+    state.cm6.007 EditorState.selection  (evidence: cm6 location mirrors/cm6/state/src/state.ts:54)
+conformance-state.jsonl:351 shared src/state.rs:62 FINDING
+    state.cm6.005 EditorState  (evidence: behavior state.EditorState.B5)
+    state.cm6.100 Transaction.state  (evidence: behavior state.Transaction.state.B8)
+conformance-state.jsonl:401 shared src/transaction.rs:532 FINDING
+    state.cm6.007 EditorState.selection  (evidence: cm6 location mirrors/cm6/state/src/state.ts:58)
+    state.cm6.036 Facet  (evidence: decision row state.cm6.036.d1)
+    state.cm6.092 Transaction  (evidence: cm6 location mirrors/cm6/state/src/transaction.ts:167)
+    state.cm6.100 Transaction.state  (evidence: decision row state.cm6.100.d1)
+conformance-state.jsonl:408 sentinel src/transaction.rs:509 FINDING
+    state.cm6.092 Transaction  (join: cited by the item line conformance-state.jsonl:286)
+    state.cm6.105 Transaction^time  (join: cited by the item line conformance-state.jsonl:297)
+conformance-state.jsonl:426 branch src/transaction.rs:52:12 FINDING
+    state.cm6.118 Annotation  (join: cited by the item line conformance-state.jsonl:410)
+    state.cm6.120 Annotation.value  (join: cited by the item line conformance-state.jsonl:412)
+conformance-state.jsonl:429 mutant src/state.rs:157:13 delete field effects from struct TransactionSpec expression in <impl From<ChangeByRange> for TransactionSpec>::from FINDING
+    state.cm6.011 EditorState.changeByRange  (evidence: cm6 location mirrors/cm6/state/src/state.ts:150)
+conformance-state.jsonl:434 mutant src/transaction.rs:509:19 delete - in now FINDING
+    state.cm6.092 Transaction  (join: cited by the item line conformance-state.jsonl:286)
+    state.cm6.105 Transaction^time  (join: cited by the item line conformance-state.jsonl:297)
+conformance-state.jsonl:436 mutant src/state.rs:719:21 delete match arm ExtensionKind::List(list) in EditorState::apply_transaction FINDING
+    state.cm6.009 EditorState.update  (evidence: cm6 location mirrors/cm6/state/src/state.ts:111)
+conformance-text.jsonl:26 mutant src/text.rs:628:69 replace - with + in Text::replace_inner FINDING
+    state.cm6.230 Text.length  (join: cited by the item line conformance-text.jsonl:124)
+    state.cm6.234 Text.replace  (join: cited by the item line conformance-text.jsonl:128)
+conformance-text.jsonl:104 sentinel src/text.rs:1051 FINDING
+    state.cm6.240 Text.iterRange  (join: cited by the item line conformance-text.jsonl:133)
+conformance-text.jsonl:105 sentinel src/text.rs:1052 FINDING
+    state.cm6.240 Text.iterRange  (join: cited by the item line conformance-text.jsonl:133)
+conformance-text.jsonl:149 branch src/charcategory.rs:26:24 FINDING
+    state.cm6.166 CharCategory  (evidence: decision row state.cm6.166.d1)
+
+tied by no source, for the consultant: 4
+    conformance-state.jsonl:349 shared src/state.rs:57 FINDING
+    conformance-state.jsonl:431 mutant src/transaction.rs:303:13 delete field selection from struct TransactionSpec expression in <impl From<&Transaction> for TransactionSpec>::from FINDING
+    conformance-state.jsonl:432 mutant src/transaction.rs:304:13 delete field effects from struct TransactionSpec expression in <impl From<&Transaction> for TransactionSpec>::from FINDING
+    conformance-state.jsonl:433 mutant src/transaction.rs:306:13 delete field scroll_into_view from struct TransactionSpec expression in <impl From<&Transaction> for TransactionSpec>::from FINDING
+findings about the proof, given no key (Q147 (2)): 3
+    conformance-state.jsonl:409 replayer:thread_local
+    conformance-text.jsonl:162 replayer:core:stop-unmet
+    conformance-text.jsonl:163 replayer:core:host-encode

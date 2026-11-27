@@ -1400,8 +1400,9 @@ def cm6_of_line(texts, path, line):
     return None
 
 
-def items(c, crate, args):
-    """Q143 and M30: the verdict of every sampled item derived from step 3's lines, against its recorded `item` line."""
+def item_tie(crate):
+    """What `items` ties: the inventory, the behaviors, the decision rows, every verdict line (with its `file` and
+    `line`), and `tie(line)`, the items a verdict line is about."""
     raw = lambda f: ic.rows(ic.spec(crate, "raw", f))
     inv = {r["id"]: r for r in raw("inventory.jsonl")}
     by_name = {r["item"]: r["id"] for r in inv.values()}
@@ -1409,7 +1410,6 @@ def items(c, crate, args):
     beh = {b["id"]: b["item_id"] for b in raw("behaviors.jsonl")}
     tests = {t["id"]: t for t in raw("tests.jsonl")}
     rows = raw("decisions.jsonl")
-    sampled = {json.loads(l)["item_id"] for l in ic.read(ic.spec(crate, "conformance", "sample.jsonl")).split("\n") if l.strip()}
     fixture_item = {}
     for f in os.listdir(ic.spec(crate, "fixtures")):
         if f.endswith(".jsonl") and f != "no-counterpart.jsonl":
@@ -1461,6 +1461,14 @@ def items(c, crate, args):
     for f in sorted(os.listdir(ic.spec(crate, "raw"))):
         if re.fullmatch(r"conformance-[\w-]+\.jsonl", f):
             for n, r in enumerate(raw(f), 1): lines.append({**r, "file": f, "line": n})
+    return {"inv": inv, "beh": beh, "rows": rows, "lines": lines, "tie": tie, "fixture_item": fixture_item}
+
+
+def items(c, crate, args):
+    """Q143 and M30: the verdict of every sampled item derived from step 3's lines, against its recorded `item` line."""
+    t_ = item_tie(crate)
+    inv, rows, lines, tie, fixture_item = t_["inv"], t_["rows"], t_["lines"], t_["tie"], t_["fixture_item"]
+    sampled = {json.loads(l)["item_id"] for l in ic.read(ic.spec(crate, "conformance", "sample.jsonl")).split("\n") if l.strip()}
     dev_rows = collections.defaultdict(list)
     for r in rows:
         if r["class"].startswith("deviation"): dev_rows[r["item_id"]].append(r["id"])
@@ -1477,10 +1485,12 @@ def items(c, crate, args):
     for x in rep:
         if x["result"] in ("mismatch", "pending"): mism[fixture_item.get((x["chunk"], x["fixture"]))].append(f"{x['chunk']}:{x['fixture']} {x['result']}")
     finding = RECHECK_FINDINGS - {"UNVERIFIED"}
-    why = collections.defaultdict(list); unver = collections.defaultdict(list); untied = []
+    why = collections.defaultdict(list); unver = collections.defaultdict(list); untied = []; proof = []
     for x in lines:
         if x["kind"] == "item": continue
         if x["verdict"] not in finding and x["verdict"] != "UNVERIFIED": continue
+        if x["id"].startswith("replayer:"):  # a finding about the proof: tied to no item, and blocks the verdict (Q147)
+            proof.append(f"{x['file']}:{x['line']} {x['kind']} {x['id']} {x['verdict']}"); continue
         t = tie(x) & set(inv)
         if not t: untied.append(f"{x['file']}:{x['line']} {x['kind']} {x['id']} {x['verdict']}"); continue
         for i in t: (why if x["verdict"] in finding else unver)[i].append(f"{x['kind']} {x['id']} {x['verdict']}")
@@ -1503,6 +1513,7 @@ def items(c, crate, args):
     diff = [f"{i} {inv[i]['item']}: recorded {recorded.get(i)}, derived {derived[i]}: " + "; ".join(reasons[i][:4]) for i in sorted(derived) if recorded.get(i) != derived[i]]
     c.say(f"disagreements with the recorded item lines, for the consultant: {len(diff)}")
     for d in diff: c.say("    " + d)
+    c.need(not proof, f"no finding about the proof (an id `replayer:...`) is open: {len(proof)} are; each blocks the verdict, whatever the items derive (Q147)", proof)
     c.need(not untied, f"every finding or UNVERIFIED line is tied to an item (by its behavior, its test's covers, the `cm6:` line of the function that holds it or of every annotated function whose calls reach that helper, or its `items` key): {len(untied)} are not", untied)
 
 
