@@ -75,7 +75,9 @@
                                                                 replay report holding one run, or a deviation row with no
                                                                 cm6 deviation line; then UNVERIFIED, DECIDED DEVIATION,
                                                                 CONFORMANT; prints the disagreements with the recorded item
-                                                                lines and the findings tied to no item
+                                                                lines; a finding tied to no item fails (a helper's line is
+                                                                tied through every annotated function that reaches it by
+                                                                the call rule of `mutants`, or by the line's `items` key)
     python3 tools/conf_check.py <crate> recheck --seed <n> [--class <C>] [--results <file> [--unit <u>] [--lines <part.jsonl>]]
                                                                 step 4's sample (M30): the lines that close a question,
                                                                 each given to the run (commit) that first wrote its kind
@@ -98,6 +100,11 @@
     python3 tools/conf_check.py <crate> recheck-audit <agent id | transcript> [--lines <part.jsonl>]
                                                                 M32: each row's recorded line reached the run only through
                                                                 the reveal that named it
+    python3 tools/conf_check.py <crate> panics [--log <file>]    every panic the tests and the replay raise, on a copy of the
+                                                                crate that records them (PANIC_LOG_RS): the outermost public
+                                                                function above it quotes the message's template under
+                                                                `# Panics` (or links one that does), and every quoted
+                                                                message is one the crate raises (design.md §5, Error)
     python3 tools/conf_check.py <crate> tests                    each ported test's label derived from its `// literal`
                                                                 comments (CHANGED when one marks a decided difference, else
                                                                 EQUIVALENT) against its `test` line; fails on a comment that
@@ -1759,6 +1766,159 @@ def mutants_missed(c, crate, args):
     c.say(f"written: {os.path.relpath(path, REPO)}")
 
 
+def standalone_copy(crate, work):
+    """A copy of the crate at <work>/crates/<crate> that builds on its own (the workspace's package values written in)."""
+    copy = os.path.join(work, "crates", crate)
+    shutil.rmtree(copy, ignore_errors=True)
+    shutil.copytree(ic.crate_dir(crate), copy, ignore=shutil.ignore_patterns("target"))
+    ws = re.search(r"^\[workspace\.package\]\n(.*?)(?=^\[|\Z)", ic.read(os.path.join(ic.ROOT, "Cargo.toml")), re.M | re.S)
+    vals = dict(re.findall(r"^(\S+)\s*=\s*(.+)$", ws.group(1), re.M)) if ws else {}
+    man = ic.read(os.path.join(copy, "Cargo.toml"))
+    man = re.sub(r"^(\S+)\.workspace\s*=\s*true$", lambda m: f"{m.group(1)} = {vals[m.group(1)]}" if m.group(1) in vals else "", man, flags=re.M)
+    open(os.path.join(copy, "Cargo.toml"), "w").write(man + "\n[workspace]\n")
+    return copy
+
+
+# Added to the copy's src/lib.rs by `panics`: a hook, installed when a test binary loads (an ELF .init_array entry),
+# that appends each panic's message, location and backtrace to $FERRUM_PANIC_LOG, one JSON line each.
+PANIC_LOG_RS = r'''
+#[cfg(feature = "__test")]
+mod __panic_log {
+    extern "C" fn install() {
+        let Ok(path) = std::env::var("FERRUM_PANIC_LOG") else { return };
+        std::panic::set_hook(Box::new(move |info| {
+            use std::io::Write;
+            let message = info.payload_as_str().unwrap_or("").to_string();
+            let at = info.location().map(|l| format!("{}:{}", l.file(), l.line())).unwrap_or_default();
+            let backtrace = std::backtrace::Backtrace::force_capture().to_string();
+            let line = serde_json::json!({"message": message, "at": at, "backtrace": backtrace}).to_string();
+            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true).open(&path) {
+                let _ = f.write_all(format!("{line}\n").as_bytes()); // one write: test threads append at once
+            }
+        }));
+    }
+    #[used]
+    #[unsafe(link_section = ".init_array")]
+    static INSTALL: extern "C" fn() = install;
+}
+'''
+
+
+def panic_sections(crate):
+    """Each fn of src/ with its `# Panics` text (the doc lines from `# Panics` to the next heading or the end)."""
+    out = []
+    for fn in crate_fns(crate):
+        lines = [re.sub(r"^\s*///\s?", "", l) for l in fn["docs"].split("\n")]
+        text, on = [], False
+        for l in lines:
+            if re.match(r"#+\s", l): on = l.strip() == "# Panics"; continue
+            if on: text.append(l)
+        fn["panics"] = " ".join(t.strip() for t in text if not re.match(r"\s*\[[^\]]+\]:", t)).strip() if any(t.strip() for t in text) else None
+        out.append(fn)
+    return out
+
+
+def message_templates(text):
+    """The messages a `# Panics` text quotes: each backticked span that starts with a capital and holds a space."""
+    spans = [m.group(1) or m.group(2) for m in re.finditer(r"``\s?(.+?)\s?``|`([^`]+)`", text or "")]  # ``a `b` c`` holds backticks
+    return [t.strip() for t in spans if re.match(r"[A-Z]", t.strip()) and " " in t]
+
+
+def template_re(t):
+    return re.compile("".join(".+?" if re.fullmatch(r"<[^>]+>", p) else re.escape(p) for p in re.split(r"(<[^>]+>)", t)), re.S)
+
+
+def panics(c, crate, args):
+    """Every panic the crate's tests and the replay raise, recorded with the outermost public function of the crate on
+    its backtrace (in the run of the crate's frames that ends at the panic: a user function of a test stops it); that
+    function's `# Panics` must quote the message's template, or name a function whose `# Panics` does; and every
+    message a `# Panics` quotes must be one the crate can raise (design.md §5's messages, the `Display` of `Error`).
+    Runs on a copy of the crate whose src/lib.rs gains a recording hook (PANIC_LOG_RS), the repository untouched;
+    --log <file> reads a log written before instead of running."""
+    fns = panic_sections(crate)
+    by_file = collections.defaultdict(list)
+    for fn in fns: by_file[fn["file"]].append(fn)
+    work = os.path.join(out_dir(crate), "panics")
+    log = os.path.join(work, "panics.jsonl")
+    if "--log" in args: log = args[args.index("--log") + 1]
+    else:
+        os.makedirs(work, exist_ok=True)
+        copy = standalone_copy(crate, work)
+        for top in ("docs", "tools", ".harness", "mirrors"):  # the replay reads the repository root above the crate
+            if not os.path.lexists(os.path.join(work, top)): os.symlink(os.path.join(REPO, top), os.path.join(work, top))
+        with open(os.path.join(copy, "src", "lib.rs"), "a", encoding="utf8") as fh: fh.write(PANIC_LOG_RS)
+        drv = os.path.join(copy, "tests", "replay", "driver.rs")
+        text = ic.read(drv)
+        quiet = "                LAST.with(|l| *l.borrow_mut() = Some((message, at)));\n"
+        c.need(text.count(quiet) == 1, "the replay driver's quiet hook found once (it is made to call the recording hook too)")
+        if text.count(quiet) != 1: return
+        open(drv, "w", encoding="utf8").write(text.replace(quiet, quiet + "                previous(info);\n"))
+        if os.path.exists(log): os.remove(log)
+        env = dict(os.environ, CARGO_TARGET_DIR=os.path.join(work, "target"), FERRUM_PANIC_LOG=log)
+        r = subprocess.run(["cargo", "test", "--no-fail-fast", "--tests"], cwd=copy, env=env, capture_output=True, text=True)
+        failed = re.findall(r"^test (\S+) \.\.\. FAILED$", r.stdout, re.M)
+        c.need(r.returncode == 0 or failed, f"the copy's tests built and ran (exit {r.returncode})", r.stderr.strip().split("\n")[-8:] if not failed else [])
+        c.say(f"tests that fail on the copy (the repository's own state, not this tool's): {len(failed)}" + (f" ({', '.join(failed[:6])})" if failed else ""))
+    rows = ic.rows(log) if os.path.exists(log) else []
+    c.need(bool(rows), f"panics recorded ({os.path.relpath(log, REPO)}: {len(rows)})")
+    def holder(file, line):
+        inside = [fn for fn in by_file.get(file, []) if fn["line"] <= line <= fn["end"]]
+        return max(inside, key=lambda fn: fn["line"]) if inside else None
+    def linked(fn):
+        """The functions a `# Panics` links to (`where [`new_doc`](Transaction::new_doc) panics`): of that name in the
+        same file when one is there, else anywhere."""
+        out = []
+        for target in re.findall(r"\[`[^`]*`\]\(([\w:]+)\)", fn["panics"] or ""):
+            n = target.split("::")[-1]
+            same = [g for g in by_file[fn["file"]] if g["name"] == n and g["public"]]
+            out += same or [g for g in fns if g["name"] == n and g["public"]]
+        return out
+    def src_of(path):
+        m = re.search(r"(?:^|/)crates/" + re.escape(crate) + r"/src/(\S+\.rs)$|^(?:\./)?src/(\S+\.rs)$", path)
+        return (m.group(1) or m.group(2)) if m else None
+    design = ic.read(ic.spec(crate, "design.md"))
+    sec5 = design.split("## 5.", 1)[1].split("\n## 6.", 1)[0] if "## 5." in design else ""
+    known = set()
+    for row in re.findall(r"^\|([^|\n]*)\|([^|\n]*)\|", sec5, re.M):
+        known |= {t for t in re.findall(r"`([^`]+)`", row[1]) if " " in t}
+    err = ic.read(os.path.join(ic.crate_dir(crate, "src"), "error.rs"))
+    for x in re.findall(r'(?:write_str|write!\(f,)\s*\(?\s*"((?:[^"\\]|\\.)*)"', err):
+        known.add(re.sub(r"\{[^}]*\}", "<x>", x))
+    shape = lambda m: next((k for k in sorted(known) if template_re(k).fullmatch(m)), m)  # a message by its template
+    seen, bad, outside = collections.Counter(), collections.defaultdict(set), collections.Counter()
+    for r in rows:
+        f, _, ln = r["at"].rpartition(":")
+        if src_of(f) is None: outside[r["at"].split(":")[0]] += 1; continue  # a test's own panic or a user function's
+        frames = re.findall(r"^\s*\d+: (.+)\n\s+at (.+?):(\d+)(?::\d+)?$", r["backtrace"], re.M)
+        chain = []  # the crate's frames from the panic outwards, up to the first frame of a test
+        start = next((k for k, (_, path, line) in enumerate(frames) if src_of(path) == src_of(f) and line == ln), None)
+        if start is None: outside["no frame at the panic's location"] += 1; continue
+        for sym, path, line in frames[start:]:  # the hooks' frames (the replay's among them) lie before the panic's
+            s = src_of(path)
+            if s: chain.append((s, int(line)))
+            elif re.search(r"/tests/|^tests/", path): break
+        outer = None
+        for s, line in chain:
+            fn = holder(s, line)
+            if fn and fn["public"]: outer = fn
+        if outer is None: outside["no public function of the crate"] += 1; continue
+        name = f"src/{outer['file']}:{outer['line']} {outer['name']}"
+        msg = re.sub(r"\s+", " ", r["message"]).strip()
+        seen[(name, msg)] += 1
+        named = [outer] + linked(outer)
+        if not any(template_re(t).fullmatch(msg) for g in named for t in message_templates(g["panics"])):
+            bad[name].add(shape(msg)[:160])
+    c.say(f"panics recorded: {len(rows)}; of the crate, by function and message: {len(seen)} pairs from {sum(seen.values())} panics; "
+          f"left out (raised outside src/, or with no public function of the crate above them): {sum(outside.values())}")
+    c.need(not bad, f"each public function's `# Panics` quotes the template of every message raised through it: {len(bad)} functions do not",
+           [f"{n}: {m!r}" for n in sorted(bad) for m in sorted(bad[n])])
+    # every quoted message is one the crate can raise
+    norm = lambda t: re.sub(r"<[^>]+>", "<x>", t)
+    knownn = {norm(k) for k in known}
+    stray = sorted({f"src/{fn['file']}:{fn['line']} {fn['name']}: `{t}`" for fn in fns if fn["public"] for t in message_templates(fn["panics"]) if norm(t) not in knownn})
+    c.need(not stray, f"every message a `# Panics` quotes is one the crate raises (design.md §5, Error's Display; {len(known)} known): {len(stray)} are not", stray)
+
+
 def mutant_probe(c, crate, args):
     """Runs a verifier's probe against each surviving mutant of a unit (M25: the U1 verifier's runmut.py, made general)."""
     if "--probe" not in args: c.need(False, "give --probe <cargo package dir>"); return
@@ -1777,14 +1937,8 @@ def mutant_probe(c, crate, args):
     todo = sorted((n, dp) for n, (s_, dp, f) in final.items() if s_ == "MissedMutant" and os.path.basename(f)[:-3] in modules)
     c.say(f"modules {modules}: {len(todo)} surviving mutants")
     work = os.path.join(out_dir(crate), "mutant-probe")
-    copy = os.path.join(work, "crates", crate)
     shutil.rmtree(work, ignore_errors=True)
-    shutil.copytree(ic.crate_dir(crate), copy, ignore=shutil.ignore_patterns("target"))
-    ws = re.search(r"^\[workspace\.package\]\n(.*?)(?=^\[|\Z)", ic.read(os.path.join(ic.ROOT, "Cargo.toml")), re.M | re.S)
-    vals = dict(re.findall(r"^(\S+)\s*=\s*(.+)$", ws.group(1), re.M)) if ws else {}
-    man = ic.read(os.path.join(copy, "Cargo.toml"))
-    man = re.sub(r"^(\S+)\.workspace\s*=\s*true$", lambda m: f"{m.group(1)} = {vals[m.group(1)]}" if m.group(1) in vals else "", man, flags=re.M)
-    open(os.path.join(copy, "Cargo.toml"), "w").write(man + "\n[workspace]\n")
+    copy = standalone_copy(crate, work)
     pr = os.path.join(work, "probe")
     shutil.copytree(probe, pr, ignore=shutil.ignore_patterns("target"))
     pm = ic.read(os.path.join(pr, "Cargo.toml"))
@@ -1828,7 +1982,7 @@ def main():
     argv = sys.argv[1:]
     if "--root" in argv:
         i = argv.index("--root"); ic.ROOT = os.path.abspath(argv[i + 1]); del argv[i:i + 2]
-    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe, "recheck": recheck, "items": items, "recheck-audit": recheck_audit, "recheck-derive": recheck_derive, "recheck-reveal": recheck_reveal, "recheck-settle": recheck_settle, "tests": tests}
+    steps = {"g1": g1, "g6": g6, "g9": g9, "g10": g10, "lists": lists, "mutants": mutants, "coverage": coverage, "costs": costs, "g8": g8, "sample": sample, "coverage-fresh": coverage_fresh, "mutants-missed": mutants_missed, "hazards": hazards, "mutant-probe": mutant_probe, "recheck": recheck, "items": items, "recheck-audit": recheck_audit, "recheck-derive": recheck_derive, "recheck-reveal": recheck_reveal, "recheck-settle": recheck_settle, "tests": tests, "panics": panics}
     if len(argv) < 2 or argv[1] not in steps:
         print(__doc__); return 2
     c = ic.Check()
