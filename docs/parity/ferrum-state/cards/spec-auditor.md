@@ -78,6 +78,58 @@ A finding no program of F1's chunks can express goes in the report, with the rea
 - the questions;
 - the two lines of `CLAUDE.md` "Reporting from a card".
 
+## Conformance step 5 (c), run F2: the fixtures of the findings of chunk `rangeset`
+
+**The step** is `docs/parity/ferrum-state/plan.md` "Conformance", step 5 (c). Read its paragraph whole, *Runs.* included: it is the binding list, and its (F2) is this run. F1 ran chunks `text` and `change` (commit 5290354); its generators `oracle/cm6/text/round-c.ts` and `oracle/cm6/change/round-c.ts` are the pattern to copy. A finding goes to the chunk whose interpreter (`docs/parity/ferrum-state/oracle/cm6/<chunk>/interp.ts`) runs its program's calls.
+
+**The inputs of F2.** Each line below is a line of `docs/parity/ferrum-state/raw/conformance-rangeset.jsonl`. Read its `evidence` and `repro`. Where `raw/recheck.jsonl` or `raw/recheck-class.jsonl` has a row for the line (match its `file` and `line`), read that row's `repro` as well.
+1. *The overturns and the panic lines:* `:152` (`src/rangeset.rs:1043`, the sorted-order error through `RangeSetBuilder`) and `:153` (`src/rangeset.rs:675`, `RangeSet.map` with a range beyond the changes): each a fixture recording cm6's throw through the public function the line names.
+2. *Hazards:* `:121` (side arithmetic), `:144` (the nested layer's strict add).
+3. *Mutants and branches of `Chunk::map`, `find_shared_chunks`, `RangeSet::compare`, `SpanCursor::forward` and `find_min_index`:* `:298`, `:299`; `:311`, `:312`, `:321`, `:322`; `:314`, `:315`; `:333` to `:335`; `:339`. Each line's evidence says which input the check misses; write it as a case of the chunk's generator.
+4. *The test instrument:* `:296` with `:303` (`Chunk::touch` and `Marks::access` under `__test`). If no program of the chunk can express them, say why in the report, for (d).
+5. *The spill:* the set `{0-10}`, `update` with `add` `[5-6, 3-4]` and no `sort`, recording cm6's throw. Then correct the texts it refutes: rows `state.RangeSet.update.B4` and `state.RangeSetUpdate.add.B2` (marked `"added": "conformance round"`), and the `checkable` and `public_entry` of the `raw/throws.jsonl` row for `rangeset.ts:527`, from the corrected `state.cm6.183.d1` (`raw/decisions.jsonl`).
+6. *From Q152* (`docs/decisions/ferrum-state.md`, "Step 5 (c) after F1", Q152): rows of `raw/throws.jsonl` for cm6's unguarded reads of an insertion's text, each written from a run in the harness with its condition and its public entries: a second condition on the row of `change.ts:305` (`ChangeSet.toJSON`, a set that lost an insertion's text after an invert on a shorter document and a `map`), and new rows for `change.ts:416` (`iterChanges`, and through it `apply`) and `change.ts:563` (`SectionIter.textBit`, through `compose`). F8018 (`oracle/cm6/change/round-c.ts`) builds such a set. These runs are probes for the rows, not fixtures.
+
+**Not in F2:** every `sentinel` line (D17, (d)); `:59` and `:295` (routed by the plan); the lines of chunks `facet` and `state` (F3 and F4).
+
+**Read:**
+- the plan's paragraph;
+- `docs/workflow/specification.md` §4 and §5 (items 3 and 5);
+- the header and ops of `oracle/cm6/rangeset/interp.ts`;
+- `oracle/cm6/rangeset/s4-fix5.ts` and F1's `oracle/cm6/change/round-c.ts`, the pattern to copy;
+- `oracle/cm6/order.json`;
+- the lines named above, and the behavior rows their evidence cites, in `raw/behaviors.jsonl`;
+- the rows of `raw/throws.jsonl` for `rangeset.ts:527` and `change.ts:305`, and the row form of that file;
+- cm6's code at the places the lines cite, under `mirrors/cm6/state/src/`.
+
+**Write:**
+- *One generator:* `oracle/cm6/rangeset/round-c.ts` with ids F8200 to F8399. Append it at the end of chunk `rangeset`'s list in `order.json`, and drop its range first, as F1's generators do. Give it a header in their form: what it records, the run order, the command, the checklist entries of `specification.md` §5 item 5 that apply, and why the others do not.
+- *Values from cm6 runs only.* A program that throws records cm6's error, as the chunk's error fixtures do.
+- *Behavior rows:* each new fixture lists the behaviors it shows, and each of those rows lists it back. A case no row states gets a new row with the next free id of its member and `"added": "conformance round"`. A row whose text a fixture refutes is corrected the same way. A fixture names only rows of its own chunk (`spec_check` fails otherwise: F1 met it).
+- *An op that no interpreter has:* add it only when no existing op can express the case. Give it a header line in the header's form, and name it in the report, because (d)'s `test-writer` registers it in the replayer.
+- *The rows of `raw/throws.jsonl`* of items 5 and 6.
+
+**Do not write:**
+- `raw/decisions.jsonl`, `raw/replay.jsonl` or `raw/improvements.jsonl` (the consultant's);
+- `raw/conformance-*.jsonl`, `raw/recheck*.jsonl` or anything under `crates/`;
+- the inputs of F3 and F4.
+
+A finding no program of chunk `rangeset` can express goes in the report, with the reason, for (d). A way to do better than cm6, or a fact that does not fit this card, goes in the report as a question in the shape of `CLAUDE.md` "Raising a question".
+
+**Check, run by you before you report:** `python3 tools/spec_check.py ferrum-state` ends with "checks passed" (about 3 minutes). It re-runs every generator of `order.json` and requires each one to reproduce its fixtures byte for byte, and it rewrites `raw/fixture-ops.jsonl`. Do not run `tools/impl_check.py`: the orchestrator replays the new fixtures after your run.
+
+**Budget.** 115,000 tokens. At 172,500, stop and report where you are; if your card's output is already committed and checked when you reach it, write your report.
+
+**Commit** with explicit paths, on the current branch, without pushing: `git commit -m 'spec(ferrum-state): conformance step 5 (c) F2, the fixtures of the findings of rangeset' -- docs/parity/ferrum-state/oracle docs/parity/ferrum-state/fixtures docs/parity/ferrum-state/raw/behaviors.jsonl docs/parity/ferrum-state/raw/throws.jsonl docs/parity/ferrum-state/raw/fixture-ops.jsonl`. Add new files with `git add <path>` first, and never `git add -A`.
+
+**Report:**
+- the output of the check;
+- for each input line above: its fixture ids, or "to (d)" with the reason;
+- the rows added or corrected in `raw/behaviors.jsonl` and `raw/throws.jsonl`, with each text before and after;
+- any new op;
+- the questions;
+- the two lines of `CLAUDE.md` "Reporting from a card".
+
 The sections below are from the implementation stage.
 
 
