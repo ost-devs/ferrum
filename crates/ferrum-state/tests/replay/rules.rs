@@ -849,3 +849,97 @@ fn rule_a_position_text_line_at_converts_in_a_callback_is_no_argument_of_the_upd
     assert_eq!(run_state(&input("aéb", false), &cm6).result, "equal");
     assert_eq!(run_state(&input("abcd", true), &cm6).result, "equal");
 }
+
+/// `Mismatched change set length (got G, expected L)` in cm6's unit (rule 10's table of `plan.md` "Positions";
+/// `docs/decisions/ferrum-state.md`, "Q157 to Q161", Q161): `G` through the start document of the set given as a
+/// spec, `L` through the document the changes are resolved against. Here the set is the one `state.changes` returned
+/// on `é` (2 bytes, 1 unit), given to `state.changes` and to `state.update` on `😀b` (5 bytes, 3 units): Ferrum's
+/// message is `got 2, expected 5`. Through `😀b` alone, G (2 bytes) falls inside the emoji.
+#[test]
+fn rule_a_mismatched_length_converts_g_through_the_start_document_of_the_set_given() {
+    let input = |call: &str| {
+        format!(
+            r#"{{"steps":[{{"op":"state.create","config":{{"doc":"é"}},"as":"s1"}},
+            {{"op":"state.changes","state":{{"$":"s1"}},"spec":{{"op":"list","of":[]}},"as":"set"}},
+            {{"op":"state.create","config":{{"doc":"😀b"}},"as":"s2"}},{call}],"out":null}}"#
+        )
+    };
+    // the set inside a list: a set given bare is returned or applied as it is (`mirrors/cm6/state/src/state.ts:177`,
+    // `transaction.ts:334`), and only `ChangeSet.of` compares its length (`change.ts:327`)
+    let changes = r#"{"op":"state.changes","state":{"$":"s2"},"spec":{"op":"list","of":[{"$":"set"}]}}"#;
+    let update = r#"{"op":"state.update","state":{"$":"s2"},"specs":[{"op":"record","of":{"changes":{"op":"list","of":[{"$":"set"}]}}}]}"#;
+    let error =
+        |m: &str| format!(r#"{{"error":{{"name":"RangeError","message":"Mismatched change set length {m}"}}}}"#);
+    for call in [changes, update] {
+        let r = run_state(&input(call), &error("(got 1, expected 3)"));
+        assert_eq!((r.result, r.note.as_str()), ("equal", ""), "{call}");
+        // the message is compared: G read through `😀b`, or Ferrum's numbers, are a mismatch
+        assert_eq!(run_state(&input(call), &error("(got 2, expected 3)")).result, "mismatch", "{call}");
+        assert_eq!(run_state(&input(call), &error("(got 2, expected 5)")).result, "mismatch", "{call}");
+    }
+}
+
+/// Rule 10's `G` of a set of op `changes.of`, which holds no document: the length the program gave it is cm6's
+/// number. On `😀` (4 bytes, 2 units) the replayer builds `changes.of([], 3)` through the state's document (rule 4),
+/// so Ferrum's message is `got 5, expected 4` and cm6's `got 3, expected 2` (`state:F2044` through `state.changes`;
+/// here through `state.update`, whose message is read by the arguments of the call). And `changes.of` given the set
+/// `state.changes` returned on `é` with length 3: its `L` is measured on filler and its `G` on `é`, so Ferrum's
+/// `got 2, expected 3` is cm6's `got 1, expected 3`.
+#[test]
+fn rule_a_mismatched_length_converts_g_of_a_changes_of_set_as_its_own_length() {
+    let error =
+        |m: &str| format!(r#"{{"error":{{"name":"RangeError","message":"Mismatched change set length {m}"}}}}"#);
+    let update = r#"{"steps":[{"op":"state.create","config":{"doc":"😀"},"as":"s"},
+        {"op":"state.update","state":{"$":"s"},"specs":[{"op":"record","of":{"changes":{"op":"list","of":[{"op":"changes.of","spec":[],"length":3}]}}}]}],"out":null}"#;
+    let r = run_state(update, &error("(got 3, expected 2)"));
+    assert_eq!((r.result, r.note.as_str()), ("equal", ""));
+    assert_eq!(run_state(update, &error("(got 5, expected 4)")).result, "mismatch");
+    // `changes.of` given the set `state.changes` returned on `é`: L on filler, G on `é`
+    let of = r#"{"steps":[{"op":"state.create","config":{"doc":"é"},"as":"s1"},
+        {"op":"state.changes","state":{"$":"s1"},"spec":{"op":"list","of":[]},"as":"set"},
+        {"op":"changes.of","spec":{"op":"list","of":[{"$":"set"}]},"length":3}],"out":null}"#;
+    let r = run_state(of, &error("(got 1, expected 3)"));
+    assert_eq!((r.result, r.note.as_str()), ("equal", ""), "{:?}", entries(&r));
+    assert_eq!(run_state(of, &error("(got 2, expected 3)")).result, "mismatch");
+}
+
+/// A filler entry of the position arguments of the call in progress (`state/values.rs` `ARGS`): `changes.of` builds
+/// its spec over filler (`state/ops.rs` `changes_of`) and `json.sel` reads a selection built from numbers over filler
+/// (`state/serial.rs` `json_sel`), each outside a call of its own, so in a transaction filter their positions join
+/// those of `state.update`. Filler has an empty text: it fits only a message whose L is 0, and converts its numbers as
+/// the empty document does; it never stands for a non-ASCII document. On `aéb` the filter's change 3 to 1 is Ferrum's
+/// `4 to 1 (in doc of length 4)`, with filler entries at 4 and 1; on `😀` its `changes.of([], 3)` is Ferrum's `got 5,
+/// expected 4`, with a filler entry at 5; on the empty document its change 2 to 1 has filler entries at 2 and 1.
+#[test]
+fn rule_a_filler_entry_of_the_arguments_does_not_convert_a_message_on_a_non_ascii_document() {
+    let input = |doc: &str, at: u32, changes: &str| {
+        format!(
+            r#"{{"steps":[
+            {{"op":"fn","params":["tr"],"do":{{"op":"block","steps":[
+                {{"op":"changes.of","spec":[{{"from":{at},"to":{at}}}],"length":{at},"as":"x"}},
+                {{"op":"json.sel","of":{{"op":"sel.single","anchor":1}},"as":"j"}},
+                {{"op":"let","value":{{"op":"record","of":{{"changes":{changes}}}}},"as":"r"}}],"result":"r"}},"as":"tf"}},
+            {{"op":"state.create","config":{{"doc":"{doc}","extensions":[{{"ofVar":["transactionFilter","tf"]}}]}},"as":"s"}},
+            {{"op":"state.update","state":{{"$":"s"}},"specs":[]}}],"out":null}}"#
+        )
+    };
+    let error = |m: &str| format!(r#"{{"error":{{"name":"RangeError","message":"{m}"}}}}"#);
+    let range = r#"{"op":"record","of":{"from":3,"to":1}}"#;
+    let r = run_state(&input("aéb", 4, range), &error("Invalid change range 3 to 1 (in doc of length 3)"));
+    assert_eq!((r.result, r.note.as_str()), ("equal", ""));
+    assert!(r.left_out.is_empty(), "{:?}", entries(&r));
+    assert_eq!(
+        run_state(&input("aéb", 4, range), &error("Invalid change range 4 to 1 (in doc of length 4)")).result,
+        "mismatch"
+    );
+    let set = r#"{"op":"list","of":[{"op":"changes.of","spec":[],"length":3}]}"#;
+    let r = run_state(&input("😀", 5, set), &error("Mismatched change set length (got 3, expected 2)"));
+    assert_eq!((r.result, r.note.as_str()), ("equal", ""));
+    assert_eq!(
+        run_state(&input("😀", 5, set), &error("Mismatched change set length (got 5, expected 4)")).result,
+        "mismatch"
+    );
+    let empty = r#"{"op":"record","of":{"from":2,"to":1}}"#;
+    let r = run_state(&input("", 2, empty), &error("Invalid change range 2 to 1 (in doc of length 0)"));
+    assert_eq!((r.result, r.note.as_str()), ("equal", ""));
+}

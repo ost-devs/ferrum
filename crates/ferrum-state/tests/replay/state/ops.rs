@@ -147,7 +147,8 @@ fn fx<T>(p: &mut Program, c: &Ctx, op: &str, doc: &Form, f: impl FnOnce() -> F<T
 fn fx_update<T>(p: &mut Program, c: &Ctx, op: &str, _doc: &Form, f: impl FnOnce() -> F<T>) -> R<T> {
     let cc = c.clone();
     poisoned(c.call_of(op, || {
-        // the panic's numbers stay Ferrum's: filler converts each to itself
+        // the panic's numbers stay Ferrum's: filler converts each to itself, except G of `Mismatched change set
+        // length`, which `thrown_given` converts through the sets given as a spec whatever the call (rule 10)
         match ferrum(p, &cc.sc, op, &filler(), f) {
             Err(Stop::Flow(Flow::Throw(e))) => Err(Stop::Flow(by_arguments(op, e)?)),
             r => r,
@@ -155,9 +156,35 @@ fn fx_update<T>(p: &mut Program, c: &Ctx, op: &str, _doc: &Form, f: impl FnOnce(
     }))
 }
 
-/// The error of `fx_update`, its numbers through the argument they fit.
+/// The error of `fx_update`, its numbers through the argument they fit. `Mismatched change set length (got G,
+/// expected L)` comes with G already in cm6's unit, converted through the change set given as a spec whose length
+/// Ferrum held as G (`change/shared.rs` `thrown_given`), and L in bytes: L goes through the document that set's
+/// changes are resolved against, of byte length L (rule 10's table).
 fn by_arguments(op: &str, e: crate::replay::lang::eval::JsError) -> Result<Flow, Flow> {
     let m = String::from_utf16_lossy(&e.message);
+    let fail = || {
+        Flow::Fail(format!(
+            "{op}: the numbers of the message {m:?} fit no argument of the call (plan.md \"Positions\", rules 6, 8 and 10)"
+        ))
+    };
+    if let Some(rest) = m.strip_prefix("Mismatched change set length (got ")
+        && let Some((g, rest)) = rest.split_once(", expected ")
+        && let Some(l) = rest.strip_suffix(')')
+    {
+        let (Ok(g), Ok(l)) = (g.parse::<usize>(), l.parse::<usize>()) else { return Err(fail()) };
+        let written: Vec<Option<String>> = cs::current_given()
+            .iter()
+            .filter(|x| x.units == g && x.resolved.len8() == l)
+            .map(|x| {
+                let l = x.resolved.to_units(l).ok()?;
+                Some(format!("Mismatched change set length (got {}, expected {l})", x.units))
+            })
+            .collect();
+        return match written.first() {
+            Some(Some(w)) if written.iter().all(|x| x.as_ref() == Some(w)) => Ok(Flow::throw(&e.name, w)),
+            _ => Err(fail()),
+        };
+    }
     // the message's numbers: (the positions, the length), and how to write it again
     type Write = fn(&[String]) -> String;
     let parse = |m: &str| -> Option<(Vec<usize>, usize, Write)> {
@@ -205,11 +232,6 @@ fn by_arguments(op: &str, e: crate::replay::lang::eval::JsError) -> Result<Flow,
         Some(write(&xs))
     };
     let written: Vec<Option<String>> = candidates.iter().map(|f| convert(f)).collect();
-    let fail = || {
-        Flow::Fail(format!(
-            "{op}: the numbers of the message {m:?} fit no argument of the call (plan.md \"Positions\", rules 6, 8 and 10)"
-        ))
-    };
     let message = match written.first() {
         Some(Some(w)) if written.iter().all(|x| x.as_ref() == Some(w)) => w.clone(),
         Some(_) => return Err(fail()),
@@ -1399,9 +1421,16 @@ fn changes_of(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
     let spec = arg(p, &a.field("spec"))?;
     let length = arg(p, &a.field("length"))?;
     let f = Rc::new(filler());
-    let s = change_spec(c, &spec, &f).map_err(|x| stop(p, OP, x))?;
-    let len = cs::pos_arg(p, OP, "length", &length, &f)?;
-    let set = cs::set_of(s, len, None, &f)?;
+    // the sets given in `spec` are this call's (rule 10), never those of the call it is evaluated in
+    let outer = cs::take_given();
+    let set = (|| {
+        let s = change_spec(c, &spec, &f).map_err(|x| stop(p, OP, x))?;
+        let len = cs::pos_arg(p, OP, "length", &length, &f)?;
+        // `L` is measured on filler, `G` on the sets given in `spec`
+        cs::ferrum_given(&f, move || ferrum_state::ChangeSet::of(s, len, None))
+    })();
+    cs::restore_given(outer);
+    let set = set?;
     let Value::Num(n) = length else { unreachable!("a position argument is a number") };
     Ok(ChangesV { src: Some(SetSrc::Of { spec, length: n }), ..ChangesV::set(set, f) }.value())
 }

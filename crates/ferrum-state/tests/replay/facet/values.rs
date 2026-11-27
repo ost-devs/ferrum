@@ -533,13 +533,21 @@ pub fn thrown(m: &str, doc: &Form) -> Flow {
         && let Some((pos, len)) = rest.split_once(" in document of length ")
         && let (Ok(pos), Ok(len)) = (pos.parse::<usize>(), len.parse::<usize>())
     {
-        let u = |b: usize| doc.to_units(b).map_or(b.to_string(), |x| x.to_string());
-        return Flow::throw("RangeError", &format!("Invalid position {} in document of length {}", u(pos), u(len)));
+        // a number inside a character of the document does not convert: the fixture fails, the number is never
+        // written as Ferrum gave it (`docs/decisions/ferrum-state.md`, "Q157 to Q161", Q161)
+        return match (doc.to_units(pos), doc.to_units(len)) {
+            (Ok(p), Ok(l)) => Flow::throw("RangeError", &format!("Invalid position {p} in document of length {l}")),
+            _ => Flow::Fail(format!(
+                "the numbers of Ferrum's message {m:?} do not convert through the document `lineAt` is called on \
+                 (plan.md \"Positions\", rule 10)"
+            )),
+        };
     }
     if RANGE_ERRORS.contains(&m) || m.starts_with("Invalid JSON representation for Selection") {
         return Flow::throw("RangeError", m);
     }
-    shared::thrown(m, doc)
+    // the change sets given as a spec to the call are those `state/specs.rs` `change_spec` recorded
+    shared::thrown_given(m, doc)
 }
 
 /// The message of `design.md` section 5 for `to_json` or `from_json` with a field that lacks the function: cm6 threw an

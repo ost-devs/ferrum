@@ -36,7 +36,10 @@ pub fn as_array(v: &Value) -> Vec<Value> {
 /// (`mirrors/cm6/state/src/change.ts:335`; D12, Q91).
 pub fn change_spec(c: &Chunk, v: &Value, doc: &Rc<Form>) -> F<ChangeSpec> {
     if let Some(cv) = ChangesV::of(v) {
-        return Ok(ChangeSpec::Set(cv.to_doc(c, doc)?));
+        // a set given as a spec: the numbers of `Mismatched change set length` go through it (rule 10)
+        let s = cv.to_doc(c, doc)?;
+        crate::replay::change::shared::given_set(cv.given(&s, doc)?);
+        return Ok(ChangeSpec::Set(s));
     }
     match v {
         Value::NoCounterpart(_) => Err(Fault::Nc(v.clone())),

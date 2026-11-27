@@ -345,6 +345,23 @@ impl ChangesV {
         }
     }
 
+    /// This value given as a spec, built by `to_doc` as `s`, with `doc`, the document its changes are resolved
+    /// against: `G` and `L` of rule 10's `Mismatched change set length` (`plan.md` "Positions"). A set of op
+    /// `changes.of` or `changes.empty` holds no document, and the length the program gave it is cm6's number (filler);
+    /// a set Ferrum returned has the length of its start document.
+    pub fn given(&self, s: &ChangeSet, doc: &Form) -> F<crate::replay::change::shared::Given> {
+        let bytes = s.length();
+        let units = match &self.src {
+            Some(SetSrc::Of { length, .. }) | Some(SetSrc::Empty { length }) => *length as usize,
+            None => self.ch.a.to_units(bytes).map_err(|_| {
+                Fault::Flow(Flow::Fail(format!(
+                    "the length {bytes} of a change set given as a spec falls inside a character of its start document"
+                )))
+            })?,
+        };
+        Ok(crate::replay::change::shared::Given { bytes, units, resolved: doc.clone() })
+    }
+
     /// `changes[prop]` for `length`, `newLength`, `empty`.
     pub fn get(&self, prop: &str) -> F<Value> {
         let d = self.ch.d();

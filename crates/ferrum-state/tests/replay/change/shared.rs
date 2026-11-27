@@ -85,6 +85,15 @@ pub fn ferrum<T>(a: &Form, f: impl FnOnce() -> T) -> R<T> {
     }
 }
 
+/// `ferrum` for a call whose change sets given as a spec are those of `given_set` (chunk `state`): the `G` of
+/// `Mismatched change set length (got G, expected L)` goes through them, and `L` through `a` (`thrown_given`).
+pub fn ferrum_given<T>(a: &Form, f: impl FnOnce() -> T) -> R<T> {
+    match call(f)? {
+        Ok(v) => Ok(v),
+        Err(m) => Err(Stop::Flow(thrown_given(&m, a))),
+    }
+}
+
 /// A call of Ferrum the replayer makes to read what cm6 holds as a plain value (the sections and inserted text a
 /// position is converted through): a panic there is no error of cm6, and fails the fixture.
 pub fn read<T>(what: &str, f: impl FnOnce() -> T) -> Result<T, Flow> {
@@ -94,41 +103,127 @@ pub fn read<T>(what: &str, f: impl FnOnce() -> T) -> Result<T, Flow> {
     }
 }
 
-/// A number of a message, given by Ferrum in bytes of `a`, in cm6's unit; as Ferrum wrote it when it is no position
-/// of `a` (inside a character), so that the message is compared and fails.
-fn units(a: &Form, n: &str) -> String {
+/// A change set given as a spec to the call of Ferrum in progress (chunk `state`): its length as Ferrum holds it, in
+/// bytes, the same length in cm6's unit, and the document its changes are resolved against (rule 10's table, `G`
+/// and `L` of `Mismatched change set length`, `mirrors/cm6/state/src/change.ts:328`).
+#[derive(Clone, Debug)]
+pub struct Given {
+    pub bytes: usize,
+    pub units: usize,
+    pub resolved: Form,
+}
+
+thread_local! {
+    /// The change sets given as a spec to the call of Ferrum in progress (`Given`).
+    static GIVEN: std::cell::RefCell<Vec<Given>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+/// A change set given as a spec to the call in progress.
+pub fn given_set(g: Given) {
+    GIVEN.with(|x| x.borrow_mut().push(g));
+}
+
+/// The change sets given as a spec to the call in progress, which a new call starts without.
+pub fn take_given() -> Vec<Given> {
+    GIVEN.with(|x| std::mem::take(&mut *x.borrow_mut()))
+}
+
+/// The change sets of the call that was in progress, given back when an inner call ends.
+pub fn restore_given(v: Vec<Given>) {
+    GIVEN.with(|x| *x.borrow_mut() = v);
+}
+
+/// The change sets given as a spec to the call in progress.
+pub fn current_given() -> Vec<Given> {
+    GIVEN.with(|x| x.borrow().clone())
+}
+
+/// `G` of `Mismatched change set length (got G, expected L)` in cm6's unit, from the change sets given as a spec
+/// whose length Ferrum holds as `g` bytes: their lengths in cm6's unit must agree. `None` when no set given has that
+/// length or two of them convert it differently (rules 8 and 10).
+pub fn given_units(given: &[Given], g: usize) -> Option<usize> {
+    let mut fits = given.iter().filter(|x| x.bytes == g).map(|x| x.units);
+    let first = fits.next()?;
+    fits.all(|u| u == first).then_some(first)
+}
+
+/// A number of one of rule 10's messages, given by Ferrum in bytes of `a`, in cm6's unit. A number that is no
+/// position of `a` (inside a character) does not convert: the fixture fails as the replayer's own, never with the
+/// number as Ferrum wrote it (`docs/decisions/ferrum-state.md`, "Q157 to Q161", Q161).
+fn units(a: &Form, n: &str, m: &str) -> Result<String, Flow> {
     match n.parse::<usize>().ok().map(|b| a.to_units(b)) {
-        Some(Ok(u)) => u.to_string(),
-        _ => n.to_string(),
+        Some(Ok(u)) => Ok(u.to_string()),
+        _ => Err(not_converted(m, n)),
     }
+}
+
+/// The failure of a message whose number `n` does not convert through the text rule 10 gives it.
+fn not_converted(m: &str, n: &str) -> Flow {
+    Flow::Fail(format!(
+        "the number {n} of Ferrum's message {m:?} does not convert through the text it is measured on \
+         (plan.md \"Positions\", rule 10)"
+    ))
 }
 
 /// The error cm6 throws for the message of a panic of Ferrum. The messages of `change.ts` and `selection.ts` with
 /// their class; the three of them that hold positions have them converted back through `a` (rule 10:
-/// `mirrors/cm6/state/src/change.ts:140`, `:328`, `:334`). Any other panic is no throw of cm6's here, and is
-/// written as it came, so that it is compared and fails.
+/// `mirrors/cm6/state/src/change.ts:140`, `:328`, `:334`): chunk `change` builds a set given as a spec on the start
+/// document of the set it is given to (`raw/positions.jsonl`, the `{"set"}` specs), so `G` and `L` of
+/// `Mismatched change set length` both go through `a`. Any other panic is no throw of cm6's here, and is written as
+/// it came, so that it is compared and fails.
 pub fn thrown(m: &str, a: &Form) -> Flow {
-    if let Some(rest) = m.strip_prefix("Position ")
-        && let Some((pos, len)) = rest.split_once(" is out of range for changeset of length ")
-    {
-        let m = format!("Position {} is out of range for changeset of length {}", units(a, pos), units(a, len));
-        return Flow::throw("RangeError", &m);
-    }
-    if let Some(rest) = m.strip_prefix("Invalid change range ")
-        && let Some((from, rest)) = rest.split_once(" to ")
-        && let Some((to, rest)) = rest.split_once(" (in doc of length ")
-        && let Some(len) = rest.strip_suffix(')')
-    {
-        let m =
-            format!("Invalid change range {} to {} (in doc of length {})", units(a, from), units(a, to), units(a, len));
-        return Flow::throw("RangeError", &m);
-    }
-    if let Some(rest) = m.strip_prefix("Mismatched change set length (got ")
-        && let Some((got, rest)) = rest.split_once(", expected ")
-        && let Some(len) = rest.strip_suffix(')')
-    {
-        let m = format!("Mismatched change set length (got {}, expected {})", units(a, got), units(a, len));
-        return Flow::throw("RangeError", &m);
+    thrown_with(m, a, &|g| units(a, g, m))
+}
+
+/// `thrown` where the change sets given as a spec are those of `given_set` (chunk `state`): `G` of `Mismatched
+/// change set length` goes through them (a set of op `changes.of` has cm6's length as its own, a set Ferrum returned
+/// the length of its start document), `L` through `a`, the document the changes are resolved against.
+pub fn thrown_given(m: &str, a: &Form) -> Flow {
+    let given = current_given();
+    thrown_with(m, a, &|g| {
+        g.parse::<usize>()
+            .ok()
+            .and_then(|b| given_units(&given, b))
+            .map(|u| u.to_string())
+            .ok_or_else(|| not_converted(m, g))
+    })
+}
+
+fn thrown_with(m: &str, a: &Form, got: &dyn Fn(&str) -> Result<String, Flow>) -> Flow {
+    let converted = || -> Result<Option<String>, Flow> {
+        if let Some(rest) = m.strip_prefix("Position ")
+            && let Some((pos, len)) = rest.split_once(" is out of range for changeset of length ")
+        {
+            return Ok(Some(format!(
+                "Position {} is out of range for changeset of length {}",
+                units(a, pos, m)?,
+                units(a, len, m)?
+            )));
+        }
+        if let Some(rest) = m.strip_prefix("Invalid change range ")
+            && let Some((from, rest)) = rest.split_once(" to ")
+            && let Some((to, rest)) = rest.split_once(" (in doc of length ")
+            && let Some(len) = rest.strip_suffix(')')
+        {
+            return Ok(Some(format!(
+                "Invalid change range {} to {} (in doc of length {})",
+                units(a, from, m)?,
+                units(a, to, m)?,
+                units(a, len, m)?
+            )));
+        }
+        if let Some(rest) = m.strip_prefix("Mismatched change set length (got ")
+            && let Some((g, rest)) = rest.split_once(", expected ")
+            && let Some(len) = rest.strip_suffix(')')
+        {
+            return Ok(Some(format!("Mismatched change set length (got {}, expected {})", got(g)?, units(a, len, m)?)));
+        }
+        Ok(None)
+    };
+    match converted() {
+        Ok(Some(c)) => return Flow::throw("RangeError", &c),
+        Ok(None) => {}
+        Err(fail) => return fail,
     }
     let range_error = m == "Applying change set to a document with the wrong length"
         || m == "A selection needs at least one range"
@@ -296,7 +391,12 @@ fn thrown_converts_the_positions_of_cm6_s_messages() {
         panic!("a throw")
     };
     assert_eq!(e.name, "RangeError");
-    // a number inside a character is left as Ferrum wrote it
-    let Flow::Throw(e) = thrown("Position 2 is out of range for changeset of length 6", &a) else { panic!("a throw") };
-    assert_eq!(String::from_utf16_lossy(&e.message), "Position 2 is out of range for changeset of length 4");
+    // a number inside a character does not convert: the fixture fails, the number is never written as Ferrum gave it
+    for m in [
+        "Position 2 is out of range for changeset of length 6",
+        "Invalid change range 1 to 3 (in doc of length 6)",
+        "Mismatched change set length (got 3, expected 6)",
+    ] {
+        assert!(matches!(thrown(m, &a), Flow::Fail(_)), "{m}");
+    }
 }

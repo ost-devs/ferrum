@@ -450,3 +450,12 @@ Conformance step 5 (d) W2c (`docs/parity/ferrum-state/plan.md` "Conformance", st
 - `crates/ferrum-state/tests/written_state.rs`
 - `crates/ferrum-state/tests/written_rangeset.rs`
 - `crates/ferrum-state/tests/written_change.rs`
+
+Conformance step 5 (d) W2d (`docs/parity/ferrum-state/plan.md` "Conformance", step 5 (d); `cards/test-writer.md` "Conformance step 5 (d), run W2d"; `docs/decisions/ferrum-state.md` "Q157 to Q161", Q161). `Mismatched change set length (got G, expected L)` is converted by rule 10's table of `plan.md` "Implementation". Chunk `state` records each change set given as a spec to the call in progress (`state/specs.rs` `change_spec`, `ChangesV::given` in `state/values.rs`): its length in bytes, the same length in cm6's unit (for a set of op `changes.of` or `changes.empty`, the length the program gave it; for a set Ferrum returned, through its start document) and the document its changes are resolved against. The record belongs to one call (`Chunk::call_of`; `changes.of` keeps its own). `G` goes through that record (`change/shared.rs` `thrown_given`, which `facet/values.rs` `thrown` now calls), and `L` through the call's document, or, in `state.update`, through the document of the set whose length is `G` (`state/ops.rs` `by_arguments`, which did not parse the message before). Chunk `change` keeps one text for `G` and `L` (`thrown`): `raw/positions.jsonl` measures a nested `{"set"}` spec on the start document of the set it is given to, and the replayer builds it on that document. A number of one of rule 10's four messages that does not convert through its text now fails the fixture as the replayer's own, where it was written as Ferrum gave it (`change/shared.rs` `units`, and the same fallback in `facet/values.rs` `thrown` for `Invalid position`). The unit test `thrown_converts_the_positions_of_cm6_s_messages` now asserts that failure for the three messages of `change.ts`; it asserted the number kept before. Three literal tests in `rules.rs`. No fixture's result changes: `state:F2044` and `change:F6070` stay `equal`. Files:
+- `crates/ferrum-state/tests/replay/change/shared.rs`
+- `crates/ferrum-state/tests/replay/facet/values.rs`
+- `crates/ferrum-state/tests/replay/state/chunk.rs`
+- `crates/ferrum-state/tests/replay/state/ops.rs`
+- `crates/ferrum-state/tests/replay/state/specs.rs`
+- `crates/ferrum-state/tests/replay/state/values.rs`
+- `crates/ferrum-state/tests/replay/rules.rs`

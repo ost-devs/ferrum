@@ -137,18 +137,21 @@ impl Chunk {
         self.known.borrow_mut().push((a, b));
     }
 
-    /// A call of Ferrum by `op`: its pairs of documents are its own, never an earlier call's (rule 14); a call made
-    /// inside a callback has its own, and the outer call's are back when it returns.
+    /// A call of Ferrum by `op`: its pairs of documents, its position arguments and its change sets given as a spec
+    /// are its own, never an earlier call's (rules 10 and 14); a call made inside a callback has its own, and the
+    /// outer call's are back when it returns.
     pub fn call_of<T>(&self, op: &str, f: impl FnOnce() -> T) -> T {
         let known = self.known.replace(Vec::new());
         let ascii = self.ascii.replace(None);
         let was = self.op.replace(op.to_string());
         let args = super::values::take_args();
+        let given = crate::replay::change::shared::take_given();
         let r = f();
         self.known.replace(known);
         self.ascii.set(ascii);
         self.op.replace(was);
         super::values::restore_args(args);
+        crate::replay::change::shared::restore_given(given);
         r
     }
 
