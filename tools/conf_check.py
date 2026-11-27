@@ -105,6 +105,12 @@
                                                                 function above it quotes the message's template under
                                                                 `# Panics` (or links one that does), and every quoted
                                                                 message is one the crate raises (design.md §5, Error)
+    python3 tools/conf_check.py <crate> panics --reach           static, no run: each panic site of G9's list with every
+                                                                public function that reaches it by the call rule walked
+                                                                through every function, `stated` when its `# Panics`
+                                                                quotes the site's message (or links one that does), else
+                                                                `open`; fails on an `open` pair not listed in
+                                                                docs/parity/<crate>/conformance/panics-unreached.txt (E72)
     python3 tools/conf_check.py <crate> tests                    each ported test's label derived from its `// literal`
                                                                 comments (CHANGED when one marks a decided difference, else
                                                                 EQUIVALENT) against its `test` line; fails on a comment that
@@ -1841,6 +1847,107 @@ def template_re(t):
     return re.compile("".join(".+?" if re.fullmatch(r"<[^>]+>", p) else re.escape(p) for p in re.split(r"(<[^>]+>)", t)), re.S)
 
 
+def impl_types(text):
+    """(first line, last line, self type) of each top-level `impl` block of a source: the type after `for`, or the
+    implemented type, without its path and generics."""
+    lines, out, k = text.split("\n"), [], 0
+    while k < len(lines):
+        if re.match(r"impl\b", lines[k]):
+            head, e = lines[k], k
+            while "{" not in head and e + 1 < len(lines): e += 1; head += " " + lines[e]
+            head = head.split("{", 1)[0]
+            while re.search(r"<[^<>]*>", head): head = re.sub(r"<[^<>]*>", "", head)
+            head = head.split(" where ", 1)[0]
+            ty = re.split(r"\bfor\b", head)[-1] if re.search(r"\bfor\b", head) else head[4:]
+            name = re.findall(r"\w+", ty)
+            end = next((j for j in range(e, len(lines)) if lines[j] == "}"), len(lines) - 1)
+            out.append((k + 1, end + 1, name[-1] if name else "?"))
+            k = end + 1
+        else: k += 1
+    return out
+
+
+def site_message(text, line, variants):
+    """The message template of the panic at <line> (`<x>` for each formatted value), read from its macro's arguments:
+    the Display of an `Error` variant, or the macro's own literal; None when the site gives no literal (`unwrap()`)."""
+    src = "\n".join(text.split("\n")[line - 1:line + 6])
+    m = re.search(r"(?:panic!|unreachable!|expect)\(\s*\"((?:[^\"\\]|\\.)*)\"\s*(,\s*Error::(\w+))?", src, re.S)
+    if not m: return None
+    if m.group(3): return variants.get(m.group(3))
+    return re.sub(r"\{[^}]*\}", "<x>", m.group(1).replace('\\"', '"'))
+
+
+def panic_reach(c, crate, args):
+    """`panics --reach` (plan step 5 (a), E72): for each panic site of G9's list, every public function of the crate
+    that reaches it by the mutation selector's call rule walked through every function (`reached` with every function a
+    helper), marked `stated` when the function's `# Panics` quotes the site's message template, or links a function
+    whose text does, else `open`. An `open` pair must be listed in conformance/panics-unreached.txt, one per line
+    `src/<file>:<line> src/<file>:<line> <Type::name> - <reason>` (site, function), with the reason its function's
+    inputs cannot meet the condition. Writes .scratch/conformance/<crate>/panics/reach.jsonl."""
+    fns = panic_sections(crate)
+    files = src_files(crate)
+    by_file = collections.defaultdict(list)
+    for fn in fns: by_file[fn["file"]].append(fn)
+    for f, fs in by_file.items():
+        blocks = impl_types(files[f])
+        for fn in fs:
+            ty = next((t for a, b, t in blocks if a <= fn["line"] <= b), None)
+            fn["qual"] = f"{ty}::{fn['name']}" if ty else fn["name"]
+            fn["key"] = f"src/{f}:{fn['line']} {fn['qual']}"
+    err = ic.read(os.path.join(ic.crate_dir(crate, "src"), "error.rs"))
+    variants = {v: re.sub(r"\{[^}]*\}", "<x>", t) for v, t in
+                re.findall(r'Error::(\w+)\b[^=\n]*=>\s*(?:\{\s*)?(?:f\.write_str|write!\(f,)\s*\(?\s*"((?:[^"\\]|\\.)*)"', err, re.S)}
+    rx = re.compile(LISTS["panics (G9)"])
+    sites = [(f, l) for f in sorted(files) if not f.startswith("__test") for l, s in code_lines(files[f]) if rx.search(s)]
+    def holder(f, line):
+        inside = [fn for fn in by_file.get(f, []) if fn["line"] <= line <= fn["end"]]
+        return max(inside, key=lambda fn: fn["line"]) if inside else None
+    def linked(fn):
+        out = []
+        for target in re.findall(r"\[`[^`]*`\]\(([\w:]+)\)", fn["panics"] or ""):
+            n = target.split("::")[-1]
+            same = [g for g in by_file[fn["file"]] if g["name"] == n and g["public"]]
+            out += same or [g for g in fns if g["name"] == n and g["public"]]
+        return out
+    norm = lambda t: re.sub(r"<[^>]+>", "<x>", t)
+    public = [fn for fn in fns if fn["public"]]
+    reach = {fn["key"]: reached(fns, [fn], helper=lambda g: True) for fn in public}
+    rows, nomsg = [], []
+    for f, l in sites:
+        h = holder(f, l)
+        msg = site_message(files[f], l, variants)
+        if msg is None: nomsg.append(f"src/{f}:{l}")
+        for fn in public:
+            if h is None or (h["file"], h["line"]) not in reach[fn["key"]]: continue
+            quoted = {norm(t) for g in [fn] + linked(fn) for t in message_templates(g["panics"])}
+            rows.append({"site": f"src/{f}:{l}", "holder": h["key"], "message": msg, "function": fn["key"],
+                         "mark": "stated" if msg is not None and norm(msg) in quoted else "open"})
+    out = os.path.join(out_dir(crate), "panics", "reach.jsonl")
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    with open(out, "w", encoding="utf8") as fh:
+        for r in rows: fh.write(json.dumps(r, ensure_ascii=False) + "\n")
+    opened = [r for r in rows if r["mark"] == "open"]
+    kind = lambda r: "unreachable!" if re.search(r"unreachable!", dict(code_lines(files[r["site"][4:].rsplit(":", 1)[0]])).get(int(r["site"].rsplit(":", 1)[1]), "")) else "panic"
+    c.say(f"panic sites of G9's list: {len(sites)}; with no public function reaching them: "
+          f"{len({(f, l) for f, l in sites} - {tuple([r['site'][4:].rsplit(':', 1)[0], int(r['site'].rsplit(':', 1)[1])]) for r in rows})}; "
+          f"with no message the tool can read: {len(nomsg)}" + (f" ({', '.join(nomsg)})" if nomsg else ""))
+    by = collections.Counter((kind(r), r["mark"]) for r in rows)
+    c.say(f"pairs (site, public function): {len(rows)}; " + ", ".join(f"{k} {m} {n}" for (k, m), n in sorted(by.items())) +
+          f": {os.path.relpath(out, REPO)}")
+    listed_path = ic.spec(crate, os.path.join("conformance", "panics-unreached.txt"))
+    listed = {}
+    if os.path.exists(listed_path):
+        for t in ic.read(listed_path).split("\n"):
+            m = re.match(r"(src/\S+:\d+) (src/\S+:\d+ \S+) - (.+)", t)
+            if m: listed[(m.group(1), m.group(2))] = m.group(3)
+    stale = sorted(f"{a} {b}" for a, b in listed if not any(r["site"] == a and r["function"] == b and r["mark"] == "open" for r in rows))
+    c.need(not stale, f"every pair panics-unreached.txt lists is an `open` pair: {len(stale)} are not", stale)
+    left = [r for r in opened if (r["site"], r["function"]) not in listed]
+    c.need(not left, f"every `open` pair is listed in {os.path.relpath(listed_path, REPO)} with its reason ({len(listed)} listed): {len(left)} are not",
+           [f"{r['site']} {r['function']}  `{r['message']}`" for r in left])
+    return rows
+
+
 def panics(c, crate, args):
     """Every panic the crate's tests and the replay raise, recorded with the outermost public function of the crate on
     its backtrace (in the run of the crate's frames that ends at the panic: a user function of a test stops it); that
@@ -1848,6 +1955,7 @@ def panics(c, crate, args):
     message a `# Panics` quotes must be one the crate can raise (design.md §5's messages, the `Display` of `Error`).
     Runs on a copy of the crate whose src/lib.rs gains a recording hook (PANIC_LOG_RS), the repository untouched;
     --log <file> reads a log written before instead of running."""
+    if "--reach" in args: return panic_reach(c, crate, args)
     fns = panic_sections(crate)
     by_file = collections.defaultdict(list)
     for fn in fns: by_file[fn["file"]].append(fn)
