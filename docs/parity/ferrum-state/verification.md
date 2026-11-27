@@ -601,3 +601,21 @@ checks passed
 ```
 
 All agree, every derivation equal to the recorded verdict. Noted: no fixture or test gives `EditorState::from_json` a `fields` key present with the JSON value `null` (`raw/conformance-state.jsonl:181`, `state.EditorState^fromJSON.B9:h2`); `src/state.rs:361` reads it with `json.get`, which gives `Some(Null)` and makes an initializer as cm6's `hasOwnProperty` does, and no check would catch a change that took a null value for an absent one.
+
+### U4b, part b: 4 test and 11 list lines (rechecker, 2026-11-27)
+
+87,988 tokens against 103,700 (0.85). `recheck-audit` shows all 15 rows first seen through their reveal.
+
+```
+lines 1627; pool 1253 (findings, item lines and replayer:core left out); by kind {'test': 197, 'hazard': 681, 'panic': 36, 'sentinel': 152, 'branch': 38, 'mutant': 39, 'shared': 108, 'line': 1, 'behavior': 1}
+order shown: tool 15; derivations the reveal corrected (derived differs, outcome agree): 0
+all: 15 rows; panic agree 2, sentinel agree 1, shared agree 8, test agree 4
+run 0ef58be conformance(ferrum-state): step 3, U4b hazards run H3: 11 rows; panic agree 2, sentinel agree 1, shared agree 8
+run e750922 conformance(ferrum-state): step 3, U4b tests run: 4 rows; test agree 4
+the six runs of M28: 0 rows; 
+hazard, panic, shared, sentinel of runs above 200,000 (M28 runs apart): 11 rows; panic agree 2, sentinel agree 1, shared agree 8
+hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart): 0 rows; 
+checks passed
+```
+
+All agree, every derivation equal to the recorded verdict; nothing was re-run. The sentinel `src/transaction.rs:508` (`SAFE`) rests, on both sides, on a deduction that no system clock comes near `i64::MAX` milliseconds; no source of an operating system is mirrored.
