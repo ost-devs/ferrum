@@ -1074,3 +1074,38 @@ Four facts existed only in the progress file, and each moved to the file of what
 - F2 ending outside 0.85 to 1.15 of its estimate.
 - A worker that commits and then works on past its line.
 - A pilot whose parts the timeline cannot separate, because they interleave.
+
+## 2026-11-27 · M40: what a fixtures run costs, and a decided deviation compared with its patch
+
+*Decided by the consultant (M40, from F2 and F3 of `ferrum-state`'s conformance step 5 (c); with Q154, whose crate part is in `docs/decisions/ferrum-state.md`, same date). Binding text: `docs/parity/ferrum-state/plan.md` "Conformance" step 5 (c) *Runs.* and (f); `docs/workflow/conformance.md` G4. Ledger: E74 (result), E75, E76.*
+
+**Question.** M39's figures, taken from F1, gave F2 115,000 and F3 110,000. The runs ended at 131,295 (1.14) and 152,020 (1.38). F4 then held two chunks' work. Which figure is wrong, and how F4 runs.
+
+**Which figure was wrong.** I split both transcripts myself with `usage --timeline`.
+- *The fixed part.* About 30,000: the first request about 9,600, the card and the plan about 12,000 to 14,000, the close and the report about 6,000 to 8,000. F1's 38,000 included the reading of a 10,000-token plan paragraph that the cards asked for whole.
+- *A chunk.* About 30,000, against 16,000 in the figures: about 20,000 to read its interpreter, helpers and program language cold, and about 10,000 to write and run its generator. F2 spent 28,700 reading `rangeset`'s. F3 spent about 15,000 on `facet`'s and 21,000 on `state`'s.
+- *The rows.* About 10,000 a run, against 4,000. A row corrected or written from cm6's code and a run costs about 6,000, against 2,000. F2's six came to about 37,000.
+- *A line.* About 800, against 700, so the line figure held.
+
+With these figures F2 comes to 129,000 and F3 to 148,000, both within 3% of the measured runs. Two causes made F3 1.38:
+- F3 wrote in a second chunk that its card did not count. Two cases that chunk `facet` could not express cost it about 30,000 there; F4a would have taken them for about 3,000.
+- F3 looked up about 19,000 outside its card: a decision entry, and the rule `tools/spec_check.py` uses to tie a fixture to its chunk.
+
+**Decision 1.** The plan's figures are replaced by the fitted ones. A line whose case the run's chunk cannot express goes in the report, with the chunk that can express it. It is written in that chunk's run, never in a second chunk the estimate does not count. A card holds its run's list of inputs, and the facts earlier runs looked up outside theirs, so that the worker does not read the plan's paragraph. *What generalizes.* A program-writing run costs per chunk it writes in, and the chunk is the unit to cut by. `ferrum-view`'s fixtures runs start from these figures and are refitted on their pilot.
+
+**Decision 2: F4 is two runs.** F4a, chunk `state`, about 134,000. F4b, chunk `text`, about 85,000. Both are within the line, and F4b follows F4a. If F4a ends outside the band, the figures are fitted again before F4b's card.
+
+**Decision 3: a deviation row with a patch is compared with its patch** (G4). A fixture that a row without a condition lists is `none` whatever the crate gives. Neither the replay nor any gate asserted that the crate gives the row's value. Only a written test, where one existed, did. A patch of cm6 already writes the crate's observable result (Q149), so replaying the crate against the patched output makes the decided value an assertion, at no reading cost.
+
+I prototyped it on the 13 listed fixtures of the three such rows. It gives 11 `equal`, and on 2 it found that Ferrum calls a user's `update` before it fails, where the row's rule fails first. No check had named that difference. The same prototype found that the replayer does not read the copy of `raw/decisions.jsonl` that G5's attribution writes, although the attribution tool and the plan say it does. (d) fixes that.
+
+**Lost.**
+- *Keeping M39's figures with a margin.* A margin would not have moved the cut where the cost is, which is per chunk.
+- *Asking the worker to stay in one chunk with no route for the other cases.* The cases would have been lost, or written blind in a chunk no one estimated.
+- *A gate on every deviation row.* Rows with no patch have no reference that runs. They stay `none`, listed in every verdict.
+
+**Confidence.** High on Decisions 1 and 3, which come from transcripts and a run. Medium on the figures out of sample, which E75 measures on F4a and F4b.
+
+**Reopens.**
+- F4a or F4b ending outside 0.85 to 1.15 of its estimate.
+- `against` giving a difference that the row's patch, and not the crate, causes (E76).

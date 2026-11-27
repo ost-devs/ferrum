@@ -1602,6 +1602,9 @@
 {"chunk":"facet","id":"F7190","compared":"none","reasons":[{"reason":"type","op":"combineConfig.call","argument":"combine","value":{"a":5}}]}
 {"chunk":"facet","id":"F7191","compared":"none","reasons":[{"reason":"type","op":"combineConfig.call","argument":"combine","value":{"a":5}},{"reason":"error","op":null,"part":"the uncaught error","value":null}]}
 {"chunk":"facet","id":"F7197","compared":"part","reasons":[{"reason":"identity","op":"same","argument":"a, b","value":null},{"reason":"identity","op":"same","argument":"a, b","value":null},{"reason":"identity","op":"same","argument":"a, b","value":null}]}
+{"chunk":"facet","id":"F8400","compared":"none","reasons":[{"reason":"state.cm6.040.d1","op":"","part":"the fixture","value":null}]}
+{"chunk":"facet","id":"F8401","compared":"none","reasons":[{"reason":"state.cm6.040.d1","op":"","part":"the fixture","value":null}]}
+{"chunk":"facet","id":"F8404","compared":"none","reasons":[{"reason":"state.cm6.040.d1","op":"","part":"the fixture","value":null}]}
 {"chunk":"state","id":"F0023","compared":"part","reasons":[{"reason":"identity","op":"same","argument":"a, b","value":null}]}
 {"chunk":"state","id":"F0024","compared":"part","reasons":[{"reason":"identity","op":"same","argument":"a, b","value":null}]}
 {"chunk":"state","id":"F0034","compared":"none","reasons":[{"reason":"type","op":"state.create","argument":"selection.anchor","value":-1}]}
@@ -1897,3 +1900,5 @@
 {"chunk":"state","id":"F7277","compared":"none","reasons":[{"reason":"type","op":"state.field","argument":"field","value":{"ferrum":"Facet"}},{"reason":"error","op":null,"part":"the uncaught error","value":null}]}
 {"chunk":"state","id":"F7278","compared":"none","reasons":[{"reason":"type","op":"state.field","argument":"field","value":{"ferrum":"Facet"}}]}
 {"chunk":"state","id":"F7300","compared":"none","reasons":[{"reason":"state.cm6.032.d3","op":"","part":"the fixture","value":null}]}
+{"chunk":"state","id":"F8400","compared":"none","reasons":[{"reason":"state.cm6.100.d2","op":"","part":"the fixture","value":null}]}
+{"chunk":"state","id":"F8401","compared":"none","reasons":[{"reason":"state.cm6.100.d2","op":"","part":"the fixture","value":null}]}
