@@ -581,3 +581,23 @@ checks passed
 ```
 
 Not `agree`: `raw/conformance-facet.jsonl:213` shared `src/facet.rs:455` (`compute_n`) overturn high (recorded `SAFE`, "a trait bound, not state; the status is per state"; the getter it keeps is given the state under construction, which it can clone to another thread: a thread spawned by the getter reads a facet not yet computed, computes the slot itself and returns `[1]` with no panic, where `design.md` §6 (Q142) asks for the panic "A state under construction is read from a thread that is not building it", a message found nowhere in `src/`; and the building thread reading a slot the other thread is computing makes `EditorState::create` panic with "Cyclic dependency between fields and/or facets" at `src/facet.rs:1282` with no cycle; probe `.scratch/recheck-U4a/probe213`. The missing guard is step 3's finding at `raw/conformance-state.jsonl:349` to `:372` (`src/state.rs:57`, `:59`, `:62`, `:643` to `:645`) and the mutant line `raw/conformance-facet.jsonl:266`; this line passed it, and every slot callback reaches it). `:10` test `test_cm6_facet_10_can_specify_a_dependency_on_the_document` overturn low (recorded `EQUIVALENT`; `cm6_facet.rs:176-178` carries three `// literal` comments, `"doc"` as `Slot::Doc` by N17 and `count` as an `AtomicI64` by D14 and D6, which M31 calls `CHANGED`; the test passes and asserts cm6's three values, `test-facet.ts:66-74`).
+
+### U4b, part a: 23 hazard lines and 1 line (rechecker, 2026-11-27)
+
+158,341 tokens against 143,200 (1.11). `recheck-audit` shows all 24 rows first seen through their reveal, after a second fix of its piece of evidence: on `raw/conformance-state.jsonl:103` the piece was a quote of cm6's source (`mirrors/cm6/state/src/state.ts:326`, `Object.prototype.hasOwnProperty.call(map, phrase)`), which the run read on purpose; the piece is now one found neither in another recorded line nor in any file the hook lets a re-checker read (of the 138 rows so far, 10 have none and are matched by id and verdict only).
+
+```
+lines 1627; pool 1253 (findings, item lines and replayer:core left out); by kind {'test': 197, 'hazard': 681, 'panic': 36, 'sentinel': 152, 'branch': 38, 'mutant': 39, 'shared': 108, 'line': 1, 'behavior': 1}
+order shown: tool 24; derivations the reveal corrected (derived differs, outcome agree): 0
+all: 24 rows; hazard agree 23, line agree 1
+run 0081109 conformance(ferrum-state): step 3, U4b hazards run H1: 11 rows; hazard agree 11
+run 0ef58be conformance(ferrum-state): step 3, U4b hazards run H3: 1 rows; hazard agree 1
+run 442f5cc conformance(ferrum-state): step 3, U4b hazards run H2; Q143: 11 rows; hazard agree 11
+run 658d643 conformance(ferrum-state): step 3, U4a and U4b gaps; step 3 done: 1 rows; line agree 1
+the six runs of M28: 0 rows; 
+hazard, panic, shared, sentinel of runs above 200,000 (M28 runs apart): 23 rows; hazard agree 23
+hazard, panic, shared, sentinel of runs below 200,000 (M28 runs apart): 0 rows; 
+checks passed
+```
+
+All agree, every derivation equal to the recorded verdict. Noted: no fixture or test gives `EditorState::from_json` a `fields` key present with the JSON value `null` (`raw/conformance-state.jsonl:181`, `state.EditorState^fromJSON.B9:h2`); `src/state.rs:361` reads it with `json.get`, which gives `Some(Null)` and makes an initializer as cm6's `hasOwnProperty` does, and no check would catch a change that took a null value for an absent one.

@@ -1175,8 +1175,28 @@ def recheck_audit(c, crate, args):
         rest = "\x00".join(e for f, es in others.items() for i, e in enumerate(es) if (f, i) != (file, line - 1))
         for k in range(0, max(1, len(text) - 48), 8):
             w = text[k:k + 48]
-            if len(w) == 48 and not re.search(r"[\"\\\n\t]", w) and not w.isspace() and w not in rest: return w
+            if len(w) == 48 and not re.search(r"[\"\\\n\t]", w) and not w.isspace() and w not in rest and w not in readable(): return w
         return None
+    corpus = []
+    def readable():
+        """Every text a re-checker may read (the hook's hidden paths left out, .claude/hooks/guard.py RECHECK_HIDDEN): a
+        piece of evidence quoted from cm6, the code or a decision does not show that the recorded line was read."""
+        if not corpus:
+            import fnmatch
+            sys.path.insert(0, os.path.join(REPO, ".claude", "hooks"))
+            import guard
+            parts = []
+            for top in ("mirrors/cm6", "crates", "docs", ".claude", "tools", ".scratch/conformance"):
+                for d, _, fs in os.walk(os.path.join(REPO, top)):
+                    if "/target" in d or "/node_modules" in d or "/.git" in d: continue
+                    for f in fs:
+                        rel = os.path.relpath(os.path.join(d, f), REPO)
+                        if any(fnmatch.fnmatch(rel, h) for h in guard.RECHECK_HIDDEN) or rel.startswith("dev/"): continue
+                        if not re.search(r"\.(rs|ts|js|md|jsonl|json|txt|toml)$", f) or not os.path.isfile(os.path.join(d, f)) or os.path.getsize(os.path.join(d, f)) > 20_000_000: continue
+                        try: parts.append(ic.read(os.path.join(d, f)))
+                        except (UnicodeDecodeError, OSError): pass
+            corpus.append("\x00".join(parts))
+        return corpus[0]
     rows = ic.rows(ic.spec(crate, "raw", "recheck.jsonl"))
     if "--lines" in args:
         part = {(r["file"], r["line"]) for r in ic.rows(args[args.index("--lines") + 1])}
