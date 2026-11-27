@@ -648,13 +648,43 @@ def fns_with_spans(text):
     return out
 
 
-def mutants(c, crate, args):
-    if not args: sys.exit("mutants: give the cm6 names, comma-separated")
-    names = [n.strip() for n in args[0].split(",") if n.strip()]
+# a std trait's method (`impl Clone for …`) is not a helper of the function that calls `.clone()`
+CALL_STD = {"clone", "default", "drop", "fmt", "eq", "ne", "hash", "deref", "deref_mut", "from", "into", "partial_cmp",
+            "cmp", "as_ref", "borrow", "index", "into_iter"}
+
+
+def crate_fns(crate):
+    """Every fn with a body in src/ outside __test, with its file."""
     fns = []
     for f, text in src_files(crate).items():
         if f.startswith("__test"): continue
         for fn in fns_with_spans(text): fn["file"] = f; fns.append(fn)
+    return fns
+
+
+def reached(fns, seeds, helper=lambda fn: not fn["public"]):
+    """The mutation selector's call rule: the seeds and the private functions they call, transitively, by name; in
+    another file only by a free or path call to a name no other private function has. Keyed by (file, line).
+    `helper` says which functions the rule walks into (the items tie walks every function with no `cm6:` line)."""
+    private = collections.defaultdict(list)
+    for fn in fns:
+        if helper(fn) and fn["name"] not in CALL_STD: private[fn["name"]].append(fn)
+    chosen, todo = {(f["file"], f["line"]): f for f in seeds}, list(seeds)
+    while todo:
+        fn = todo.pop()
+        for name in fn["calls"]:
+            for h in private.get(name, []):
+                # a method call `.name(` is too often another type's method
+                if h["file"] != fn["file"] and (name not in fn["free"] or len(private[name]) > 1): continue
+                k = (h["file"], h["line"])
+                if k not in chosen: chosen[k] = h; todo.append(h)
+    return chosen
+
+
+def mutants(c, crate, args):
+    if not args: sys.exit("mutants: give the cm6 names, comma-separated")
+    names = [n.strip() for n in args[0].split(",") if n.strip()]
+    fns = crate_fns(crate)
     def names_it(fn, n):
         """A `cm6:` line naming n (a static member written with `^`), or a private function's "cm6's `n`"."""
         docs = fn["docs"].replace("^", ".")
@@ -663,22 +693,7 @@ def mutants(c, crate, args):
     seeds = [fn for fn in fns if any(names_it(fn, n) for n in names)]
     found = {n for n in names if any(names_it(fn, n) for fn in seeds)}
     c.need(found == set(names), f"each named cm6 item has a function whose `cm6:` line names it: {len(found)} of {len(names)}", sorted(set(names) - found))
-    # a std trait's method (`impl Clone for …`) is not a helper of the function that calls `.clone()`
-    STD = {"clone", "default", "drop", "fmt", "eq", "ne", "hash", "deref", "deref_mut", "from", "into", "partial_cmp",
-           "cmp", "as_ref", "borrow", "index", "into_iter"}
-    private = collections.defaultdict(list)
-    for fn in fns:
-        if not fn["public"] and fn["name"] not in STD: private[fn["name"]].append(fn)
-    chosen, todo = {(f["file"], f["line"]): f for f in seeds}, list(seeds)
-    while todo:
-        fn = todo.pop()
-        for name in fn["calls"]:
-            for h in private.get(name, []):
-                # another file's helper only through a call by path or a free call, and only when its name is one
-                # private function's: a method call `.name(` is too often another type's method
-                if h["file"] != fn["file"] and (name not in fn["free"] or len(private[name]) > 1): continue
-                k = (h["file"], h["line"])
-                if k not in chosen: chosen[k] = h; todo.append(h)
+    chosen = reached(fns, seeds)
     c.say(f"functions: {len(seeds)} with a named `cm6:` line, {len(chosen) - len(seeds)} private functions they call (transitively, by name: in another file only by a free or path call to a name no other private function has)")
     r = ic.run(["cargo", "mutants", "-p", crate, "--features", "__test", "--list", "--json"])
     try: ms = json.loads(r.stdout)
@@ -1382,6 +1397,7 @@ def items(c, crate, args):
     raw = lambda f: ic.rows(ic.spec(crate, "raw", f))
     inv = {r["id"]: r for r in raw("inventory.jsonl")}
     by_name = {r["item"]: r["id"] for r in inv.values()}
+    by_name.update({n.replace("^", "."): i for n, i in list(by_name.items()) if "^" in n})  # a `cm6:` line writes a static member with `.`
     beh = {b["id"]: b["item_id"] for b in raw("behaviors.jsonl")}
     tests = {t["id"]: t for t in raw("tests.jsonl")}
     rows = raw("decisions.jsonl")
@@ -1391,7 +1407,16 @@ def items(c, crate, args):
         if f.endswith(".jsonl") and f != "no-counterpart.jsonl":
             for r in ic.rows(ic.spec(crate, "fixtures", f)): fixture_item[(f[:-6], r["id"])] = r.get("item_id")
     texts = src_files(crate)
-    tdir = ic.crate_dir(crate, "tests")
+    fns = crate_fns(crate)
+    cm6_name = lambda fn: (re.search(r"///\s*cm6(?: contract)?:\s*(\S+)", fn["docs"]) or [None, None])[1]
+    callers = collections.defaultdict(set)  # (file, line) of a helper -> cm6 names of the annotated functions reaching it
+    for a in fns:
+        if cm6_name(a) in by_name:
+            for k in reached(fns, [a], lambda fn: cm6_name(fn) is None): callers[k].add(cm6_name(a))
+    def holder(path, line):
+        """The innermost fn with a body that holds src/<path>:<line>."""
+        inside = [fn for fn in fns if fn["file"] == path and fn["line"] <= line <= fn["end"]]
+        return max(inside, key=lambda fn: fn["line"]) if inside else None
     def covers(path, fn):
         text = ic.read(os.path.join(REPO, path)) if os.path.exists(os.path.join(REPO, path)) else ""
         m = re.search(rf"\bfn\s+{re.escape(fn)}\b", text)
@@ -1415,11 +1440,15 @@ def items(c, crate, args):
             m = re.match(r"g5:(\w+):S\d+\.(F\d+)", i)
             if m: return {fixture_item.get((m.group(1), m.group(2)))} - {None}
             return {beh[i]} if i in beh else set()
+        own = set(x.get("items") or [])  # the verifier's `items` key, where the call rule cannot reach (cards/verifier.md)
         m = re.match(r"src/(\S+?):(\d+)", i)
         if m:
             name = cm6_of_line(texts, m.group(1), int(m.group(2)))
-            return {by_name[name]} if name in by_name else set()
-        return set()
+            if name in by_name: return {by_name[name]} | own
+            h = holder(m.group(1), int(m.group(2)))
+            via = callers.get((h["file"], h["line"]), set()) if h else set()
+            return {by_name[n] for n in via} | own
+        return own
     lines = []
     for f in sorted(os.listdir(ic.spec(crate, "raw"))):
         if re.fullmatch(r"conformance-[\w-]+\.jsonl", f):
@@ -1466,8 +1495,7 @@ def items(c, crate, args):
     diff = [f"{i} {inv[i]['item']}: recorded {recorded.get(i)}, derived {derived[i]}: " + "; ".join(reasons[i][:4]) for i in sorted(derived) if recorded.get(i) != derived[i]]
     c.say(f"disagreements with the recorded item lines, for the consultant: {len(diff)}")
     for d in diff: c.say("    " + d)
-    c.say(f"finding or UNVERIFIED lines tied to no item, for the consultant: {len(untied)}")
-    for u in untied: c.say("    " + u)
+    c.need(not untied, f"every finding or UNVERIFIED line is tied to an item (by its behavior, its test's covers, the `cm6:` line of the function that holds it or of every annotated function whose calls reach that helper, or its `items` key): {len(untied)} are not", untied)
 
 
 def outcome_counts(path, src_marker):
