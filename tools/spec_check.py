@@ -176,6 +176,59 @@ def module_end_artifacts(v8_dir, marker):
     return found
 
 
+# Q156 (docs/decisions/method.md, "A generator G5 cannot reseed"): conformance G5 draws fresh seeds by setting
+# ORACLE_SEED_SALT, which `rng` of tools/cm6/oracle-lib.ts reads. A generator that draws from Math.random, or from a
+# PRNG of its own that does not read the salt, writes the same draws under every salt and G5 finds nothing new in it.
+# The check reads each generator of order.json and the local modules it imports, comments removed.
+OWN_PRNG = re.compile(r"Math\.imul|\b0x[0-9a-fA-F]+n\b|\b\d{6,}n\b|getRandomValues|randomInt|randomBytes|randomUUID")
+LOCAL_IMPORT = re.compile(r"""^\s*import\b[^;]*?from\s+["'](\.{1,2}/[^"']+)["']""", re.M)
+
+
+def code_of(path):
+    """The source of a module with its comments removed (string literals kept as they are)."""
+    out, i, src = [], 0, open(path, encoding="utf-8").read()
+    while i < len(src):
+        c = src[i]
+        if c in "\"'`":
+            j = i + 1
+            while j < len(src) and src[j] != c: j += 2 if src[j] == "\\" else 1
+            out.append(src[i:j + 1]); i = j + 1
+        elif src.startswith("//", i): i = src.find("\n", i) if src.find("\n", i) >= 0 else len(src)
+        elif src.startswith("/*", i): i = src.find("*/", i + 2) + 2 if src.find("*/", i + 2) >= 0 else len(src)
+        else: out.append(c); i += 1
+    return "".join(out)
+
+
+def seed_sources(oracle_dir, chunks):
+    """{chunk/file: (kind, why)} for every generator of order.json: kind is harness, own-salted, none, math-random or
+    own-unsalted (the last two fail), read over the file and the local modules it imports, transitively."""
+    res = {}
+    for c, files in chunks.items():
+        for f in files:
+            path = os.path.join(oracle_dir, c, f)
+            if not os.path.exists(path): continue
+            seen, todo, code = set(), [path], {}
+            while todo:
+                q = os.path.normpath(todo.pop())
+                if q in seen or not os.path.exists(q): continue
+                seen.add(q); code[q] = code_of(q)
+                for m in LOCAL_IMPORT.findall(code[q]):
+                    t = os.path.join(os.path.dirname(q), m)
+                    todo += [t] if t.endswith(".ts") else [t + ".ts", os.path.join(t, "index.ts")]
+            rel = lambda q: os.path.relpath(q, oracle_dir)
+            rnd = [rel(q) for q, t in code.items() if "Math.random" in t]
+            own = [(rel(q), OWN_PRNG.search(t).group(0)) for q, t in code.items() if OWN_PRNG.search(t)]
+            salted = any("ORACLE_SEED_SALT" in t for t in code.values())
+            harness = any(re.search(r"\brng\s*\(", t) and "@harness/lib" in t for t in code.values())
+            key = f"{c}/{f}"
+            if rnd: res[key] = ("math-random", "in " + ", ".join(rnd))
+            elif own and not salted: res[key] = ("own-unsalted", "; ".join(f"{q}: {m}" for q, m in own))
+            elif own: res[key] = ("own-salted", "")
+            elif harness: res[key] = ("harness", "")
+            else: res[key] = ("none", "")
+    return res
+
+
 def rows(path):
     with open(path, encoding="utf-8") as f:
         return [json.loads(l) for l in f.read().split("\n") if l.strip()]  # split on \n only: raw U+2028 in strings
@@ -242,6 +295,15 @@ def main():
     for c, files in chunks.items():
         missing = [f for f in files if f not in on_disk.get(c, [])]
         if missing: bad.append(f"order.json names generators that do not exist in {c}: {missing}")
+    seeds = seed_sources(os.path.join(base, "oracle", "cm6"), chunks)
+    n = collections.Counter(k for k, _ in seeds.values())
+    print(f"seeds (Q156): {len(seeds)} generators; {n['harness']} draw from rng of @harness/lib, {n['own-salted']} from a "
+          f"PRNG of their own that reads ORACLE_SEED_SALT, {n['none']} draw from no PRNG; {n['math-random']} from "
+          f"Math.random, {n['own-unsalted']} from a PRNG of their own that does not read the salt")
+    for g, (k, why) in sorted(seeds.items()):
+        if k in ("math-random", "own-unsalted"):
+            bad.append(f"{g} draws from {'Math.random' if k == 'math-random' else 'a PRNG of its own'} ({why}): "
+                       "conformance G5 cannot reseed it (tools/oracle_fresh.py sets ORACLE_SEED_SALT)")
 
     if "--same-outputs-as" in args:
         ref = args[args.index("--same-outputs-as") + 1]
