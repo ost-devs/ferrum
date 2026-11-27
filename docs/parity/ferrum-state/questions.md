@@ -2,7 +2,7 @@
 
 Open questions only (`docs/workflow/README.md` §3): a decided entry is removed in the commit that records the decision. Ids are stable and never reused.
 
-The next id is Q161.
+The next id is Q162.
 
 ## Q157. The plan's (d) and the amended row `state.cm6.160.d1` give different results for 2^53 written as a float
 - **Found.** `plan.md` "Conformance" step 5 (d) (and item 1 of the W1 and W1b cards copied from it) says `ChangeDesc::from_json` and `ChangeSet::from_json` give the domain's `Err` for 2^53 written as a float. `state.cm6.160.d1`, as amended on 2026-11-27 (`docs/decisions/ferrum-state.md`, "Step 4 classified, Q144, Q145, E60 and the round of step 5"), accepts integral doubles up to `isize::MAX`; cm6 accepts it (`docs/parity/ferrum-state/written/values.out`, label `desc exact [9007199254740992.0,-1]`). W1b's test `json_readers_read_an_integral_float_as_cm6_reads_it` (`crates/ferrum-state/tests/written_change.rs`) follows the row, and fails at the current code (Ferrum gives `Err`). Second: `ChangeSet::empty(usize::MAX)` is not in the "Where" column of `design.md` §5's row `A change cannot be longer than isize::MAX`; W1b asserts its panic from D17's general sentence.
@@ -30,3 +30,10 @@ The next id is Q161.
 - **Bears on it.** A caller who parses JSON text with the crate's `serde_json` and passes it to `from_json` gets another position than cm6 reads from the same text (deduction from the observed parse; the crate's own parse path not read).
 - **Blocks.** Nothing in (d); the reading of `from_json` against cm6 on JSON text.
 - **Raised by.** The test-writer of step 5 (d) W1b (commit aaa3960), queued by the orchestrator, 2026-11-27.
+
+## Q161. Rule 10 converts three of cm6's four messages with positions, and two ops convert outside `call_of` on filler
+- **Found.** W2a (commit d3bb89b) moved op `text.lineAt`'s conversion inside `Chunk::call_of` (`crates/ferrum-state/tests/replay/state/ops.rs:1381-1388`); the literal test `rule_a_position_text_line_at_converts_in_a_callback_is_no_argument_of_the_update` (`tests/replay/rules.rs:825`) gave `mismatch` before (two candidate texts converting the message differently) and `equal` after; replay counts unchanged. Its sweep of `tests/replay/state/` for writers of `ARGS` outside `call_of`: op `changes.of` (`ops.rs:1398`, `change_spec` on filler) and op `json.sel` (`serial.rs:153`, calling `ferrum(...)` directly, `SelV::to_doc(&filler)` at `values.rs:226-227`). Both write entries on filler (byte length 0), which by W2a's deduction fit no message rule 10 parses; not run. Second: `by_arguments` (`ops.rs:158-223`) parses three of the four messages of rule 10's table (`plan.md` "Implementation", the rules of positions, item 10); `Mismatched change set length (got G, expected L)` is compared as Ferrum writes it.
+- **Open because.** Rule 10 names four messages; W2a's card did not ask whether the fourth is parsed, nor whether the two filler writers are by design.
+- **Bears on it.** A `Mismatched change set length` message whose numbers differ between the units would compare Ferrum's bytes with cm6's code units (deduction; W2a did not look for a fixture that has it). The filler entries can fit only a message whose every number is 0 (deduction). W2a's finding: at the current code the hole of `conformance-state.jsonl:409` gave a false fail, not a false pass, since the document the change is resolved against is always a candidate.
+- **Blocks.** Nothing in (d) W2b; (g)'s judgment of `conformance-state.jsonl:409`.
+- **Raised by.** The orchestrator, from the test-writer W2a's report, 2026-11-27.
