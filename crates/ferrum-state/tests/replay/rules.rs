@@ -813,3 +813,39 @@ fn rule_a_decisions_file_beside_the_fixtures_replaces_the_committed_one() {
     assert_eq!(super::driver::decisions_file(&raw, &with), with.join("decisions.jsonl"));
     assert_eq!(super::driver::decisions_file(&raw, &without), raw.join("decisions.jsonl"));
 }
+
+/// `conformance-state.jsonl:409`: `text.lineAt` evaluated in a callback during `state.update` is a call of its own, so
+/// its position, measured on its text, is no argument of the update that rule 10 of `plan.md` "Positions" could read a
+/// message's numbers against. Here the filter calls `text.lineAt` on `aéb` at 2 and 1 (bytes 3 and 1 on a text of 4
+/// bytes) and returns the change 3 to 1 on `abcd` (4 bytes): Ferrum's message has the same numbers, and only `abcd`,
+/// the document the change is resolved against, converts them. Read through `aéb` they would be `2 to 1 (in doc of
+/// length 3)`: before the op was a call of its own, both texts fitted the message, and their disagreement made the
+/// fixture a `mismatch` of the replayer's own (rule 8).
+#[test]
+fn rule_a_position_text_line_at_converts_in_a_callback_is_no_argument_of_the_update() {
+    let input = |text: &str, line_at: bool| {
+        let calls = if line_at {
+            r#"{"op":"text.lineAt","of":{"$":"t"},"pos":2,"as":"l1"},{"op":"text.lineAt","of":{"$":"t"},"pos":1,"as":"l2"},"#
+        } else {
+            ""
+        };
+        format!(
+            r#"{{"steps":[{{"op":"text.of","lines":["{text}"],"as":"t"}},
+            {{"op":"fn","params":["tr"],"do":{{"op":"block","steps":[{calls}
+                {{"op":"let","value":{{"op":"record","of":{{"changes":{{"op":"record","of":{{"from":3,"to":1}}}}}}}},"as":"r"}}],"result":"r"}},"as":"tf"}},
+            {{"op":"state.create","config":{{"doc":"abcd","extensions":[{{"ofVar":["transactionFilter","tf"]}}]}},"as":"s"}},
+            {{"op":"state.update","state":{{"$":"s"}},"specs":[]}}],"out":null}}"#
+        )
+    };
+    let error = |m: &str| format!(r#"{{"error":{{"name":"RangeError","message":"{m}"}}}}"#);
+    let cm6 = error("Invalid change range 3 to 1 (in doc of length 4)");
+    let r = run_state(&input("aéb", true), &cm6);
+    assert_eq!((r.result, r.note.as_str()), ("equal", ""), "the message through the update's own arguments");
+    assert!(r.left_out.is_empty(), "{:?}", entries(&r));
+    // the message is compared: its numbers read through `aéb` are a mismatch
+    let through_line_at = error("Invalid change range 2 to 1 (in doc of length 3)");
+    assert_eq!(run_state(&input("aéb", true), &through_line_at).result, "mismatch");
+    // the same program without the calls of `text.lineAt`, and with them on an ASCII text, give the same result
+    assert_eq!(run_state(&input("aéb", false), &cm6).result, "equal");
+    assert_eq!(run_state(&input("abcd", true), &cm6).result, "equal");
+}

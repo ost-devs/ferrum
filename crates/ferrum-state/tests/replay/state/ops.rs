@@ -1377,14 +1377,18 @@ fn text_line_at(a: &Value, p: &mut Program, c: &Ctx) -> R<Value> {
     let d = doc_arg(p, OP, &v)?;
     let lines = d.t.to_json();
     let form = Form::lines(&lines);
-    let b = to_bytes(&form, &pos, "pos").map_err(|f| stop(p, OP, f))?;
     let text = lines.join("\n");
-    let line = match crate::replay::text::host::ferrum(Some(&text), || d.t.line_at(b)) {
+    // a call of its own (`Chunk::call_of`): its position, measured on this text, never joins the arguments of a call
+    // in progress that rule 10 reads a message against, such as a `state.update` whose callback evaluates this op
+    // (`raw/conformance-state.jsonl:409`)
+    let r = c.call_of(OP, || {
+        to_bytes(&form, &pos, "pos").map(|b| crate::replay::text::host::ferrum(Some(&text), || d.t.line_at(b)))
+    });
+    let line = match r.map_err(|f| stop(p, OP, f))? {
         Ok(l) => l,
         Err(crate::replay::text::host::Stop::Flow(f)) => return Err(Stop::Flow(f)),
         Err(crate::replay::text::host::Stop::Nc(v)) => return Err(Stop::Nc(v)),
     };
-    let _ = c;
     Ok(host(LineV { line, doc: Rc::new(crate::replay::text::host::Form::new(lines)) }))
 }
 

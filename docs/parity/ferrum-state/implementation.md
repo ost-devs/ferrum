@@ -436,3 +436,7 @@ Conformance step 5 (d) W1b (`docs/parity/ferrum-state/plan.md` "Conformance", st
 - `crates/ferrum-state/tests/written_rangeset.rs`
 - `crates/ferrum-state/benches/g8.rs`
 - `docs/parity/ferrum-state/bench/g8.ts`
+
+Conformance step 5 (d) W2a (`docs/parity/ferrum-state/plan.md` "Conformance", step 5 (d); the replayer's finding `docs/parity/ferrum-state/raw/conformance-state.jsonl:409`, `cards/test-writer.md` "Conformance step 5 (d), run W2a"). Op `text.lineAt` of chunk `state` converts its position and calls `Text::line_at` inside `Chunk::call_of`, so that evaluated in a callback during `state.update` its (position, text) no longer joins the update's arguments that rule 10 of `plan.md` "Implementation" reads a message's numbers against; the conversions that add to the call by design (the specs and effects a callback returns) are unchanged. A literal test in `rules.rs`: a `transactionFilter` that calls `text.lineAt` on a text outside ASCII at the byte positions of the message of the change it returns. No fixture's result changes. Files:
+- `crates/ferrum-state/tests/replay/state/ops.rs`
+- `crates/ferrum-state/tests/replay/rules.rs`
