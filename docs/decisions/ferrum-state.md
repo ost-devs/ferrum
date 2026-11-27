@@ -1383,3 +1383,48 @@ So G2's coverage is lines and branches, in one run on the nightly toolchain; mut
 **What the MIR format costs.** rustc marks `--emit=mir` as output for human readers, with no stable format. The toolchain is pinned, a toolchain change runs every check again (M22), and the tool's self-checks fail on a format they cannot read: a public function with no body, a site with no body, a run-observed pair missed.
 
 **Confidence.** High on the graph: the trial, 72 of 73 run-observed pairs with the one left explained, and four spot checks of name-only ties, none of them a call. High on the three rules of Decision 2, which follow from `design.md` §5's purpose and from where each error would show. Medium on the cost of I3 and on the reliability of the listed reasons until I3's ratio and (g)'s overturns come in (E73). **Reopens.** A run-observed pair the tool misses; a panic omission found after (f) passes; more than 1 in 10 listed reasons overturned at (g); a site in an impl of an outside trait.
+
+## 2026-11-27 · Step 5 (c) after F1: Q152, Q153 and the cut of the rest of the fixtures
+
+*Decided by the consultant (Q152 and Q153 of `ferrum-state`, and the crate's part of M39, whose record is `docs/decisions/method.md`, same date). Binding text: `design.md` §5 (the first paragraph, and a message in the table of Ferrum's own panics) and §10 "Engine errors"; `plan.md` "Conformance" step 5 (c), (d) and (e); `raw/improvements.jsonl` `state.imp.019`. Ledger: E66 (partial result), E74.*
+
+**Q152. A set that lost a text, and the engine's `TypeError`.** *What cm6 does and why.* `invert` does not check that its document has the set's length (`mirrors/cm6/state/src/change.ts:218-232`). Q11 decided to reproduce that (`state.cm6.140.d1`). On a shorter document a replaced range past the end gets an empty text. `map` then drops that text, because `addInsert` returns at once on an empty value (`:393-394`). The mapped set has an insertion section with no entry in `inserted`. cm6 reads `inserted[i]` without a guard in three places: `toJSON` (`:305`), `iterChanges` (`:416`, through `Text.append` of `undefined`, which also reaches `apply`) and `SectionIter.textBit` (`:563`, through `compose`). Each fails with a V8 `TypeError` (F8018 records two of them). The `text` getter (`:557`) does guard: it gives `Text.empty`, and that is how `map` dropped the text. None of this is a contract of cm6. It is JavaScript failing on an array that ran short. For `:416` I deduced the failure from `Text.replace` reading `text.length`; I did not run it. F2's throws rows run it.
+
+*Decision.* D13 already settles the class. Where cm6 fails with an engine `TypeError` on input Ferrum's types can express, Ferrum panics at the same condition with a message of its own. `design.md` §5 now lists that message: `The change set holds no text for one of its insertions`. One private function writes it, and every read that cm6 leaves unguarded goes through that function. Each public function `panics --reach` gives it states the panic. The replayer needs no new rule: §10 "Engine errors" compares a captured `TypeError` by its name and leaves its message out, provided Ferrum's panic is a §5 message. The inventory of implicit throws missed these sites, because it took them for unreachable on the premise that step 4 refuted. F2 writes their rows in `raw/throws.jsonl` from harness runs: a second condition of `:305`, and new rows for `:416` and `:563`. (d) registers `set.invertMapCompose`, and (e) I1 writes the panic.
+
+*Why not the alternatives.*
+- *Leave Rust's `index out of bounds`.* D13 forbids a message that names nothing the caller can fix. §10 is right to fail it: a panic with a message outside §5 must stay a mismatch, or any unrelated bug would pass as an engine error.
+- *Accept any panic where cm6 recorded a `TypeError`.* This would hide that same bug everywhere.
+- *Keep the empty text in Ferrum's `map`, so the set stays whole.* `to_json` would then give a value where cm6 throws. That is a difference that no class of D11 allows.
+- *Make `invert` check its document now.* That is an improvement, and its timing is D16's.
+
+*The improvement it shows.* A caller that passes `invert` the wrong document should learn that at the call. As things stand, it learns it at a later, unrelated call, or never: a longer document gives an undo of the wrong text with no failure anywhere (F0354). History and collaboration invert every change. `state.imp.019` is a candidate for the delta. Its reference is a patch that throws in `invert` as `apply` does for the same mistake (`:208`). If it is adopted, the panic above can no longer fire through the public API, and it is removed in the same delta.
+
+*Confidence.* High. *Reopens.* A harness run showing that one of the three reads gives a value rather than failing. That case would be D11 (c), reading past the end of an array, and would need its own row.
+
+**Q153. How deep the fixtures pin a result's sharing.** *What the question assumed.* It assumed that whether F1's fixtures kill the mutant `conformance-text.jsonl:23` is measured only at (f). It is not. A mutation run of the four functions F1's generator targets, against the replay as it stands, takes minutes and answers it now. If the answer waited for (f), a missing check would surface after (d) and (e), and a second round would be needed for it alone.
+
+*Is sharing below the top level worth pinning?* Yes. Ferrum keeps cm6's tree, because several results depend on its layout. Sharing nodes is how an edit avoids copying the document, which serves the goal of large documents without whole-document work. A mutant that copies deep nodes gives equal text and an equal shape, but costs time and memory that no value check shows. The replay already reads node identity through `__test` (`raw/replay.jsonl`, `text.sharedChildren`, `how: test`). A deeper count is the same kind of check, with values recorded from cm6.
+
+*Decision.* Before F4's card, the orchestrator runs the mutants of `conformance-text.jsonl:5` to `:26`. If any survives, an op of chunk `text` that counts the nodes a result shares with its source through the whole tree goes into F4's card, and `round-c.ts` records it (about 15,000 more). If none survives, the op is not written: shape and the panic already pin what the finding is about.
+
+*Lost.* Adding the op unconditionally: about 15,000, plus a replayer op, possibly for nothing. Waiting for (f).
+
+*Confidence.* High.
+
+**The cut of the rest of (c).** F1's transcript gives the figures (M39). The fixed part of a run is about 40,000. Reading a chunk's interpreter costs about 8,000. Each input line costs about 700 to read, and each group of cases written as one fixture set about 1,500. A new op costs about 10,000, writing and running a generator about 8,000, the rows about 4,000.
+- *As one run,* chunks `rangeset`, `facet` and `state` come to about 230,000.
+- *Split in two by chunk,* one part stays at about 155,000. Both figures are above the 140,000 at which `docs/workflow/README.md` §5 splits a card.
+- *One run per chunk* gives about 115,000, 95,000 and 110,000, at the cost of two more fixed parts.
+
+The runs go one after another, because all three write the same files and `spec_check` re-runs every generator.
+
+Twelve lines are routed by their own evidence and not given to any of the three runs to read. For each, the evidence says either that cm6 has no counterpart value (a depth of the engine's stack, D17, the decided panic of `state.cm6.100.d2`, `from_json`'s `Err`) or that another step owns it (the replayer's rules, a mutant no test can give an input to). Reading them would cost about 8,000 and change nothing a fixture can hold.
+
+The lines whose case has a value in cm6 stay with the fixtures, because a value from a run is the better evidence. These are the reads of a clone kept from a build that panicked (`conformance-facet.jsonl:191`, `:192`, `conformance-state.jsonl:63`'s first case, `:332`) and the nested `tr.state()` (`:427`, `:428`, `:401`). The `shared` lines are the threading of `design.md` §6, which (d) and (e) take. `conformance-change.jsonl:249` goes to (d), because no fixture can carry a float. Below 2^53 Ferrum must read an integral float as cm6 reads the same text, and at 2^53 it returns the domain's `Err`.
+
+*Lost.*
+- Two runs: one of them would sit at the cap with no margin, after a pilot that ended at 1.58 of its estimate.
+- Giving the pre-routed lines to the runs to confirm: about 8,000 to read evidence that already names its step.
+
+*Confidence.* Medium on the figures, since they come from one run of the kind; F2 measures them again (E74). High on the cut itself.

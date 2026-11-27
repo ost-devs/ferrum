@@ -1038,3 +1038,39 @@ Four facts existed only in the progress file, and each moved to the file of what
 **Lost.** A fix per tool (three answers to one question); rust-analyzer's index (not pinned with the toolchain; not tried); the run-based list alone (it sees only what a run passes through).
 
 **Confidence.** High. **Reopens.** A toolchain whose MIR the self-checks cannot read; a pair that recorded runs observe and the graph misses.
+
+## 2026-11-27 · M39: a pilot that passed its line at its report, and where a pilot's split comes from
+
+*Decided by the consultant (M39, the stop-loss of `ferrum-state`'s conformance step 5 (c); learning W59; the crate's part, the cut of F2: `docs/decisions/ferrum-state.md`, "Step 5 (c) after F1"). Binding text: `docs/workflow/README.md` §5 "Budgets" and "Stop-loss"; `tools/ledger.py` `usage --timeline`; `tools/README.md`. Ledger: E66 (partial result), E74.*
+
+**Question.** F1, the first fixtures run of the conformance round, was estimated at 100,000 against a stop line of 150,000. It ended at 157,998, in one attempt, with its work whole. Its size was 147,121 when it committed and 157,998 when it handed back, so the report alone crossed the line. The question asked what the stop-loss means here, and how F2 is to be estimated from F1.
+
+**Decision 1: F1 stands, and the stop-loss had nothing to stop.** A stop line exists so that a run does not hold more than its line allows before its work is done. F1's work was done and committed below the line. `spec_check` passed at its run and again at the orchestrator's run, and the replay gave no mismatch. Nothing in its output is thinner for the overrun. What failed was the estimate (1.58 of it), which E66 records.
+
+**Decision 2: a worker that has committed its card's checked output is left to write its report** (§5 "Stop-loss"). The report is a few thousand tokens. It is also the only place where the worker says where each input line went: F1 sent five of them elsewhere, with its reasons. A `TaskStop` at that point would save almost nothing and lose that routing. The condition is one the orchestrator can see, namely the card's commit in `git log`. A worker that commits and then keeps working past its line is stopped as before, and that would reopen this decision.
+
+**Decision 3: a pilot's cost is split from its transcript, never from the worker's own count** (§5 "Budgets"; `tools/ledger.py usage --timeline`).
+- *What the worker counted.* Its own split was 50,000, 10,000 and 35,000, about 95,000 in all. That was 0.60 of the run, and it gave no fixed part.
+- *What the transcript shows.*
+  - A fixed part of about 38,000: the first request 9,671; the card, the plan and the listings about 13,700; the closing check, the commit and the report about 14,800.
+  - Chunk `text` about 78,000, of which the generator was about 70,000.
+  - Chunk `change` about 42,000, for 17 lines and one new op.
+- *Why the difference matters.* Scaling the worker's split put about 3,600 on each line and predicted 215,000 for F2. The transcript gives about 700 to read a line, about 1,500 per group of cases and about 10,000 per new op. It also gives a fixed part per run, which is what makes each extra cut cost something.
+- *Self-counts are low every time.* W52 was low too.
+- *The tool.* What splits the transcript is data. `--timeline` prints, for each request, the context it sent, its own output and what its calls touched. I tried it on F1: 56 requests, and its last line reproduces the 157,998. The orchestrator marks where the card's parts begin, which is a reading of a short list, not an estimate.
+- *Cards.* They no longer ask the worker what each part cost. F1's card was the only one that did.
+
+**Decision 4: F2 becomes three runs, one chunk each,** estimated from these figures. The reasons and the routing are in the crate's entry.
+
+**Lost.**
+- *Re-running F1:* its output is whole and checked.
+- *Raising the cap so that F2 runs as one:* at about 230,000 it would hold three interpreters' reading that no other part needs.
+- *Scaling the worker's split:* it misses the fixed part, so it would misplace the cut.
+- *Stopping at the line whatever has been committed:* this loses the report and saves nothing.
+
+**Confidence.** High on Decisions 1 to 3. Medium on the figures, which come from one run of the kind, until F2 measures them again (E74).
+
+**Reopens.**
+- F2 ending outside 0.85 to 1.15 of its estimate.
+- A worker that commits and then works on past its line.
+- A pilot whose parts the timeline cannot separate, because they interleave.

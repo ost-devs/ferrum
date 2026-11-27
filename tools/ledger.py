@@ -5,14 +5,19 @@
     python3 tools/ledger.py report [<crate>] [--all]     cost per stage and step, escapes, the open expectations in full
                                                          and the settled ones as a count (--all prints them too: they are
                                                          history, read at a review, not at every session start)
-    python3 tools/ledger.py usage <transcript.jsonl> [--breakdown]   a run's size from its transcript: requests,
+    python3 tools/ledger.py usage <transcript.jsonl> [--breakdown | --timeline]   a run's size from its transcript: requests,
                                                          `tokens` (the last request's four usage counts) and `consumed`
                                                          (their sum over the requests), each request counted once by its
                                                          id; --breakdown adds what filled the context (M27): the first
                                                          request, the rules loaded by the paths it read, the results by
                                                          tool, its own output (the output tokens of every request but
                                                          the last) against the input added, and the bytes per token of
-                                                         the largest results that arrived alone between two requests
+                                                         the largest results that arrived alone between two requests;
+                                                         --timeline prints one line per request instead: its number,
+                                                         the context it sent, its own output, and what its tool calls
+                                                         touched (a path, or a command's first words), so that a pilot's
+                                                         size is split by part of its card from the transcript, never
+                                                         from the worker's own count (M39)
     python3 tools/ledger.py watch <agent id | transcript.jsonl> --stop <tokens> [--poll <s>]
                                                          waits, printing nothing, until a running worker's context (the
                                                          `tokens` of `usage`) reaches its stop line, then prints one line
@@ -45,7 +50,7 @@ Kinds and their keys (date defaults to today; numbers are parsed):
                                                                      or `partial`: what one of several checking points measured,
                                                                      the expectation staying open for the others
 """
-import collections, datetime, json, os, sys
+import collections, datetime, json, os, re, sys
 
 PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs", "progress", "ledger.jsonl")
 KEYS = {"step": ["crate", "stage", "step", "role", "model", "effort", "tokens"],
@@ -192,7 +197,33 @@ def sizes(path):
     return len(seen), last, total
 
 
+def timeline(path):
+    """One line per request: number, context sent, own output, what its tool calls touched (M39)."""
+    seen, rows = {}, []
+    for line in open(path, encoding="utf-8"):
+        try: m = json.loads(line).get("message")
+        except ValueError: continue
+        if not isinstance(m, dict) or m.get("role") != "assistant": continue
+        k = m.get("id")
+        if k not in seen:
+            u = m.get("usage") or {}
+            ctx = sum(u.get(x) or 0 for x in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"))
+            seen[k] = len(rows); rows.append([ctx, u.get("output_tokens") or 0, []])
+        for b_ in m.get("content") if isinstance(m.get("content"), list) else []:
+            if b_.get("type") != "tool_use": continue
+            i = b_.get("input") or {}
+            what = i.get("file_path") or " ".join(str(i.get("command") or i.get("pattern") or "").split())
+            what = re.sub(r"^cd \S+ && ", "", what)[:100]
+            if (b_["name"], what) not in [tuple(x) for x in rows[seen[k]][2]]: rows[seen[k]][2].append((b_["name"], what))
+    prev = 0
+    for n, (ctx, out, calls) in enumerate(rows, 1):
+        if not ctx: continue
+        print(f"{n:4} {ctx:8,} +{ctx - prev:7,} out {out:6,}  " + " | ".join(f"{t}: {w}" for t, w in calls))
+        prev = ctx
+
+
 def usage(path):
+    if "--timeline" in sys.argv: return timeline(path)
     n, last, total = sizes(path)
     out = {"requests": n, "tokens": last, "consumed": total}
     if "--breakdown" in sys.argv: out["breakdown"] = breakdown(path)
